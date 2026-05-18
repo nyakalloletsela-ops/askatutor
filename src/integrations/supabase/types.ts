@@ -14,16 +14,165 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          availability: Json | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          featured_until: string | null
+          full_name: string | null
+          hourly_rate: number | null
+          id: string
+          is_featured: boolean
+          phone: string | null
+          subjects: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          availability?: Json | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          featured_until?: string | null
+          full_name?: string | null
+          hourly_rate?: number | null
+          id: string
+          is_featured?: boolean
+          phone?: string | null
+          subjects?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          availability?: Json | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          featured_until?: string | null
+          full_name?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_featured?: boolean
+          phone?: string | null
+          subjects?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          duration_min: number
+          id: string
+          room_id: string
+          scheduled_at: string
+          status: Database["public"]["Enums"]["session_status"]
+          student_id: string
+          subject: string | null
+          tutor_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_min?: number
+          id?: string
+          room_id?: string
+          scheduled_at: string
+          status?: Database["public"]["Enums"]["session_status"]
+          student_id: string
+          subject?: string | null
+          tutor_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_min?: number
+          id?: string
+          room_id?: string
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["session_status"]
+          student_id?: string
+          subject?: string | null
+          tutor_id?: string
+        }
+        Relationships: []
+      }
+      tutor_subscriptions: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          id: string
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          status: Database["public"]["Enums"]["sub_status"]
+          submitted_at: string
+          transaction_ref: string
+          tutor_id: string
+        }
+        Insert: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          status?: Database["public"]["Enums"]["sub_status"]
+          submitted_at?: string
+          transaction_ref: string
+          tutor_id: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["pay_method"]
+          status?: Database["public"]["Enums"]["sub_status"]
+          submitted_at?: string
+          transaction_ref?: string
+          tutor_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "tutor" | "student"
+      pay_method: "mpesa" | "ecocash"
+      session_status: "scheduled" | "live" | "completed" | "cancelled"
+      sub_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +299,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "tutor", "student"],
+      pay_method: ["mpesa", "ecocash"],
+      session_status: ["scheduled", "live", "completed", "cancelled"],
+      sub_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
