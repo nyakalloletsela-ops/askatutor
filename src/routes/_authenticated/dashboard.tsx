@@ -18,7 +18,12 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-const SUBJECTS = ["Math", "Physics", "Chemistry"];
+const SUBJECT_SUGGESTIONS = [
+  "Math", "Physics", "Chemistry", "Biology", "English", "Sesotho",
+  "Geography", "History", "Accounting", "Business Studies", "Economics",
+  "Computer Studies", "Agriculture", "Development Studies", "Religious Studies",
+  "Life Skills", "Art", "Music",
+];
 
 type Profile = {
   id: string;
