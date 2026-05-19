@@ -121,7 +121,7 @@ function Home() {
         </div>
 
         <div className="mb-6 flex flex-wrap gap-2">
-          {["Math", "Physics", "Chemistry"].map((s) => (
+          {Array.from(new Set(tutors.flatMap((t) => t.subjects ?? []))).sort().map((s) => (
             <Button
               key={s}
               size="sm"
