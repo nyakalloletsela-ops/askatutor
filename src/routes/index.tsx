@@ -70,7 +70,7 @@ function Home() {
               <Sparkles className="mr-1 h-3 w-3" /> Built for Lesotho
             </Badge>
             <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
-              Master Math, Physics & Chemistry — one live session at a time.
+              Master any subject — one live session at a time.
             </h1>
             <p className="mt-4 text-lg text-navy-foreground/80 md:text-xl">
               Book certified tutors, join a split-screen virtual classroom with whiteboard and our
@@ -121,7 +121,7 @@ function Home() {
         </div>
 
         <div className="mb-6 flex flex-wrap gap-2">
-          {["Math", "Physics", "Chemistry"].map((s) => (
+          {Array.from(new Set(tutors.flatMap((t) => t.subjects ?? []))).sort().map((s) => (
             <Button
               key={s}
               size="sm"

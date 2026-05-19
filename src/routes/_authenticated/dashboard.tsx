@@ -12,13 +12,18 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, Calendar, Plus } from "lucide-react";
+import { Crown, Calendar, Plus, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-const SUBJECTS = ["Math", "Physics", "Chemistry"];
+const SUBJECT_SUGGESTIONS = [
+  "Math", "Physics", "Chemistry", "Biology", "English", "Sesotho",
+  "Geography", "History", "Accounting", "Business Studies", "Economics",
+  "Computer Studies", "Agriculture", "Development Studies", "Religious Studies",
+  "Life Skills", "Art", "Music",
+];
 
 type Profile = {
   id: string;
@@ -56,6 +61,22 @@ function Dashboard() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [txnRef, setTxnRef] = useState("");
   const [payMethod, setPayMethod] = useState<"mpesa" | "ecocash">("mpesa");
+  const [subjectInput, setSubjectInput] = useState("");
+
+  const addSubject = (raw: string) => {
+    if (!profile) return;
+    const s = raw.trim();
+    if (!s) return;
+    const cur = new Set(profile.subjects ?? []);
+    cur.add(s);
+    setProfile({ ...profile, subjects: Array.from(cur) });
+    setSubjectInput("");
+  };
+  const removeSubject = (s: string) => {
+    if (!profile) return;
+    const cur = (profile.subjects ?? []).filter((x) => x !== s);
+    setProfile({ ...profile, subjects: cur });
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -209,25 +230,54 @@ function Dashboard() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Subjects</Label>
-                    <div className="flex flex-wrap gap-3 pt-2">
-                      {SUBJECTS.map((s) => {
-                        const checked = (profile.subjects ?? []).includes(s);
-                        return (
-                          <label key={s} className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(v) => {
-                                const cur = new Set(profile.subjects ?? []);
-                                if (v) cur.add(s);
-                                else cur.delete(s);
-                                setProfile({ ...profile, subjects: Array.from(cur) });
-                              }}
-                            />
-                            {s}
-                          </label>
-                        );
-                      })}
+                    <Label>Subjects you tutor</Label>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {(profile.subjects ?? []).map((s) => (
+                        <Badge key={s} variant="secondary" className="gap-1 pr-1">
+                          {s}
+                          <button
+                            type="button"
+                            onClick={() => removeSubject(s)}
+                            className="ml-1 rounded hover:bg-muted-foreground/20"
+                            aria-label={`Remove ${s}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                      {(profile.subjects ?? []).length === 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          Add at least one subject so students can find you.
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <Input
+                        value={subjectInput}
+                        onChange={(e) => setSubjectInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === ",") {
+                            e.preventDefault();
+                            addSubject(subjectInput);
+                          }
+                        }}
+                        placeholder="Type a subject and press Enter"
+                      />
+                      <Button type="button" variant="outline" onClick={() => addSubject(subjectInput)}>
+                        Add
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1 pt-2">
+                      {SUBJECT_SUGGESTIONS.filter((s) => !(profile.subjects ?? []).includes(s)).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => addSubject(s)}
+                          className="rounded-full border border-dashed px-2 py-0.5 text-xs text-muted-foreground hover:border-primary hover:text-primary"
+                        >
+                          + {s}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
