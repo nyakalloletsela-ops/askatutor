@@ -1,20 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Pen, Eraser, Trash2 } from "lucide-react";
+import { Pen, Eraser, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 
+type Pt = { x: number; y: number };
 type Stroke = {
   type: "stroke";
-  points: { x: number; y: number }[];
+  page: number;
+  points: Pt[];
   color: string;
   size: number;
   mode: "pen" | "eraser";
   id: string;
 };
-type ClearMsg = { type: "clear" };
+type ClearMsg = { type: "clear"; page?: number };
 type Msg = Stroke | ClearMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
+const PAGE_COUNT = 100;
+const PAGE_ASPECT = 1.414; // A4 portrait
 
 interface Props {
   roomId: string;
@@ -22,69 +26,88 @@ interface Props {
 }
 
 export function Whiteboard({ roomId, userId }: Props) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // active drawing state
   const drawingRef = useRef<{
     active: boolean;
-    points: { x: number; y: number }[];
+    page: number;
+    points: Pt[];
     id: string;
-  }>({ active: false, points: [], id: "" });
+  }>({ active: false, page: -1, points: [], id: "" });
+
+  // multi-touch tracking for 2-finger scroll
+  const pointersRef = useRef<Map<number, Pt>>(new Map());
+  const scrollStartRef = useRef<{ scrollTop: number; midY: number }>({
+    scrollTop: 0,
+    midY: 0,
+  });
+
+  // remember all strokes so we can redraw on resize
+  const historyRef = useRef<Stroke[]>([]);
 
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<"pen" | "eraser">("pen");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // resize canvas to container
+  const pages = useMemo(() => Array.from({ length: PAGE_COUNT }, (_, i) => i), []);
+
+  // ── canvas sizing (per page) ────────────────────────────────
+  const sizeCanvas = (canvas: HTMLCanvasElement) => {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return;
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+    }
+  };
+
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = rect.width + "px";
-      canvas.style.height = rect.height + "px";
-      const ctx = canvas.getContext("2d");
-      ctx?.scale(dpr, dpr);
-      if (ctx) {
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-      }
+    const onResize = () => {
+      canvasRefs.current.forEach((c) => c && sizeCanvas(c));
+      // redraw history
+      historyRef.current.forEach(renderStroke);
     };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(container);
-    return () => ro.disconnect();
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // realtime broadcast channel
+  // ── realtime ────────────────────────────────────────────────
   useEffect(() => {
     const channel = supabase.channel(`whiteboard:${roomId}`, {
       config: { broadcast: { self: false } },
     });
     channel
-      .on("broadcast", { event: "draw" }, ({ payload }) => {
-        applyMessage(payload as Msg);
-      })
+      .on("broadcast", { event: "draw" }, ({ payload }) => applyMessage(payload as Msg))
       .subscribe();
     channelRef.current = channel;
     return () => {
       channel.unsubscribe();
       channelRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
+  // ── drawing helpers ────────────────────────────────────────
   const drawSegment = (
-    a: { x: number; y: number },
-    b: { x: number; y: number },
+    page: number,
+    a: Pt,
+    b: Pt,
     c: string,
     sz: number,
     m: "pen" | "eraser",
   ) => {
-    const ctx = canvasRef.current?.getContext("2d");
+    const ctx = canvasRefs.current[page]?.getContext("2d");
     if (!ctx) return;
     ctx.globalCompositeOperation = m === "eraser" ? "destination-out" : "source-over";
     ctx.strokeStyle = c;
@@ -95,69 +118,156 @@ export function Whiteboard({ roomId, userId }: Props) {
     ctx.stroke();
   };
 
+  const renderStroke = (s: Stroke) => {
+    for (let i = 1; i < s.points.length; i++) {
+      drawSegment(s.page, s.points[i - 1], s.points[i], s.color, s.size, s.mode);
+    }
+  };
+
   const applyMessage = (m: Msg) => {
     if (m.type === "clear") {
-      const ctx = canvasRef.current?.getContext("2d");
-      const c = canvasRef.current;
-      if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+      if (m.page == null) {
+        canvasRefs.current.forEach((c) => {
+          const ctx = c?.getContext("2d");
+          if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+        });
+        historyRef.current = [];
+      } else {
+        const c = canvasRefs.current[m.page];
+        const ctx = c?.getContext("2d");
+        if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+        historyRef.current = historyRef.current.filter((s) => s.page !== m.page);
+      }
       return;
     }
-    for (let i = 1; i < m.points.length; i++) {
-      drawSegment(m.points[i - 1], m.points[i], m.color, m.size, m.mode);
-    }
+    historyRef.current.push(m);
+    renderStroke(m);
   };
 
   const send = (m: Msg) => {
     channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
   };
 
-  const pos = (e: PointerEvent | React.PointerEvent | TouchEvent | React.TouchEvent) => {
-    const canvas = canvasRef.current!;
+  // ── pointer/touch routing ──────────────────────────────────
+  const localPos = (canvas: HTMLCanvasElement, clientX: number, clientY: number): Pt => {
     const rect = canvas.getBoundingClientRect();
-    const p = "touches" in e ? (e as TouchEvent).touches[0] : (e as PointerEvent);
-    return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+    return { x: clientX - rect.left, y: clientY - rect.top };
   };
 
-  const start = (e: React.PointerEvent | React.TouchEvent) => {
+  const cancelActiveStroke = () => {
+    drawingRef.current.active = false;
+    drawingRef.current.points = [];
+    drawingRef.current.page = -1;
+  };
+
+  const onPointerDown = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointersRef.current.size >= 2) {
+      // switch to 2-finger scroll mode — abort any in-progress stroke
+      cancelActiveStroke();
+      const ys = [...pointersRef.current.values()].map((p) => p.y);
+      scrollStartRef.current = {
+        scrollTop: containerRef.current?.scrollTop ?? 0,
+        midY: ys.reduce((a, b) => a + b, 0) / ys.length,
+      };
+      return;
+    }
+
+    // single touch / mouse — start drawing
+    if (e.pointerType !== "touch") {
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    }
     e.preventDefault();
+    const canvas = canvasRefs.current[page]!;
     drawingRef.current = {
       active: true,
-      points: [pos(e.nativeEvent)],
+      page,
+      points: [localPos(canvas, e.clientX, e.clientY)],
       id: `${userId}-${Date.now()}`,
     };
   };
 
-  const move = (e: React.PointerEvent | React.TouchEvent) => {
-    if (!drawingRef.current.active) return;
+  const onPointerMove = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // 2-finger scroll
+    if (pointersRef.current.size >= 2) {
+      e.preventDefault();
+      const ys = [...pointersRef.current.values()].map((p) => p.y);
+      const midY = ys.reduce((a, b) => a + b, 0) / ys.length;
+      if (containerRef.current) {
+        containerRef.current.scrollTop =
+          scrollStartRef.current.scrollTop - (midY - scrollStartRef.current.midY);
+      }
+      return;
+    }
+
+    // drawing
+    if (!drawingRef.current.active || drawingRef.current.page !== page) return;
     e.preventDefault();
-    const p = pos(e.nativeEvent);
+    const canvas = canvasRefs.current[page]!;
+    const p = localPos(canvas, e.clientX, e.clientY);
     const prev = drawingRef.current.points[drawingRef.current.points.length - 1];
     drawingRef.current.points.push(p);
-    drawSegment(prev, p, color, size, mode);
+    drawSegment(page, prev, p, color, size, mode);
   };
 
-  const end = (e: React.PointerEvent | React.TouchEvent) => {
-    if (!drawingRef.current.active) return;
-    e.preventDefault();
-    drawingRef.current.active = false;
+  const onPointerUp = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointersRef.current.delete(e.pointerId);
+    if (!drawingRef.current.active || drawingRef.current.page !== page) return;
     if (drawingRef.current.points.length > 1) {
-      send({
+      const stroke: Stroke = {
         type: "stroke",
+        page,
         points: drawingRef.current.points,
         color,
         size,
         mode,
         id: drawingRef.current.id,
-      });
+      };
+      historyRef.current.push(stroke);
+      send(stroke);
     }
+    drawingRef.current.active = false;
     drawingRef.current.points = [];
+    drawingRef.current.page = -1;
   };
 
-  const clear = () => {
-    const ctx = canvasRef.current?.getContext("2d");
-    const c = canvasRef.current;
+  // Track which page is "current" while scrolling
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const top = el.scrollTop + el.clientHeight / 3;
+      let found = 1;
+      for (let i = 0; i < canvasRefs.current.length; i++) {
+        const c = canvasRefs.current[i];
+        if (!c) continue;
+        const wrap = c.parentElement!;
+        if (wrap.offsetTop <= top) found = i + 1;
+        else break;
+      }
+      setCurrentPage(found);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const goToPage = (n: number) => {
+    const p = Math.max(1, Math.min(PAGE_COUNT, n));
+    const c = canvasRefs.current[p - 1];
+    c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const clearCurrent = () => {
+    const page = currentPage - 1;
+    const c = canvasRefs.current[page];
+    const ctx = c?.getContext("2d");
     if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
-    send({ type: "clear" });
+    historyRef.current = historyRef.current.filter((s) => s.page !== page);
+    send({ type: "clear", page });
   };
 
   return (
@@ -199,27 +309,76 @@ export function Whiteboard({ roomId, userId }: Props) {
           max={20}
           value={size}
           onChange={(e) => setSize(Number(e.target.value))}
-          className="w-24"
+          className="w-20"
         />
         <span className="text-xs text-muted-foreground">{size}px</span>
+        <div className="mx-1 h-6 w-px bg-border" />
+        <div className="flex items-center gap-1">
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-7 w-7"
+            onClick={() => goToPage(currentPage - 1)}
+            aria-label="Previous page"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {currentPage}/{PAGE_COUNT}
+          </span>
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-7 w-7"
+            onClick={() => goToPage(currentPage + 1)}
+            aria-label="Next page"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="ml-auto" />
-        <Button size="sm" variant="destructive" onClick={clear}>
-          <Trash2 className="mr-1 h-4 w-4" /> Clear
+        <Button size="sm" variant="destructive" onClick={clearCurrent}>
+          <Trash2 className="mr-1 h-4 w-4" /> Clear page
         </Button>
       </div>
-      <div ref={containerRef} className="no-touch-scroll relative flex-1 bg-white">
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 h-full w-full cursor-crosshair"
-          onPointerDown={start}
-          onPointerMove={move}
-          onPointerUp={end}
-          onPointerCancel={end}
-          onPointerLeave={end}
-          onTouchStart={start}
-          onTouchMove={move}
-          onTouchEnd={end}
-        />
+
+      {/* Hint */}
+      <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
+        Draw with one finger · scroll with two fingers · {PAGE_COUNT} pages
+      </div>
+
+      {/* Pages — scrollable container */}
+      <div
+        ref={containerRef}
+        className="relative flex-1 overflow-y-auto overscroll-contain bg-muted/30"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="mx-auto flex max-w-[900px] flex-col gap-4 px-3 py-4">
+          {pages.map((i) => (
+            <div key={i} className="relative">
+              <div
+                className="relative w-full overflow-hidden rounded-md border bg-white shadow-sm"
+                style={{ aspectRatio: `1 / ${PAGE_ASPECT}` }}
+              >
+                <span className="pointer-events-none absolute right-2 top-1 text-[10px] text-muted-foreground/70">
+                  Page {i + 1}
+                </span>
+                <canvas
+                  ref={(el) => {
+                    canvasRefs.current[i] = el;
+                    if (el) sizeCanvas(el);
+                  }}
+                  className="absolute inset-0 h-full w-full cursor-crosshair"
+                  style={{ touchAction: "none" }}
+                  onPointerDown={onPointerDown(i)}
+                  onPointerMove={onPointerMove(i)}
+                  onPointerUp={onPointerUp(i)}
+                  onPointerCancel={onPointerUp(i)}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
