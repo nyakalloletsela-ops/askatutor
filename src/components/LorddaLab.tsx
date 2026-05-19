@@ -80,13 +80,54 @@ const phetUrl = (slug: string) => `https://phet.colorado.edu/sims/html/${slug}/l
 export function LorddaLab() {
   const [selected, setSelected] = useState<Module | null>(MODULES[0]);
   const [key, setKey] = useState(0);
+  const [filter, setFilter] = useState<Subject | "All">("All");
+  const [query, setQuery] = useState("");
+
+  const visible = useMemo(
+    () =>
+      MODULES.filter((m) => filter === "All" || m.subject === filter).filter(
+        (m) =>
+          !query.trim() ||
+          m.name.toLowerCase().includes(query.toLowerCase()) ||
+          m.description.toLowerCase().includes(query.toLowerCase()),
+      ),
+    [filter, query],
+  );
+
+  const grouped = useMemo(() => {
+    const g: Record<string, Module[]> = {};
+    for (const m of visible) (g[m.subject] ||= []).push(m);
+    return g;
+  }, [visible]);
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 p-2">
         <FlaskConical className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold text-navy">Lordda Virtual Lab</span>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search experiments"
+              className="h-9 w-[180px] pl-7 text-sm"
+            />
+          </div>
+          <Select value={filter} onValueChange={(v) => setFilter(v as Subject | "All")}>
+            <SelectTrigger className="h-9 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All subjects</SelectItem>
+              {SUBJECTS.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select
             value={selected?.id ?? ""}
             onValueChange={(v) => {
@@ -95,39 +136,52 @@ export function LorddaLab() {
               setKey((k) => k + 1);
             }}
           >
-            <SelectTrigger className="w-[260px]">
-              <SelectValue placeholder="Choose a lab module" />
+            <SelectTrigger className="h-9 w-[260px]">
+              <SelectValue placeholder="Choose an experiment" />
             </SelectTrigger>
-            <SelectContent>
-              {MODULES.map((m) => (
-                <SelectItem key={m.id} value={m.id}>
-                  <span className="flex items-center gap-2">
-                    {m.icon} {m.name} <span className="text-xs text-muted-foreground">({m.subject})</span>
-                  </span>
-                </SelectItem>
+            <SelectContent className="max-h-[60vh]">
+              {Object.entries(grouped).map(([subject, mods]) => (
+                <SelectGroup key={subject}>
+                  <SelectLabel>{subject}</SelectLabel>
+                  {mods.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               ))}
+              {visible.length === 0 && (
+                <div className="px-3 py-2 text-xs text-muted-foreground">No matches.</div>
+              )}
             </SelectContent>
           </Select>
           <Button size="icon" variant="outline" onClick={() => setKey((k) => k + 1)} aria-label="Reload">
             <RotateCw className="h-4 w-4" />
           </Button>
+          {selected && (
+            <Button asChild size="icon" variant="outline" aria-label="Open in new tab">
+              <a href={phetUrl(selected.slug)} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          )}
         </div>
       </div>
       {selected ? (
         <iframe
           key={key}
-          src={selected.url}
+          src={phetUrl(selected.slug)}
           title={selected.name}
           loading="lazy"
           allow="fullscreen; autoplay; xr-spatial-tracking"
           className="flex-1 w-full border-0 bg-white"
         />
       ) : (
-        <div className="flex-1 p-6 text-sm text-muted-foreground">Select a module.</div>
+        <div className="flex-1 p-6 text-sm text-muted-foreground">Select an experiment.</div>
       )}
       {selected && (
         <p className="border-t bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          {selected.description}
+          <span className="font-medium text-foreground">{selected.subject} · {selected.name}</span> — {selected.description}
         </p>
       )}
     </div>
