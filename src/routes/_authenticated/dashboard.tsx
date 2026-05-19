@@ -61,6 +61,22 @@ function Dashboard() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [txnRef, setTxnRef] = useState("");
   const [payMethod, setPayMethod] = useState<"mpesa" | "ecocash">("mpesa");
+  const [subjectInput, setSubjectInput] = useState("");
+
+  const addSubject = (raw: string) => {
+    if (!profile) return;
+    const s = raw.trim();
+    if (!s) return;
+    const cur = new Set(profile.subjects ?? []);
+    cur.add(s);
+    setProfile({ ...profile, subjects: Array.from(cur) });
+    setSubjectInput("");
+  };
+  const removeSubject = (s: string) => {
+    if (!profile) return;
+    const cur = (profile.subjects ?? []).filter((x) => x !== s);
+    setProfile({ ...profile, subjects: cur });
+  };
 
   useEffect(() => {
     if (!user) return;
