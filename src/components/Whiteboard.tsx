@@ -375,6 +375,30 @@ export function Whiteboard({ roomId, userId }: Props) {
         />
         <span className="text-xs text-muted-foreground">{size}px</span>
         <div className="mx-1 h-6 w-px bg-border" />
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-7 w-7"
+          onClick={undo}
+          disabled={myUndoStackRef.current.length === 0}
+          aria-label="Undo"
+          title="Undo"
+          data-undo-tick={undoTick}
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-7 w-7"
+          onClick={redo}
+          disabled={myRedoStackRef.current.length === 0}
+          aria-label="Redo"
+          title="Redo"
+        >
+          <Redo2 className="h-4 w-4" />
+        </Button>
+        <div className="mx-1 h-6 w-px bg-border" />
         <div className="flex items-center gap-1">
           <Button
             size="icon"
