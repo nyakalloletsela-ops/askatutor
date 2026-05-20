@@ -251,7 +251,7 @@ export function Whiteboard({ roomId, userId }: Props) {
         id: drawingRef.current.id,
       };
       historyRef.current.push(stroke);
-      send(stroke);
+      sendStroke(stroke);
     }
     drawingRef.current.active = false;
     drawingRef.current.points = [];
