@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { JitsiRoom } from "@/components/JitsiRoom";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
+import { ClassroomFiles } from "@/components/ClassroomFiles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -41,12 +42,16 @@ function ClassroomPage() {
         </section>
         <section className="min-h-0 bg-background text-foreground">
           <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
-            <TabsList className="m-2 grid w-[calc(100%-1rem)] grid-cols-2">
+            <TabsList className="m-2 grid w-[calc(100%-1rem)] grid-cols-3">
               <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
+              <TabsTrigger value="files">Files</TabsTrigger>
               <TabsTrigger value="lab">Lordda Lab</TabsTrigger>
             </TabsList>
             <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
               <Whiteboard roomId={roomId} userId={user.id} />
+            </TabsContent>
+            <TabsContent value="files" className="m-0 min-h-0 flex-1">
+              <ClassroomFiles roomId={roomId} />
             </TabsContent>
             <TabsContent value="lab" className="m-0 min-h-0 flex-1">
               <LorddaLab />

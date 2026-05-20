@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Pen, Eraser, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2 } from "lucide-react";
 
 type Pt = { x: number; y: number };
 type Stroke = {
@@ -14,7 +14,9 @@ type Stroke = {
   id: string;
 };
 type ClearMsg = { type: "clear"; page?: number };
-type Msg = Stroke | ClearMsg;
+type UndoMsg = { type: "undo"; id: string };
+type RestoreMsg = { type: "restore"; stroke: Stroke };
+type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
@@ -124,6 +126,14 @@ export function Whiteboard({ roomId, userId }: Props) {
     }
   };
 
+  const redrawPage = (page: number) => {
+    const c = canvasRefs.current[page];
+    const ctx = c?.getContext("2d");
+    if (!ctx || !c) return;
+    ctx.clearRect(0, 0, c.width, c.height);
+    historyRef.current.filter((s) => s.page === page).forEach(renderStroke);
+  };
+
   const applyMessage = (m: Msg) => {
     if (m.type === "clear") {
       if (m.page == null) {
@@ -138,6 +148,19 @@ export function Whiteboard({ roomId, userId }: Props) {
         if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
         historyRef.current = historyRef.current.filter((s) => s.page !== m.page);
       }
+      return;
+    }
+    if (m.type === "undo") {
+      const idx = historyRef.current.findIndex((s) => s.id === m.id);
+      if (idx >= 0) {
+        const [removed] = historyRef.current.splice(idx, 1);
+        redrawPage(removed.page);
+      }
+      return;
+    }
+    if (m.type === "restore") {
+      historyRef.current.push(m.stroke);
+      renderStroke(m.stroke);
       return;
     }
     historyRef.current.push(m);
@@ -228,7 +251,7 @@ export function Whiteboard({ roomId, userId }: Props) {
         id: drawingRef.current.id,
       };
       historyRef.current.push(stroke);
-      send(stroke);
+      sendStroke(stroke);
     }
     drawingRef.current.active = false;
     drawingRef.current.points = [];
@@ -261,12 +284,51 @@ export function Whiteboard({ roomId, userId }: Props) {
     c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // ── undo / redo (per-user, owns own strokes only) ───────────
+  const myUndoStackRef = useRef<Stroke[]>([]); // own strokes in order
+  const myRedoStackRef = useRef<Stroke[]>([]); // undone strokes ready to redo
+  const [undoTick, setUndoTick] = useState(0);
+
+  // patch send to track own strokes
+  const sendStroke = (stroke: Stroke) => {
+    myUndoStackRef.current.push(stroke);
+    myRedoStackRef.current = [];
+    setUndoTick((t) => t + 1);
+    send(stroke);
+  };
+
+  const undo = () => {
+    const stroke = myUndoStackRef.current.pop();
+    if (!stroke) return;
+    myRedoStackRef.current.push(stroke);
+    const idx = historyRef.current.findIndex((s) => s.id === stroke.id);
+    if (idx >= 0) {
+      historyRef.current.splice(idx, 1);
+      redrawPage(stroke.page);
+    }
+    send({ type: "undo", id: stroke.id });
+    setUndoTick((t) => t + 1);
+  };
+
+  const redo = () => {
+    const stroke = myRedoStackRef.current.pop();
+    if (!stroke) return;
+    myUndoStackRef.current.push(stroke);
+    historyRef.current.push(stroke);
+    renderStroke(stroke);
+    send({ type: "restore", stroke });
+    setUndoTick((t) => t + 1);
+  };
+
   const clearCurrent = () => {
     const page = currentPage - 1;
     const c = canvasRefs.current[page];
     const ctx = c?.getContext("2d");
     if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
     historyRef.current = historyRef.current.filter((s) => s.page !== page);
+    myUndoStackRef.current = myUndoStackRef.current.filter((s) => s.page !== page);
+    myRedoStackRef.current = myRedoStackRef.current.filter((s) => s.page !== page);
+    setUndoTick((t) => t + 1);
     send({ type: "clear", page });
   };
 
@@ -312,6 +374,30 @@ export function Whiteboard({ roomId, userId }: Props) {
           className="w-20"
         />
         <span className="text-xs text-muted-foreground">{size}px</span>
+        <div className="mx-1 h-6 w-px bg-border" />
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-7 w-7"
+          onClick={undo}
+          disabled={myUndoStackRef.current.length === 0}
+          aria-label="Undo"
+          title="Undo"
+          data-undo-tick={undoTick}
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-7 w-7"
+          onClick={redo}
+          disabled={myRedoStackRef.current.length === 0}
+          aria-label="Redo"
+          title="Redo"
+        >
+          <Redo2 className="h-4 w-4" />
+        </Button>
         <div className="mx-1 h-6 w-px bg-border" />
         <div className="flex items-center gap-1">
           <Button
