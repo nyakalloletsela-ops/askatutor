@@ -105,6 +105,35 @@ function AuthPage() {
               </Button>
             </TabsContent>
             <TabsContent value="signup" className="space-y-3 pt-4">
+              <div className="space-y-1.5">
+                <Label>I am a…</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAccountType("student")}
+                    className={`rounded-md border p-3 text-left text-sm transition ${
+                      accountType === "student"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="font-semibold">Student</div>
+                    <div className="text-xs text-muted-foreground">Find and book tutors</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAccountType("tutor")}
+                    className={`rounded-md border p-3 text-left text-sm transition ${
+                      accountType === "tutor"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="font-semibold">Tutor</div>
+                    <div className="text-xs text-muted-foreground">Teach &amp; earn</div>
+                  </button>
+                </div>
+              </div>
               <Field label="Full name" value={fullName} onChange={setFullName} />
               <Field label="Email" value={email} onChange={setEmail} type="email" />
               <Field label="Password" value={password} onChange={setPassword} type="password" />
