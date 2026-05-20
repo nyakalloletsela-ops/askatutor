@@ -126,6 +126,14 @@ export function Whiteboard({ roomId, userId }: Props) {
     }
   };
 
+  const redrawPage = (page: number) => {
+    const c = canvasRefs.current[page];
+    const ctx = c?.getContext("2d");
+    if (!ctx || !c) return;
+    ctx.clearRect(0, 0, c.width, c.height);
+    historyRef.current.filter((s) => s.page === page).forEach(renderStroke);
+  };
+
   const applyMessage = (m: Msg) => {
     if (m.type === "clear") {
       if (m.page == null) {
@@ -140,6 +148,19 @@ export function Whiteboard({ roomId, userId }: Props) {
         if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
         historyRef.current = historyRef.current.filter((s) => s.page !== m.page);
       }
+      return;
+    }
+    if (m.type === "undo") {
+      const idx = historyRef.current.findIndex((s) => s.id === m.id);
+      if (idx >= 0) {
+        const [removed] = historyRef.current.splice(idx, 1);
+        redrawPage(removed.page);
+      }
+      return;
+    }
+    if (m.type === "restore") {
+      historyRef.current.push(m.stroke);
+      renderStroke(m.stroke);
       return;
     }
     historyRef.current.push(m);
