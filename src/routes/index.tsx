@@ -169,12 +169,15 @@ function Home() {
   );
 }
 
-function Feature({ icon, label }: { icon: React.ReactNode; label: string }) {
+function Feature({ icon, label, to }: { icon: React.ReactNode; label: string; to: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-navy-foreground/15 bg-navy-foreground/5 px-3 py-2">
+    <a
+      href={to}
+      className="flex items-center gap-2 rounded-lg border border-navy-foreground/15 bg-navy-foreground/5 px-3 py-2 transition hover:border-gold/60 hover:bg-navy-foreground/10"
+    >
       <span className="text-gold">{icon}</span>
       <span className="font-medium">{label}</span>
-    </div>
+    </a>
   );
 }
 
