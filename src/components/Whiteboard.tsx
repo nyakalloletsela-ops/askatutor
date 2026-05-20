@@ -284,12 +284,51 @@ export function Whiteboard({ roomId, userId }: Props) {
     c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // ── undo / redo (per-user, owns own strokes only) ───────────
+  const myUndoStackRef = useRef<Stroke[]>([]); // own strokes in order
+  const myRedoStackRef = useRef<Stroke[]>([]); // undone strokes ready to redo
+  const [undoTick, setUndoTick] = useState(0);
+
+  // patch send to track own strokes
+  const sendStroke = (stroke: Stroke) => {
+    myUndoStackRef.current.push(stroke);
+    myRedoStackRef.current = [];
+    setUndoTick((t) => t + 1);
+    send(stroke);
+  };
+
+  const undo = () => {
+    const stroke = myUndoStackRef.current.pop();
+    if (!stroke) return;
+    myRedoStackRef.current.push(stroke);
+    const idx = historyRef.current.findIndex((s) => s.id === stroke.id);
+    if (idx >= 0) {
+      historyRef.current.splice(idx, 1);
+      redrawPage(stroke.page);
+    }
+    send({ type: "undo", id: stroke.id });
+    setUndoTick((t) => t + 1);
+  };
+
+  const redo = () => {
+    const stroke = myRedoStackRef.current.pop();
+    if (!stroke) return;
+    myUndoStackRef.current.push(stroke);
+    historyRef.current.push(stroke);
+    renderStroke(stroke);
+    send({ type: "restore", stroke });
+    setUndoTick((t) => t + 1);
+  };
+
   const clearCurrent = () => {
     const page = currentPage - 1;
     const c = canvasRefs.current[page];
     const ctx = c?.getContext("2d");
     if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
     historyRef.current = historyRef.current.filter((s) => s.page !== page);
+    myUndoStackRef.current = myUndoStackRef.current.filter((s) => s.page !== page);
+    myRedoStackRef.current = myRedoStackRef.current.filter((s) => s.page !== page);
+    setUndoTick((t) => t + 1);
     send({ type: "clear", page });
   };
 
