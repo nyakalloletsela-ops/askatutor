@@ -14,7 +14,9 @@ type Stroke = {
   id: string;
 };
 type ClearMsg = { type: "clear"; page?: number };
-type Msg = Stroke | ClearMsg;
+type UndoMsg = { type: "undo"; id: string };
+type RestoreMsg = { type: "restore"; stroke: Stroke };
+type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
