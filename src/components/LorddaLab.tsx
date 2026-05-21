@@ -11,7 +11,7 @@ type Module = {
   id: string;
   name: string;
   subject: Subject;
-  level: Level;
+  level?: Level;
   slug: string; // PhET sim slug
   description: string;
 };
