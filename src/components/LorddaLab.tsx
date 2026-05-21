@@ -127,17 +127,20 @@ export function LorddaLab() {
   const [selected, setSelected] = useState<Module | null>(MODULES[0]);
   const [key, setKey] = useState(0);
   const [filter, setFilter] = useState<Subject | "All">("All");
+  const [levelFilter, setLevelFilter] = useState<Level | "All">("All");
   const [query, setQuery] = useState("");
 
   const visible = useMemo(
     () =>
-      MODULES.filter((m) => filter === "All" || m.subject === filter).filter(
-        (m) =>
-          !query.trim() ||
-          m.name.toLowerCase().includes(query.toLowerCase()) ||
-          m.description.toLowerCase().includes(query.toLowerCase()),
-      ),
-    [filter, query],
+      MODULES.filter((m) => filter === "All" || m.subject === filter)
+        .filter((m) => levelFilter === "All" || (m.level ?? "Secondary") === levelFilter)
+        .filter(
+          (m) =>
+            !query.trim() ||
+            m.name.toLowerCase().includes(query.toLowerCase()) ||
+            m.description.toLowerCase().includes(query.toLowerCase()),
+        ),
+    [filter, levelFilter, query],
   );
 
   const grouped = useMemo(() => {
