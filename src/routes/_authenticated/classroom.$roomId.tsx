@@ -35,9 +35,9 @@ function ClassroomPage() {
         </div>
       </header>
 
-      {/* Split screen: video | workstation. Landscape on mobile -> side by side */}
-      <div className="grid flex-1 grid-cols-1 grid-rows-2 overflow-hidden md:grid-cols-2 md:grid-rows-1 landscape:grid-cols-2 landscape:grid-rows-1">
-        <section className="min-h-0 border-r border-navy-foreground/10">
+      {/* Workstation-first layout: small video tile, large whiteboard/lab area */}
+      <div className="grid flex-1 grid-cols-1 grid-rows-[180px_1fr] overflow-hidden md:grid-cols-[280px_1fr] md:grid-rows-1 landscape:grid-cols-[240px_1fr] landscape:grid-rows-1">
+        <section className="min-h-0 border-b border-navy-foreground/10 md:border-b-0 md:border-r">
           <JitsiRoom roomId={roomId} displayName={user.email ?? "Guest"} email={user.email ?? ""} />
         </section>
         <section className="min-h-0 bg-background text-foreground">
