@@ -157,36 +157,7 @@ export type Database = {
       }
     }
     Views: {
-      public_tutor_profiles: {
-        Row: {
-          avatar_url: string | null
-          bio: string | null
-          full_name: string | null
-          hourly_rate: number | null
-          id: string | null
-          is_featured: boolean | null
-          subjects: string[] | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          bio?: string | null
-          full_name?: string | null
-          hourly_rate?: number | null
-          id?: string | null
-          is_featured?: boolean | null
-          subjects?: string[] | null
-        }
-        Update: {
-          avatar_url?: string | null
-          bio?: string | null
-          full_name?: string | null
-          hourly_rate?: number | null
-          id?: string | null
-          is_featured?: boolean | null
-          subjects?: string[] | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       has_role: {
@@ -195,6 +166,18 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_public_tutors: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          bio: string
+          full_name: string
+          hourly_rate: number
+          id: string
+          is_featured: boolean
+          subjects: string[]
+        }[]
       }
     }
     Enums: {
