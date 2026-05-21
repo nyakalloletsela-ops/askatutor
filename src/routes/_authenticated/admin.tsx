@@ -17,6 +17,15 @@ import { checkIsAdmin } from "@/lib/access.functions";
 import { redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin")({
+  beforeLoad: async () => {
+    try {
+      const { isAdmin } = await checkIsAdmin();
+      if (!isAdmin) throw redirect({ to: "/dashboard" });
+    } catch (e) {
+      if (e && typeof e === "object" && "to" in e) throw e;
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: AdminPage,
 });
 

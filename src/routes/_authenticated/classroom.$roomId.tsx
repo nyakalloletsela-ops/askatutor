@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { JitsiRoom } from "@/components/JitsiRoom";
 import { Whiteboard } from "@/components/Whiteboard";
@@ -8,8 +8,18 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import { checkRoomMembership } from "@/lib/access.functions";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
+  beforeLoad: async ({ params }) => {
+    try {
+      const { isMember } = await checkRoomMembership({ data: { roomId: params.roomId } });
+      if (!isMember) throw redirect({ to: "/dashboard" });
+    } catch (e) {
+      if (e && typeof e === "object" && "to" in e) throw e;
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: ClassroomPage,
 });
 
