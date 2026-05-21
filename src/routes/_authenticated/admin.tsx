@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { adminCreateUser } from "@/lib/admin.functions";
+import { checkIsAdmin } from "@/lib/access.functions";
+import { redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
