@@ -13,8 +13,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { adminCreateUser } from "@/lib/admin.functions";
+import { checkIsAdmin } from "@/lib/access.functions";
+import { redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin")({
+  beforeLoad: async () => {
+    try {
+      const { isAdmin } = await checkIsAdmin();
+      if (!isAdmin) throw redirect({ to: "/dashboard" });
+    } catch (e) {
+      if (e && typeof e === "object" && "to" in e) throw e;
+      throw redirect({ to: "/dashboard" });
+    }
+  },
   component: AdminPage,
 });
 
