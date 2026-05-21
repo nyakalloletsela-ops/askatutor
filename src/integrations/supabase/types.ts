@@ -167,6 +167,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_public_tutors: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          bio: string
+          full_name: string
+          hourly_rate: number
+          id: string
+          is_featured: boolean
+          subjects: string[]
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "tutor" | "student"

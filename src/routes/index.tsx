@@ -29,22 +29,12 @@ function Home() {
 
   useEffect(() => {
     (async () => {
-      // Fetch only tutors: join via user_roles
-      const { data: tutorRoles } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .eq("role", "tutor");
-      const ids = tutorRoles?.map((r) => r.user_id) ?? [];
-      if (ids.length === 0) {
+      const { data, error } = await supabase.rpc("list_public_tutors");
+      if (error) {
+        console.error(error);
         setTutors([]);
         return;
       }
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, bio, subjects, hourly_rate, avatar_url, is_featured")
-        .in("id", ids)
-        .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false });
       setTutors((data as TutorRow[]) ?? []);
     })();
   }, []);
@@ -73,8 +63,8 @@ function Home() {
               Master any subject — one live session at a time.
             </h1>
             <p className="mt-4 text-lg text-navy-foreground/80 md:text-xl">
-              Book certified tutors, join a split-screen virtual classroom with whiteboard and our
-              Lordda Lab, and pay via M-Pesa or EcoCash.
+              Book certified tutors and join a split-screen virtual classroom with whiteboard and
+              our Lordda Lab.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90">
@@ -90,9 +80,9 @@ function Home() {
               </Button>
             </div>
             <div className="mt-10 grid grid-cols-3 gap-4 text-sm">
-              <Feature icon={<Video className="h-5 w-5" />} label="HD live video" to="#tutors" />
-              <Feature icon={<PenLine className="h-5 w-5" />} label="Realtime whiteboard" to="#tutors" />
-              <Feature icon={<FlaskConical className="h-5 w-5" />} label="Lordda Virtual Lab" to="#tutors" />
+              <Feature icon={<Video className="h-5 w-5" />} label="HD live video" to="/auth" />
+              <Feature icon={<PenLine className="h-5 w-5" />} label="Realtime whiteboard" to="/auth" />
+              <Feature icon={<FlaskConical className="h-5 w-5" />} label="Lordda Virtual Lab" to="/auth" />
             </div>
           </div>
         </div>
@@ -170,14 +160,26 @@ function Home() {
 }
 
 function Feature({ icon, label, to }: { icon: React.ReactNode; label: string; to: string }) {
+  const isHash = to.startsWith("#");
+  if (isHash) {
+    return (
+      <a
+        href={to}
+        className="flex items-center gap-2 rounded-lg border border-navy-foreground/15 bg-navy-foreground/5 px-3 py-2 transition hover:border-gold/60 hover:bg-navy-foreground/10"
+      >
+        <span className="text-gold">{icon}</span>
+        <span className="font-medium">{label}</span>
+      </a>
+    );
+  }
   return (
-    <a
-      href={to}
+    <Link
+      to={to}
       className="flex items-center gap-2 rounded-lg border border-navy-foreground/15 bg-navy-foreground/5 px-3 py-2 transition hover:border-gold/60 hover:bg-navy-foreground/10"
     >
       <span className="text-gold">{icon}</span>
       <span className="font-medium">{label}</span>
-    </a>
+    </Link>
   );
 }
 

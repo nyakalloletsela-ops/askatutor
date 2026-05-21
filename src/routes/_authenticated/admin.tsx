@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { adminCreateUser } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
@@ -122,6 +127,9 @@ function AdminPage() {
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
         <h1 className="text-3xl font-bold text-navy">Admin</h1>
 
+        <ManualCreateUser />
+
+
         <Card>
           <CardHeader>
             <CardTitle>Pending subscription payments</CardTitle>
@@ -191,5 +199,72 @@ function AdminPage() {
         </Card>
       </main>
     </div>
+  );
+}
+
+function ManualCreateUser() {
+  const createUser = useServerFn(adminCreateUser);
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"student" | "tutor">("student");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await createUser({ data: { email, full_name: fullName, password, role } });
+      toast.success(`Created ${role} account for ${email}`);
+      setEmail("");
+      setFullName("");
+      setPassword("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to create user");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Add a user manually</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="grid gap-3 md:grid-cols-5">
+          <div className="md:col-span-1">
+            <Label htmlFor="mc-name">Full name</Label>
+            <Input id="mc-name" value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={120} />
+          </div>
+          <div className="md:col-span-1">
+            <Label htmlFor="mc-email">Email</Label>
+            <Input id="mc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="md:col-span-1">
+            <Label htmlFor="mc-pwd">Temp password</Label>
+            <Input id="mc-pwd" type="text" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+          </div>
+          <div className="md:col-span-1">
+            <Label>Role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as "student" | "tutor")}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Student</SelectItem>
+                <SelectItem value="tutor">Tutor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end md:col-span-1">
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy ? "Creating…" : "Create user"}
+            </Button>
+          </div>
+        </form>
+        <p className="mt-2 text-xs text-muted-foreground">
+          The new user will be email-confirmed and can sign in immediately with the temp password.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
