@@ -157,7 +157,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_tutor_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          full_name: string | null
+          hourly_rate: number | null
+          id: string | null
+          is_featured: boolean | null
+          subjects: string[] | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          full_name?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          is_featured?: boolean | null
+          subjects?: string[] | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          full_name?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          is_featured?: boolean | null
+          subjects?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
