@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { FlaskConical, RotateCw, ExternalLink, Search } from "lucide-react";
 
 type Subject = "Physics" | "Chemistry" | "Biology" | "Math" | "Earth Science";
+type Level = "Primary" | "Secondary" | "Tertiary";
 
 type Module = {
   id: string;
   name: string;
   subject: Subject;
+  level?: Level;
   slug: string; // PhET sim slug
   description: string;
 };
@@ -72,26 +74,73 @@ const MODULES: Module[] = [
   // ── Earth Science ─────────────────────────────────────────
   { id: "ghg", name: "The Greenhouse Effect", subject: "Earth Science", slug: "greenhouse-effect", description: "Atmospheric gases & temperature." },
   { id: "plate-tectonics", name: "Plate Tectonics", subject: "Earth Science", slug: "plate-tectonics", description: "Crust types and plate motion." },
+
+  // ── Tertiary / University-level ───────────────────────────
+  // Physics
+  { id: "t-quantum-tunneling", name: "Quantum Tunneling and Wave Packets", subject: "Physics", level: "Tertiary", slug: "quantum-tunneling", description: "Tunneling, transmission & reflection coefficients." },
+  { id: "t-quantum-bound", name: "Quantum Bound States", subject: "Physics", level: "Tertiary", slug: "bound-states", description: "Eigenstates in 1D potential wells." },
+  { id: "t-hydrogen", name: "Models of the Hydrogen Atom", subject: "Physics", level: "Tertiary", slug: "hydrogen-atom", description: "Bohr, de Broglie, Schrödinger models." },
+  { id: "t-stern-gerlach", name: "Stern-Gerlach Experiment", subject: "Physics", level: "Tertiary", slug: "stern-gerlach", description: "Spin quantization of silver atoms." },
+  { id: "t-photoelectric", name: "Photoelectric Effect", subject: "Physics", level: "Tertiary", slug: "photoelectric", description: "Einstein's photon model; work function." },
+  { id: "t-blackbody", name: "Blackbody Spectrum", subject: "Physics", level: "Tertiary", slug: "blackbody-spectrum", description: "Planck curve, Wien's & Stefan-Boltzmann laws." },
+  { id: "t-rutherford", name: "Rutherford Scattering", subject: "Physics", level: "Tertiary", slug: "rutherford-scattering", description: "Alpha-particle scattering off nuclei." },
+  { id: "t-alpha-decay", name: "Alpha Decay", subject: "Physics", level: "Tertiary", slug: "alpha-decay", description: "Nuclear tunneling & half-life." },
+  { id: "t-beta-decay", name: "Beta Decay", subject: "Physics", level: "Tertiary", slug: "beta-decay", description: "Weak interaction & neutrino emission." },
+  { id: "t-nuclear-fission", name: "Nuclear Fission", subject: "Physics", level: "Tertiary", slug: "nuclear-fission", description: "Chain reactions & critical mass." },
+  { id: "t-fourier", name: "Fourier: Making Waves", subject: "Physics", level: "Tertiary", slug: "fourier-making-waves", description: "Fourier series & wave synthesis." },
+  { id: "t-normal-modes", name: "Normal Modes", subject: "Physics", level: "Tertiary", slug: "normal-modes", description: "Coupled oscillators & eigenmodes." },
+  { id: "t-charges-fields", name: "Charges and Fields", subject: "Physics", level: "Tertiary", slug: "charges-and-fields", description: "Electric fields, potentials & equipotentials." },
+  { id: "t-capacitor-lab", name: "Capacitor Lab", subject: "Physics", level: "Tertiary", slug: "capacitor-lab-basics", description: "Capacitance, dielectrics & stored energy." },
+  { id: "t-faraday-lab", name: "Faraday's Electromagnetic Lab", subject: "Physics", level: "Tertiary", slug: "faradays-electromagnetic-lab", description: "Generators, transformers & flux." },
+  { id: "t-band-structure", name: "Band Structure", subject: "Physics", level: "Tertiary", slug: "band-structure", description: "Periodic potentials & energy bands." },
+  { id: "t-semiconductors", name: "Semiconductors", subject: "Physics", level: "Tertiary", slug: "semiconductor", description: "n/p doping and junctions." },
+  { id: "t-conductivity", name: "Conductivity", subject: "Physics", level: "Tertiary", slug: "conductivity", description: "Photoconductivity in metals/insulators." },
+  { id: "t-davisson-germer", name: "Davisson-Germer: Electron Diffraction", subject: "Physics", level: "Tertiary", slug: "davisson-germer", description: "Matter-wave diffraction." },
+  { id: "t-lasers", name: "Lasers", subject: "Physics", level: "Tertiary", slug: "lasers", description: "Stimulated emission & population inversion." },
+  { id: "t-mri", name: "Simplified MRI", subject: "Physics", level: "Tertiary", slug: "mri", description: "Nuclear magnetic resonance basics." },
+  { id: "t-gravity-lab", name: "Gravity Force Lab", subject: "Physics", level: "Tertiary", slug: "gravity-force-lab", description: "Newton's law of universal gravitation." },
+
+  // Chemistry
+  { id: "t-acid-base", name: "Acid-Base Solutions", subject: "Chemistry", level: "Tertiary", slug: "acid-base-solutions", description: "Strong/weak acids, Ka & equilibrium." },
+  { id: "t-sugar-salt", name: "Sugar and Salt Solutions", subject: "Chemistry", level: "Tertiary", slug: "sugar-and-salt-solutions", description: "Dissociation & conductivity." },
+  { id: "t-rxn-rates", name: "Reactions & Rates", subject: "Chemistry", level: "Tertiary", slug: "reactions-and-rates", description: "Activation energy & rate laws." },
+  { id: "t-mol-polarity", name: "Molecule Polarity (Advanced)", subject: "Chemistry", level: "Tertiary", slug: "molecule-polarity", description: "Dipole moments & electronegativity." },
+  { id: "t-atomic-interactions", name: "Atomic Interactions", subject: "Chemistry", level: "Tertiary", slug: "atomic-interactions", description: "Lennard-Jones potential between atoms." },
+  { id: "t-build-nucleus", name: "Build a Nucleus", subject: "Chemistry", level: "Tertiary", slug: "build-a-nucleus", description: "Nuclear stability & decay chains." },
+  { id: "t-beers-law", name: "Beer's Law Lab", subject: "Chemistry", level: "Tertiary", slug: "beers-law-lab", description: "Spectrophotometry: A = εcl." },
+
+  // Math
+  { id: "t-calculus-grapher", name: "Calculus Grapher", subject: "Math", level: "Tertiary", slug: "calculus-grapher", description: "Derivatives & integrals visualized." },
+  { id: "t-curve-fit", name: "Curve Fitting", subject: "Math", level: "Tertiary", slug: "curve-fitting", description: "Least-squares regression & χ²." },
+  { id: "t-least-squares", name: "Least-Squares Regression", subject: "Math", level: "Tertiary", slug: "least-squares-regression", description: "Linear regression statistics." },
+  { id: "t-prob-density", name: "Projectile Data Lab", subject: "Math", level: "Tertiary", slug: "projectile-data-lab", description: "Distributions & sample statistics." },
+
+  // Biology
+  { id: "t-nat-sel-adv", name: "Natural Selection (Advanced)", subject: "Biology", level: "Tertiary", slug: "natural-selection", description: "Population genetics & allele frequencies." },
 ];
 
 const SUBJECTS: Subject[] = ["Physics", "Chemistry", "Biology", "Math", "Earth Science"];
+const LEVELS: Level[] = ["Primary", "Secondary", "Tertiary"];
 const phetUrl = (slug: string) => `https://phet.colorado.edu/sims/html/${slug}/latest/${slug}_en.html`;
 
 export function LorddaLab() {
   const [selected, setSelected] = useState<Module | null>(MODULES[0]);
   const [key, setKey] = useState(0);
   const [filter, setFilter] = useState<Subject | "All">("All");
+  const [levelFilter, setLevelFilter] = useState<Level | "All">("All");
   const [query, setQuery] = useState("");
 
   const visible = useMemo(
     () =>
-      MODULES.filter((m) => filter === "All" || m.subject === filter).filter(
-        (m) =>
-          !query.trim() ||
-          m.name.toLowerCase().includes(query.toLowerCase()) ||
-          m.description.toLowerCase().includes(query.toLowerCase()),
-      ),
-    [filter, query],
+      MODULES.filter((m) => filter === "All" || m.subject === filter)
+        .filter((m) => levelFilter === "All" || (m.level ?? "Secondary") === levelFilter)
+        .filter(
+          (m) =>
+            !query.trim() ||
+            m.name.toLowerCase().includes(query.toLowerCase()) ||
+            m.description.toLowerCase().includes(query.toLowerCase()),
+        ),
+    [filter, levelFilter, query],
   );
 
   const grouped = useMemo(() => {
@@ -124,6 +173,19 @@ export function LorddaLab() {
               {SUBJECTS.map((s) => (
                 <SelectItem key={s} value={s}>
                   {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={levelFilter} onValueChange={(v) => setLevelFilter(v as Level | "All")}>
+            <SelectTrigger className="h-9 w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All levels</SelectItem>
+              {LEVELS.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
                 </SelectItem>
               ))}
             </SelectContent>
