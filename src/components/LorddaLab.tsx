@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { FlaskConical, RotateCw, ExternalLink, Search } from "lucide-react";
 
 type Subject = "Physics" | "Chemistry" | "Biology" | "Math" | "Earth Science";
+type Level = "Primary" | "Secondary" | "Tertiary";
 
 type Module = {
   id: string;
   name: string;
   subject: Subject;
+  level: Level;
   slug: string; // PhET sim slug
   description: string;
 };
