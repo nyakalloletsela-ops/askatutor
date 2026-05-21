@@ -177,6 +177,19 @@ export function LorddaLab() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={levelFilter} onValueChange={(v) => setLevelFilter(v as Level | "All")}>
+            <SelectTrigger className="h-9 w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All levels</SelectItem>
+              {LEVELS.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select
             value={selected?.id ?? ""}
             onValueChange={(v) => {
