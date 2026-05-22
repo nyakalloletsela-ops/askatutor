@@ -10,6 +10,7 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { MobileTabBar } from "@/components/MobileTabBar";
 
 import appCss from "../styles.css?url";
 
@@ -103,7 +104,10 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <Outlet />
+          <div className="pb-16 md:pb-0">
+            <Outlet />
+          </div>
+          <MobileTabBar />
           <Toaster richColors position="top-right" />
         </AuthProvider>
       </ThemeProvider>

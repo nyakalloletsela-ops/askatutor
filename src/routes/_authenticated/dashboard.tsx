@@ -12,11 +12,38 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, Calendar, Plus, X, Gift, Star } from "lucide-react";
+import { Crown, Calendar, Plus, X, Gift, Star, Clock, Sparkles, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
+
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  accent: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-4">
+      <div className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${accent} opacity-20 blur-2xl`} />
+      <div className="relative flex items-center gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${accent} text-white shadow-glow`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="text-xl font-bold">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const SUBJECT_SUGGESTIONS = [
   "Math", "Physics", "Chemistry", "Biology", "English", "Sesotho",
@@ -160,13 +187,36 @@ function Dashboard() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 pb-24 md:pb-8">
         <div>
-          <h1 className="text-3xl font-bold text-navy">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back{profile.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+          </h1>
           <p className="text-sm text-muted-foreground">
             Signed in as <span className="font-medium">{user.email}</span> · Roles:{" "}
             {roles.join(", ") || "student"}
           </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatTile
+            icon={Clock}
+            label={isTutor ? "Upcoming sessions" : "Free minutes left"}
+            value={isTutor ? String(sessions.filter((s) => s.status === "scheduled").length) : String(profile.free_minutes_remaining)}
+            accent="from-primary to-accent"
+          />
+          <StatTile
+            icon={Sparkles}
+            label="Sessions completed"
+            value={String(sessions.filter((s) => s.status === "completed").length)}
+            accent="from-accent to-gold"
+          />
+          <StatTile
+            icon={Trophy}
+            label={isTutor ? "Featured status" : "Learning streak"}
+            value={isTutor ? (profile.is_featured ? "Premium" : "Standard") : `${Math.min(sessions.length, 30)} days`}
+            accent="from-gold to-primary"
+          />
         </div>
 
         {!isTutor && (

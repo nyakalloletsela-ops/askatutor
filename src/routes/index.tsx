@@ -722,8 +722,11 @@ function TutorCard({ t, premium }: { t: TutorRow; premium?: boolean }) {
                   <span className="text-muted-foreground">/hour</span>
                 </p>
               )}
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <BookSessionDialog tutor={t} />
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/tutor/$id" params={{ id: t.id }}>View profile</Link>
+                </Button>
               </div>
             </div>
           </div>
