@@ -42,6 +42,7 @@ type TutorRow = {
   is_featured: boolean;
   avg_rating: number | null;
   review_count: number | null;
+  session_count: number | null;
 };
 
 function Home() {
