@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 import appCss from "../styles.css?url";
 
@@ -59,18 +60,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ask A Tutor — Lesotho's online tutoring marketplace" },
+      { title: "Ask A Tutor Live — Lesotho's Smartest AI Learning Platform" },
       {
         name: "description",
         content:
-          "Find certified Math, Physics, and Chemistry tutors in Lesotho. Live classroom with whiteboard and virtual lab.",
+          "Live tutoring, AI study tools, and virtual STEM labs for students from primary school to university. Built for Lesotho and Africa.",
       },
-      { property: "og:title", content: "Ask A Tutor — Lesotho's online tutoring marketplace" },
-      { property: "og:description", content: "Ask A Tutor Live is a Lesotho-based online tutoring marketplace with live virtual classrooms." },
+      { property: "og:title", content: "Ask A Tutor Live — Lesotho's Smartest AI Learning Platform" },
+      { property: "og:description", content: "Live tutors, AI homework help, virtual labs and a coding playground — from Primary to Undergraduate." },
       { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "Ask A Tutor — Lesotho's online tutoring marketplace" },
-      { name: "description", content: "Ask A Tutor Live is a Lesotho-based online tutoring marketplace with live virtual classrooms." },
-      { name: "twitter:description", content: "Ask A Tutor Live is a Lesotho-based online tutoring marketplace with live virtual classrooms." },
+      { name: "twitter:title", content: "Ask A Tutor Live — Lesotho's Smartest AI Learning Platform" },
+      { name: "twitter:description", content: "Live tutors, AI homework help, virtual labs and a coding playground — from Primary to Undergraduate." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4c139b5e-5b78-4510-bb41-2fefe36649aa/id-preview-aff979ab--87417747-df1f-4651-a34c-1045cd51a535.lovable.app-1779127877540.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4c139b5e-5b78-4510-bb41-2fefe36649aa/id-preview-aff979ab--87417747-df1f-4651-a34c-1045cd51a535.lovable.app-1779127877540.png" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -101,10 +101,12 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Outlet />
-        <Toaster richColors position="top-right" />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Outlet />
+          <Toaster richColors position="top-right" />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
