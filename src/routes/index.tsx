@@ -641,7 +641,7 @@ function FinalCTA() {
             Ready to <span className="text-aurora">level up</span>?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-white/70">
-            Join hundreds of Basotho students learning smarter every day.
+            Be among the first Basotho students learning smarter every day.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-aurora text-white shadow-glow">
