@@ -149,6 +149,42 @@ export type Database = {
           },
         ]
       }
+      help_messages: {
+        Row: {
+          body: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["help_status"]
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["help_status"]
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["help_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           availability: Json | null
@@ -568,6 +604,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "tutor" | "student"
       course_status: "pending" | "approved" | "rejected"
+      help_status: "open" | "answered" | "closed"
       pay_method: "mpesa" | "ecocash"
       session_status: "scheduled" | "live" | "completed" | "cancelled"
       sub_status: "pending" | "approved" | "rejected"
@@ -701,6 +738,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "tutor", "student"],
       course_status: ["pending", "approved", "rejected"],
+      help_status: ["open", "answered", "closed"],
       pay_method: ["mpesa", "ecocash"],
       session_status: ["scheduled", "live", "completed", "cancelled"],
       sub_status: ["pending", "approved", "rejected"],
