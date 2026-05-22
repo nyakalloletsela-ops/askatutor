@@ -212,7 +212,7 @@ function Home() {
         )}
       </section>
 
-      <Footer />
+      <Footer tagline={t("footer.tagline")} />
     </div>
   );
 }
