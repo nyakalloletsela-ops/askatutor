@@ -114,6 +114,14 @@ function AuthPage() {
               <Button className="w-full" onClick={handleSignIn} disabled={loading}>
                 Sign in
               </Button>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="block w-full text-center text-xs text-primary hover:underline"
+                disabled={loading}
+              >
+                Forgot password?
+              </button>
             </TabsContent>
             <TabsContent value="signup" className="space-y-3 pt-4">
               <div className="space-y-1.5">
