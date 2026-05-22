@@ -236,6 +236,39 @@ export type Database = {
         }
         Relationships: []
       }
+      site_content: {
+        Row: {
+          key: string
+          label: string
+          multiline: boolean
+          section: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          key: string
+          label: string
+          multiline?: boolean
+          section: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Update: {
+          key?: string
+          label?: string
+          multiline?: boolean
+          section?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       student_subscriptions: {
         Row: {
           amount: number
