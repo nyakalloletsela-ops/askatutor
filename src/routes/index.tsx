@@ -71,22 +71,25 @@ function Home() {
                 <Link to="/auth">Get started — it's free</Link>
               </Button>
               <Button
-                asChild
                 size="lg"
                 variant="outline"
                 className="border-navy-foreground/30 bg-transparent text-navy-foreground hover:bg-navy-foreground/10"
+                onClick={() => {
+                  document.getElementById("tutors")?.scrollIntoView({ behavior: "smooth" });
+                }}
               >
-                <a href="#tutors">Browse tutors</a>
+                Browse tutors
               </Button>
             </div>
             <div className="mt-10 grid grid-cols-3 gap-4 text-sm">
-              <Feature icon={<Video className="h-5 w-5" />} label="HD live video" to="/auth" />
-              <Feature icon={<PenLine className="h-5 w-5" />} label="Realtime whiteboard" to="/auth" />
-              <Feature icon={<FlaskConical className="h-5 w-5" />} label="Lordda Virtual Lab" to="/auth" />
+              <Feature icon={<Video className="h-5 w-5" />} label="HD live video" />
+              <Feature icon={<PenLine className="h-5 w-5" />} label="Realtime whiteboard" />
+              <Feature icon={<FlaskConical className="h-5 w-5" />} label="Lordda Virtual Lab" />
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Search */}
       <section id="tutors" className="mx-auto max-w-7xl px-4 py-12">
