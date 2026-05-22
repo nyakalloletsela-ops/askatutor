@@ -13,6 +13,19 @@ const SENDER_DOMAIN = "notify.www.askatutorlive.com"
 // Can be the root domain when display_from_root is enabled — this is cosmetic only.
 const FROM_DOMAIN = "www.askatutorlive.com"
 
+// Whitelisted role-based sender aliases (left-hand side of the @).
+// Templates can pick one via `template.fromAlias`; callers can override
+// per-send via `fromAlias` in the request body. Defaults to "noreply".
+const ALLOWED_ALIASES = new Set(["noreply", "admin", "help", "tutors", "students", "billing"])
+const ALIAS_DISPLAY: Record<string, string> = {
+  noreply: "askatutor",
+  admin: "askatutor Admin",
+  help: "askatutor Help",
+  tutors: "askatutor Tutors",
+  students: "askatutor Students",
+  billing: "askatutor Billing",
+}
+
 function redactEmail(email: string | null | undefined): string {
   if (!email) return '***'
   const [localPart, domain] = email.split('@')
