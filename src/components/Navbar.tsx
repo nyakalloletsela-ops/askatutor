@@ -87,11 +87,26 @@ export function Navbar() {
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
+          {isAdmin && (
+            <Link
+              to="/admin"
+              aria-label={`Admin notifications${pendingCount ? `: ${pendingCount} pending` : ""}`}
+              className="relative ml-1 rounded-md p-2 text-foreground/70 hover:bg-accent hover:text-foreground"
+            >
+              <Bell className="h-4 w-4" />
+              {pendingCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {pendingCount > 9 ? "9+" : pendingCount}
+                </span>
+              )}
+            </Link>
+          )}
           {user ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={async () => { await signOut(); navigate({ to: "/" }); }}
+
             >
               <LogOut className="h-4 w-4" />
             </Button>
