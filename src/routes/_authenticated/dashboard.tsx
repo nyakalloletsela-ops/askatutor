@@ -1010,3 +1010,97 @@ function ReviewsCard({ userId }: { userId: string }) {
     </section>
   );
 }
+
+/* ===================== PROPOSE A COURSE (TUTOR) ===================== */
+
+type ProposedCourse = {
+  id: string;
+  name: string;
+  level: "primary" | "high_school" | "tertiary";
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+};
+
+function ProposeCourseCard({ tutorId }: { tutorId: string }) {
+  const [name, setName] = useState("");
+  const [level, setLevel] = useState<"primary" | "high_school" | "tertiary">("high_school");
+  const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [mine, setMine] = useState<ProposedCourse[]>([]);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("tutor_courses")
+      .select("id, name, level, status, created_at")
+      .eq("tutor_id", tutorId)
+      .order("created_at", { ascending: false });
+    setMine((data as ProposedCourse[]) ?? []);
+  };
+  useEffect(() => { load(); }, [tutorId]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy(true);
+    const { error } = await supabase.from("tutor_courses").insert({
+      tutor_id: tutorId, name: name.trim(), level, description: description.trim() || null,
+    });
+    if (error) toast.error(error.message);
+    else { toast.success("Submitted for admin review"); setName(""); setDescription(""); load(); }
+    setBusy(false);
+  };
+
+  const labels: Record<ProposedCourse["level"], string> = {
+    primary: "Primary", high_school: "High School", tertiary: "Tertiary",
+  };
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-5">
+        <p className="text-sm text-muted-foreground">
+          Don't see a subject you teach? Propose it here — an admin will review and add it to the catalog.
+        </p>
+        <form onSubmit={submit} className="grid gap-3 md:grid-cols-6">
+          <div className="md:col-span-2">
+            <Label>Course name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Discrete Mathematics" maxLength={120} />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Level</Label>
+            <Select value={level} onValueChange={(v) => setLevel(v as ProposedCourse["level"])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="primary">Primary</SelectItem>
+                <SelectItem value="high_school">High School</SelectItem>
+                <SelectItem value="tertiary">Tertiary / Undergraduate</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-6">
+            <Label>Short description (optional)</Label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={500} />
+          </div>
+          <div className="md:col-span-6 flex justify-end">
+            <Button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit for review"}</Button>
+          </div>
+        </form>
+
+        {mine.length > 0 && (
+          <div>
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your proposals</h4>
+            <ul className="space-y-1.5 text-sm">
+              {mine.map((c) => (
+                <li key={c.id} className="flex items-center justify-between rounded-md border p-2">
+                  <span>{c.name} <span className="text-xs text-muted-foreground">· {labels[c.level]}</span></span>
+                  <Badge variant={c.status === "approved" ? "default" : c.status === "rejected" ? "destructive" : "secondary"}>
+                    {c.status}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
