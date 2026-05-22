@@ -339,7 +339,7 @@ function buildPendulum(scene: THREE.Scene) {
   scene.add(new THREE.GridHelper(20, 20, 0x2a2a44, 0x1a1a2e));
   let theta = 0.8, omega = 0;
   const g = 9.8;
-  return (dt) => {
+  return (dt: number) => {
     omega += -(g / L) * Math.sin(theta) * dt;
     omega *= 0.999;
     theta += omega * dt;
@@ -364,7 +364,7 @@ function buildSpring(scene: THREE.Scene) {
   scene.add(coil);
   let y = 0, v = 0;
   const k = 10, m = 1, dPhys = 0.4;
-  return (dt) => {
+  return (dt: number) => {
     const a = (-k * (y + 1.5) - dPhys * v) / m;
     v += a * dt;
     y += v * dt;
@@ -390,7 +390,7 @@ function buildProjectile(scene: THREE.Scene) {
   scene.add(cannon);
   const balls: { mesh: THREE.Mesh; vel: THREE.Vector3 }[] = [];
   let t = 0;
-  return (dt) => {
+  return (dt: number) => {
     t += dt;
     if (t > 1) {
       t = 0;
@@ -425,7 +425,7 @@ function buildWaveString(scene: THREE.Scene) {
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x4ade80 }));
   scene.add(line);
-  return (_dt, t) => {
+  return (_dt: number, t: number) => {
     const pos = geo.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < N; i++) {
       const x = (i / N) * 20 - 10;
@@ -450,7 +450,7 @@ function buildOrbitField(scene: THREE.Scene) {
     particles.push({ mesh: m, vel: new THREE.Vector3(-Math.sin(a) * speed, 0, Math.cos(a) * speed) });
     scene.add(m);
   }
-  return (dt) => {
+  return (dt: number) => {
     particles.forEach((p) => {
       const r = p.mesh.position.length();
       const acc = p.mesh.position.clone().multiplyScalar(-8 / (r * r * r));
@@ -483,7 +483,7 @@ function buildMolecule(scene: THREE.Scene) {
     group.add(bond);
   });
   scene.add(group);
-  return (dt) => { group.rotation.y += dt * 0.5; };
+  return (dt: number) => { group.rotation.y += dt * 0.5; };
 }
 
 function buildAtom(scene: THREE.Scene) {
@@ -510,7 +510,7 @@ function buildAtom(scene: THREE.Scene) {
       electrons.push({ mesh: el, r: o.r, speed: 1.5 / o.r, phase: (i / o.n) * Math.PI * 2, tilt: o.tilt });
     }
   });
-  return (_dt, t) => {
+  return (_dt: number, t: number) => {
     nucleus.rotation.y += 0.005;
     electrons.forEach((e) => {
       const a = e.phase + t * e.speed * 2;
@@ -536,7 +536,7 @@ function buildGasBox(scene: THREE.Scene) {
     particles.push({ mesh: m, vel: v });
     scene.add(m);
   }
-  return (dt) => {
+  return (dt: number) => {
     particles.forEach((p) => {
       p.mesh.position.addScaledVector(p.vel, dt);
       (["x", "y", "z"] as const).forEach((ax, idx) => {
@@ -560,7 +560,7 @@ function buildEcosystem(scene: THREE.Scene) {
     creatures.push({ mesh: c, angle: Math.random() * Math.PI * 2, r: 3 + Math.random() * 7, speed: 0.3 + Math.random() * 0.7 });
     scene.add(c);
   }
-  return (dt) => {
+  return (dt: number) => {
     creatures.forEach((c) => {
       c.angle += dt * c.speed;
       c.mesh.position.set(Math.cos(c.angle) * c.r, 0.5, Math.sin(c.angle) * c.r);
@@ -581,7 +581,7 @@ function buildDNA(scene: THREE.Scene) {
     group.add(b);
   }
   scene.add(group);
-  return (dt) => { group.rotation.y += dt * 0.4; };
+  return (dt: number) => { group.rotation.y += dt * 0.4; };
 }
 
 function buildBySubject(subject: LabSubject): Builder {
