@@ -210,10 +210,105 @@ function AdminPage() {
           </CardContent>
         </Card>
 
+        <SiteContentEditor />
         <SubjectsManager />
         <TutorCoursesQueue />
       </main>
     </div>
+  );
+}
+
+/* ===================== SITE CONTENT EDITOR ===================== */
+
+type SiteContentRow = {
+  key: string;
+  section: string;
+  label: string;
+  value: string;
+  multiline: boolean;
+  sort_order: number;
+};
+
+function SiteContentEditor() {
+  const { user } = useAuth();
+  const [rows, setRows] = useState<SiteContentRow[]>([]);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("site_content")
+      .select("key, section, label, value, multiline, sort_order")
+      .order("section")
+      .order("sort_order");
+    const list = (data as SiteContentRow[]) ?? [];
+    setRows(list);
+    setDraft(Object.fromEntries(list.map((r) => [r.key, r.value])));
+  };
+  useEffect(() => { load(); }, []);
+
+  const save = async (row: SiteContentRow) => {
+    if (!user) return;
+    setBusy(row.key);
+    const { error } = await supabase
+      .from("site_content")
+      .update({ value: draft[row.key] ?? "", updated_by: user.id })
+      .eq("key", row.key);
+    setBusy(null);
+    if (error) toast.error(error.message);
+    else { toast.success(`Saved “${row.label}”`); load(); }
+  };
+
+  const sections = Array.from(new Set(rows.map((r) => r.section)));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Edit homepage stories &amp; headings</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {rows.length === 0 && (
+          <p className="text-sm text-muted-foreground">Loading editable copy…</p>
+        )}
+        {sections.map((section) => (
+          <div key={section} className="space-y-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {section}
+            </h4>
+            <div className="space-y-3">
+              {rows.filter((r) => r.section === section).map((r) => {
+                const dirty = (draft[r.key] ?? "") !== r.value;
+                return (
+                  <div key={r.key} className="rounded-md border bg-muted/20 p-3">
+                    <div className="mb-2 flex items-baseline justify-between gap-3">
+                      <Label className="text-sm font-medium">{r.label}</Label>
+                      <span className="font-mono text-[10px] text-muted-foreground">{r.key}</span>
+                    </div>
+                    {r.multiline ? (
+                      <Textarea
+                        value={draft[r.key] ?? ""}
+                        onChange={(e) => setDraft({ ...draft, [r.key]: e.target.value })}
+                        rows={3}
+                      />
+                    ) : (
+                      <Input
+                        value={draft[r.key] ?? ""}
+                        onChange={(e) => setDraft({ ...draft, [r.key]: e.target.value })}
+                      />
+                    )}
+                    <div className="mt-2 flex justify-end">
+                      <Button size="sm" disabled={!dirty || busy === r.key} onClick={() => save(r)}>
+                        {busy === r.key ? "Saving…" : dirty ? "Save" : "Saved"}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
