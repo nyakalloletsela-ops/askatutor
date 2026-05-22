@@ -258,6 +258,14 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [duration, setDuration] = useState<string>("60");
+  const [useFree, setUseFree] = useState(false);
+  const [freeMinutes, setFreeMinutes] = useState<number>(0);
+
+  useEffect(() => {
+    if (!open || !user) return;
+    supabase.from("profiles").select("free_minutes_remaining").eq("id", user.id).single()
+      .then(({ data }) => setFreeMinutes((data as any)?.free_minutes_remaining ?? 0));
+  }, [open, user]);
 
   const handleClick = (e: React.MouseEvent) => {
     if (!user) {
@@ -282,9 +290,10 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
         subject: subject || null,
         scheduled_at: scheduledAt.toISOString(),
         duration_min: Number(duration),
+        is_free: useFree,
       });
       if (error) throw error;
-      toast.success("Session booked! Check your dashboard.");
+      toast.success(useFree ? "Free session booked!" : "Session booked! Check your dashboard.");
       setOpen(false);
       navigate({ to: "/dashboard" });
     } catch (e) {
@@ -301,6 +310,8 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
       </Button>
     );
   }
+
+  const canUseFree = freeMinutes >= Number(duration);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -342,7 +353,7 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
           </div>
           <div className="space-y-1.5">
             <Label>Duration</Label>
-            <Select value={duration} onValueChange={setDuration}>
+            <Select value={duration} onValueChange={(v) => { setDuration(v); if (Number(v) > freeMinutes) setUseFree(false); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="30">30 min</SelectItem>
@@ -352,11 +363,31 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
               </SelectContent>
             </Select>
           </div>
+          {freeMinutes > 0 && (
+            <label className={`flex items-start gap-3 rounded-md border p-3 text-sm ${canUseFree ? "cursor-pointer hover:bg-muted/40" : "opacity-60"}`}>
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={useFree}
+                disabled={!canUseFree}
+                onChange={(e) => setUseFree(e.target.checked)}
+              />
+              <div className="flex-1">
+                <div className="flex items-center gap-1.5 font-medium text-navy">
+                  <Gift className="h-4 w-4 text-gold" /> Use a free welcome lesson
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  You have <strong>{freeMinutes} minutes</strong> of free lessons remaining.
+                  {!canUseFree && " Not enough for this duration."}
+                </p>
+              </div>
+            </label>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
           <Button onClick={submit} disabled={loading || !date || !time}>
-            {loading ? "Booking…" : "Confirm booking"}
+            {loading ? "Booking…" : useFree ? "Confirm free booking" : "Confirm booking"}
           </Button>
         </DialogFooter>
       </DialogContent>
