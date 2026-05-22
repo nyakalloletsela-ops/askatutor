@@ -289,12 +289,18 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           status: 'pending',
         })
 
+        // Resolve sender alias: per-call override > template setting > "noreply"
+        const requestedAlias =
+          (fromAliasBody ?? (template as any).fromAlias ?? 'noreply').toLowerCase()
+        const alias = ALLOWED_ALIASES.has(requestedAlias) ? requestedAlias : 'noreply'
+        const fromHeader = `${ALIAS_DISPLAY[alias] ?? SITE_NAME} <${alias}@${FROM_DOMAIN}>`
+
         const { error: enqueueError } = await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
           payload: {
             message_id: messageId,
             to: effectiveRecipient,
-            from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+            from: fromHeader,
             sender_domain: SENDER_DOMAIN,
             subject: resolvedSubject,
             html,
