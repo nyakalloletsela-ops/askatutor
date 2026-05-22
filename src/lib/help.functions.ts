@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/integrations/supabase/client.server'
+import { enqueueTransactionalEmail } from '@/lib/email/enqueue.server'
 
 const HelpSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -10,11 +11,6 @@ const HelpSchema = z.object({
   user_id: z.string().uuid().nullable().optional(),
 })
 
-/**
- * Public help-message submission. Inserts the message and triggers two emails:
- * a confirmation to the sender (from help@) and an admin notification
- * (from help@, to help@askatutorlive.com).
- */
 export const submitHelpMessage = createServerFn({ method: 'POST' })
   .inputValidator((input) => HelpSchema.parse(input))
   .handler(async ({ data }) => {
@@ -31,39 +27,86 @@ export const submitHelpMessage = createServerFn({ method: 'POST' })
       .single()
     if (error) throw new Error(error.message)
 
-    const origin =
-      process.env.SITE_URL ||
-      `https://${process.env.VITE_PUBLIC_DOMAIN || 'www.askatutorlive.com'}`
-
-    const headers = { 'Content-Type': 'application/json' } as Record<string, string>
-    const baseSend = async (payload: unknown) => {
-      try {
-        await fetch(`${origin}/lovable/email/transactional/send-internal`, {
-          method: 'POST',
-          headers: { ...headers, 'X-Internal-Key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '' },
-          body: JSON.stringify(payload),
-        })
-      } catch (e) {
-        console.error('help email send failed', e)
-      }
-    }
-
     await Promise.all([
-      baseSend({
+      enqueueTransactionalEmail({
         templateName: 'help-confirmation',
         recipientEmail: data.email,
         idempotencyKey: `help-confirm-${row.id}`,
         templateData: { name: data.name, subject: data.subject, body: data.body },
         fromAlias: 'help',
-      }),
-      baseSend({
+      }).catch((e) => console.error('help-confirmation send failed', e)),
+      enqueueTransactionalEmail({
         templateName: 'help-new-ticket',
         recipientEmail: 'help@askatutorlive.com',
         idempotencyKey: `help-notify-${row.id}`,
         templateData: { name: data.name, email: data.email, subject: data.subject, body: data.body },
         fromAlias: 'help',
-      }),
+      }).catch((e) => console.error('help-new-ticket send failed', e)),
     ])
 
     return { id: row.id }
+  })
+
+const SubEmailSchema = z.object({
+  tutor_id: z.string().uuid(),
+  status: z.enum(['approved', 'rejected']),
+  amount: z.number().optional(),
+  reason: z.string().max(500).optional(),
+})
+
+/**
+ * Admin-triggered: notify tutor of subscription approval/rejection.
+ * Verifies caller is admin via the user_roles table (using their JWT).
+ */
+export const sendSubscriptionDecisionEmail = createServerFn({ method: 'POST' })
+  .inputValidator((input) => SubEmailSchema.parse(input))
+  .handler(async ({ data, request }) => {
+    const authHeader = request?.headers.get('Authorization') ?? ''
+    if (!authHeader.startsWith('Bearer ')) throw new Error('Unauthorized')
+    const jwt = authHeader.slice(7)
+    const { data: u } = await supabaseAdmin.auth.getUser(jwt)
+    if (!u.user) throw new Error('Unauthorized')
+    const { data: roles } = await supabaseAdmin
+      .from('user_roles').select('role').eq('user_id', u.user.id).eq('role', 'admin')
+    if (!roles || roles.length === 0) throw new Error('Forbidden')
+
+    const { data: prof } = await supabaseAdmin
+      .from('profiles').select('full_name').eq('id', data.tutor_id).single()
+    const { data: au } = await supabaseAdmin.auth.admin.getUserById(data.tutor_id)
+    const email = au.user?.email
+    if (!email) throw new Error('Tutor email not found')
+
+    await enqueueTransactionalEmail({
+      templateName: data.status === 'approved' ? 'subscription-approved' : 'subscription-rejected',
+      recipientEmail: email,
+      idempotencyKey: `sub-${data.status}-${data.tutor_id}-${Date.now()}`,
+      templateData: { name: prof?.full_name ?? undefined, amount: data.amount ?? 250, reason: data.reason },
+      fromAlias: 'billing',
+    })
+    return { ok: true }
+  })
+
+const WelcomeSchema = z.object({
+  user_id: z.string().uuid(),
+})
+
+/** Authenticated user requests their own welcome email (called once after signup). */
+export const sendWelcomeEmail = createServerFn({ method: 'POST' })
+  .inputValidator((input) => WelcomeSchema.parse(input))
+  .handler(async ({ data, request }) => {
+    const authHeader = request?.headers.get('Authorization') ?? ''
+    if (!authHeader.startsWith('Bearer ')) throw new Error('Unauthorized')
+    const jwt = authHeader.slice(7)
+    const { data: u } = await supabaseAdmin.auth.getUser(jwt)
+    if (!u.user || u.user.id !== data.user_id) throw new Error('Forbidden')
+    const { data: prof } = await supabaseAdmin
+      .from('profiles').select('full_name').eq('id', data.user_id).single()
+    await enqueueTransactionalEmail({
+      templateName: 'welcome',
+      recipientEmail: u.user.email!,
+      idempotencyKey: `welcome-${data.user_id}`,
+      templateData: { name: prof?.full_name ?? undefined },
+      fromAlias: 'noreply',
+    })
+    return { ok: true }
   })
