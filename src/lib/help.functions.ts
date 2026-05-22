@@ -90,18 +90,17 @@ const WelcomeSchema = z.object({
 
 /** Authenticated user requests their own welcome email (called once after signup). */
 export const sendWelcomeEmail = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => WelcomeSchema.parse(input))
-  .handler(async ({ data, request }) => {
-    const authHeader = request?.headers.get('Authorization') ?? ''
-    if (!authHeader.startsWith('Bearer ')) throw new Error('Unauthorized')
-    const jwt = authHeader.slice(7)
-    const { data: u } = await supabaseAdmin.auth.getUser(jwt)
-    if (!u.user || u.user.id !== data.user_id) throw new Error('Forbidden')
+  .handler(async ({ data, context }) => {
+    if (context.userId !== data.user_id) throw new Error('Forbidden')
+    const { data: u } = await supabaseAdmin.auth.admin.getUserById(data.user_id)
+    if (!u.user?.email) throw new Error('User email not found')
     const { data: prof } = await supabaseAdmin
       .from('profiles').select('full_name').eq('id', data.user_id).single()
     await enqueueTransactionalEmail({
       templateName: 'welcome',
-      recipientEmail: u.user.email!,
+      recipientEmail: u.user.email,
       idempotencyKey: `welcome-${data.user_id}`,
       templateData: { name: prof?.full_name ?? undefined },
       fromAlias: 'noreply',
