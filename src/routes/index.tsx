@@ -189,17 +189,14 @@ function Home() {
 
 /* ===================== SHORTCUT CARD ===================== */
 
-function ShortcutCard({
-  to, icon: Icon, title, desc, search,
+function ShortcutInner({
+  icon: Icon, title, desc,
 }: {
-  to: string;
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   desc: string;
-  search?: Record<string, string>;
 }) {
-  const isHash = to.startsWith("#");
-  const inner = (
+  return (
     <Card className="group h-full border-border/60 transition hover:border-foreground/30 hover:shadow-sm">
       <CardContent className="flex h-full flex-col gap-3 p-6">
         <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-aurora text-white">
@@ -212,12 +209,6 @@ function ShortcutCard({
         </span>
       </CardContent>
     </Card>
-  );
-  if (isHash) return <a href={to}>{inner}</a>;
-  return (
-    <Link to={to} search={search as never}>
-      {inner}
-    </Link>
   );
 }
 
