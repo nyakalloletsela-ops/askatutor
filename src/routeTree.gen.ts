@@ -10,18 +10,32 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as LeaderboardRouteImport } from './routes/leaderboard'
+import { Route as LabsRouteImport } from './routes/labs'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIdRouteImport } from './routes/tutor.$id'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCodeRouteImport } from './routes/_authenticated/code'
 import { Route as AuthenticatedAiTutorRouteImport } from './routes/_authenticated/ai-tutor'
+import { Route as AuthenticatedAiToolsRouteImport } from './routes/_authenticated/ai-tools'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedClassroomRoomIdRouteImport } from './routes/_authenticated/classroom.$roomId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LeaderboardRoute = LeaderboardRouteImport.update({
+  id: '/leaderboard',
+  path: '/leaderboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabsRoute = LabsRouteImport.update({
+  id: '/labs',
+  path: '/labs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -48,9 +62,19 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCodeRoute = AuthenticatedCodeRouteImport.update({
+  id: '/code',
+  path: '/code',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAiTutorRoute = AuthenticatedAiTutorRouteImport.update({
   id: '/ai-tutor',
   path: '/ai-tutor',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAiToolsRoute = AuthenticatedAiToolsRouteImport.update({
+  id: '/ai-tools',
+  path: '/ai-tools',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -68,9 +92,13 @@ const AuthenticatedClassroomRoomIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/labs': typeof LabsRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/tutor/$id': typeof TutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -78,9 +106,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/labs': typeof LabsRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/tutor/$id': typeof TutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -90,9 +122,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/labs': typeof LabsRoute
+  '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/ai-tools': typeof AuthenticatedAiToolsRoute
   '/_authenticated/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/_authenticated/code': typeof AuthenticatedCodeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/tutor/$id': typeof TutorIdRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -102,9 +138,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/labs'
+    | '/leaderboard'
     | '/reset-password'
     | '/admin'
+    | '/ai-tools'
     | '/ai-tutor'
+    | '/code'
     | '/dashboard'
     | '/tutor/$id'
     | '/classroom/$roomId'
@@ -112,9 +152,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/labs'
+    | '/leaderboard'
     | '/reset-password'
     | '/admin'
+    | '/ai-tools'
     | '/ai-tutor'
+    | '/code'
     | '/dashboard'
     | '/tutor/$id'
     | '/classroom/$roomId'
@@ -123,9 +167,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/labs'
+    | '/leaderboard'
     | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/ai-tools'
     | '/_authenticated/ai-tutor'
+    | '/_authenticated/code'
     | '/_authenticated/dashboard'
     | '/tutor/$id'
     | '/_authenticated/classroom/$roomId'
@@ -135,6 +183,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  LabsRoute: typeof LabsRoute
+  LeaderboardRoute: typeof LeaderboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TutorIdRoute: typeof TutorIdRoute
 }
@@ -146,6 +196,20 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/leaderboard': {
+      id: '/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/leaderboard'
+      preLoaderRoute: typeof LeaderboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/labs': {
+      id: '/labs'
+      path: '/labs'
+      fullPath: '/labs'
+      preLoaderRoute: typeof LabsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -183,11 +247,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/code': {
+      id: '/_authenticated/code'
+      path: '/code'
+      fullPath: '/code'
+      preLoaderRoute: typeof AuthenticatedCodeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/ai-tutor': {
       id: '/_authenticated/ai-tutor'
       path: '/ai-tutor'
       fullPath: '/ai-tutor'
       preLoaderRoute: typeof AuthenticatedAiTutorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/ai-tools': {
+      id: '/_authenticated/ai-tools'
+      path: '/ai-tools'
+      fullPath: '/ai-tools'
+      preLoaderRoute: typeof AuthenticatedAiToolsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin': {
@@ -209,14 +287,18 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAiToolsRoute: typeof AuthenticatedAiToolsRoute
   AuthenticatedAiTutorRoute: typeof AuthenticatedAiTutorRoute
+  AuthenticatedCodeRoute: typeof AuthenticatedCodeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAiToolsRoute: AuthenticatedAiToolsRoute,
   AuthenticatedAiTutorRoute: AuthenticatedAiTutorRoute,
+  AuthenticatedCodeRoute: AuthenticatedCodeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
 }
@@ -229,6 +311,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  LabsRoute: LabsRoute,
+  LeaderboardRoute: LeaderboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TutorIdRoute: TutorIdRoute,
 }
