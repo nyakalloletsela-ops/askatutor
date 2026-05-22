@@ -225,9 +225,128 @@ function TutorCard({ t, premium }: { t: TutorRow; premium?: boolean }) {
                 M{t.hourly_rate}/hour
               </p>
             )}
+            <div className="mt-4">
+              <BookSessionDialog tutor={t} />
+            </div>
           </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const subjects = tutor.subjects ?? [];
+  const [subject, setSubject] = useState<string>(subjects[0] ?? "");
+  const [date, setDate] = useState<string>("");
+  const [time, setTime] = useState<string>("");
+  const [duration, setDuration] = useState<string>("60");
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      toast.info("Please sign in to book a session");
+      navigate({ to: "/auth" });
+    }
+  };
+
+  const submit = async () => {
+    if (!user || !date || !time) return;
+    setLoading(true);
+    try {
+      const scheduledAt = new Date(`${date}T${time}`);
+      if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) {
+        toast.error("Pick a future date and time");
+        return;
+      }
+      const { error } = await supabase.from("sessions").insert({
+        tutor_id: tutor.id,
+        student_id: user.id,
+        subject: subject || null,
+        scheduled_at: scheduledAt.toISOString(),
+        duration_min: Number(duration),
+      });
+      if (error) throw error;
+      toast.success("Session booked! Check your dashboard.");
+      setOpen(false);
+      navigate({ to: "/dashboard" });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <Button size="sm" className="w-full" onClick={handleClick}>
+        <CalendarPlus className="mr-1 h-4 w-4" /> Book session
+      </Button>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="w-full">
+          <CalendarPlus className="mr-1 h-4 w-4" /> Book session
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Book {tutor.full_name ?? "tutor"}</DialogTitle>
+          <DialogDescription>Pick a subject, date and time for your session.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          {subjects.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Subject</Label>
+              <Select value={subject} onValueChange={setSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Time</Label>
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Duration</Label>
+            <Select value={duration} onValueChange={setDuration}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30">30 min</SelectItem>
+                <SelectItem value="60">1 hour</SelectItem>
+                <SelectItem value="90">1.5 hours</SelectItem>
+                <SelectItem value="120">2 hours</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={submit} disabled={loading || !date || !time}>
+            {loading ? "Booking…" : "Confirm booking"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
