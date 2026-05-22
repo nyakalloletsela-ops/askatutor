@@ -40,6 +40,8 @@ type TutorRow = {
 
 function Home() {
   const [tutors, setTutors] = useState<TutorRow[]>([]);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [studentCount, setStudentCount] = useState(0);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
 
@@ -48,6 +50,13 @@ function Home() {
       const { data, error } = await supabase.rpc("list_public_tutors");
       if (error) { console.error(error); setTutors([]); return; }
       setTutors((data as TutorRow[]) ?? []);
+    })();
+    (async () => {
+      const { count: sCount } = await supabase.from("sessions").select("id", { count: "exact", head: true });
+      setSessionCount(sCount ?? 0);
+      const { count: stuCount } = await supabase
+        .from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "student");
+      setStudentCount(stuCount ?? 0);
     })();
   }, []);
 
@@ -65,7 +74,7 @@ function Home() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <Hero />
-      <TrustStrip tutorCount={tutorCount} />
+      <TrustStrip tutorCount={tutorCount} sessionCount={sessionCount} studentCount={studentCount} />
       <Levels />
       <Subjects tutors={tutors} />
       <Features />
@@ -237,12 +246,12 @@ function Counter({ to, suffix = "", duration = 1.6 }: { to: number; suffix?: str
   return <span>{n.toLocaleString()}{suffix}</span>;
 }
 
-function TrustStrip({ tutorCount }: { tutorCount: number }) {
+function TrustStrip({ tutorCount, sessionCount, studentCount }: { tutorCount: number; sessionCount: number; studentCount: number }) {
   const stats = [
-    { value: Math.max(tutorCount * 35, 1200), suffix: "+", label: "Students helped" },
-    { value: Math.max(tutorCount, 25), suffix: "+", label: "Verified tutors" },
-    { value: 8400, suffix: "+", label: "Lessons completed" },
-    { value: 92, suffix: "%", label: "Pass-rate boost" },
+    { value: studentCount, suffix: "", label: "Students registered" },
+    { value: tutorCount, suffix: "", label: "Verified tutors" },
+    { value: sessionCount, suffix: "", label: "Sessions booked" },
+    { value: 4, suffix: "", label: "Free lessons for new students" },
   ];
   return (
     <section className="border-y border-border/60 bg-muted/30">
@@ -632,7 +641,7 @@ function FinalCTA() {
             Ready to <span className="text-aurora">level up</span>?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-white/70">
-            Join hundreds of Basotho students learning smarter every day.
+            Be among the first Basotho students learning smarter every day.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" className="bg-aurora text-white shadow-glow">
