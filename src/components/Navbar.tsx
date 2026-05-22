@@ -1,16 +1,34 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, Moon, Sun, Menu, X } from "lucide-react";
+import { LogOut, Moon, Sun, Menu, X, Bell } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    const load = async () => {
+      const [{ count: subs }, { count: courses }] = await Promise.all([
+        supabase.from("tutor_subscriptions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("tutor_courses").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+      if (alive) setPendingCount((subs ?? 0) + (courses ?? 0));
+    };
+    load();
+    const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, [isAdmin]);
+
 
   const links = (
     <>
@@ -69,11 +87,26 @@ export function Navbar() {
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
+          {isAdmin && (
+            <Link
+              to="/admin"
+              aria-label={`Admin notifications${pendingCount ? `: ${pendingCount} pending` : ""}`}
+              className="relative ml-1 rounded-md p-2 text-foreground/70 hover:bg-accent hover:text-foreground"
+            >
+              <Bell className="h-4 w-4" />
+              {pendingCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {pendingCount > 9 ? "9+" : pendingCount}
+                </span>
+              )}
+            </Link>
+          )}
           {user ? (
             <Button
               variant="ghost"
               size="sm"
               onClick={async () => { await signOut(); navigate({ to: "/" }); }}
+
             >
               <LogOut className="h-4 w-4" />
             </Button>
