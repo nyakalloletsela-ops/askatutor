@@ -4,8 +4,9 @@ import { useAuth } from "@/hooks/use-auth";
 
 const tabs = [
   { to: "/" as const, label: "Tutors", icon: Home },
-  { to: "/ai-tutor" as const, label: "AI", icon: Sparkles },
-  { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard, authed: true },
+  { to: "/labs" as const, label: "Labs", icon: FlaskConical },
+  { to: "/ai-tools" as const, label: "AI", icon: Sparkles, authed: true },
+  { to: "/dashboard" as const, label: "Me", icon: LayoutDashboard, authed: true },
   { to: "/auth" as const, label: "Sign in", icon: User, guest: true },
 ];
 
