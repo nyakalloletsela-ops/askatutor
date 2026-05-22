@@ -53,20 +53,12 @@ function AuthPage() {
         password: parsed.password,
         options: {
           emailRedirectTo: window.location.origin,
-          data: { full_name: parsed.full_name },
+          data: { full_name: parsed.full_name, account_type: accountType },
         },
       });
       if (error) throw error;
-      // If tutor was selected, add tutor role (student is added by default trigger)
-      if (accountType === "tutor") {
-        const { data: sess } = await supabase.auth.getSession();
-        const uid = sess.session?.user.id;
-        if (uid) {
-          await supabase.from("user_roles").insert({ user_id: uid, role: "tutor" });
-        }
-      }
-      toast.success("Account created! You're signed in.");
-      navigate({ to: "/dashboard" });
+      toast.success("Account created! Please check your email to verify before signing in.");
+      navigate({ to: "/auth" });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

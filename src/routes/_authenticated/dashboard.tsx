@@ -103,13 +103,14 @@ function Dashboard() {
 
   const becomeTutor = async () => {
     if (!user) return;
-    const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: "tutor" });
-    if (error && !error.message.includes("duplicate")) {
+    const { error } = await supabase.rpc("become_tutor");
+    if (error) {
       toast.error(error.message);
       return;
     }
     toast.success("You're now a tutor! Complete your profile.");
     await refresh();
+    await refreshAll();
   };
 
   const saveProfile = async () => {
