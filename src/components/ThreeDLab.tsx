@@ -646,10 +646,10 @@ function buildDNA(scene: THREE.Scene) {
 }
 
 function buildBySubject(subject: LabSubject): Builder {
-  if (subject === "Chemistry") return buildMolecule;
+  if (subject === "Chemistry") return buildBeaker;
   if (subject === "Biology") return buildDNA;
-  if (subject === "Math") return buildWaveString;
-  if (subject === "Earth Science") return buildSolarSystem;
+  if (subject === "Math") return buildGraph;
+  if (subject === "Earth Science") return buildTectonics;
   return buildOrbitField; // Physics fallback
 }
 
@@ -663,4 +663,254 @@ function addStars(scene: THREE.Scene) {
   }
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPos, 3));
   scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.15 })));
+}
+
+// ─── Additional bespoke scenes ─────────────────────────────────────────────
+
+function buildCircuit(scene: THREE.Scene) {
+  scene.add(new THREE.GridHelper(20, 20, 0x2a2a44, 0x1a1a2e));
+  // Battery
+  const battery = new THREE.Mesh(
+    new THREE.BoxGeometry(2, 1.2, 1.2),
+    new THREE.MeshStandardMaterial({ color: 0xe94560 }),
+  );
+  battery.position.set(-6, 0.6, 0);
+  scene.add(battery);
+  // Bulb
+  const bulb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.9, 24, 24),
+    new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfde047, emissiveIntensity: 0.6 }),
+  );
+  bulb.position.set(6, 0.9, 0);
+  scene.add(bulb);
+  // Wires (rectangular loop)
+  const path: THREE.Vector3[] = [
+    new THREE.Vector3(-6, 0.6, 0.7), new THREE.Vector3(-6, 3, 0.7),
+    new THREE.Vector3(6, 3, 0.7), new THREE.Vector3(6, 0.9, 0.7),
+    new THREE.Vector3(6, 0.9, -0.7), new THREE.Vector3(6, 3, -0.7),
+    new THREE.Vector3(-6, 3, -0.7), new THREE.Vector3(-6, 0.6, -0.7),
+  ];
+  for (let i = 0; i < path.length; i++) {
+    const a = path[i], b = path[(i + 1) % path.length];
+    const dir = b.clone().sub(a);
+    const len = dir.length();
+    const wire = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, len, 8),
+      new THREE.MeshStandardMaterial({ color: 0xc9c9e0 }),
+    );
+    wire.position.copy(a.clone().add(b).multiplyScalar(0.5));
+    wire.lookAt(b); wire.rotateX(Math.PI / 2);
+    scene.add(wire);
+  }
+  // Electrons flowing along loop
+  const N = 30;
+  const electrons: THREE.Mesh[] = [];
+  for (let i = 0; i < N; i++) {
+    const e = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0x4ade80, emissive: 0x114422 }),
+    );
+    electrons.push(e); scene.add(e);
+  }
+  // Pre-compute segment cumulative lengths
+  const segs = path.map((p, i) => ({ a: p, b: path[(i + 1) % path.length] }));
+  const lens = segs.map((s) => s.b.clone().sub(s.a).length());
+  const total = lens.reduce((s, l) => s + l, 0);
+  let t = 0;
+  return (dt: number) => {
+    t += dt * 1.5;
+    bulb.material instanceof THREE.MeshStandardMaterial &&
+      (bulb.material.emissiveIntensity = 0.5 + Math.abs(Math.sin(t * 2)) * 0.5);
+    electrons.forEach((e, i) => {
+      let d = ((t + i / N) * total) % total;
+      for (let j = 0; j < segs.length; j++) {
+        if (d <= lens[j]) {
+          const f = d / lens[j];
+          e.position.lerpVectors(segs[j].a, segs[j].b, f);
+          return;
+        }
+        d -= lens[j];
+      }
+    });
+  };
+}
+
+function buildOptics(scene: THREE.Scene) {
+  scene.add(new THREE.GridHelper(20, 20, 0x2a2a44, 0x1a1a2e));
+  // Lens (convex)
+  const lensMat = new THREE.MeshPhysicalMaterial({
+    color: 0x67e8f9, transparent: true, opacity: 0.45, roughness: 0.05, transmission: 0.9, ior: 1.5,
+  });
+  const lens = new THREE.Mesh(new THREE.SphereGeometry(2, 32, 32, 0, Math.PI * 2, 0, Math.PI), lensMat);
+  lens.scale.set(0.3, 1, 1);
+  scene.add(lens);
+  // Light source (cone)
+  const src = new THREE.Mesh(
+    new THREE.ConeGeometry(0.5, 1.2, 16),
+    new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xfde047, emissiveIntensity: 0.6 }),
+  );
+  src.position.set(-8, 0, 0); src.rotation.z = -Math.PI / 2; scene.add(src);
+  // Light rays
+  const rayMat = new THREE.LineBasicMaterial({ color: 0xfde047 });
+  const rays: { line: THREE.Line; offset: number }[] = [];
+  for (let i = -3; i <= 3; i++) {
+    if (i === 0) continue;
+    const off = i * 0.6;
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-8, off, 0),
+      new THREE.Vector3(0, off, 0),
+      new THREE.Vector3(8, 0, 0),
+    ]);
+    const line = new THREE.Line(geo, rayMat);
+    rays.push({ line, offset: off });
+    scene.add(line);
+  }
+  // Screen
+  const screen = new THREE.Mesh(
+    new THREE.PlaneGeometry(4, 4),
+    new THREE.MeshStandardMaterial({ color: 0xeeeeee, side: THREE.DoubleSide }),
+  );
+  screen.position.set(8, 0, 0); screen.rotation.y = Math.PI / 2; scene.add(screen);
+  return (_dt: number, t: number) => {
+    const focal = 8 + Math.sin(t * 0.6) * 3;
+    rays.forEach(({ line, offset }) => {
+      const geo = line.geometry as THREE.BufferGeometry;
+      geo.setFromPoints([
+        new THREE.Vector3(-8, offset, 0),
+        new THREE.Vector3(0, offset, 0),
+        new THREE.Vector3(focal, 0, 0),
+      ]);
+    });
+    screen.position.x = focal;
+  };
+}
+
+function buildBeaker(scene: THREE.Scene) {
+  scene.add(new THREE.GridHelper(20, 20, 0x2a2a44, 0x1a1a2e));
+  // Beaker (open cylinder)
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0xaad8ff, transparent: true, opacity: 0.25, transmission: 0.9, roughness: 0.05,
+  });
+  const beaker = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 5, 32, 1, true), glass);
+  beaker.position.y = 2.5; scene.add(beaker);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.1, 32), glass);
+  scene.add(base);
+  // Liquid (color shifts to indicate pH / concentration)
+  const liquidMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, transparent: true, opacity: 0.85 });
+  const liquid = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 3.5, 32), liquidMat);
+  liquid.position.y = 1.85; scene.add(liquid);
+  // Bubbles
+  const bubbles: { mesh: THREE.Mesh; speed: number }[] = [];
+  for (let i = 0; i < 30; i++) {
+    const b = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1 + Math.random() * 0.1, 8, 8),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }),
+    );
+    const r = Math.random() * 2.2, a = Math.random() * Math.PI * 2;
+    b.position.set(Math.cos(a) * r, Math.random() * 3, Math.sin(a) * r);
+    bubbles.push({ mesh: b, speed: 0.4 + Math.random() * 0.6 });
+    scene.add(b);
+  }
+  // Stir rod
+  const rod = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 6, 12),
+    new THREE.MeshStandardMaterial({ color: 0xc9c9e0 }),
+  );
+  rod.position.set(1.2, 4, 0); scene.add(rod);
+  return (dt: number, t: number) => {
+    const hue = (Math.sin(t * 0.5) * 0.5 + 0.5);
+    liquidMat.color.setHSL(0.05 + hue * 0.6, 0.7, 0.55);
+    rod.position.x = Math.cos(t * 2) * 1.2;
+    rod.position.z = Math.sin(t * 2) * 1.2;
+    bubbles.forEach((b) => {
+      b.mesh.position.y += b.speed * dt;
+      if (b.mesh.position.y > 3.5) {
+        b.mesh.position.y = 0.2;
+        const r = Math.random() * 2.2, a = Math.random() * Math.PI * 2;
+        b.mesh.position.x = Math.cos(a) * r;
+        b.mesh.position.z = Math.sin(a) * r;
+      }
+    });
+  };
+}
+
+function buildGraph(scene: THREE.Scene) {
+  // Axes
+  const ax = new THREE.AxesHelper(8); scene.add(ax);
+  scene.add(new THREE.GridHelper(16, 16, 0x2a2a44, 0x1a1a2e));
+  // Animated function surface y = f(x,z,t)
+  const W = 50;
+  const geo = new THREE.PlaneGeometry(14, 14, W, W);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x4f46e5, side: THREE.DoubleSide, flatShading: true, wireframe: false,
+  });
+  const surf = new THREE.Mesh(geo, mat);
+  scene.add(surf);
+  // Sliding curve line
+  const curveGeo = new THREE.BufferGeometry();
+  const N = 200;
+  const positions = new Float32Array(N * 3);
+  curveGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const curve = new THREE.Line(curveGeo, new THREE.LineBasicMaterial({ color: 0xfde047 }));
+  scene.add(curve);
+  return (_dt: number, t: number) => {
+    const pos = geo.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), z = pos.getZ(i);
+      const y = Math.sin(x * 0.7 + t) * 1.4 + Math.cos(z * 0.7 + t * 0.6) * 1.4;
+      pos.setY(i, y);
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+    const cp = curveGeo.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < N; i++) {
+      const x = (i / N) * 14 - 7;
+      const y = Math.sin(x * 0.9 + t * 1.2) * 2 + 0.05;
+      cp.setXYZ(i, x, y, 0);
+    }
+    cp.needsUpdate = true;
+  };
+}
+
+function buildTectonics(scene: THREE.Scene) {
+  scene.add(new THREE.GridHelper(20, 20, 0x2a2a44, 0x1a1a2e));
+  // Two crustal plates
+  const plateMat1 = new THREE.MeshStandardMaterial({ color: 0x8b5a3c, roughness: 1 });
+  const plateMat2 = new THREE.MeshStandardMaterial({ color: 0x6b4226, roughness: 1 });
+  const plate1 = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 10), plateMat1);
+  const plate2 = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 10), plateMat2);
+  plate1.position.set(-4.5, 0.5, 0);
+  plate2.position.set(4.5, 0.5, 0);
+  scene.add(plate1); scene.add(plate2);
+  // Mantle (red glow underneath)
+  const mantle = new THREE.Mesh(
+    new THREE.BoxGeometry(20, 0.4, 12),
+    new THREE.MeshStandardMaterial({ color: 0xc44d2a, emissive: 0x551100, emissiveIntensity: 0.6 }),
+  );
+  mantle.position.y = -0.3; scene.add(mantle);
+  // Mountain peaks at the boundary
+  const peaks: THREE.Mesh[] = [];
+  for (let i = 0; i < 6; i++) {
+    const p = new THREE.Mesh(
+      new THREE.ConeGeometry(0.6, 1.5, 6),
+      new THREE.MeshStandardMaterial({ color: 0x9b8770 }),
+    );
+    p.position.set(0, 0.8, -3 + i * 1.2);
+    peaks.push(p); scene.add(p);
+  }
+  // Sun for greenhouse-effect overlap
+  const sun = new THREE.Mesh(
+    new THREE.SphereGeometry(0.6, 16, 16),
+    new THREE.MeshBasicMaterial({ color: 0xfde047 }),
+  );
+  sun.position.set(-8, 8, 4); scene.add(sun);
+  return (dt: number, t: number) => {
+    const d = (Math.sin(t * 0.4) + 1) * 0.4;
+    plate1.position.x = -4.5 - d;
+    plate2.position.x = 4.5 + d;
+    peaks.forEach((p, i) => {
+      p.position.y = 0.8 + Math.abs(Math.sin(t * 0.5 + i)) * (1.5 - d);
+    });
+  };
 }
