@@ -458,7 +458,12 @@ export function Whiteboard({ roomId, userId }: Props) {
                 <canvas
                   ref={(el) => {
                     canvasRefs.current[i] = el;
-                    if (el) sizeCanvas(el);
+                    if (el && sizeCanvas(el)) {
+                      // first/real resize — redraw any history for this page
+                      historyRef.current
+                        .filter((s) => s.page === i)
+                        .forEach(renderStroke);
+                    }
                   }}
                   className="absolute inset-0 h-full w-full cursor-crosshair"
                   style={{ touchAction: "none" }}
@@ -467,6 +472,7 @@ export function Whiteboard({ roomId, userId }: Props) {
                   onPointerUp={onPointerUp(i)}
                   onPointerCancel={onPointerUp(i)}
                 />
+
               </div>
             </div>
           ))}
