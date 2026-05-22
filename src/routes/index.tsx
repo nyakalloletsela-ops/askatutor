@@ -45,17 +45,46 @@ type TutorRow = {
   session_count: number | null;
 };
 
+const DEFAULT_CONTENT: Record<string, string> = {
+  "hero.badge": "Online tutoring marketplace",
+  "hero.title": "Learn from verified tutors, one lesson at a time.",
+  "hero.title_accent": "one lesson at a time.",
+  "hero.subtitle": "Book live one-on-one sessions with expert tutors for Primary, High School, IGCSE, A-Level and Undergraduate subjects.",
+  "hero.cta_primary": "Find a tutor",
+  "hero.cta_secondary": "Create free account",
+  "shortcuts.find.title": "Find a Tutor",
+  "shortcuts.find.desc": "Browse verified tutors by subject and book a live session.",
+  "shortcuts.tutor.title": "Become a Tutor",
+  "shortcuts.tutor.desc": "Apply to join, list your subjects, and start earning.",
+  "shortcuts.dash.title": "Dashboard",
+  "shortcuts.dash.desc": "Manage your sessions, bookings and profile.",
+  "tutors.heading": "Available tutors",
+  "tutors.subheading": "Premium Certified Tutors appear first. Search by name or filter by subject.",
+  "tutors.top_label": "Top 5 most-booked tutors",
+  "footer.tagline": "© Ask A Tutor Live. All rights reserved.",
+};
+
 function Home() {
   const { user, isTutor } = useAuth();
   const [tutors, setTutors] = useState<TutorRow[]>([]);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
+  const [content, setContent] = useState<Record<string, string>>(DEFAULT_CONTENT);
+  const t = (k: string) => content[k] ?? DEFAULT_CONTENT[k] ?? "";
 
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.rpc("list_public_tutors");
       if (error) { console.error(error); setTutors([]); return; }
       setTutors((data as TutorRow[]) ?? []);
+    })();
+    (async () => {
+      const { data } = await supabase.from("site_content").select("key, value");
+      if (data) {
+        const next = { ...DEFAULT_CONTENT };
+        (data as { key: string; value: string }[]).forEach((r) => { next[r.key] = r.value; });
+        setContent(next);
+      }
     })();
   }, []);
 
