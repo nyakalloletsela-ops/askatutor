@@ -171,6 +171,24 @@ function Dashboard() {
 
         {!isTutor && (
           <>
+            {profile.free_minutes_remaining > 0 && (
+              <Card className="border-gold/40 bg-gold/5">
+                <CardContent className="flex items-center gap-3 p-4">
+                  <Gift className="h-6 w-6 text-gold" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-navy">
+                      You have {profile.free_minutes_remaining} free minutes left
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Welcome gift — up to 4 lessons, 5 hours total. Apply when booking.
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/">Browse tutors</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle>Become a tutor</CardTitle>
@@ -183,6 +201,7 @@ function Dashboard() {
               </CardContent>
             </Card>
             <StudentFeeCard userId={user.id} />
+            <ReviewsCard userId={user.id} />
           </>
         )}
 
