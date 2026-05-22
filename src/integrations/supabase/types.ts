@@ -275,6 +275,30 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          level: Database["public"]["Enums"]["subject_level"]
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level: Database["public"]["Enums"]["subject_level"]
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["subject_level"]
+          name?: string
+        }
+        Relationships: []
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -296,6 +320,42 @@ export type Database = {
           id?: string
           metadata?: Json | null
           reason?: string
+        }
+        Relationships: []
+      }
+      tutor_courses: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          level: Database["public"]["Enums"]["subject_level"]
+          name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["course_status"]
+          tutor_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level: Database["public"]["Enums"]["subject_level"]
+          name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["course_status"]
+          tutor_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["subject_level"]
+          name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["course_status"]
+          tutor_id?: string
         }
         Relationships: []
       }
@@ -474,9 +534,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "tutor" | "student"
+      course_status: "pending" | "approved" | "rejected"
       pay_method: "mpesa" | "ecocash"
       session_status: "scheduled" | "live" | "completed" | "cancelled"
       sub_status: "pending" | "approved" | "rejected"
+      subject_level: "primary" | "high_school" | "tertiary"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -605,9 +667,11 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "tutor", "student"],
+      course_status: ["pending", "approved", "rejected"],
       pay_method: ["mpesa", "ecocash"],
       session_status: ["scheduled", "live", "completed", "cancelled"],
       sub_status: ["pending", "approved", "rejected"],
+      subject_level: ["primary", "high_school", "tertiary"],
     },
   },
 } as const
