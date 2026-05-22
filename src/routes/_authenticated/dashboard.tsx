@@ -168,18 +168,22 @@ function Dashboard() {
         </div>
 
         {!isTutor && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Become a tutor</CardTitle>
-              <CardDescription>
-                Create your tutor profile in seconds. Setup is free.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={becomeTutor}>Activate tutor account</Button>
-            </CardContent>
-          </Card>
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Become a tutor</CardTitle>
+                <CardDescription>
+                  Create your tutor profile in seconds. Setup is free.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={becomeTutor}>Activate tutor account</Button>
+              </CardContent>
+            </Card>
+            <StudentFeeCard userId={user.id} />
+          </>
         )}
+
 
         {isTutor && (
           <>
