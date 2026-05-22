@@ -12,13 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TutorsRouteImport } from './routes/tutors'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
-import { Route as LabsRouteImport } from './routes/labs'
 import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIdRouteImport } from './routes/tutor.$id'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as AuthenticatedLabsRouteImport } from './routes/_authenticated/labs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCodeRouteImport } from './routes/_authenticated/code'
 import { Route as AuthenticatedCertificateRouteImport } from './routes/_authenticated/certificate'
@@ -44,11 +44,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const LeaderboardRoute = LeaderboardRouteImport.update({
   id: '/leaderboard',
   path: '/leaderboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LabsRoute = LabsRouteImport.update({
-  id: '/labs',
-  path: '/labs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CommunityRoute = CommunityRouteImport.update({
@@ -79,6 +74,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedLabsRoute = AuthenticatedLabsRouteImport.update({
+  id: '/labs',
+  path: '/labs',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
@@ -145,7 +145,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
-  '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/tutors': typeof TutorsRoute
@@ -155,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/labs': typeof AuthenticatedLabsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -167,7 +167,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
-  '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/tutors': typeof TutorsRoute
@@ -177,6 +176,7 @@ export interface FileRoutesByTo {
   '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/labs': typeof AuthenticatedLabsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -191,7 +191,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/community': typeof CommunityRoute
-  '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/tutors': typeof TutorsRoute
@@ -201,6 +200,7 @@ export interface FileRoutesById {
   '/_authenticated/certificate': typeof AuthenticatedCertificateRoute
   '/_authenticated/code': typeof AuthenticatedCodeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/labs': typeof AuthenticatedLabsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -215,7 +215,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/community'
-    | '/labs'
     | '/leaderboard'
     | '/reset-password'
     | '/tutors'
@@ -225,6 +224,7 @@ export interface FileRouteTypes {
     | '/certificate'
     | '/code'
     | '/dashboard'
+    | '/labs'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/classroom/$roomId'
@@ -237,7 +237,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/community'
-    | '/labs'
     | '/leaderboard'
     | '/reset-password'
     | '/tutors'
@@ -247,6 +246,7 @@ export interface FileRouteTypes {
     | '/certificate'
     | '/code'
     | '/dashboard'
+    | '/labs'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/classroom/$roomId'
@@ -260,7 +260,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/community'
-    | '/labs'
     | '/leaderboard'
     | '/reset-password'
     | '/tutors'
@@ -270,6 +269,7 @@ export interface FileRouteTypes {
     | '/_authenticated/certificate'
     | '/_authenticated/code'
     | '/_authenticated/dashboard'
+    | '/_authenticated/labs'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/_authenticated/classroom/$roomId'
@@ -284,7 +284,6 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   CommunityRoute: typeof CommunityRoute
-  LabsRoute: typeof LabsRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TutorsRoute: typeof TutorsRoute
@@ -317,13 +316,6 @@ declare module '@tanstack/react-router' {
       path: '/leaderboard'
       fullPath: '/leaderboard'
       preLoaderRoute: typeof LeaderboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/labs': {
-      id: '/labs'
-      path: '/labs'
-      fullPath: '/labs'
-      preLoaderRoute: typeof LabsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/community': {
@@ -367,6 +359,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/labs': {
+      id: '/_authenticated/labs'
+      path: '/labs'
+      fullPath: '/labs'
+      preLoaderRoute: typeof AuthenticatedLabsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -455,6 +454,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCertificateRoute: typeof AuthenticatedCertificateRoute
   AuthenticatedCodeRoute: typeof AuthenticatedCodeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedLabsRoute: typeof AuthenticatedLabsRoute
   AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
 }
 
@@ -465,6 +465,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCertificateRoute: AuthenticatedCertificateRoute,
   AuthenticatedCodeRoute: AuthenticatedCodeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedLabsRoute: AuthenticatedLabsRoute,
   AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
 }
 
@@ -477,7 +478,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   CommunityRoute: CommunityRoute,
-  LabsRoute: LabsRoute,
   LeaderboardRoute: LeaderboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TutorsRoute: TutorsRoute,

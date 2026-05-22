@@ -59,7 +59,7 @@ function ClassroomPage() {
             <ClassroomFiles roomId={roomId} />
           </TabsContent>
           <TabsContent value="lab" className="m-0 min-h-0 flex-1">
-            <LorddaLab />
+            <LorddaLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} />
           </TabsContent>
         </Tabs>
       </main>
