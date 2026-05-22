@@ -20,7 +20,6 @@ type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
-const PAGE_ASPECT = 1.414; // A4 portrait
 
 interface Props {
   roomId: string;
