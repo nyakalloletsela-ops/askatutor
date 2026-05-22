@@ -450,6 +450,7 @@ export type Database = {
           id: string
           is_featured: boolean
           review_count: number
+          session_count: number
           subjects: string[]
         }[]
       }
