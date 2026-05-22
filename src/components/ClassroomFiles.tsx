@@ -56,8 +56,17 @@ export function ClassroomFiles({ roomId }: Props) {
     }
   };
 
-  const urlFor = (name: string) =>
-    supabase.storage.from(BUCKET).getPublicUrl(`${prefix}/${name}`).data.publicUrl;
+  const openFile = async (name: string) => {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(`${prefix}/${name}`, 60 * 60);
+    if (error || !data?.signedUrl) {
+      toast.error(error?.message ?? "Could not open file");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
 
   const remove = async (name: string) => {
     if (!confirm(`Delete ${name}?`)) return;
@@ -118,11 +127,10 @@ export function ClassroomFiles({ roomId }: Props) {
                       </p>
                     )}
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={urlFor(f.name)} target="_blank" rel="noreferrer">
-                      <Download className="mr-1 h-4 w-4" /> Open
-                    </a>
+                  <Button size="sm" variant="outline" onClick={() => openFile(f.name)}>
+                    <Download className="mr-1 h-4 w-4" /> Open
                   </Button>
+
                   <Button size="sm" variant="ghost" onClick={() => remove(f.name)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>

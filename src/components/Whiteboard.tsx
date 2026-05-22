@@ -61,16 +61,22 @@ export function Whiteboard({ roomId, userId }: Props) {
   const sizeCanvas = (canvas: HTMLCanvasElement) => {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0) return;
-    canvas.width = Math.floor(rect.width * dpr);
-    canvas.height = Math.floor(rect.height * dpr);
+    if (rect.width === 0) return false;
+    const targetW = Math.floor(rect.width * dpr);
+    const targetH = Math.floor(rect.height * dpr);
+    // Skip if already sized — assigning width/height clears the canvas
+    if (canvas.width === targetW && canvas.height === targetH) return false;
+    canvas.width = targetW;
+    canvas.height = targetH;
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
     }
+    return true;
   };
+
 
   useEffect(() => {
     const onResize = () => {
@@ -452,7 +458,12 @@ export function Whiteboard({ roomId, userId }: Props) {
                 <canvas
                   ref={(el) => {
                     canvasRefs.current[i] = el;
-                    if (el) sizeCanvas(el);
+                    if (el && sizeCanvas(el)) {
+                      // first/real resize — redraw any history for this page
+                      historyRef.current
+                        .filter((s) => s.page === i)
+                        .forEach(renderStroke);
+                    }
                   }}
                   className="absolute inset-0 h-full w-full cursor-crosshair"
                   style={{ touchAction: "none" }}
@@ -461,6 +472,7 @@ export function Whiteboard({ roomId, userId }: Props) {
                   onPointerUp={onPointerUp(i)}
                   onPointerCancel={onPointerUp(i)}
                 />
+
               </div>
             </div>
           ))}

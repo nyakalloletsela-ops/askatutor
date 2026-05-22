@@ -29,6 +29,13 @@ export function Navbar() {
               >
                 Dashboard
               </Link>
+              <Link
+                to="/ai-tutor"
+                className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent"
+              >
+                AI Coach
+              </Link>
+
               {isAdmin && (
                 <Link
                   to="/admin"

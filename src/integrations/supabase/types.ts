@@ -199,6 +199,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_classroom_room: { Args: { _room: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
