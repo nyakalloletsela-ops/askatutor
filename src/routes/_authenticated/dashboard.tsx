@@ -34,6 +34,7 @@ type Profile = {
   phone: string | null;
   is_featured: boolean;
   availability: Record<string, string[]> | null;
+  free_minutes_remaining: number;
 };
 
 type Subscription = {
