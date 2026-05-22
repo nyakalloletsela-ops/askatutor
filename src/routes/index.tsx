@@ -40,6 +40,8 @@ type TutorRow = {
 
 function Home() {
   const [tutors, setTutors] = useState<TutorRow[]>([]);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [studentCount, setStudentCount] = useState(0);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
 
@@ -48,6 +50,13 @@ function Home() {
       const { data, error } = await supabase.rpc("list_public_tutors");
       if (error) { console.error(error); setTutors([]); return; }
       setTutors((data as TutorRow[]) ?? []);
+    })();
+    (async () => {
+      const { count: sCount } = await supabase.from("sessions").select("id", { count: "exact", head: true });
+      setSessionCount(sCount ?? 0);
+      const { count: stuCount } = await supabase
+        .from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "student");
+      setStudentCount(stuCount ?? 0);
     })();
   }, []);
 
