@@ -32,5 +32,5 @@ export const template = {
   subject: 'We received your message — askatutor Help',
   displayName: 'Help: confirmation to sender',
   fromAlias: 'help',
-  previewData: { name: 'Lerato', subject: 'Can't log in', body: 'I forgot my password.' },
+  previewData: { name: 'Lerato', subject: 'Login issue', body: 'I forgot my password.' },
 } satisfies TemplateEntry & { fromAlias?: string }
