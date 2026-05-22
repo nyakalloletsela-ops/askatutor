@@ -106,6 +106,9 @@ function AdminPage() {
     if (e1 || e2) toast.error((e1 || e2)!.message);
     else {
       toast.success("Approved — tutor is now featured");
+      sendSubscriptionDecisionEmail({
+        data: { tutor_id: sub.tutor_id, status: "approved", amount: Number(sub.amount ?? 250) },
+      }).catch((err) => console.error("approval email failed", err));
       load();
     }
   };
@@ -118,6 +121,9 @@ function AdminPage() {
     if (error) toast.error(error.message);
     else {
       toast.success("Rejected");
+      sendSubscriptionDecisionEmail({
+        data: { tutor_id: sub.tutor_id, status: "rejected" },
+      }).catch((err) => console.error("rejection email failed", err));
       load();
     }
   };
