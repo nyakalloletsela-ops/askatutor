@@ -134,86 +134,108 @@ function AdminPage() {
 
   if (!isAdmin) return null;
 
+  const pendingSubs = subs.filter((s) => s.status === "pending");
+
   return (
     <div className="min-h-screen">
       <Navbar />
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-        <h1 className="text-3xl font-bold text-navy">Admin</h1>
+        <h1 className="text-3xl font-bold text-navy">Admin control panel</h1>
 
-        <ManualCreateUser />
+        <Tabs defaultValue="approvals" className="w-full">
+          <TabsList className="flex w-full flex-wrap justify-start">
+            <TabsTrigger value="approvals" className="relative">
+              Approvals
+              {pendingSubs.length > 0 && (
+                <Badge className="ml-2 h-5 px-1.5 text-[10px]" variant="destructive">
+                  {pendingSubs.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="tutors">Tutors</TabsTrigger>
+            <TabsTrigger value="courses">Courses</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="content">Site content</TabsTrigger>
+            <TabsTrigger value="subjects">Subjects</TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="approvals" className="mt-4 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Pending subscription payments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingSubs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nothing pending.</p>
+                ) : (
+                  <ul className="divide-y">
+                    {pendingSubs.map((s) => (
+                      <li key={s.id} className="flex items-center justify-between py-3">
+                        <div>
+                          <p className="font-medium">
+                            {profiles[s.tutor_id]?.full_name ?? "Unknown tutor"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Ref <span className="font-mono">{s.transaction_ref}</span> ·{" "}
+                            {s.payment_method.toUpperCase()} · M100
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => approve(s)}>Approve</Button>
+                          <Button size="sm" variant="outline" onClick={() => reject(s)}>Reject</Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending subscription payments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {subs.filter((s) => s.status === "pending").length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing pending.</p>
-            ) : (
-              <ul className="divide-y">
-                {subs
-                  .filter((s) => s.status === "pending")
-                  .map((s) => (
-                    <li key={s.id} className="flex items-center justify-between py-3">
+          <TabsContent value="tutors" className="mt-4 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>All tutors — Featured toggle</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="divide-y">
+                  {allTutors.map((t) => (
+                    <li key={t.id} className="flex items-center justify-between py-3">
                       <div>
-                        <p className="font-medium">
-                          {profiles[s.tutor_id]?.full_name ?? "Unknown tutor"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Ref <span className="font-mono">{s.transaction_ref}</span> ·{" "}
-                          {s.payment_method.toUpperCase()} · M100
-                        </p>
+                        <p className="font-medium">{t.full_name ?? "Unnamed"}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {(t.subjects ?? []).map((s) => (
+                            <Badge key={s} variant="secondary">{s}</Badge>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => approve(s)}>
-                          Approve
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => reject(s)}>
-                          Reject
-                        </Button>
+                      <div className="flex items-center gap-2 text-sm">
+                        Featured
+                        <Switch checked={t.is_featured} onCheckedChange={(v) => toggleFeatured(t, v)} />
                       </div>
                     </li>
                   ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+                </ul>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All tutors — Featured toggle</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="divide-y">
-              {allTutors.map((t) => (
-                <li key={t.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="font-medium">{t.full_name ?? "Unnamed"}</p>
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {(t.subjects ?? []).map((s) => (
-                        <Badge key={s} variant="secondary">
-                          {s}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    Featured
-                    <Switch
-                      checked={t.is_featured}
-                      onCheckedChange={(v) => toggleFeatured(t, v)}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+          <TabsContent value="courses" className="mt-4">
+            <TutorCoursesQueue />
+          </TabsContent>
 
-        <SiteContentEditor />
-        <SubjectsManager />
-        <TutorCoursesQueue />
+          <TabsContent value="users" className="mt-4">
+            <ManualCreateUser />
+          </TabsContent>
+
+          <TabsContent value="content" className="mt-4">
+            <SiteContentEditor />
+          </TabsContent>
+
+          <TabsContent value="subjects" className="mt-4">
+            <SubjectsManager />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
