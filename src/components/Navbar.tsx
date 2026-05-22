@@ -1,16 +1,34 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, Moon, Sun, Menu, X } from "lucide-react";
+import { LogOut, Moon, Sun, Menu, X, Bell } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let alive = true;
+    const load = async () => {
+      const [{ count: subs }, { count: courses }] = await Promise.all([
+        supabase.from("tutor_subscriptions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("tutor_courses").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+      if (alive) setPendingCount((subs ?? 0) + (courses ?? 0));
+    };
+    load();
+    const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, [isAdmin]);
+
 
   const links = (
     <>
