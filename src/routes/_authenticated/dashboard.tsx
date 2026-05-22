@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Crown, Calendar, Plus, X, Gift, Star } from "lucide-react";
+import { Crown, Calendar, Plus, X, Gift, Star, Clock, Sparkles, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -160,13 +160,36 @@ function Dashboard() {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 pb-24 md:pb-8">
         <div>
-          <h1 className="text-3xl font-bold text-navy">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back{profile.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+          </h1>
           <p className="text-sm text-muted-foreground">
             Signed in as <span className="font-medium">{user.email}</span> · Roles:{" "}
             {roles.join(", ") || "student"}
           </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatTile
+            icon={Clock}
+            label={isTutor ? "Upcoming sessions" : "Free minutes left"}
+            value={isTutor ? String(sessions.filter((s) => s.status === "scheduled").length) : String(profile.free_minutes_remaining)}
+            accent="from-primary to-accent"
+          />
+          <StatTile
+            icon={Sparkles}
+            label="Sessions completed"
+            value={String(sessions.filter((s) => s.status === "completed").length)}
+            accent="from-accent to-gold"
+          />
+          <StatTile
+            icon={Trophy}
+            label={isTutor ? "Featured status" : "Learning streak"}
+            value={isTutor ? (profile.is_featured ? "Premium" : "Standard") : `${Math.min(sessions.length, 30)} days`}
+            accent="from-gold to-primary"
+          />
         </div>
 
         {!isTutor && (
