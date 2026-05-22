@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TutorsRouteImport } from './routes/tutors'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LabsRouteImport } from './routes/labs'
@@ -30,6 +31,11 @@ import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lova
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
+const TutorsRoute = TutorsRouteImport.update({
+  id: '/tutors',
+  path: '/tutors',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -142,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tutors': typeof TutorsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tutors': typeof TutorsRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tutors': typeof TutorsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai-tools': typeof AuthenticatedAiToolsRoute
   '/_authenticated/ai-tutor': typeof AuthenticatedAiTutorRoute
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/labs'
     | '/leaderboard'
     | '/reset-password'
+    | '/tutors'
     | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/labs'
     | '/leaderboard'
     | '/reset-password'
+    | '/tutors'
     | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/labs'
     | '/leaderboard'
     | '/reset-password'
+    | '/tutors'
     | '/_authenticated/admin'
     | '/_authenticated/ai-tools'
     | '/_authenticated/ai-tutor'
@@ -275,6 +287,7 @@ export interface RootRouteChildren {
   LabsRoute: typeof LabsRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TutorsRoute: typeof TutorsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   TutorIdRoute: typeof TutorIdRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
@@ -285,6 +298,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tutors': {
+      id: '/tutors'
+      path: '/tutors'
+      fullPath: '/tutors'
+      preLoaderRoute: typeof TutorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -460,6 +480,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabsRoute: LabsRoute,
   LeaderboardRoute: LeaderboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TutorsRoute: TutorsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   TutorIdRoute: TutorIdRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
