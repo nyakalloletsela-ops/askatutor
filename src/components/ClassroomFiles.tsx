@@ -127,11 +127,10 @@ export function ClassroomFiles({ roomId }: Props) {
                       </p>
                     )}
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={urlFor(f.name)} target="_blank" rel="noreferrer">
-                      <Download className="mr-1 h-4 w-4" /> Open
-                    </a>
+                  <Button size="sm" variant="outline" onClick={() => openFile(f.name)}>
+                    <Download className="mr-1 h-4 w-4" /> Open
                   </Button>
+
                   <Button size="sm" variant="ghost" onClick={() => remove(f.name)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
