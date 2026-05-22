@@ -104,22 +104,28 @@ function Home() {
       {/* ===== HERO ===== */}
       <section className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-background">
         <div className="mx-auto max-w-5xl px-4 py-16 text-center md:py-24">
-          <Badge variant="secondary" className="mb-5">Online tutoring marketplace</Badge>
+          <Badge variant="secondary" className="mb-5">{t("hero.badge")}</Badge>
           <h1 className="text-balance text-4xl font-semibold tracking-tight md:text-6xl">
-            Learn from verified tutors,{" "}
-            <span className="text-aurora">one lesson at a time.</span>
+            {(() => {
+              const title = t("hero.title");
+              const accent = t("hero.title_accent");
+              if (accent && title.endsWith(accent)) {
+                const main = title.slice(0, title.length - accent.length).trimEnd();
+                return (<>{main}{" "}<span className="text-aurora">{accent}</span></>);
+              }
+              return title;
+            })()}
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Book live one-on-one sessions with expert tutors for Primary, High School,
-            IGCSE, A-Level and Undergraduate subjects.
+            {t("hero.subtitle")}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="bg-aurora text-white hover:opacity-90">
-              <a href="#tutors"><Search className="mr-2 h-4 w-4" /> Find a tutor</a>
+              <a href="#tutors"><Search className="mr-2 h-4 w-4" /> {t("hero.cta_primary")}</a>
             </Button>
             {!user && (
               <Button asChild size="lg" variant="outline">
-                <Link to="/auth">Create free account</Link>
+                <Link to="/auth">{t("hero.cta_secondary")}</Link>
               </Button>
             )}
           </div>
@@ -130,8 +136,7 @@ function Home() {
       <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
         <div className="grid gap-4 md:grid-cols-3">
           <a href="#tutors" className="block">
-            <ShortcutInner icon={Users} title="Find a Tutor"
-              desc="Browse verified tutors by subject and book a live session." />
+            <ShortcutInner icon={Users} title={t("shortcuts.find.title")} desc={t("shortcuts.find.desc")} />
           </a>
           {user && isTutor ? (
             <Link to="/dashboard" className="block">
@@ -140,18 +145,16 @@ function Home() {
             </Link>
           ) : (
             <Link to="/auth" className="block">
-              <ShortcutInner icon={GraduationCap} title="Become a Tutor"
-                desc="Apply to join, list your subjects, and start earning." />
+              <ShortcutInner icon={GraduationCap} title={t("shortcuts.tutor.title")} desc={t("shortcuts.tutor.desc")} />
             </Link>
           )}
           {user ? (
             <Link to="/dashboard" className="block">
-              <ShortcutInner icon={LayoutDashboard} title="Dashboard"
-                desc="Manage your sessions, bookings and profile." />
+              <ShortcutInner icon={LayoutDashboard} title={t("shortcuts.dash.title")} desc={t("shortcuts.dash.desc")} />
             </Link>
           ) : (
             <Link to="/auth" className="block">
-              <ShortcutInner icon={LayoutDashboard} title="Dashboard"
+              <ShortcutInner icon={LayoutDashboard} title={t("shortcuts.dash.title")}
                 desc="Sign in to access your dashboard." />
             </Link>
           )}
@@ -162,10 +165,8 @@ function Home() {
       <section id="tutors" className="mx-auto max-w-7xl px-4 pb-20">
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Available tutors</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Premium Certified Tutors appear first. Search by name or filter by subject.
-            </p>
+            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{t("tutors.heading")}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{t("tutors.subheading")}</p>
           </div>
           <div className="relative w-full md:w-72">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -190,7 +191,7 @@ function Home() {
         )}
 
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Top 5 most-booked tutors
+          {t("tutors.top_label")}
         </h3>
         {top5.length === 0 ? (
           <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
