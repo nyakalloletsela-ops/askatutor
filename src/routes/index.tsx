@@ -64,8 +64,8 @@ function Home() {
     if (q && !(t.full_name ?? "").toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
-  const featured = filtered.filter((t) => t.is_featured);
-  const standard = filtered.filter((t) => !t.is_featured);
+  // Show only the 5 busiest tutors on the homepage (RPC already sorts by featured → sessions → rating)
+  const top5 = filtered.slice(0, 5);
   const allSubjects = Array.from(new Set(tutors.flatMap((t) => t.subjects ?? []))).sort();
 
   return (
