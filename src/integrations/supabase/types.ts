@@ -21,6 +21,7 @@ export type Database = {
           bio: string | null
           created_at: string
           featured_until: string | null
+          free_minutes_remaining: number
           full_name: string | null
           hourly_rate: number | null
           id: string
@@ -35,6 +36,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           featured_until?: string | null
+          free_minutes_remaining?: number
           full_name?: string | null
           hourly_rate?: number | null
           id: string
@@ -49,6 +51,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           featured_until?: string | null
+          free_minutes_remaining?: number
           full_name?: string | null
           hourly_rate?: number | null
           id?: string
@@ -64,6 +67,7 @@ export type Database = {
           created_at: string
           duration_min: number
           id: string
+          is_free: boolean
           room_id: string
           scheduled_at: string
           status: Database["public"]["Enums"]["session_status"]
@@ -75,6 +79,7 @@ export type Database = {
           created_at?: string
           duration_min?: number
           id?: string
+          is_free?: boolean
           room_id?: string
           scheduled_at: string
           status?: Database["public"]["Enums"]["session_status"]
@@ -86,6 +91,7 @@ export type Database = {
           created_at?: string
           duration_min?: number
           id?: string
+          is_free?: boolean
           room_id?: string
           scheduled_at?: string
           status?: Database["public"]["Enums"]["session_status"]
@@ -131,6 +137,36 @@ export type Database = {
           student_id?: string
           submitted_at?: string
           transaction_ref?: string
+        }
+        Relationships: []
+      }
+      tutor_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          session_id: string | null
+          student_id: string
+          tutor_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          session_id?: string | null
+          student_id: string
+          tutor_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          session_id?: string | null
+          student_id?: string
+          tutor_id?: string
         }
         Relationships: []
       }
@@ -212,11 +248,13 @@ export type Database = {
         Args: never
         Returns: {
           avatar_url: string
+          avg_rating: number
           bio: string
           full_name: string
           hourly_rate: number
           id: string
           is_featured: boolean
+          review_count: number
           subjects: string[]
         }[]
       }
