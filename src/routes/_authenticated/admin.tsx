@@ -178,7 +178,7 @@ function AdminPage() {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             Ref <span className="font-mono">{s.transaction_ref}</span> ·{" "}
-                            {s.payment_method.toUpperCase()} · M100
+                            {s.payment_method.toUpperCase()} · M{Number(s.amount ?? 250)}
                           </p>
                         </div>
                         <div className="flex gap-2">
