@@ -99,25 +99,32 @@ function Home() {
       {/* ===== SHORTCUT CATEGORIES ===== */}
       <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
         <div className="grid gap-4 md:grid-cols-3">
-          <ShortcutCard
-            to="#tutors"
-            icon={Users}
-            title="Find a Tutor"
-            desc="Browse verified tutors by subject and book a live session."
-          />
-          <ShortcutCard
-            to={user ? (isTutor ? "/dashboard" : "/auth") : "/auth"}
-            icon={GraduationCap}
-            title="Become a Tutor"
-            desc="Apply to join, list your subjects, and start earning."
-            search={!user ? { mode: "signup", role: "tutor" } : undefined}
-          />
-          <ShortcutCard
-            to={user ? "/dashboard" : "/auth"}
-            icon={LayoutDashboard}
-            title="Dashboard"
-            desc={user ? "Manage your sessions, bookings and profile." : "Sign in to access your dashboard."}
-          />
+          <a href="#tutors" className="block">
+            <ShortcutInner icon={Users} title="Find a Tutor"
+              desc="Browse verified tutors by subject and book a live session." />
+          </a>
+          {user && isTutor ? (
+            <Link to="/dashboard" className="block">
+              <ShortcutInner icon={GraduationCap} title="Tutor Dashboard"
+                desc="Manage your subjects, availability and bookings." />
+            </Link>
+          ) : (
+            <Link to="/auth" className="block">
+              <ShortcutInner icon={GraduationCap} title="Become a Tutor"
+                desc="Apply to join, list your subjects, and start earning." />
+            </Link>
+          )}
+          {user ? (
+            <Link to="/dashboard" className="block">
+              <ShortcutInner icon={LayoutDashboard} title="Dashboard"
+                desc="Manage your sessions, bookings and profile." />
+            </Link>
+          ) : (
+            <Link to="/auth" className="block">
+              <ShortcutInner icon={LayoutDashboard} title="Dashboard"
+                desc="Sign in to access your dashboard." />
+            </Link>
+          )}
         </div>
       </section>
 
