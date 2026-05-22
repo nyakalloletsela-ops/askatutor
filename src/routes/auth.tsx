@@ -44,6 +44,25 @@ function AuthPage() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Enter your email above first, then click 'Forgot password?'");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast.success("Password reset link sent. Check your email.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignUp = async () => {
     setLoading(true);
     try {
@@ -95,6 +114,14 @@ function AuthPage() {
               <Button className="w-full" onClick={handleSignIn} disabled={loading}>
                 Sign in
               </Button>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="block w-full text-center text-xs text-primary hover:underline"
+                disabled={loading}
+              >
+                Forgot password?
+              </button>
             </TabsContent>
             <TabsContent value="signup" className="space-y-3 pt-4">
               <div className="space-y-1.5">
