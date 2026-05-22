@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
-import { Crown, Search, Sparkles, Video, PenLine, FlaskConical, CalendarPlus } from "lucide-react";
+import { Crown, Search, Sparkles, Video, PenLine, FlaskConical, CalendarPlus, Star, Gift } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -39,6 +39,8 @@ type TutorRow = {
   hourly_rate: number | null;
   avatar_url: string | null;
   is_featured: boolean;
+  avg_rating: number | null;
+  review_count: number | null;
 };
 
 function Home() {
