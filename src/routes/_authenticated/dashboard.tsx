@@ -168,18 +168,22 @@ function Dashboard() {
         </div>
 
         {!isTutor && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Become a tutor</CardTitle>
-              <CardDescription>
-                Create your tutor profile in seconds. Setup is free.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={becomeTutor}>Activate tutor account</Button>
-            </CardContent>
-          </Card>
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Become a tutor</CardTitle>
+                <CardDescription>
+                  Create your tutor profile in seconds. Setup is free.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={becomeTutor}>Activate tutor account</Button>
+              </CardContent>
+            </Card>
+            <StudentFeeCard userId={user.id} />
+          </>
         )}
+
 
         {isTutor && (
           <>
@@ -288,12 +292,15 @@ function Dashboard() {
             <Card className={profile.is_featured ? "border-gold ring-1 ring-gold/40" : ""}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-gold" /> Featured Placement — M100/month
+                  <Crown className="h-5 w-5 text-gold" /> Tutor monthly fee — M250
                 </CardTitle>
                 <CardDescription>
-                  Pay M100 to <strong>Vodacom M-Pesa</strong> or <strong>Econet EcoCash</strong>{" "}
-                  number <strong>+266 5000 1234</strong>. Then submit your transaction reference
-                  below. An admin will approve within 24h.
+                  Pay <strong>M250</strong> monthly to one of these numbers, then submit your
+                  transaction reference. An admin will approve within 24h.
+                  <span className="mt-2 block rounded-md bg-muted/60 p-2 text-foreground">
+                    <strong>EcoCash:</strong> 62927828 — Nyakallo Letsela<br />
+                    <strong>M-Pesa:</strong> 58152047 — Nyakallo Letsela
+                  </span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -347,6 +354,7 @@ function Dashboard() {
                 )}
               </CardContent>
             </Card>
+
           </>
         )}
 
@@ -403,3 +411,81 @@ function Dashboard() {
     </div>
   );
 }
+
+function StudentFeeCard({ userId }: { userId: string }) {
+  const [subs, setSubs] = useState<Array<{ id: string; transaction_ref: string; payment_method: string; status: string; submitted_at: string }>>([]);
+  const [txnRef, setTxnRef] = useState("");
+  const [payMethod, setPayMethod] = useState<"mpesa" | "ecocash">("mpesa");
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("student_subscriptions")
+      .select("*")
+      .eq("student_id", userId)
+      .order("submitted_at", { ascending: false });
+    setSubs(data ?? []);
+  };
+  useEffect(() => { load(); }, [userId]);
+
+  const pending = subs.find((s) => s.status === "pending");
+  const approved = subs.find((s) => s.status === "approved");
+
+  const submit = async () => {
+    const { error } = await supabase.from("student_subscriptions").insert({
+      student_id: userId,
+      transaction_ref: txnRef.trim(),
+      payment_method: payMethod,
+    });
+    if (error) toast.error(error.message);
+    else { toast.success("Submitted for review"); setTxnRef(""); load(); }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Student monthly fee — M100</CardTitle>
+        <CardDescription>
+          Pay <strong>M100</strong> monthly to one of these numbers, then submit your transaction
+          reference. (If an admin enrolled you manually, you can ignore this.)
+          <span className="mt-2 block rounded-md bg-muted/60 p-2 text-foreground">
+            <strong>EcoCash:</strong> 62927828 — Nyakallo Letsela<br />
+            <strong>M-Pesa:</strong> 58152047 — Nyakallo Letsela
+          </span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {pending ? (
+          <div className="rounded-md border bg-muted/40 p-3 text-sm">
+            Pending review — ref <span className="font-mono">{pending.transaction_ref}</span> via {pending.payment_method.toUpperCase()}.
+          </div>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-1.5 md:col-span-1">
+              <Label>Method</Label>
+              <Select value={payMethod} onValueChange={(v) => setPayMethod(v as "mpesa" | "ecocash")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                  <SelectItem value="ecocash">EcoCash</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5 md:col-span-2">
+              <Label>Transaction reference</Label>
+              <div className="flex gap-2">
+                <Input value={txnRef} onChange={(e) => setTxnRef(e.target.value)} placeholder="e.g. QGH7X8K2LM" />
+                <Button onClick={submit} disabled={!txnRef.trim()}>Submit</Button>
+              </div>
+            </div>
+          </div>
+        )}
+        {approved && (
+          <p className="text-xs text-muted-foreground">
+            Last approved: {new Date(approved.submitted_at).toLocaleDateString()}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+

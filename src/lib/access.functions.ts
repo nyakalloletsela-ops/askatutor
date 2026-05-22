@@ -19,6 +19,10 @@ export const checkRoomMembership = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ roomId: z.string().min(1).max(200) }).parse(input))
   .handler(async ({ context, data }) => {
+    // Demo rooms are accessible to any signed-in user (room id encodes their own uid prefix)
+    if (data.roomId.startsWith("demo-")) {
+      return { isMember: true };
+    }
     const { data: row, error } = await context.supabase
       .from("sessions")
       .select("id, tutor_id, student_id")
@@ -28,3 +32,4 @@ export const checkRoomMembership = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { isMember: !!row };
   });
+

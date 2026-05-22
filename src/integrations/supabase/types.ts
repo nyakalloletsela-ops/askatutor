@@ -95,6 +95,45 @@ export type Database = {
         }
         Relationships: []
       }
+      student_subscriptions: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          id: string
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          status: Database["public"]["Enums"]["sub_status"]
+          student_id: string
+          submitted_at: string
+          transaction_ref: string
+        }
+        Insert: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_method: Database["public"]["Enums"]["pay_method"]
+          status?: Database["public"]["Enums"]["sub_status"]
+          student_id: string
+          submitted_at?: string
+          transaction_ref: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["pay_method"]
+          status?: Database["public"]["Enums"]["sub_status"]
+          student_id?: string
+          submitted_at?: string
+          transaction_ref?: string
+        }
+        Relationships: []
+      }
       tutor_subscriptions: {
         Row: {
           amount: number
