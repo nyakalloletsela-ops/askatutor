@@ -191,7 +191,7 @@ function Home() {
         )}
 
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {t("tutors.top_label")}
+          Tutors
         </h3>
         {top5.length === 0 ? (
           <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
