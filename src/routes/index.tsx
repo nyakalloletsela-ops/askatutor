@@ -246,12 +246,12 @@ function Counter({ to, suffix = "", duration = 1.6 }: { to: number; suffix?: str
   return <span>{n.toLocaleString()}{suffix}</span>;
 }
 
-function TrustStrip({ tutorCount }: { tutorCount: number }) {
+function TrustStrip({ tutorCount, sessionCount, studentCount }: { tutorCount: number; sessionCount: number; studentCount: number }) {
   const stats = [
-    { value: Math.max(tutorCount * 35, 1200), suffix: "+", label: "Students helped" },
-    { value: Math.max(tutorCount, 25), suffix: "+", label: "Verified tutors" },
-    { value: 8400, suffix: "+", label: "Lessons completed" },
-    { value: 92, suffix: "%", label: "Pass-rate boost" },
+    { value: studentCount, suffix: "", label: "Students registered" },
+    { value: tutorCount, suffix: "", label: "Verified tutors" },
+    { value: sessionCount, suffix: "", label: "Sessions booked" },
+    { value: 4, suffix: "", label: "Free lessons for new students" },
   ];
   return (
     <section className="border-y border-border/60 bg-muted/30">
