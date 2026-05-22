@@ -18,6 +18,33 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
+function StatTile({
+  icon: Icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  accent: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-border/60 bg-card p-4">
+      <div className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${accent} opacity-20 blur-2xl`} />
+      <div className="relative flex items-center gap-3">
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br ${accent} text-white shadow-glow`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="text-xl font-bold">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const SUBJECT_SUGGESTIONS = [
   "Math", "Physics", "Chemistry", "Biology", "English", "Sesotho",
   "Geography", "History", "Accounting", "Business Studies", "Economics",
