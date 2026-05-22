@@ -288,12 +288,15 @@ function Dashboard() {
             <Card className={profile.is_featured ? "border-gold ring-1 ring-gold/40" : ""}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-gold" /> Featured Placement — M100/month
+                  <Crown className="h-5 w-5 text-gold" /> Tutor monthly fee — M250
                 </CardTitle>
                 <CardDescription>
-                  Pay M100 to <strong>Vodacom M-Pesa</strong> or <strong>Econet EcoCash</strong>{" "}
-                  number <strong>+266 5000 1234</strong>. Then submit your transaction reference
-                  below. An admin will approve within 24h.
+                  Pay <strong>M250</strong> monthly to one of these numbers, then submit your
+                  transaction reference. An admin will approve within 24h.
+                  <span className="mt-2 block rounded-md bg-muted/60 p-2 text-foreground">
+                    <strong>EcoCash:</strong> 62927828 — Nyakallo Letsela<br />
+                    <strong>M-Pesa:</strong> 58152047 — Nyakallo Letsela
+                  </span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -347,6 +350,7 @@ function Dashboard() {
                 )}
               </CardContent>
             </Card>
+
           </>
         )}
 
