@@ -532,6 +532,13 @@ function Dashboard() {
               </section>
             )}
 
+            {isTutor && (
+              <section>
+                <SectionHeader title="Propose a new course" />
+                <ProposeCourseCard tutorId={user.id} />
+              </section>
+            )}
+
             {/* Become tutor CTA (student only) */}
             {!isTutor && (
               <section>
