@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/integrations/supabase/client.server'
+import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 import { enqueueTransactionalEmail } from '@/lib/email/enqueue.server'
 
 const HelpSchema = z.object({
