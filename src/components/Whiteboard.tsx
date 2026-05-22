@@ -20,7 +20,6 @@ type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
-const PAGE_ASPECT = 1.414; // A4 portrait
 
 interface Props {
   roomId: string;
@@ -445,21 +444,20 @@ export function Whiteboard({ roomId, userId }: Props) {
         className="relative flex-1 overflow-y-auto overscroll-contain bg-muted/30"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="mx-auto flex max-w-[900px] flex-col gap-4 px-3 py-4">
+        <div className="mx-auto flex w-full flex-col gap-4 px-2 py-2">
           {pages.map((i) => (
             <div key={i} className="relative">
               <div
                 className="relative w-full overflow-hidden rounded-md border bg-white shadow-sm"
-                style={{ aspectRatio: `1 / ${PAGE_ASPECT}` }}
+                style={{ height: "calc(100vh - 180px)", minHeight: 400 }}
               >
-                <span className="pointer-events-none absolute right-2 top-1 text-[10px] text-muted-foreground/70">
+                <span className="pointer-events-none absolute right-2 top-1 z-10 text-[10px] text-muted-foreground/70">
                   Page {i + 1}
                 </span>
                 <canvas
                   ref={(el) => {
                     canvasRefs.current[i] = el;
                     if (el && sizeCanvas(el)) {
-                      // first/real resize — redraw any history for this page
                       historyRef.current
                         .filter((s) => s.page === i)
                         .forEach(renderStroke);
@@ -477,6 +475,7 @@ export function Whiteboard({ roomId, userId }: Props) {
             </div>
           ))}
         </div>
+
       </div>
     </div>
   );
