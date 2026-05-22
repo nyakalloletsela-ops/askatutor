@@ -244,11 +244,11 @@ function ShortcutInner({
 
 /* ===================== FOOTER ===================== */
 
-function Footer() {
+function Footer({ tagline }: { tagline: string }) {
   return (
     <footer className="border-t border-border/60 bg-muted/20">
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-muted-foreground md:flex-row">
-        <div>© {new Date().getFullYear()} Ask A Tutor Live. All rights reserved.</div>
+        <div>{tagline.replace(/^©\s*/, `© ${new Date().getFullYear()} `)}</div>
         <div className="flex flex-wrap items-center gap-4">
           <a href="mailto:help@askatutorlive.com" className="hover:text-foreground">help@askatutorlive.com</a>
           <Link to="/community" className="hover:text-foreground">Community</Link>
