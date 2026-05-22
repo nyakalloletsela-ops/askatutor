@@ -74,7 +74,7 @@ function Home() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <Hero />
-      <TrustStrip tutorCount={tutorCount} />
+      <TrustStrip tutorCount={tutorCount} sessionCount={sessionCount} studentCount={studentCount} />
       <Levels />
       <Subjects tutors={tutors} />
       <Features />
