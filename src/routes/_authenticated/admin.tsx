@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { adminCreateUser } from "@/lib/admin.functions";
+import { sendSubscriptionDecisionEmail } from "@/lib/help.functions";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { redirect } from "@tanstack/react-router";
 
@@ -105,6 +106,9 @@ function AdminPage() {
     if (e1 || e2) toast.error((e1 || e2)!.message);
     else {
       toast.success("Approved — tutor is now featured");
+      sendSubscriptionDecisionEmail({
+        data: { tutor_id: sub.tutor_id, status: "approved", amount: Number(sub.amount ?? 250) },
+      }).catch((err) => console.error("approval email failed", err));
       load();
     }
   };
@@ -117,6 +121,9 @@ function AdminPage() {
     if (error) toast.error(error.message);
     else {
       toast.success("Rejected");
+      sendSubscriptionDecisionEmail({
+        data: { tutor_id: sub.tutor_id, status: "rejected" },
+      }).catch((err) => console.error("rejection email failed", err));
       load();
     }
   };
