@@ -215,6 +215,17 @@ function TutorCard({ t, premium }: { t: TutorRow; premium?: boolean }) {
             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
               {t.bio ?? "No bio yet."}
             </p>
+            <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+              {(t.review_count ?? 0) > 0 ? (
+                <>
+                  <Star className="h-3.5 w-3.5 fill-gold text-gold" />
+                  <span className="font-medium text-foreground">{Number(t.avg_rating ?? 0).toFixed(1)}</span>
+                  <span>· {t.review_count} review{t.review_count === 1 ? "" : "s"}</span>
+                </>
+              ) : (
+                <span className="italic">No reviews yet</span>
+              )}
+            </div>
             <div className="mt-3 flex flex-wrap gap-1">
               {(t.subjects ?? []).map((s) => (
                 <Badge key={s} variant="secondary">
