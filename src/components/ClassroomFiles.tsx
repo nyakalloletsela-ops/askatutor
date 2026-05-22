@@ -56,8 +56,17 @@ export function ClassroomFiles({ roomId }: Props) {
     }
   };
 
-  const urlFor = (name: string) =>
-    supabase.storage.from(BUCKET).getPublicUrl(`${prefix}/${name}`).data.publicUrl;
+  const openFile = async (name: string) => {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(`${prefix}/${name}`, 60 * 60);
+    if (error || !data?.signedUrl) {
+      toast.error(error?.message ?? "Could not open file");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
 
   const remove = async (name: string) => {
     if (!confirm(`Delete ${name}?`)) return;
