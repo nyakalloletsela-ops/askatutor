@@ -15,21 +15,16 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
-  Users, GraduationCap, LayoutDashboard,
-} from "lucide-react";
+import { Search, Crown, Star, CalendarPlus, Gift } from "lucide-react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/tutors")({
   head: () => ({
     meta: [
-      { title: "Ask A Tutor Live — Online Tutoring Marketplace" },
-      { name: "description", content: "Find verified tutors for Primary, High School, IGCSE, A-Level and Undergraduate subjects. Book live one-on-one sessions online." },
-      { property: "og:title", content: "Ask A Tutor Live — Online Tutoring Marketplace" },
-      { property: "og:description", content: "Book verified tutors for Primary to Undergraduate study. Live one-on-one lessons online." },
+      { title: "All Tutors — Ask A Tutor Live" },
+      { name: "description", content: "Browse all verified tutors on Ask A Tutor Live. Filter by subject and book a live one-on-one session." },
     ],
   }),
-  component: Home,
+  component: AllTutorsPage,
 });
 
 type TutorRow = {
@@ -45,8 +40,7 @@ type TutorRow = {
   session_count: number | null;
 };
 
-function Home() {
-  const { user, isTutor } = useAuth();
+function AllTutorsPage() {
   const [tutors, setTutors] = useState<TutorRow[]>([]);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
@@ -54,7 +48,7 @@ function Home() {
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.rpc("list_public_tutors");
-      if (error) { console.error(error); setTutors([]); return; }
+      if (error) { console.error(error); return; }
       setTutors((data as TutorRow[]) ?? []);
     })();
   }, []);
@@ -64,78 +58,17 @@ function Home() {
     if (q && !(t.full_name ?? "").toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
-  // Show only the 5 busiest tutors on the homepage (RPC already sorts by featured → sessions → rating)
-  const top5 = filtered.slice(0, 5);
   const allSubjects = Array.from(new Set(tutors.flatMap((t) => t.subjects ?? []))).sort();
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-
-      {/* ===== HERO ===== */}
-      <section className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-background">
-        <div className="mx-auto max-w-5xl px-4 py-16 text-center md:py-24">
-          <Badge variant="secondary" className="mb-5">Online tutoring marketplace</Badge>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight md:text-6xl">
-            Learn from verified tutors,{" "}
-            <span className="text-aurora">one lesson at a time.</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Book live one-on-one sessions with expert tutors for Primary, High School,
-            IGCSE, A-Level and Undergraduate subjects.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="bg-aurora text-white hover:opacity-90">
-              <a href="#tutors"><Search className="mr-2 h-4 w-4" /> Find a tutor</a>
-            </Button>
-            {!user && (
-              <Button asChild size="lg" variant="outline">
-                <Link to="/auth">Create free account</Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== SHORTCUT CATEGORIES ===== */}
-      <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
-        <div className="grid gap-4 md:grid-cols-3">
-          <a href="#tutors" className="block">
-            <ShortcutInner icon={Users} title="Find a Tutor"
-              desc="Browse verified tutors by subject and book a live session." />
-          </a>
-          {user && isTutor ? (
-            <Link to="/dashboard" className="block">
-              <ShortcutInner icon={GraduationCap} title="Tutor Dashboard"
-                desc="Manage your subjects, availability and bookings." />
-            </Link>
-          ) : (
-            <Link to="/auth" className="block">
-              <ShortcutInner icon={GraduationCap} title="Become a Tutor"
-                desc="Apply to join, list your subjects, and start earning." />
-            </Link>
-          )}
-          {user ? (
-            <Link to="/dashboard" className="block">
-              <ShortcutInner icon={LayoutDashboard} title="Dashboard"
-                desc="Manage your sessions, bookings and profile." />
-            </Link>
-          ) : (
-            <Link to="/auth" className="block">
-              <ShortcutInner icon={LayoutDashboard} title="Dashboard"
-                desc="Sign in to access your dashboard." />
-            </Link>
-          )}
-        </div>
-      </section>
-
-      {/* ===== TUTORS ===== */}
-      <section id="tutors" className="mx-auto max-w-7xl px-4 pb-20">
+      <section className="mx-auto max-w-7xl px-4 py-10">
         <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Available tutors</h2>
+            <h1 className="text-3xl font-semibold tracking-tight">All tutors</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Premium Certified Tutors appear first. Search by name or filter by subject.
+              {tutors.length} verified tutor{tutors.length === 1 ? "" : "s"} available.
             </p>
           </div>
           <div className="relative w-full md:w-72">
@@ -146,7 +79,7 @@ function Home() {
 
         {allSubjects.length > 0 && (
           <div className="mb-6 flex flex-wrap gap-2">
-            {allSubjects.slice(0, 16).map((s) => (
+            {allSubjects.map((s) => (
               <Button
                 key={s}
                 size="sm"
@@ -160,78 +93,26 @@ function Home() {
           </div>
         )}
 
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Top 5 most-booked tutors
-        </h3>
-        {top5.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-            No tutors match your search yet.
+            No tutors match your search.
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {top5.map((t) => <TutorCard key={t.id} t={t} premium={t.is_featured} />)}
+            {filtered.map((t) => <TutorCard key={t.id} t={t} />)}
           </div>
         )}
 
-        {filtered.length > 5 && (
-          <div className="mt-8 flex justify-center">
-            <Button asChild size="lg" variant="outline">
-              <Link to="/tutors">View all {filtered.length} tutors <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-          </div>
-        )}
+        <div className="mt-10 text-center">
+          <Button asChild variant="outline"><Link to="/">Back to home</Link></Button>
+        </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
 
-/* ===================== SHORTCUT CARD ===================== */
-
-function ShortcutInner({
-  icon: Icon, title, desc,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <Card className="group h-full border-border/60 transition hover:border-foreground/30 hover:shadow-sm">
-      <CardContent className="flex h-full flex-col gap-3 p-6">
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-aurora text-white">
-          <Icon className="h-5 w-5" />
-        </div>
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-sm text-muted-foreground">{desc}</p>
-        <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-foreground/80 group-hover:text-foreground">
-          Continue <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-        </span>
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ===================== FOOTER ===================== */
-
-function Footer() {
-  return (
-    <footer className="border-t border-border/60 bg-muted/20">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-muted-foreground md:flex-row">
-        <div>© {new Date().getFullYear()} Ask A Tutor Live. All rights reserved.</div>
-        <div className="flex flex-wrap items-center gap-4">
-          <a href="mailto:help@askatutorlive.com" className="hover:text-foreground">help@askatutorlive.com</a>
-          <Link to="/community" className="hover:text-foreground">Community</Link>
-          <Link to="/leaderboard" className="hover:text-foreground">Leaderboard</Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-/* ===================== TUTOR CARD ===================== */
-
-function TutorCard({ t, premium }: { t: TutorRow; premium?: boolean }) {
+function TutorCard({ t }: { t: TutorRow }) {
+  const premium = t.is_featured;
   return (
     <Card className={`h-full transition hover:shadow-sm ${premium ? "border-gold/40" : "border-border/60"}`}>
       <CardContent className="p-5">
@@ -263,6 +144,9 @@ function TutorCard({ t, premium }: { t: TutorRow; premium?: boolean }) {
                 </>
               ) : (
                 <span className="italic">New tutor</span>
+              )}
+              {(t.session_count ?? 0) > 0 && (
+                <span className="ml-2">· {t.session_count} session{t.session_count === 1 ? "" : "s"}</span>
               )}
             </div>
             <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
@@ -311,51 +195,32 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
       .then(({ data }) => setFreeMinutes((data as { free_minutes_remaining?: number } | null)?.free_minutes_remaining ?? 0));
   }, [open, user]);
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      toast.info("Please sign in to book a session");
-      navigate({ to: "/auth" });
-    }
-  };
-
-  const submit = async () => {
-    if (!user || !date || !time) return;
-    setLoading(true);
-    try {
-      const scheduledAt = new Date(`${date}T${time}`);
-      if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) {
-        toast.error("Pick a future date and time");
-        return;
-      }
-      const { error } = await supabase.from("sessions").insert({
-        tutor_id: tutor.id,
-        student_id: user.id,
-        subject: subject || null,
-        scheduled_at: scheduledAt.toISOString(),
-        duration_min: Number(duration),
-        is_free: useFree,
-      });
-      if (error) throw error;
-      toast.success(useFree ? "Free session booked!" : "Session booked! Check your dashboard.");
-      setOpen(false);
-      navigate({ to: "/dashboard" });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (!user) {
     return (
-      <Button size="sm" className="w-full bg-aurora text-white" onClick={handleClick}>
+      <Button size="sm" className="w-full bg-aurora text-white" onClick={() => { toast.info("Please sign in to book"); navigate({ to: "/auth" }); }}>
         <CalendarPlus className="mr-1 h-4 w-4" /> Book session
       </Button>
     );
   }
 
   const canUseFree = freeMinutes >= Number(duration);
+
+  const submit = async () => {
+    if (!date || !time) return;
+    setLoading(true);
+    try {
+      const scheduledAt = new Date(`${date}T${time}`);
+      if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) { toast.error("Pick a future date and time"); return; }
+      const { error } = await supabase.from("sessions").insert({
+        tutor_id: tutor.id, student_id: user.id, subject: subject || null,
+        scheduled_at: scheduledAt.toISOString(), duration_min: Number(duration), is_free: useFree,
+      });
+      if (error) throw error;
+      toast.success("Session booked!");
+      setOpen(false);
+      navigate({ to: "/dashboard" });
+    } catch (e) { toast.error((e as Error).message); } finally { setLoading(false); }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -382,14 +247,8 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Time</Label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            </div>
+            <div className="space-y-1.5"><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Time</Label><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
           </div>
           <div className="space-y-1.5">
             <Label>Duration</Label>
@@ -405,21 +264,10 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
           </div>
           {freeMinutes > 0 && (
             <label className={`flex items-start gap-3 rounded-md border p-3 text-sm ${canUseFree ? "cursor-pointer hover:bg-muted/40" : "opacity-60"}`}>
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={useFree}
-                disabled={!canUseFree}
-                onChange={(e) => setUseFree(e.target.checked)}
-              />
+              <input type="checkbox" className="mt-1" checked={useFree} disabled={!canUseFree} onChange={(e) => setUseFree(e.target.checked)} />
               <div className="flex-1">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Gift className="h-4 w-4 text-gold" /> Use a free welcome lesson
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  You have <strong>{freeMinutes} minutes</strong> of free lessons remaining.
-                  {!canUseFree && " Not enough for this duration."}
-                </p>
+                <div className="flex items-center gap-1.5 font-medium"><Gift className="h-4 w-4 text-gold" /> Use a free welcome lesson</div>
+                <p className="text-xs text-muted-foreground">You have <strong>{freeMinutes} minutes</strong> remaining.</p>
               </div>
             </label>
           )}
@@ -427,7 +275,7 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
           <Button onClick={submit} disabled={loading || !date || !time} className="bg-aurora text-white">
-            {loading ? "Booking…" : useFree ? "Confirm free booking" : "Confirm booking"}
+            {loading ? "Booking…" : "Confirm booking"}
           </Button>
         </DialogFooter>
       </DialogContent>
