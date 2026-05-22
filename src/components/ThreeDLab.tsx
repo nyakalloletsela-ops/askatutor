@@ -146,8 +146,7 @@ export function ThreeDLab() {
         scene.add(bond);
       });
       const group = new THREE.Group();
-      // group not strictly needed; just rotate scene's parent? Skip, rotate via update
-      const all = scene.children.filter((c) => c instanceof THREE.Mesh && c !== sun);
+      const all = scene.children.filter((c): c is THREE.Mesh => c instanceof THREE.Mesh);
       update.push((dt) => {
         all.forEach((m) => { m.rotation.y += dt * 0.4; });
       });
