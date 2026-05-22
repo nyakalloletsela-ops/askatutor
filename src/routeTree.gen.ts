@@ -12,12 +12,14 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as LabsRouteImport } from './routes/labs'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIdRouteImport } from './routes/tutor.$id'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCodeRouteImport } from './routes/_authenticated/code'
+import { Route as AuthenticatedCertificateRouteImport } from './routes/_authenticated/certificate'
 import { Route as AuthenticatedAiTutorRouteImport } from './routes/_authenticated/ai-tutor'
 import { Route as AuthenticatedAiToolsRouteImport } from './routes/_authenticated/ai-tools'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -36,6 +38,11 @@ const LeaderboardRoute = LeaderboardRouteImport.update({
 const LabsRoute = LabsRouteImport.update({
   id: '/labs',
   path: '/labs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -67,6 +74,12 @@ const AuthenticatedCodeRoute = AuthenticatedCodeRouteImport.update({
   path: '/code',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCertificateRoute =
+  AuthenticatedCertificateRouteImport.update({
+    id: '/certificate',
+    path: '/certificate',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAiTutorRoute = AuthenticatedAiTutorRouteImport.update({
   id: '/ai-tutor',
   path: '/ai-tutor',
@@ -92,12 +105,14 @@ const AuthenticatedClassroomRoomIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
   '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/tutor/$id': typeof TutorIdRoute
@@ -106,12 +121,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
   '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/tutor/$id': typeof TutorIdRoute
@@ -122,12 +139,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
   '/labs': typeof LabsRoute
   '/leaderboard': typeof LeaderboardRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai-tools': typeof AuthenticatedAiToolsRoute
   '/_authenticated/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/_authenticated/certificate': typeof AuthenticatedCertificateRoute
   '/_authenticated/code': typeof AuthenticatedCodeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/tutor/$id': typeof TutorIdRoute
@@ -138,12 +157,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/community'
     | '/labs'
     | '/leaderboard'
     | '/reset-password'
     | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
+    | '/certificate'
     | '/code'
     | '/dashboard'
     | '/tutor/$id'
@@ -152,12 +173,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/community'
     | '/labs'
     | '/leaderboard'
     | '/reset-password'
     | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
+    | '/certificate'
     | '/code'
     | '/dashboard'
     | '/tutor/$id'
@@ -167,12 +190,14 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/community'
     | '/labs'
     | '/leaderboard'
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/ai-tools'
     | '/_authenticated/ai-tutor'
+    | '/_authenticated/certificate'
     | '/_authenticated/code'
     | '/_authenticated/dashboard'
     | '/tutor/$id'
@@ -183,6 +208,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CommunityRoute: typeof CommunityRoute
   LabsRoute: typeof LabsRoute
   LeaderboardRoute: typeof LeaderboardRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -210,6 +236,13 @@ declare module '@tanstack/react-router' {
       path: '/labs'
       fullPath: '/labs'
       preLoaderRoute: typeof LabsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -254,6 +287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCodeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/certificate': {
+      id: '/_authenticated/certificate'
+      path: '/certificate'
+      fullPath: '/certificate'
+      preLoaderRoute: typeof AuthenticatedCertificateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/ai-tutor': {
       id: '/_authenticated/ai-tutor'
       path: '/ai-tutor'
@@ -289,6 +329,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiToolsRoute: typeof AuthenticatedAiToolsRoute
   AuthenticatedAiTutorRoute: typeof AuthenticatedAiTutorRoute
+  AuthenticatedCertificateRoute: typeof AuthenticatedCertificateRoute
   AuthenticatedCodeRoute: typeof AuthenticatedCodeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
@@ -298,6 +339,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiToolsRoute: AuthenticatedAiToolsRoute,
   AuthenticatedAiTutorRoute: AuthenticatedAiTutorRoute,
+  AuthenticatedCertificateRoute: AuthenticatedCertificateRoute,
   AuthenticatedCodeRoute: AuthenticatedCodeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
@@ -311,6 +353,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
+  CommunityRoute: CommunityRoute,
   LabsRoute: LabsRoute,
   LeaderboardRoute: LeaderboardRoute,
   ResetPasswordRoute: ResetPasswordRoute,

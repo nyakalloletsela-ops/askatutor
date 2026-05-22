@@ -19,6 +19,9 @@ export function Navbar() {
       <Link to="/labs" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground">
         Virtual Labs
       </Link>
+      <Link to="/community" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground">
+        Community
+      </Link>
       <Link to="/leaderboard" onClick={() => setOpen(false)} className="rounded-md px-3 py-2 text-sm font-medium text-foreground/80 hover:bg-accent hover:text-foreground">
         Leaderboard
       </Link>
