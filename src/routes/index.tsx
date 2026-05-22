@@ -160,25 +160,24 @@ function Home() {
           </div>
         )}
 
-        {featured.length > 0 && (
-          <>
-            <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gold">
-              <Crown className="h-4 w-4" /> Premium Certified Tutors
-            </h3>
-            <div className="mb-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.map((t) => <TutorCard key={t.id} t={t} premium />)}
-            </div>
-          </>
-        )}
-
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">All tutors</h3>
-        {standard.length === 0 && featured.length === 0 ? (
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Top 5 most-booked tutors
+        </h3>
+        {top5.length === 0 ? (
           <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
             No tutors match your search yet.
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {standard.map((t) => <TutorCard key={t.id} t={t} />)}
+            {top5.map((t) => <TutorCard key={t.id} t={t} premium={t.is_featured} />)}
+          </div>
+        )}
+
+        {filtered.length > 5 && (
+          <div className="mt-8 flex justify-center">
+            <Button asChild size="lg" variant="outline">
+              <Link to="/tutors">View all {filtered.length} tutors <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
           </div>
         )}
       </section>
