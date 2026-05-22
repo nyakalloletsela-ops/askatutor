@@ -208,8 +208,180 @@ function AdminPage() {
             </ul>
           </CardContent>
         </Card>
+
+        <SubjectsManager />
+        <TutorCoursesQueue />
       </main>
     </div>
+  );
+}
+
+/* ===================== SUBJECTS CATALOG ===================== */
+
+type SubjectRow = { id: string; name: string; level: "primary" | "high_school" | "tertiary" };
+const LEVEL_LABELS: Record<SubjectRow["level"], string> = {
+  primary: "Primary",
+  high_school: "High School",
+  tertiary: "Tertiary / Undergraduate",
+};
+
+function SubjectsManager() {
+  const [items, setItems] = useState<SubjectRow[]>([]);
+  const [name, setName] = useState("");
+  const [level, setLevel] = useState<SubjectRow["level"]>("high_school");
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase.from("subjects").select("*").order("level").order("name");
+    setItems((data as SubjectRow[]) ?? []);
+  };
+  useEffect(() => { load(); }, []);
+
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy(true);
+    const { error } = await supabase.from("subjects").insert({ name: name.trim(), level });
+    if (error) toast.error(error.message);
+    else { toast.success("Subject added"); setName(""); load(); }
+    setBusy(false);
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("Remove this subject from the catalog?")) return;
+    const { error } = await supabase.from("subjects").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Removed"); load(); }
+  };
+
+  const grouped: Record<SubjectRow["level"], SubjectRow[]> = { primary: [], high_school: [], tertiary: [] };
+  items.forEach((s) => grouped[s.level].push(s));
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Subjects catalog</CardTitle></CardHeader>
+      <CardContent className="space-y-5">
+        <form onSubmit={add} className="grid gap-3 md:grid-cols-5">
+          <div className="md:col-span-2">
+            <Label htmlFor="sub-name">Subject name</Label>
+            <Input id="sub-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Discrete Mathematics" />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Level</Label>
+            <Select value={level} onValueChange={(v) => setLevel(v as SubjectRow["level"])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="primary">Primary</SelectItem>
+                <SelectItem value="high_school">High School</SelectItem>
+                <SelectItem value="tertiary">Tertiary / Undergraduate</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end">
+            <Button type="submit" disabled={busy} className="w-full">Add</Button>
+          </div>
+        </form>
+
+        {(["primary", "high_school", "tertiary"] as const).map((lvl) => (
+          <div key={lvl}>
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {LEVEL_LABELS[lvl]} · {grouped[lvl].length}
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {grouped[lvl].length === 0 && <span className="text-sm text-muted-foreground">No subjects.</span>}
+              {grouped[lvl].map((s) => (
+                <Badge key={s.id} variant="secondary" className="gap-2">
+                  {s.name}
+                  <button onClick={() => remove(s.id)} className="text-muted-foreground hover:text-destructive" aria-label="Remove">×</button>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ===================== TUTOR COURSE PROPOSALS ===================== */
+
+type CourseRow = {
+  id: string;
+  tutor_id: string;
+  name: string;
+  level: SubjectRow["level"];
+  description: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+};
+
+function TutorCoursesQueue() {
+  const { user } = useAuth();
+  const [rows, setRows] = useState<CourseRow[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
+
+  const load = async () => {
+    const { data } = await supabase.from("tutor_courses").select("*").order("created_at", { ascending: false });
+    const list = (data as CourseRow[]) ?? [];
+    setRows(list);
+    const ids = Array.from(new Set(list.map((r) => r.tutor_id)));
+    if (ids.length) {
+      const { data: pr } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+      const map: Record<string, string> = {};
+      (pr ?? []).forEach((p) => (map[p.id] = (p as { id: string; full_name: string | null }).full_name ?? "Unnamed"));
+      setNames(map);
+    }
+  };
+  useEffect(() => { load(); }, []);
+
+  const setStatus = async (row: CourseRow, status: "approved" | "rejected") => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("tutor_courses")
+      .update({ status, reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .eq("id", row.id);
+    if (error) { toast.error(error.message); return; }
+    if (status === "approved") {
+      // Also add to the official catalog and to the tutor's subjects[]
+      await supabase.from("subjects").insert({ name: row.name, level: row.level }).then(() => {});
+      const { data: prof } = await supabase.from("profiles").select("subjects").eq("id", row.tutor_id).single();
+      const current = ((prof as { subjects?: string[] } | null)?.subjects ?? []) as string[];
+      if (!current.includes(row.name)) {
+        await supabase.from("profiles").update({ subjects: [...current, row.name] }).eq("id", row.tutor_id);
+      }
+    }
+    toast.success(status === "approved" ? "Course approved" : "Course rejected");
+    load();
+  };
+
+  const pending = rows.filter((r) => r.status === "pending");
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Tutor course proposals · {pending.length} pending</CardTitle></CardHeader>
+      <CardContent>
+        {pending.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nothing waiting for review.</p>
+        ) : (
+          <ul className="divide-y">
+            {pending.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{r.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {names[r.tutor_id] ?? "Tutor"} · {LEVEL_LABELS[r.level]}
+                  </p>
+                  {r.description && <p className="mt-1 text-sm">{r.description}</p>}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => setStatus(r, "approved")}>Approve</Button>
+                  <Button size="sm" variant="outline" onClick={() => setStatus(r, "rejected")}>Reject</Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
