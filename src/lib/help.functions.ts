@@ -60,15 +60,12 @@ const SubEmailSchema = z.object({
  * Verifies caller is admin via the user_roles table (using their JWT).
  */
 export const sendSubscriptionDecisionEmail = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => SubEmailSchema.parse(input))
-  .handler(async ({ data, request }) => {
-    const authHeader = request?.headers.get('Authorization') ?? ''
-    if (!authHeader.startsWith('Bearer ')) throw new Error('Unauthorized')
-    const jwt = authHeader.slice(7)
-    const { data: u } = await supabaseAdmin.auth.getUser(jwt)
-    if (!u.user) throw new Error('Unauthorized')
+  .handler(async ({ data, context }) => {
+    const { userId } = context
     const { data: roles } = await supabaseAdmin
-      .from('user_roles').select('role').eq('user_id', u.user.id).eq('role', 'admin')
+      .from('user_roles').select('role').eq('user_id', userId).eq('role', 'admin')
     if (!roles || roles.length === 0) throw new Error('Forbidden')
 
     const { data: prof } = await supabaseAdmin
