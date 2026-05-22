@@ -78,6 +78,7 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
         let idempotencyKey: string
         let messageId: string
         let templateData: Record<string, any> = {}
+        let fromAliasBody: string | undefined
         try {
           const body = await request.json()
           templateName = body.templateName || body.template_name
@@ -87,6 +88,7 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           if (body.templateData && typeof body.templateData === 'object') {
             templateData = body.templateData
           }
+          if (typeof body.fromAlias === 'string') fromAliasBody = body.fromAlias
         } catch {
           return Response.json(
             { error: 'Invalid JSON in request body' },
@@ -103,6 +105,7 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
 
         // 1. Look up template from registry (early — needed to resolve recipient)
         const template = TEMPLATES[templateName]
+
 
         if (!template) {
           console.error('Template not found in registry', { templateName })
