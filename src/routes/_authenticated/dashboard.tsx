@@ -510,3 +510,91 @@ function StudentFeeCard({ userId }: { userId: string }) {
   );
 }
 
+function ReviewsCard({ userId }: { userId: string }) {
+  const [tutors, setTutors] = useState<Array<{ id: string; name: string }>>([]);
+  const [reviews, setReviews] = useState<Record<string, { rating: number; comment: string | null }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { rating: number; comment: string }>>({});
+
+  const load = async () => {
+    const { data: ss } = await supabase
+      .from("sessions")
+      .select("tutor_id")
+      .eq("student_id", userId);
+    const ids = Array.from(new Set((ss ?? []).map((s: any) => s.tutor_id)));
+    if (ids.length === 0) { setTutors([]); return; }
+    const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+    setTutors((profs ?? []).map((p: any) => ({ id: p.id, name: p.full_name ?? "Tutor" })));
+    const { data: rv } = await supabase
+      .from("tutor_reviews")
+      .select("tutor_id, rating, comment")
+      .eq("student_id", userId);
+    const map: Record<string, { rating: number; comment: string | null }> = {};
+    (rv ?? []).forEach((r: any) => { map[r.tutor_id] = { rating: r.rating, comment: r.comment }; });
+    setReviews(map);
+  };
+  useEffect(() => { load(); }, [userId]);
+
+  const submit = async (tutorId: string) => {
+    const d = drafts[tutorId];
+    if (!d || !d.rating) return;
+    const { error } = await supabase
+      .from("tutor_reviews")
+      .upsert(
+        { tutor_id: tutorId, student_id: userId, rating: d.rating, comment: d.comment || null, session_id: null },
+        { onConflict: "student_id,tutor_id,session_id" }
+      );
+    if (error) toast.error(error.message);
+    else { toast.success("Review saved"); load(); }
+  };
+
+  if (tutors.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Star className="h-5 w-5 text-gold" /> Rate your tutors
+        </CardTitle>
+        <CardDescription>Help other students choose the right tutor.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {tutors.map((t) => {
+          const existing = reviews[t.id];
+          const draft = drafts[t.id] ?? { rating: existing?.rating ?? 0, comment: existing?.comment ?? "" };
+          return (
+            <div key={t.id} className="rounded-md border p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="font-medium">{t.name}</p>
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setDrafts({ ...drafts, [t.id]: { ...draft, rating: n } })}
+                      aria-label={`${n} star${n > 1 ? "s" : ""}`}
+                    >
+                      <Star className={`h-5 w-5 ${n <= draft.rating ? "fill-gold text-gold" : "text-muted-foreground"}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <Textarea
+                rows={2}
+                placeholder="Share your experience (optional)"
+                value={draft.comment}
+                onChange={(e) => setDrafts({ ...drafts, [t.id]: { ...draft, comment: e.target.value } })}
+              />
+              <div className="mt-2 flex justify-end">
+                <Button size="sm" onClick={() => submit(t.id)} disabled={!draft.rating}>
+                  {existing ? "Update review" : "Submit review"}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+
