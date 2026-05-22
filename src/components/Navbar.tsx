@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Sparkles, LogOut, Moon, Sun, Menu, X } from "lucide-react";
+import { LogOut, Moon, Sun, Menu, X } from "lucide-react";
+import logo from "@/assets/logo.png";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
@@ -53,9 +54,7 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-bold">
-          <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-aurora shadow-glow">
-            <Sparkles className="h-4 w-4 text-white" />
-          </span>
+          <img src={logo} alt="Ask A Tutor Live logo" className="h-9 w-9 object-contain" />
           <span className="text-lg tracking-tight">
             Ask A Tutor <span className="text-aurora">Live</span>
           </span>
