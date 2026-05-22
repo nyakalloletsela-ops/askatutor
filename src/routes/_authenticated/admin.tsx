@@ -38,6 +38,7 @@ type Sub = {
   payment_method: string;
   status: string;
   submitted_at: string;
+  amount: number;
 };
 
 type TutorProfile = {
