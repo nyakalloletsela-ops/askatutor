@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { LorddaLab } from "@/components/LorddaLab";
 import { ThreeDLab } from "@/components/ThreeDLab";
-import { FlaskConical, Boxes } from "lucide-react";
+import { FlaskConical, Boxes, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   STUDENT_LAB_LIMIT,
