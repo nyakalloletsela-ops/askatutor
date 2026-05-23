@@ -17,7 +17,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import {
   Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
-  Users, GraduationCap, LayoutDashboard,
+  Users, GraduationCap, Briefcase,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -52,12 +52,12 @@ const DEFAULT_CONTENT: Record<string, string> = {
   "hero.subtitle": "Book live one-on-one sessions with expert tutors for Primary, High School, IGCSE, A-Level and Undergraduate subjects.",
   "hero.cta_primary": "Find a tutor",
   "hero.cta_secondary": "Create free account",
-  "shortcuts.find.title": "Find a Tutor",
-  "shortcuts.find.desc": "Browse verified tutors by subject and book a live session.",
-  "shortcuts.tutor.title": "Become a Tutor",
-  "shortcuts.tutor.desc": "Apply to join, list your subjects, and start earning.",
-  "shortcuts.dash.title": "Dashboard",
-  "shortcuts.dash.desc": "Manage your sessions, bookings and profile.",
+  "shortcuts.find.title": "For Students",
+  "shortcuts.find.desc": "Find verified tutors by subject and book live lessons.",
+  "shortcuts.tutor.title": "For Tutors",
+  "shortcuts.tutor.desc": "Apply to teach, list your subjects, and start earning.",
+  "shortcuts.dash.title": "Student Work",
+  "shortcuts.dash.desc": "Practice with Virtual Labs, AI Coach, and the Community.",
   "tutors.heading": "Available tutors",
   "tutors.subheading": "Premium Certified Tutors appear first. Search by name or filter by subject.",
   "tutors.top_label": "Top 5 most-booked tutors",
@@ -132,12 +132,23 @@ function Home() {
         </div>
       </section>
 
-      {/* ===== SHORTCUT CATEGORIES ===== */}
+      {/* ===== SHORTCUT CATEGORIES (3 audiences) ===== */}
       <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
+        <h2 className="mb-6 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Who is this for?
+        </h2>
         <div className="grid gap-4 md:grid-cols-3">
+          {/* Students */}
           <a href="#tutors" className="block">
             <ShortcutInner icon={Users} title={t("shortcuts.find.title")} desc={t("shortcuts.find.desc")} />
           </a>
+
+          {/* Student Work — learning tools & community */}
+          <Link to="/labs" className="block">
+            <ShortcutInner icon={Briefcase} title={t("shortcuts.dash.title")} desc={t("shortcuts.dash.desc")} />
+          </Link>
+
+          {/* Tutors */}
           {user && isTutor ? (
             <Link to="/dashboard" className="block">
               <ShortcutInner icon={GraduationCap} title="Tutor Dashboard"
@@ -148,18 +159,9 @@ function Home() {
               <ShortcutInner icon={GraduationCap} title={t("shortcuts.tutor.title")} desc={t("shortcuts.tutor.desc")} />
             </Link>
           )}
-          {user ? (
-            <Link to="/dashboard" className="block">
-              <ShortcutInner icon={LayoutDashboard} title={t("shortcuts.dash.title")} desc={t("shortcuts.dash.desc")} />
-            </Link>
-          ) : (
-            <Link to="/auth" className="block">
-              <ShortcutInner icon={LayoutDashboard} title={t("shortcuts.dash.title")}
-                desc="Sign in to access your dashboard." />
-            </Link>
-          )}
         </div>
       </section>
+
 
       {/* ===== TUTORS ===== */}
       <section id="tutors" className="mx-auto max-w-7xl px-4 pb-20">

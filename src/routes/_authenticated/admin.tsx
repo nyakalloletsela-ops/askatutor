@@ -150,16 +150,8 @@ function AdminPage() {
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
         <h1 className="text-3xl font-bold text-navy">Admin control panel</h1>
 
-        <Tabs defaultValue="approvals" className="w-full">
+        <Tabs defaultValue="tutors" className="w-full">
           <TabsList className="flex w-full flex-wrap justify-start">
-            <TabsTrigger value="approvals" className="relative">
-              Approvals
-              {pendingSubs.length > 0 && (
-                <Badge className="ml-2 h-5 px-1.5 text-[10px]" variant="destructive">
-                  {pendingSubs.length}
-                </Badge>
-              )}
-            </TabsTrigger>
             <TabsTrigger value="tutors">Tutors</TabsTrigger>
             <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
@@ -167,38 +159,8 @@ function AdminPage() {
             <TabsTrigger value="subjects">Subjects</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="approvals" className="mt-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Pending subscription payments</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {pendingSubs.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nothing pending.</p>
-                ) : (
-                  <ul className="divide-y">
-                    {pendingSubs.map((s) => (
-                      <li key={s.id} className="flex items-center justify-between py-3">
-                        <div>
-                          <p className="font-medium">
-                            {profiles[s.tutor_id]?.full_name ?? "Unknown tutor"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Ref <span className="font-mono">{s.transaction_ref}</span> ·{" "}
-                            {s.payment_method.toUpperCase()} · M{Number(s.amount ?? 250)}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => approve(s)}>Approve</Button>
-                          <Button size="sm" variant="outline" onClick={() => reject(s)}>Reject</Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          {/* Pending subscription payments tab hidden until free options are finalised. */}
+
 
           <TabsContent value="tutors" className="mt-4 space-y-4">
             <Card>

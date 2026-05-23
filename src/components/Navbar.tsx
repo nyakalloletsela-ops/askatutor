@@ -18,16 +18,16 @@ export function Navbar() {
     if (!isAdmin) return;
     let alive = true;
     const load = async () => {
-      const [{ count: subs }, { count: courses }] = await Promise.all([
-        supabase.from("tutor_subscriptions").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("tutor_courses").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      ]);
-      if (alive) setPendingCount((subs ?? 0) + (courses ?? 0));
+      // Subscriptions hidden until free options are finalised — only count course approvals.
+      const { count: courses } = await supabase
+        .from("tutor_courses").select("id", { count: "exact", head: true }).eq("status", "pending");
+      if (alive) setPendingCount(courses ?? 0);
     };
     load();
     const t = setInterval(load, 30000);
     return () => { alive = false; clearInterval(t); };
   }, [isAdmin]);
+
 
 
   const links = (
