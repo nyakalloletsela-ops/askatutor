@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { LorddaLab } from "@/components/LorddaLab";
 import { ThreeDLab } from "@/components/ThreeDLab";
-import { FlaskConical, Boxes } from "lucide-react";
+import { FlaskConical, Boxes, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   STUDENT_LAB_LIMIT,
@@ -84,6 +84,20 @@ function LabsPage() {
           />
         )}
       </div>
+      {mode === "phet" && (
+        <div className="flex shrink-0 items-center justify-center gap-1 border-t bg-muted/30 px-3 py-1.5 text-[10px] text-muted-foreground">
+          <span>2D simulations by</span>
+          <a
+            href="https://phet.colorado.edu"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-0.5 underline hover:text-foreground"
+          >
+            PhET Interactive Simulations <ExternalLink className="h-2.5 w-2.5" />
+          </a>
+          <span>· University of Colorado Boulder · CC BY 4.0</span>
+        </div>
+      )}
     </div>
   );
 }
