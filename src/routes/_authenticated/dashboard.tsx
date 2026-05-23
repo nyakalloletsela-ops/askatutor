@@ -561,24 +561,8 @@ function Dashboard() {
               </section>
             )}
 
-            {/* Subscription — hidden until free options are finalised */}
-            {false && (
-              <section>
-                <SectionHeader title="Subscription" />
-                <SubscriptionPanel
-                  isTutor={isTutor}
-                  userId={user.id}
-                  pendingSub={pendingSub}
-                  approvedSub={approvedSub}
-                  txnRef={txnRef}
-                  setTxnRef={setTxnRef}
-                  payMethod={payMethod}
-                  setPayMethod={setPayMethod}
-                  onSubmitTutorSub={submitSub}
-                  isFeatured={profile.is_featured}
-                />
-              </section>
-            )}
+            {/* Subscription panel intentionally hidden until free options are finalised. */}
+
 
 
             {/* Reviews (students) */}
