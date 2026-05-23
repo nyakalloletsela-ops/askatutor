@@ -17,7 +17,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import {
   Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
-  Users, GraduationCap, LayoutDashboard,
+  Users, GraduationCap, Briefcase,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
