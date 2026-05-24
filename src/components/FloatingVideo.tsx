@@ -100,7 +100,13 @@ export function FloatingVideo({ roomId, displayName, email, onParticipantsChange
         className="h-[calc(100%-36px)]"
         style={{ display: minimized ? "none" : "block" }}
       >
-        <JitsiRoom roomId={roomId} displayName={displayName} email={email} audioOnly={minimized} />
+        <JitsiRoom
+          roomId={roomId}
+          displayName={displayName}
+          email={email}
+          audioOnly={minimized}
+          onParticipantsChange={onParticipantsChange}
+        />
       </div>
       {!minimized && (
         <div
