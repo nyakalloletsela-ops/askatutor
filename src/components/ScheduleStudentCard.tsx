@@ -38,10 +38,12 @@ export function ScheduleStudentCard({
       const { data, error } = await supabase.rpc("list_students_for_tutor");
       if (!error && data) {
         setStudents(
-          (data as { id: string; full_name: string | null }[]).map((s) => ({
-            id: s.id,
-            name: s.full_name ?? "Student",
-          })),
+          (data as { id: string; full_name: string | null }[])
+            .filter((s) => s.id !== tutorId)
+            .map((s) => ({
+              id: s.id,
+              name: s.full_name ?? "Student",
+            })),
         );
         return;
       }
