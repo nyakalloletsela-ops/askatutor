@@ -98,7 +98,10 @@ export function FloatingVideo({ roomId, displayName, email, onParticipantsChange
       </div>
       <div
         className="h-[calc(100%-36px)]"
-        style={{ display: minimized ? "none" : "block" }}
+        style={{
+          visibility: minimized ? "hidden" : "visible",
+          pointerEvents: minimized ? "none" : "auto",
+        }}
       >
         <JitsiRoom
           roomId={roomId}
