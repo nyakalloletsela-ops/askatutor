@@ -363,15 +363,18 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
         toast.error("Pick a future date and time");
         return;
       }
-      const { error } = await supabase.from("sessions").insert({
+      const { data: inserted, error } = await supabase.from("sessions").insert({
         tutor_id: tutor.id,
         student_id: user.id,
         subject: subject || null,
         scheduled_at: scheduledAt.toISOString(),
         duration_min: Number(duration),
         is_free: useFree,
-      });
+      }).select("id").single();
       if (error) throw error;
+      if (inserted?.id) {
+        notifyBookingEmails({ data: { sessionId: inserted.id } }).catch(() => {});
+      }
       toast.success(useFree ? "Free session booked!" : "Session booked! Check your dashboard.");
       setOpen(false);
       navigate({ to: "/dashboard" });
