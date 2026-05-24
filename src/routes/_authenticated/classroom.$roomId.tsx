@@ -30,6 +30,7 @@ function ClassroomPage() {
   const { roomId } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const [isTutor, setIsTutor] = useState(false);
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   useEffect(() => {
     if (!user) return;
