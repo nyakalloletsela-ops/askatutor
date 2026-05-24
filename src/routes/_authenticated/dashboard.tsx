@@ -588,6 +588,13 @@ function Dashboard() {
 
             {isTutor && (
               <section>
+                <SectionHeader title="Schedule a session with an existing student" />
+                <ScheduleStudentCard tutorId={user.id} onCreated={refreshSessions} />
+              </section>
+            )}
+
+            {isTutor && (
+              <section>
                 <SectionHeader title="Propose a new course" />
                 <ProposeCourseCard tutorId={user.id} />
               </section>
