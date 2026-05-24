@@ -90,8 +90,8 @@ export function ScheduleStudentCard({
       <CardContent className="space-y-4 p-5">
         {students.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No student accounts found yet. Once students sign up you'll be able to schedule
-            classes for them here.
+            No student accounts found yet. Once students sign up you'll be able to schedule classes
+            for them here.
           </p>
         ) : (
           <>
