@@ -704,6 +704,13 @@ export type Database = {
           subjects: string[]
         }[]
       }
+      list_students_for_tutor: {
+        Args: never
+        Returns: {
+          full_name: string
+          id: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
