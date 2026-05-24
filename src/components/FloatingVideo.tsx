@@ -119,6 +119,7 @@ export function FloatingVideo({
           audioOnly={minimized}
           onParticipantsChange={onParticipantsChange}
           onDiagnosticsChange={onDiagnosticsChange}
+          onApiReady={onApiReady}
         />
       </div>
       {!minimized && (
