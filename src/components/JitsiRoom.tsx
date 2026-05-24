@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 declare global {
   interface Window {
@@ -17,25 +18,42 @@ interface Props {
 export function JitsiRoom({ roomId, displayName, email }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<{ dispose: () => void } | null>(null);
+  const [started, setStarted] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
+
+  const requestMediaAndStart = async () => {
+    setPermissionError(null);
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setPermissionError("This browser cannot access the camera or microphone.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      setStarted(true);
+    } catch (err) {
+      const name = err instanceof DOMException ? err.name : "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setPermissionError("Camera or microphone is blocked. Allow access in your browser settings, then try again.");
+      } else if (name === "NotFoundError") {
+        setPermissionError("No camera or microphone was found on this device.");
+      } else if (name === "NotReadableError") {
+        setPermissionError("Camera or microphone is already in use by another app.");
+      } else {
+        setPermissionError("Camera and microphone could not start. Check browser permissions and try again.");
+      }
+    }
+  };
 
   useEffect(() => {
+    if (!started) return;
+
     let observer: MutationObserver | null = null;
 
-    const start = async () => {
+    const start = () => {
       if (!containerRef.current || !window.JitsiMeetExternalAPI) return;
-
-      // Proactively request camera/mic permissions so the browser shows the
-      // prompt against the parent origin BEFORE Jitsi attempts to use them
-      // inside the iframe. Without this, embedded usage often silently fails.
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        stream.getTracks().forEach((t) => t.stop());
-      } catch (err) {
-        console.warn("Camera/mic permission not granted yet:", err);
-      }
 
       // Set the iframe `allow` attribute BEFORE Jitsi finishes loading,
       // otherwise the browser blocks camera/mic in the embedded context.
@@ -97,7 +115,16 @@ export function JitsiRoom({ roomId, displayName, email }: Props) {
       apiRef.current?.dispose();
       apiRef.current = null;
     };
-  }, [roomId, displayName, email]);
+  }, [started, roomId, displayName, email]);
 
-  return <div ref={containerRef} className="h-full w-full bg-black" />;
+  return (
+    <div ref={containerRef} className="flex h-full w-full items-center justify-center bg-background">
+      {!started && (
+        <div className="flex max-w-64 flex-col items-center gap-3 p-4 text-center">
+          <Button onClick={requestMediaAndStart}>Start camera and mic</Button>
+          {permissionError && <p className="text-xs text-destructive">{permissionError}</p>}
+        </div>
+      )}
+    </div>
+  );
 }
