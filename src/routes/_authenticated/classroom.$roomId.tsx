@@ -9,7 +9,7 @@ import { ClassroomFiles } from "@/components/ClassroomFiles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { checkRoomMembership } from "@/lib/access.functions";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
@@ -50,25 +50,25 @@ function ClassroomPage() {
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
-      <header className="flex items-center justify-between border-b px-4 py-2">
-        <div className="flex items-center gap-3">
+      <header className="flex items-center justify-between gap-2 border-b px-2 py-2 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button asChild size="sm" variant="ghost">
             <Link to="/dashboard">
               <ArrowLeft className="mr-1 h-4 w-4" /> Leave
             </Link>
           </Button>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold">Live Classroom</p>
-            <p className="text-xs text-muted-foreground">Room: {roomId}</p>
+            <p className="truncate text-xs text-muted-foreground sm:max-w-none">Room: {roomId}</p>
           </div>
         </div>
-        <Button asChild size="sm" variant="outline">
+        <Button asChild size="icon" variant="ghost" title="Open video in new tab" aria-label="Open video in new tab">
           <a
             href={`https://meet.jit.si/AskATutor-${roomId}`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Open video in new tab
+            <ExternalLink className="h-4 w-4" />
           </a>
         </Button>
       </header>
