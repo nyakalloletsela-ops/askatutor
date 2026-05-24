@@ -11,6 +11,7 @@ declare global {
       dispose: () => void;
       addListener: (event: string, handler: (data: unknown) => void) => void;
       executeCommand: (cmd: string, ...args: unknown[]) => void;
+      getIFrame?: () => HTMLIFrameElement;
     };
   }
 }
@@ -57,7 +58,12 @@ type JitsiApi = {
   dispose: () => void;
   addListener: (event: string, handler: (data: unknown) => void) => void;
   executeCommand: (cmd: string, ...args: unknown[]) => void;
+  getIFrame?: () => HTMLIFrameElement;
 };
+
+type ScriptStatus = "loading" | "ready" | "error";
+
+const iframeAllow = "autoplay; camera; microphone; display-capture; clipboard-write; fullscreen; speaker-selection";
 
 const loadJitsiScript = () =>
   new Promise<void>((resolve, reject) => {
