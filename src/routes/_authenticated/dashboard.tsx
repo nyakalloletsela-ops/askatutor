@@ -37,6 +37,8 @@ import {
   Wallet,
   Users,
   BookOpen,
+  Copy,
+  Link2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
