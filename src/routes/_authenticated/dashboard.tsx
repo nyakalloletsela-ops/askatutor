@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
+import { ScheduleStudentCard } from "@/components/ScheduleStudentCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -588,6 +589,13 @@ function Dashboard() {
 
             {isTutor && (
               <section>
+                <SectionHeader title="Schedule a session with an existing student" />
+                <ScheduleStudentCard tutorId={user.id} onCreated={refreshSessions} />
+              </section>
+            )}
+
+            {isTutor && (
+              <section>
                 <SectionHeader title="Propose a new course" />
                 <ProposeCourseCard tutorId={user.id} />
               </section>
@@ -657,6 +665,12 @@ function Dashboard() {
                   icon={MessageSquare}
                   title="AI Study Coach"
                   desc="Guided hints for the problem you're stuck on."
+                />
+                <QuickAction
+                  to="/messages"
+                  icon={MessageSquare}
+                  title="Messages"
+                  desc="Chat directly with your tutors and students."
                 />
                 <QuickAction
                   to="/ai-tools"

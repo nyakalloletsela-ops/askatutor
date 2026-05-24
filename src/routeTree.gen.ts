@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIdRouteImport } from './routes/tutor.$id'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedLabsRouteImport } from './routes/_authenticated/labs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCodeRouteImport } from './routes/_authenticated/code'
@@ -81,6 +82,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedLabsRoute = AuthenticatedLabsRouteImport.update({
   id: '/labs',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/labs': typeof AuthenticatedLabsRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/labs': typeof AuthenticatedLabsRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/_authenticated/code': typeof AuthenticatedCodeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/labs': typeof AuthenticatedLabsRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/code'
     | '/dashboard'
     | '/labs'
+    | '/messages'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/classroom/$roomId'
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/code'
     | '/dashboard'
     | '/labs'
+    | '/messages'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/classroom/$roomId'
@@ -295,6 +306,7 @@ export interface FileRouteTypes {
     | '/_authenticated/code'
     | '/_authenticated/dashboard'
     | '/_authenticated/labs'
+    | '/_authenticated/messages'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/_authenticated/classroom/$roomId'
@@ -392,6 +404,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/labs': {
       id: '/_authenticated/labs'
@@ -496,6 +515,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCodeRoute: typeof AuthenticatedCodeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLabsRoute: typeof AuthenticatedLabsRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
 }
 
@@ -508,6 +528,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCodeRoute: AuthenticatedCodeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLabsRoute: AuthenticatedLabsRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
 }
 
