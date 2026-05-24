@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
+import { ExternalLink, Users } from "lucide-react";
 
 declare global {
   interface Window {
@@ -12,6 +12,9 @@ declare global {
   }
 }
 
+export type ParticipantStatus = "connecting" | "joined";
+export type Participant = { id: string; displayName?: string; status: ParticipantStatus };
+
 interface Props {
   roomId: string;
   displayName?: string;
@@ -19,9 +22,8 @@ interface Props {
   /** When true, mic stays live but video tile is hidden (used by FloatingVideo minimize). */
   audioOnly?: boolean;
   showParticipants?: boolean;
+  onParticipantsChange?: (participants: Participant[]) => void;
 }
-
-type Participant = { id: string; displayName?: string };
 
 type JitsiApi = {
   dispose: () => void;
@@ -29,12 +31,33 @@ type JitsiApi = {
   executeCommand: (cmd: string, ...args: unknown[]) => void;
 };
 
-export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showParticipants = true }: Props) {
+const isInPreviewIframe = () => {
+  try {
+    return typeof window !== "undefined" && window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
+export function JitsiRoom({
+  roomId,
+  displayName,
+  email,
+  audioOnly = false,
+  showParticipants = true,
+  onParticipantsChange,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
   const [started, setStarted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const nested = isInPreviewIframe();
+  const externalUrl = `https://meet.jit.si/AskATutor-${roomId}`;
+
+  useEffect(() => {
+    onParticipantsChange?.(participants);
+  }, [participants, onParticipantsChange]);
 
   const requestMediaAndStart = async () => {
     setPermissionError(null);
@@ -43,7 +66,6 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
       return;
     }
     try {
-      // Pre-flight permission check inside the user gesture
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       stream.getTracks().forEach((t) => t.stop());
       setStarted(true);
@@ -61,15 +83,12 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
     }
   };
 
-  // Toggle video only — keeps audio track alive when minimized
   useEffect(() => {
     if (!apiRef.current) return;
     try {
-      apiRef.current.executeCommand("setVideoQuality", audioOnly ? 180 : 720);
-      // Mute / unmute video. We do not touch audio so mic stays as user set it.
       apiRef.current.executeCommand(audioOnly ? "muteVideo" : "unmuteVideo");
     } catch {
-      // Older Jitsi may not support these commands; ignore.
+      /* ignore */
     }
   }, [audioOnly]);
 
@@ -122,24 +141,28 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
       });
       apiRef.current = api;
 
-      const refresh = () => {
-        // Jitsi exposes getParticipantsInfo via async — use listener-tracked state instead.
-      };
-
       api.addListener("videoConferenceJoined", (d: unknown) => {
         const data = d as { id: string; displayName?: string };
         setParticipants((p) => {
-          if (p.some((x) => x.id === data.id)) return p;
-          return [...p, { id: data.id, displayName: data.displayName ?? displayName ?? "You" }];
+          const next = p.filter((x) => x.id !== data.id);
+          return [
+            ...next,
+            { id: data.id, displayName: data.displayName ?? displayName ?? "You", status: "joined" },
+          ];
         });
-        refresh();
       });
       api.addListener("participantJoined", (d: unknown) => {
         const data = d as { id: string; displayName?: string };
         setParticipants((p) => {
-          if (p.some((x) => x.id === data.id)) return p;
-          return [...p, { id: data.id, displayName: data.displayName ?? "Guest" }];
+          const next = p.filter((x) => x.id !== data.id);
+          return [...next, { id: data.id, displayName: data.displayName ?? "Guest", status: "connecting" }];
         });
+        // Promote to joined shortly after — Jitsi has no per-peer "connected" event over the API
+        window.setTimeout(() => {
+          setParticipants((p) =>
+            p.map((x) => (x.id === data.id ? { ...x, status: "joined" as ParticipantStatus } : x)),
+          );
+        }, 1500);
       });
       api.addListener("participantLeft", (d: unknown) => {
         const data = d as { id: string };
@@ -150,6 +173,9 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
         setParticipants((p) =>
           p.map((x) => (x.id === data.id ? { ...x, displayName: data.displayname ?? x.displayName } : x)),
         );
+      });
+      api.addListener("videoConferenceLeft", () => {
+        setParticipants([]);
       });
     };
 
@@ -168,6 +194,7 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
       observer = null;
       apiRef.current?.dispose();
       apiRef.current = null;
+      setParticipants([]);
     };
   }, [started, roomId, displayName, email]);
 
@@ -175,7 +202,21 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
     <div className="relative h-full w-full">
       <div ref={containerRef} className="flex h-full w-full items-center justify-center bg-background">
         {!started && (
-          <div className="flex max-w-64 flex-col items-center gap-3 p-4 text-center">
+          <div className="flex max-w-xs flex-col items-center gap-3 p-4 text-center">
+            {nested && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-amber-200">
+                <p className="font-semibold">Audio &amp; video may not work in the preview frame.</p>
+                <p className="mt-1 opacity-90">
+                  Browsers block camera and microphone inside nested previews. Open the live class in a new tab for full
+                  audio/video.
+                </p>
+                <Button asChild size="sm" className="mt-2 w-full">
+                  <a href={externalUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="mr-1 h-3 w-3" /> Open class in new tab
+                  </a>
+                </Button>
+              </div>
+            )}
             <Button onClick={requestMediaAndStart}>Start camera and mic</Button>
             {permissionError && <p className="text-xs text-destructive">{permissionError}</p>}
           </div>
@@ -185,9 +226,6 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
         <div className="pointer-events-none absolute left-2 top-2 z-10 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
           <Users className="h-3 w-3" />
           <span>{participants.length}</span>
-          <span className="ml-1 max-w-[160px] truncate opacity-80">
-            {participants.map((p) => p.displayName ?? "Guest").join(", ")}
-          </span>
         </div>
       )}
     </div>

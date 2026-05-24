@@ -9,8 +9,9 @@ import { ClassroomFiles } from "@/components/ClassroomFiles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { checkRoomMembership } from "@/lib/access.functions";
+import type { Participant } from "@/components/JitsiRoom";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
   beforeLoad: async ({ params }) => {
@@ -29,6 +30,7 @@ function ClassroomPage() {
   const { roomId } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const [isTutor, setIsTutor] = useState(false);
+  const [participants, setParticipants] = useState<Participant[]>([]);
 
   useEffect(() => {
     if (!user) return;
@@ -74,6 +76,39 @@ function ClassroomPage() {
       </header>
 
 
+      <div className="border-b bg-muted/30 px-2 py-1.5 sm:px-4">
+        <div className="flex items-center gap-2 overflow-x-auto">
+          <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            In room ({participants.length})
+          </span>
+          {participants.length === 0 ? (
+            <span className="text-xs text-muted-foreground">Waiting for participants…</span>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              {participants.map((p) => (
+                <span
+                  key={p.id}
+                  className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs ${
+                    p.status === "joined"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      p.status === "joined" ? "bg-emerald-400" : "animate-pulse bg-amber-400"
+                    }`}
+                  />
+                  {p.displayName ?? "Guest"}
+                  <span className="opacity-70">{p.status === "joined" ? "" : "· connecting"}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       <main className="min-h-0 flex-1">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
           <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-md grid-cols-3">
@@ -97,6 +132,7 @@ function ClassroomPage() {
         roomId={roomId}
         displayName={user.email ?? "Guest"}
         email={user.email ?? ""}
+        onParticipantsChange={setParticipants}
       />
     </div>
   );
