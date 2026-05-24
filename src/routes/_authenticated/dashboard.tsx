@@ -440,6 +440,12 @@ function Dashboard() {
                                 )}
                               </p>
                               <p className="mt-0.5 text-xs text-muted-foreground">
+                                {tutorRow ? "Student: " : "Tutor: "}
+                                <span className="font-medium text-foreground">
+                                  {participantNames[tutorRow ? s.student_id : s.tutor_id] ?? "Unnamed"}
+                                </span>
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
                                 {new Date(s.scheduled_at).toLocaleString(undefined, {
                                   weekday: "short",
                                   month: "short",
