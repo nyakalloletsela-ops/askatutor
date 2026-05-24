@@ -549,6 +549,133 @@ function ManualCreateUser() {
   );
 }
 
+/* ===================== ALL USERS LIST ===================== */
+
+type AdminUser = {
+  id: string;
+  email: string;
+  created_at: string;
+  full_name: string | null;
+  roles: string[];
+};
+
+function AllUsersList() {
+  const { user } = useAuth();
+  const listUsers = useServerFn(adminListUsers);
+  const deleteUser = useServerFn(adminDeleteUser);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const result = await listUsers();
+      setUsers(result as AdminUser[]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const remove = async (u: AdminUser) => {
+    if (u.id === user?.id) {
+      toast.error("You cannot delete your own account");
+      return;
+    }
+    if (!confirm(`Permanently delete ${u.email}? This cannot be undone.`)) return;
+    setBusy(u.id);
+    try {
+      await deleteUser({ data: { user_id: u.id } });
+      toast.success(`Deleted ${u.email}`);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete user");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const q = filter.trim().toLowerCase();
+  const visible = q
+    ? users.filter(
+        (u) =>
+          u.email.toLowerCase().includes(q) ||
+          (u.full_name ?? "").toLowerCase().includes(q) ||
+          u.roles.some((r) => r.toLowerCase().includes(q)),
+      )
+    : users;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3">
+        <CardTitle>All users · {users.length}</CardTitle>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search email, name, role…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-56"
+          />
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+            {loading ? "Loading…" : "Refresh"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading users…</p>
+        ) : visible.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No users found.</p>
+        ) : (
+          <ul className="divide-y">
+            {visible.map((u) => {
+              const isSelf = u.id === user?.id;
+              return (
+                <li key={u.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {u.full_name ?? "Unnamed"}
+                      {isSelf && <Badge variant="secondary" className="ml-2">You</Badge>}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{u.email}</p>
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {u.roles.length === 0 ? (
+                        <Badge variant="outline">no role</Badge>
+                      ) : (
+                        u.roles.map((r) => (
+                          <Badge key={r} variant={r === "admin" ? "default" : "secondary"}>
+                            {r}
+                          </Badge>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={isSelf || busy === u.id}
+                    onClick={() => remove(u)}
+                  >
+                    {busy === u.id ? "Deleting…" : "Delete"}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ===================== TUTOR APPLICATIONS QUEUE ===================== */
 
 type AppRow = {
