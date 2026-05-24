@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { render } from '@react-email/components'
+import { renderAsync } from '@react-email/components'
 import { createClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 import { TEMPLATES } from '@/lib/email-templates/registry'
@@ -12,19 +12,6 @@ const SENDER_DOMAIN = "notify.www.askatutorlive.com"
 // FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
 // Can be the root domain when display_from_root is enabled — this is cosmetic only.
 const FROM_DOMAIN = "www.askatutorlive.com"
-
-// Whitelisted role-based sender aliases (left-hand side of the @).
-// Templates can pick one via `template.fromAlias`; callers can override
-// per-send via `fromAlias` in the request body. Defaults to "noreply".
-const ALLOWED_ALIASES = new Set(["noreply", "admin", "help", "tutors", "students", "billing"])
-const ALIAS_DISPLAY: Record<string, string> = {
-  noreply: "askatutor",
-  admin: "askatutor Admin",
-  help: "askatutor Help",
-  tutors: "askatutor Tutors",
-  students: "askatutor Students",
-  billing: "askatutor Billing",
-}
 
 function redactEmail(email: string | null | undefined): string {
   if (!email) return '***'
@@ -78,7 +65,6 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
         let idempotencyKey: string
         let messageId: string
         let templateData: Record<string, any> = {}
-        let fromAliasBody: string | undefined
         try {
           const body = await request.json()
           templateName = body.templateName || body.template_name
@@ -88,7 +74,6 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           if (body.templateData && typeof body.templateData === 'object') {
             templateData = body.templateData
           }
-          if (typeof body.fromAlias === 'string') fromAliasBody = body.fromAlias
         } catch {
           return Response.json(
             { error: 'Invalid JSON in request body' },
@@ -105,7 +90,6 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
 
         // 1. Look up template from registry (early — needed to resolve recipient)
         const template = TEMPLATES[templateName]
-
 
         if (!template) {
           console.error('Template not found in registry', { templateName })
@@ -269,8 +253,8 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
 
         // 4. Render React Email template to HTML and plain text
         const element = React.createElement(template.component, templateData)
-        const html = await render(element)
-        const plainText = await render(element, { plainText: true })
+        const html = await renderAsync(element)
+        const plainText = await renderAsync(element, { plainText: true })
 
         // Resolve subject — supports static string or dynamic function
         const resolvedSubject =
@@ -289,18 +273,12 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           status: 'pending',
         })
 
-        // Resolve sender alias: per-call override > template setting > "noreply"
-        const requestedAlias =
-          (fromAliasBody ?? (template as any).fromAlias ?? 'noreply').toLowerCase()
-        const alias = ALLOWED_ALIASES.has(requestedAlias) ? requestedAlias : 'noreply'
-        const fromHeader = `${ALIAS_DISPLAY[alias] ?? SITE_NAME} <${alias}@${FROM_DOMAIN}>`
-
         const { error: enqueueError } = await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
           payload: {
             message_id: messageId,
             to: effectiveRecipient,
-            from: fromHeader,
+            from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
             sender_domain: SENDER_DOMAIN,
             subject: resolvedSubject,
             html,
