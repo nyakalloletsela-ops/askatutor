@@ -37,8 +37,8 @@ type Review = {
   rating: number;
   comment: string | null;
   created_at: string;
-  student_id: string;
 };
+
 
 function TutorProfile() {
   const { id } = Route.useParams();
