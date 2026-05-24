@@ -401,9 +401,10 @@ export function JitsiRoom({
     () => () => {
       apiRef.current?.dispose();
       apiRef.current = null;
+      onApiReady?.(null);
       setParticipants([]);
     },
-    [],
+    [onApiReady],
   );
 
   return (
