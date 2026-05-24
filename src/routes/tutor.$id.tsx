@@ -119,11 +119,6 @@ function TutorProfile() {
                 <div className="flex-1 pb-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <h1 className="text-2xl font-bold tracking-tight">{tutor.full_name ?? "Tutor"}</h1>
-                    {tutor.is_featured && (
-                      <Badge className="gap-1 bg-gold text-gold-foreground">
-                        <Crown className="h-3 w-3" /> Premium Certified
-                      </Badge>
-                    )}
                   </div>
                   <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                     {tutor.review_count > 0 ? (

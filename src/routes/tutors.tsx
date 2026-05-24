@@ -112,9 +112,8 @@ function AllTutorsPage() {
 }
 
 function TutorCard({ t }: { t: TutorRow }) {
-  const premium = t.is_featured;
   return (
-    <Card className={`h-full transition hover:shadow-sm ${premium ? "border-gold/40" : "border-border/60"}`}>
+    <Card className="h-full border-border/60 transition hover:shadow-sm">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-muted">
@@ -129,11 +128,6 @@ function TutorCard({ t }: { t: TutorRow }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h4 className="truncate font-semibold">{t.full_name ?? "Unnamed tutor"}</h4>
-              {premium && (
-                <Badge className="bg-gold text-gold-foreground hover:bg-gold">
-                  <Crown className="mr-1 h-3 w-3" /> Premium
-                </Badge>
-              )}
             </div>
             <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               {(t.review_count ?? 0) > 0 ? (

@@ -90,7 +90,6 @@ function LeaderboardPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <p className="truncate font-semibold">{t.full_name ?? "Tutor"}</p>
-                        {t.is_featured && <Crown className="h-3.5 w-3.5 text-gold" />}
                       </div>
                       <p className="truncate text-xs text-muted-foreground">
                         {(t.subjects ?? []).slice(0, 3).join(" · ") || "—"}

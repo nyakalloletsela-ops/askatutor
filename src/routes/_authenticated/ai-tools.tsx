@@ -72,7 +72,6 @@ function AiToolsPage() {
       <div className="flex items-center gap-2">
         <Sparkles className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold tracking-tight">AI Toolkit</h1>
-        <Badge className="ml-auto bg-aurora text-white">Premium</Badge>
       </div>
       <p className="text-sm text-muted-foreground">
         Pick a tool, give it your topic, and let Lordda do the heavy lifting.
