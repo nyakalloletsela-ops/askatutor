@@ -234,6 +234,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
+    if (!canDraw) return; // student without permission can only view + scroll
+
+
     // single touch / mouse — start drawing
     if (e.pointerType !== "touch") {
       (e.target as Element).setPointerCapture?.(e.pointerId);
