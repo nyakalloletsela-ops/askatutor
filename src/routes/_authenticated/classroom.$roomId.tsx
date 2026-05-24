@@ -108,6 +108,8 @@ function ClassroomPage() {
           )}
         </div>
       </div>
+
+      <main className="min-h-0 flex-1">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
           <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-md grid-cols-3">
             <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
