@@ -247,140 +247,14 @@ export function JitsiRoom({
     }
   }, [audioOnly]);
 
-  useEffect(() => {
-    if (!started) return;
-    let observer: MutationObserver | null = null;
-
-    const start = () => {
-      if (!containerRef.current || !window.JitsiMeetExternalAPI) return;
-
-      observer = new MutationObserver(() => {
-        const iframe = containerRef.current?.querySelector("iframe");
-        if (iframe) {
-          iframe.setAttribute(
-            "allow",
-            "camera *; microphone *; display-capture *; autoplay; clipboard-write; fullscreen; speaker-selection",
-          );
-          iframe.setAttribute("allowfullscreen", "true");
-          observer?.disconnect();
-          observer = null;
-        }
-      });
-      observer.observe(containerRef.current, { childList: true, subtree: true });
-
-      const api: JitsiApi = new window.JitsiMeetExternalAPI("meet.jit.si", {
-        roomName: `AskATutor-${roomId}`,
-        parentNode: containerRef.current,
-        width: "100%",
-        height: "100%",
-        userInfo: { displayName: displayName ?? "Guest", email: email ?? "" },
-        configOverwrite: {
-          prejoinPageEnabled: false,
-          disableDeepLinking: true,
-          startWithAudioMuted: false,
-          startWithVideoMuted: false,
-        },
-        interfaceConfigOverwrite: {
-          TOOLBAR_BUTTONS: [
-            "microphone",
-            "camera",
-            "desktop",
-            "fullscreen",
-            "hangup",
-            "chat",
-            "raisehand",
-            "tileview",
-            "settings",
-          ],
-        },
-      });
-      apiRef.current = api;
-
-      window.setTimeout(() => {
-        try {
-          api.executeCommand("unmuteAudio");
-          if (audioOnlyRef.current) api.executeCommand("muteVideo");
-        } catch {
-          /* ignore */
-        }
-      }, 1500);
-
-      api.addListener("micError", () => {
-        setPermissionError(
-          "Microphone did not start. Tap the lock icon in the address bar and allow microphone access.",
-        );
-      });
-      api.addListener("cameraError", () => {
-        setPermissionError(
-          "Camera did not start. Tap the lock icon in the address bar and allow camera access.",
-        );
-      });
-
-      api.addListener("videoConferenceJoined", (d: unknown) => {
-        const data = d as { id: string; displayName?: string };
-        setParticipants((p) => {
-          const next = p.filter((x) => x.id !== data.id);
-          return [
-            ...next,
-            {
-              id: data.id,
-              displayName: data.displayName ?? displayName ?? "You",
-              status: "joined",
-            },
-          ];
-        });
-      });
-      api.addListener("participantJoined", (d: unknown) => {
-        const data = d as { id: string; displayName?: string };
-        setParticipants((p) => {
-          const next = p.filter((x) => x.id !== data.id);
-          return [
-            ...next,
-            { id: data.id, displayName: data.displayName ?? "Guest", status: "connecting" },
-          ];
-        });
-        // Promote to joined shortly after — Jitsi has no per-peer "connected" event over the API
-        window.setTimeout(() => {
-          setParticipants((p) =>
-            p.map((x) => (x.id === data.id ? { ...x, status: "joined" as ParticipantStatus } : x)),
-          );
-        }, 1500);
-      });
-      api.addListener("participantLeft", (d: unknown) => {
-        const data = d as { id: string };
-        setParticipants((p) => p.filter((x) => x.id !== data.id));
-      });
-      api.addListener("displayNameChange", (d: unknown) => {
-        const data = d as { id: string; displayname?: string };
-        setParticipants((p) =>
-          p.map((x) =>
-            x.id === data.id ? { ...x, displayName: data.displayname ?? x.displayName } : x,
-          ),
-        );
-      });
-      api.addListener("videoConferenceLeft", () => {
-        setParticipants([]);
-      });
-    };
-
-    if (!window.JitsiMeetExternalAPI) {
-      const s = document.createElement("script");
-      s.src = "https://meet.jit.si/external_api.js";
-      s.async = true;
-      s.onload = start;
-      document.body.appendChild(s);
-    } else {
-      start();
-    }
-
-    return () => {
-      observer?.disconnect();
-      observer = null;
+  useEffect(
+    () => () => {
       apiRef.current?.dispose();
       apiRef.current = null;
       setParticipants([]);
-    };
-  }, [started, roomId, displayName, email]);
+    },
+    [],
+  );
 
   return (
     <div className="relative h-full w-full">
