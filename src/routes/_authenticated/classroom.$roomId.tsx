@@ -6,6 +6,7 @@ import { FloatingVideo } from "@/components/FloatingVideo";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
+import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -88,6 +89,7 @@ function ClassroomPage() {
   const [isTutor, setIsTutor] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [diagnostics, setDiagnostics] = useState<MediaDiagnostics>(initialDiagnostics);
+  const [jitsiApi, setJitsiApi] = useState<JitsiDeviceApi | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -175,6 +177,8 @@ function ClassroomPage() {
       </div>
 
       <DiagnosticsPanel diagnostics={diagnostics} />
+      <DeviceSelector api={jitsiApi} />
+
 
       <main className="min-h-0 flex-1">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
@@ -201,6 +205,7 @@ function ClassroomPage() {
         email={user.email ?? ""}
         onParticipantsChange={setParticipants}
         onDiagnosticsChange={setDiagnostics}
+        onApiReady={setJitsiApi}
       />
     </div>
   );

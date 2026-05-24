@@ -50,6 +50,7 @@ interface Props {
   showParticipants?: boolean;
   onParticipantsChange?: (participants: Participant[]) => void;
   onDiagnosticsChange?: (diagnostics: MediaDiagnostics) => void;
+  onApiReady?: (api: { executeCommand: (cmd: string, ...args: unknown[]) => void } | null) => void;
 }
 
 type JitsiApi = {
@@ -124,6 +125,7 @@ export function JitsiRoom({
   showParticipants = true,
   onParticipantsChange,
   onDiagnosticsChange,
+  onApiReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
@@ -233,6 +235,7 @@ export function JitsiRoom({
       },
     });
     apiRef.current = api;
+    onApiReady?.(api);
     setStarted(true);
 
     const iframe = containerRef.current.querySelector("iframe");
@@ -398,9 +401,10 @@ export function JitsiRoom({
     () => () => {
       apiRef.current?.dispose();
       apiRef.current = null;
+      onApiReady?.(null);
       setParticipants([]);
     },
-    [],
+    [onApiReady],
   );
 
   return (
