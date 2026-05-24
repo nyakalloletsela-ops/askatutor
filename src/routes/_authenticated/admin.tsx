@@ -150,14 +150,20 @@ function AdminPage() {
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-8">
         <h1 className="text-3xl font-bold text-navy">Admin control panel</h1>
 
-        <Tabs defaultValue="tutors" className="w-full">
+        <Tabs defaultValue="applications" className="w-full">
           <TabsList className="flex w-full flex-wrap justify-start">
+            <TabsTrigger value="applications">Tutor applications</TabsTrigger>
             <TabsTrigger value="tutors">Tutors</TabsTrigger>
             <TabsTrigger value="courses">Courses</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="content">Site content</TabsTrigger>
             <TabsTrigger value="subjects">Subjects</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="applications" className="mt-4">
+            <TutorApplicationsQueue />
+          </TabsContent>
+
 
           {/* Pending subscription payments tab hidden until free options are finalised. */}
 
