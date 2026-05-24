@@ -59,6 +59,15 @@ export function JitsiRoom({
     onParticipantsChange?.(participants);
   }, [participants, onParticipantsChange]);
 
+  // Auto-start on the live site (top-level frame). In the Lovable preview iframe
+  // browsers block getUserMedia, so we keep the manual button + "open in new tab" CTA.
+  useEffect(() => {
+    if (started || nested) return;
+    void requestMediaAndStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nested]);
+
+
   const requestMediaAndStart = async () => {
     setPermissionError(null);
     if (!navigator.mediaDevices?.getUserMedia) {
