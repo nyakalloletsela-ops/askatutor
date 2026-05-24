@@ -17,6 +17,16 @@ declare global {
 
 export type ParticipantStatus = "connecting" | "joined";
 export type Participant = { id: string; displayName?: string; status: ParticipantStatus };
+export type MediaPermissionState = "checking" | "granted" | "prompt" | "denied" | "unknown" | "unavailable";
+export type MediaAvailabilityState = "checking" | "available" | "missing" | "blocked" | "in-use" | "unknown" | "unavailable";
+export type MediaDiagnostics = {
+  cameraAvailable: MediaAvailabilityState;
+  microphoneAvailable: MediaAvailabilityState;
+  cameraPermission: MediaPermissionState;
+  microphonePermission: MediaPermissionState;
+  jitsiMessages: string[];
+  lastCheckedAt?: number;
+};
 
 interface Props {
   roomId: string;
@@ -26,6 +36,7 @@ interface Props {
   audioOnly?: boolean;
   showParticipants?: boolean;
   onParticipantsChange?: (participants: Participant[]) => void;
+  onDiagnosticsChange?: (diagnostics: MediaDiagnostics) => void;
 }
 
 type JitsiApi = {
@@ -64,6 +75,32 @@ const isInPreviewIframe = () => {
   } catch {
     return true;
   }
+};
+
+const initialDiagnostics: MediaDiagnostics = {
+  cameraAvailable: "checking",
+  microphoneAvailable: "checking",
+  cameraPermission: "checking",
+  microphonePermission: "checking",
+  jitsiMessages: [],
+};
+
+const readPermission = async (name: "camera" | "microphone"): Promise<MediaPermissionState> => {
+  if (typeof navigator === "undefined" || !navigator.permissions?.query) return "unknown";
+
+  try {
+    const status = await navigator.permissions.query({ name: name as PermissionName });
+    return status.state;
+  } catch {
+    return "unknown";
+  }
+};
+
+const describeJitsiPayload = (prefix: string, data: unknown) => {
+  if (!data || typeof data !== "object") return prefix;
+  const payload = data as { message?: string; error?: string; type?: string; name?: string };
+  const detail = payload.message ?? payload.error ?? payload.type ?? payload.name;
+  return detail ? `${prefix}: ${detail}` : prefix;
 };
 
 export function JitsiRoom({
