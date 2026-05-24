@@ -72,7 +72,7 @@ function ClassroomPage() {
             <TabsTrigger value="lab">Lordda Lab</TabsTrigger>
           </TabsList>
           <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
-            <Whiteboard roomId={roomId} userId={user.id} />
+            <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />
           </TabsContent>
           <TabsContent value="files" className="m-0 min-h-0 flex-1">
             <ClassroomFiles roomId={roomId} />
