@@ -41,3 +41,60 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     }
     return { id: created.user.id, email: created.user.email };
   });
+
+async function assertAdmin(context: { supabase: any; userId: string }) {
+  const { data, error } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .eq("role", "admin");
+  if (error) throw new Error(error.message);
+  if (!data || data.length === 0) throw new Error("Forbidden");
+}
+
+export const adminListUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+
+    const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    if (error) throw new Error(error.message);
+
+    const ids = list.users.map((u) => u.id);
+    const [{ data: profiles }, { data: roles }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, full_name").in("id", ids),
+      supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids),
+    ]);
+
+    const nameById = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name]));
+    const rolesById = new Map<string, string[]>();
+    (roles ?? []).forEach((r: any) => {
+      const arr = rolesById.get(r.user_id) ?? [];
+      arr.push(r.role);
+      rolesById.set(r.user_id, arr);
+    });
+
+    return list.users.map((u) => ({
+      id: u.id,
+      email: u.email ?? "",
+      created_at: u.created_at,
+      full_name: nameById.get(u.id) ?? null,
+      roles: rolesById.get(u.id) ?? [],
+    }));
+  });
+
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ user_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.user_id === context.userId) throw new Error("You cannot delete your own account");
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.user_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
