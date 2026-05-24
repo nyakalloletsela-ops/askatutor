@@ -200,9 +200,11 @@ function AdminPage() {
             <TutorCoursesQueue />
           </TabsContent>
 
-          <TabsContent value="users" className="mt-4">
+          <TabsContent value="users" className="mt-4 space-y-4">
             <ManualCreateUser />
+            <AllUsersList />
           </TabsContent>
+
 
           <TabsContent value="content" className="mt-4">
             <SiteContentEditor />
