@@ -198,6 +198,14 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
     );
   }
 
+  if (user.id === tutor.id) {
+    return (
+      <Button size="sm" variant="outline" className="w-full" disabled>
+        This is you
+      </Button>
+    );
+  }
+
   const canUseFree = freeMinutes >= Number(duration);
 
   const submit = async () => {
