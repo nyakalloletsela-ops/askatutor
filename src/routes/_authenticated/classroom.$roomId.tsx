@@ -89,6 +89,7 @@ function ClassroomPage() {
   const [isTutor, setIsTutor] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [diagnostics, setDiagnostics] = useState<MediaDiagnostics>(initialDiagnostics);
+  const [jitsiApi, setJitsiApi] = useState<JitsiDeviceApi | null>(null);
 
   useEffect(() => {
     if (!user) return;
