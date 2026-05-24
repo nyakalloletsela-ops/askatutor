@@ -51,16 +51,24 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: MediaDiagnostics }) {
           <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraAvailable)}`}>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraAvailable)}`}
+          >
             <Camera className="h-3 w-3" /> Camera {statusText(diagnostics.cameraAvailable)}
           </span>
-          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraPermission)}`}>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraPermission)}`}
+          >
             Camera permission {statusText(diagnostics.cameraPermission)}
           </span>
-          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphoneAvailable)}`}>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphoneAvailable)}`}
+          >
             <Mic className="h-3 w-3" /> Mic {statusText(diagnostics.microphoneAvailable)}
           </span>
-          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphonePermission)}`}>
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphonePermission)}`}
+          >
             Mic permission {statusText(diagnostics.microphonePermission)}
           </span>
           {diagnostics.jitsiMessages.length > 0 && (
