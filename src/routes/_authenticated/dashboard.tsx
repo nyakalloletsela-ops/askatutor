@@ -556,7 +556,7 @@ function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <Button onClick={becomeTutor}>Become a tutor</Button>
+                    <Button asChild><Link to="/become-tutor">Apply to tutor</Link></Button>
                   </CardContent>
                 </Card>
               </section>
