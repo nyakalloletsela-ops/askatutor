@@ -148,18 +148,23 @@ function Home() {
             <ShortcutInner icon={Briefcase} title={t("shortcuts.dash.title")} desc={t("shortcuts.dash.desc")} />
           </Link>
 
-          {/* Tutors — only shown to guests + actual tutors. Logged-in
-              students already see a "Become a tutor" CTA on their dashboard,
-              so we don't repeat it here. */}
-          {user && isTutor && (
+          {/* Third card — context-aware so "Become a tutor" only appears once.
+              Guests: For Tutors (apply to teach).
+              Tutors: their dashboard.
+              Logged-in students: their dashboard (the become-tutor CTA lives there). */}
+          {!user ? (
+            <Link to="/auth" className="block">
+              <ShortcutInner icon={GraduationCap} title={t("shortcuts.tutor.title")} desc={t("shortcuts.tutor.desc")} />
+            </Link>
+          ) : isTutor ? (
             <Link to="/dashboard" className="block">
               <ShortcutInner icon={GraduationCap} title="Tutor Dashboard"
                 desc="Manage your subjects, availability and bookings." />
             </Link>
-          )}
-          {!user && (
-            <Link to="/auth" className="block">
-              <ShortcutInner icon={GraduationCap} title={t("shortcuts.tutor.title")} desc={t("shortcuts.tutor.desc")} />
+          ) : (
+            <Link to="/dashboard" className="block">
+              <ShortcutInner icon={GraduationCap} title="Your Dashboard"
+                desc="Your sessions, profile and the option to teach." />
             </Link>
           )}
         </div>
