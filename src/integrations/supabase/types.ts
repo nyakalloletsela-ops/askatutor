@@ -548,6 +548,30 @@ export type Database = {
           },
         ]
       }
+      tutor_reviews_public: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string | null
+          rating: number | null
+          tutor_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string | null
+          rating?: number | null
+          tutor_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string | null
+          rating?: number | null
+          tutor_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       become_tutor: { Args: never; Returns: undefined }
