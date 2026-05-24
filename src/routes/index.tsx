@@ -77,6 +77,9 @@ function Home() {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // hooks must run unconditionally — keep these above any early return that depends on async state
+
+
 
   useEffect(() => {
     (async () => {
