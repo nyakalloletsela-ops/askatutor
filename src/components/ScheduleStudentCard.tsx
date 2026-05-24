@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { notifyBookingEmails } from "@/lib/booking-emails.functions";
+import { listSchedulableStudents } from "@/lib/students.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,37 +34,19 @@ export function ScheduleStudentCard({
   const [busy, setBusy] = useState(false);
 
   const [query, setQuery] = useState("");
+  const loadStudents = useServerFn(listSchedulableStudents);
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.rpc("list_students_for_tutor");
-      if (!error && data) {
-        setStudents(
-          (data as { id: string; full_name: string | null }[])
-            .filter((s) => s.id !== tutorId)
-            .map((s) => ({
-              id: s.id,
-              name: s.full_name ?? "Student",
-            })),
-        );
-        return;
+      try {
+        const rows = await loadStudents();
+        setStudents((rows as Student[]).filter((s) => s.id !== tutorId));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to load students");
+        setStudents([]);
       }
-      // fallback: past students only
-      const { data: ss } = await supabase
-        .from("sessions")
-        .select("student_id")
-        .eq("tutor_id", tutorId);
-      const ids = Array.from(new Set((ss ?? []).map((s) => s.student_id)));
-      if (ids.length === 0) return setStudents([]);
-      const { data: profs } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", ids);
-      setStudents(
-        (profs ?? []).map((p) => ({ id: p.id, name: p.full_name ?? "Student" })),
-      );
     })();
-  }, [tutorId]);
+  }, [loadStudents, tutorId]);
 
   const filtered = query
     ? students.filter((s) => s.name.toLowerCase().includes(query.toLowerCase()))
