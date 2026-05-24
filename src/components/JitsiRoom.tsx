@@ -91,6 +91,10 @@ export function JitsiRoom({
     onParticipantsChange?.(participants);
   }, [participants, onParticipantsChange]);
 
+  useEffect(() => {
+    void loadJitsiScript().catch(() => undefined);
+  }, []);
+
   const startConference = () => {
     if (!containerRef.current || !window.JitsiMeetExternalAPI || apiRef.current) return;
 
@@ -203,9 +207,9 @@ export function JitsiRoom({
       return;
     }
     try {
-      await loadJitsiScript();
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       stream.getTracks().forEach((t) => t.stop());
+      await loadJitsiScript();
       startConference();
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
