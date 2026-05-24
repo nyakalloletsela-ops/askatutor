@@ -62,7 +62,17 @@ function ClassroomPage() {
             <p className="text-xs text-muted-foreground">Room: {roomId}</p>
           </div>
         </div>
+        <Button asChild size="sm" variant="outline">
+          <a
+            href={`https://meet.jit.si/AskATutor-${roomId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open video in new tab
+          </a>
+        </Button>
       </header>
+
 
       <main className="min-h-0 flex-1">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
