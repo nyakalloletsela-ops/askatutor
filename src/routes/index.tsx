@@ -66,12 +66,17 @@ const DEFAULT_CONTENT: Record<string, string> = {
 };
 
 function Home() {
-  const { user, isTutor } = useAuth();
+  const { user, isTutor, loading } = useAuth();
   const [tutors, setTutors] = useState<TutorRow[]>([]);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
   const [content, setContent] = useState<Record<string, string>>(DEFAULT_CONTENT);
   const t = (k: string) => content[k] ?? DEFAULT_CONTENT[k] ?? "";
+
+  if (!loading && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
 
   useEffect(() => {
     (async () => {
