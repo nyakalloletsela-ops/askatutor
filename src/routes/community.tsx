@@ -26,7 +26,6 @@ export const Route = createFileRoute("/community")({
 
 type Post = {
   id: string;
-  user_id: string;
   parent_id: string | null;
   title: string | null;
   body: string;
@@ -34,6 +33,7 @@ type Post = {
   created_at: string;
   author_name: string;
 };
+
 
 function CommunityPage() {
   const { user } = useAuth();
