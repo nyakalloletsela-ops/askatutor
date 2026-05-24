@@ -235,6 +235,7 @@ export function JitsiRoom({
       },
     });
     apiRef.current = api;
+    onApiReady?.(api);
     setStarted(true);
 
     const iframe = containerRef.current.querySelector("iframe");
