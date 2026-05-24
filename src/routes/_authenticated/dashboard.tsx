@@ -147,7 +147,7 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 /* ---------- Page ---------- */
 
 function Dashboard() {
-  const { user, isTutor, roles, refresh } = useAuth();
+  const { user, isTutor, roles } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
@@ -199,14 +199,8 @@ function Dashboard() {
     setSessions((ss as SessionRow[]) ?? []);
   };
 
-  const becomeTutor = async () => {
-    if (!user) return;
-    const { error } = await supabase.rpc("become_tutor");
-    if (error) return toast.error(error.message);
-    toast.success("You're now a tutor! Complete your profile.");
-    await refresh();
-    await refreshAll();
-  };
+  // Tutor onboarding now requires an application reviewed by an admin.
+
 
   const saveProfile = async () => {
     if (!profile || !user) return;
@@ -562,7 +556,7 @@ function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <Button onClick={becomeTutor}>Become a tutor</Button>
+                    <Button asChild><Link to="/become-tutor">Apply to tutor</Link></Button>
                   </CardContent>
                 </Card>
               </section>
