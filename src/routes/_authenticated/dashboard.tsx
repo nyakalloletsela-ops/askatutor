@@ -667,6 +667,12 @@ function Dashboard() {
                   desc="Guided hints for the problem you're stuck on."
                 />
                 <QuickAction
+                  to="/messages"
+                  icon={MessageSquare}
+                  title="Messages"
+                  desc="Chat directly with your tutors and students."
+                />
+                <QuickAction
                   to="/ai-tools"
                   icon={Sparkles}
                   title="AI Toolkit"
