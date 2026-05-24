@@ -93,20 +93,21 @@ export function FloatingVideo({ roomId, displayName, email }: Props) {
           </button>
         </div>
       </div>
+      <div
+        className="h-[calc(100%-36px)]"
+        style={{ display: minimized ? "none" : "block" }}
+      >
+        <JitsiRoom roomId={roomId} displayName={displayName} email={email} audioOnly={minimized} />
+      </div>
       {!minimized && (
-        <>
-          <div className="h-[calc(100%-36px)]">
-            <JitsiRoom roomId={roomId} displayName={displayName} email={email} />
-          </div>
-          <div
-            className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize bg-navy-foreground/40"
-            style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}
-            onPointerDown={(e) => {
-              (e.target as HTMLElement).setPointerCapture(e.pointerId);
-              resizeRef.current = { sx: e.clientX, sy: e.clientY, w: size.w, h: size.h };
-            }}
-          />
-        </>
+        <div
+          className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize bg-navy-foreground/40"
+          style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}
+          onPointerDown={(e) => {
+            (e.target as HTMLElement).setPointerCapture(e.pointerId);
+            resizeRef.current = { sx: e.clientX, sy: e.clientY, w: size.w, h: size.h };
+          }}
+        />
       )}
     </div>
   );
