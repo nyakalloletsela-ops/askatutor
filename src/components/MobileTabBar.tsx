@@ -22,8 +22,6 @@ export function MobileTabBar() {
     if (t.authed && !user) return false;
     if (t.guest && user) return false;
     if (t.admin && !isAdmin) return false;
-    // Drop the generic "Me" tab for admins so Admin fits without crowding.
-    if (isAdmin && t.to === "/dashboard") return false;
     return true;
   });
 
