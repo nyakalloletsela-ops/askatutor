@@ -135,9 +135,9 @@ export function JitsiRoom({
   const nested = isInPreviewIframe();
   const externalUrl = `https://meet.jit.si/AskATutor-${roomId}`;
 
-  const patchDiagnostics = (patch: Partial<MediaDiagnostics>) => {
+  const patchDiagnostics = useCallback((patch: Partial<MediaDiagnostics>) => {
     setDiagnostics((current) => ({ ...current, ...patch, lastCheckedAt: Date.now() }));
-  };
+  }, []);
 
   const addJitsiMessage = (message: string) => {
     setDiagnostics((current) => ({
@@ -147,7 +147,7 @@ export function JitsiRoom({
     }));
   };
 
-  const refreshDiagnostics = async () => {
+  const refreshDiagnostics = useCallback(async () => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices) {
       patchDiagnostics({
         cameraAvailable: "unavailable",
@@ -167,15 +167,24 @@ export function JitsiRoom({
 
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      cameraAvailable = devices.some((device) => device.kind === "videoinput") ? "available" : "missing";
-      microphoneAvailable = devices.some((device) => device.kind === "audioinput") ? "available" : "missing";
+      cameraAvailable = devices.some((device) => device.kind === "videoinput")
+        ? "available"
+        : "missing";
+      microphoneAvailable = devices.some((device) => device.kind === "audioinput")
+        ? "available"
+        : "missing";
     } catch {
       cameraAvailable = cameraPermission === "denied" ? "blocked" : "unknown";
       microphoneAvailable = microphonePermission === "denied" ? "blocked" : "unknown";
     }
 
-    patchDiagnostics({ cameraAvailable, microphoneAvailable, cameraPermission, microphonePermission });
-  };
+    patchDiagnostics({
+      cameraAvailable,
+      microphoneAvailable,
+      cameraPermission,
+      microphonePermission,
+    });
+  }, [patchDiagnostics]);
 
   useEffect(() => {
     audioOnlyRef.current = audioOnly;
@@ -192,7 +201,7 @@ export function JitsiRoom({
   useEffect(() => {
     void loadJitsiScript().catch(() => undefined);
     void refreshDiagnostics();
-  }, []);
+  }, [refreshDiagnostics]);
 
   const startConference = () => {
     if (!containerRef.current || !window.JitsiMeetExternalAPI || apiRef.current) return;
