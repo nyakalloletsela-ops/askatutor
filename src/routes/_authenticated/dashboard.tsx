@@ -154,6 +154,7 @@ function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
   const [txnRef, setTxnRef] = useState("");
   const [payMethod, setPayMethod] = useState<"mpesa" | "ecocash">("mpesa");
   const [subjectInput, setSubjectInput] = useState("");
@@ -187,6 +188,14 @@ function Dashboard() {
       .or(`tutor_id.eq.${user.id},student_id.eq.${user.id}`)
       .order("scheduled_at", { ascending: true });
     setSessions((ss as SessionRow[]) ?? []);
+    const { data: names } = await supabase.rpc("get_session_participant_names");
+    if (names) {
+      const map: Record<string, string> = {};
+      for (const r of names as Array<{ user_id: string; full_name: string | null }>) {
+        if (r.full_name) map[r.user_id] = r.full_name;
+      }
+      setParticipantNames(map);
+    }
   };
 
   const startSession = async (s: SessionRow) => {
@@ -429,6 +438,12 @@ function Dashboard() {
                                     Live
                                   </Badge>
                                 )}
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {tutorRow ? "Student: " : "Tutor: "}
+                                <span className="font-medium text-foreground">
+                                  {participantNames[tutorRow ? s.student_id : s.tutor_id] ?? "Unnamed"}
+                                </span>
                               </p>
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 {new Date(s.scheduled_at).toLocaleString(undefined, {
