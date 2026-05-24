@@ -189,7 +189,7 @@ function Dashboard() {
   const startSession = async (s: SessionRow) => {
     const { error } = await supabase
       .from("sessions")
-      .update({ status: "in_progress" })
+      .update({ status: "live" })
       .eq("id", s.id);
     if (error) { toast.error(error.message); return; }
     window.location.href = `/classroom/${s.room_id}`;
