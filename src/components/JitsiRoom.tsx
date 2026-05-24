@@ -136,6 +136,9 @@ export function JitsiRoom({
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
   const audioOnlyRef = useRef(audioOnly);
+  const [scriptStatus, setScriptStatus] = useState<ScriptStatus>(
+    typeof window !== "undefined" && window.JitsiMeetExternalAPI ? "ready" : "loading",
+  );
   const [started, setStarted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -207,7 +210,12 @@ export function JitsiRoom({
   }, [participants, onParticipantsChange]);
 
   useEffect(() => {
-    void loadJitsiScript().catch(() => undefined);
+    void loadJitsiScript()
+      .then(() => setScriptStatus("ready"))
+      .catch(() => {
+        setScriptStatus("error");
+        setPermissionError("Video service failed to load. Use Open class in new tab while we retry.");
+      });
     void refreshDiagnostics();
   }, [refreshDiagnostics]);
 
@@ -225,6 +233,10 @@ export function JitsiRoom({
         disableDeepLinking: true,
         startWithAudioMuted: false,
         startWithVideoMuted: false,
+      },
+      iframeAttrs: {
+        allow: iframeAllow,
+        allowfullscreen: "true",
       },
       interfaceConfigOverwrite: {
         TOOLBAR_BUTTONS: [
@@ -244,10 +256,10 @@ export function JitsiRoom({
     onApiReady?.(api);
     setStarted(true);
 
-    const iframe = containerRef.current.querySelector("iframe");
+    const iframe = api.getIFrame?.() ?? containerRef.current.querySelector("iframe");
     iframe?.setAttribute(
       "allow",
-      "autoplay; camera; microphone; display-capture; clipboard-write; fullscreen; speaker-selection",
+      iframeAllow,
     );
     iframe?.setAttribute("allowfullscreen", "true");
 
