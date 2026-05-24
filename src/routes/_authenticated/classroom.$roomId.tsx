@@ -9,8 +9,9 @@ import { ClassroomFiles } from "@/components/ClassroomFiles";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { checkRoomMembership } from "@/lib/access.functions";
+import type { Participant } from "@/components/JitsiRoom";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
   beforeLoad: async ({ params }) => {
