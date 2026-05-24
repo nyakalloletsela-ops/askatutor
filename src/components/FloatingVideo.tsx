@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Minus, Move, Video, VideoOff, Maximize2 } from "lucide-react";
-import { JitsiRoom } from "@/components/JitsiRoom";
+import { NativeClassroomCall } from "@/components/NativeClassroomCall";
 import { Button } from "@/components/ui/button";
 
 import type { MediaDiagnostics, Participant } from "@/components/JitsiRoom";
@@ -112,7 +112,7 @@ export function FloatingVideo({
           pointerEvents: minimized ? "none" : "auto",
         }}
       >
-        <JitsiRoom
+        <NativeClassroomCall
           roomId={roomId}
           displayName={displayName}
           email={email}
