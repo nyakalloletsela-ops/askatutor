@@ -94,7 +94,7 @@ export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showP
       });
       observer.observe(containerRef.current, { childList: true, subtree: true });
 
-      const api = new window.JitsiMeetExternalAPI("meet.jit.si", {
+      const api: JitsiApi = new window.JitsiMeetExternalAPI("meet.jit.si", {
         roomName: `AskATutor-${roomId}`,
         parentNode: containerRef.current,
         width: "100%",
