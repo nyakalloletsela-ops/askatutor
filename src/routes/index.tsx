@@ -377,11 +377,10 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
         is_free: useFree,
       }).select("id").single();
       if (error) {
-        const msg = /row-level security/i.test(error.message)
-          ? "You can't book this session. Make sure you're signed in as a student and not booking yourself."
-          : error.message;
-        throw new Error(msg);
+        console.error("Booking insert failed", { error, userId: user.id, tutorId: tutor.id });
+        throw new Error(`${error.message}${error.code ? ` (${error.code})` : ""}`);
       }
+
       if (inserted?.id) {
         notifyBookingEmails({ data: { sessionId: inserted.id } }).catch(() => {});
       }
