@@ -76,11 +76,16 @@ export function JitsiRoom({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
+  const audioOnlyRef = useRef(audioOnly);
   const [started, setStarted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const nested = isInPreviewIframe();
   const externalUrl = `https://meet.jit.si/AskATutor-${roomId}`;
+
+  useEffect(() => {
+    audioOnlyRef.current = audioOnly;
+  }, [audioOnly]);
 
   useEffect(() => {
     onParticipantsChange?.(participants);
@@ -189,7 +194,7 @@ export function JitsiRoom({
       window.setTimeout(() => {
         try {
           api.executeCommand("unmuteAudio");
-          if (audioOnly) api.executeCommand("muteVideo");
+          if (audioOnlyRef.current) api.executeCommand("muteVideo");
         } catch {
           /* ignore */
         }
