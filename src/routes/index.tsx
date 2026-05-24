@@ -52,14 +52,14 @@ const DEFAULT_CONTENT: Record<string, string> = {
   "hero.subtitle": "Book live one-on-one sessions with expert tutors for Primary, High School, IGCSE, A-Level and Undergraduate subjects.",
   "hero.cta_primary": "Find a tutor",
   "hero.cta_secondary": "Create free account",
-  "shortcuts.find.title": "For Students",
+  "shortcuts.find.title": "Students",
   "shortcuts.find.desc": "Find verified tutors by subject and book live lessons.",
-  "shortcuts.tutor.title": "For Tutors",
+  "shortcuts.tutor.title": "Tutors",
   "shortcuts.tutor.desc": "Apply to teach, list your subjects, and start earning.",
-  "shortcuts.dash.title": "Student Work",
+  "shortcuts.dash.title": "Work",
   "shortcuts.dash.desc": "Practice with Virtual Labs, AI Coach, and the Community.",
   "tutors.heading": "Available tutors",
-  "tutors.subheading": "Premium Certified Tutors appear first. Search by name or filter by subject.",
+  "tutors.subheading": "Browse verified tutors. Search by name or filter by subject.",
   "tutors.top_label": "Top 5 most-booked tutors",
   "footer.tagline": "© Ask A Tutor Live. All rights reserved.",
 };
@@ -271,9 +271,9 @@ function Footer({ tagline }: { tagline: string }) {
 
 /* ===================== TUTOR CARD ===================== */
 
-function TutorCard({ t, premium }: { t: TutorRow; premium?: boolean }) {
+function TutorCard({ t }: { t: TutorRow; premium?: boolean }) {
   return (
-    <Card className={`h-full transition hover:shadow-sm ${premium ? "border-gold/40" : "border-border/60"}`}>
+    <Card className="h-full border-border/60 transition hover:shadow-sm">
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-muted">
@@ -288,11 +288,6 @@ function TutorCard({ t, premium }: { t: TutorRow; premium?: boolean }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h4 className="truncate font-semibold">{t.full_name ?? "Unnamed tutor"}</h4>
-              {premium && (
-                <Badge className="bg-gold text-gold-foreground hover:bg-gold">
-                  <Crown className="mr-1 h-3 w-3" /> Premium
-                </Badge>
-              )}
             </div>
             <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               {(t.review_count ?? 0) > 0 ? (

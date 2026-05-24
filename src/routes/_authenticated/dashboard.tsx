@@ -176,14 +176,21 @@ function Dashboard() {
 
   const refreshAll = async () => {
     if (!user) return;
-    const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-    setProfile(p as Profile);
-    const { data: s } = await supabase
-      .from("tutor_subscriptions")
-      .select("*")
-      .eq("tutor_id", user.id)
-      .order("submitted_at", { ascending: false });
-    setSubs((s as Subscription[]) ?? []);
+    const { data: p } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+    setProfile(
+      (p as Profile) ?? {
+        id: user.id,
+        full_name: (user.user_metadata as { full_name?: string } | undefined)?.full_name ?? null,
+        bio: null,
+        subjects: [],
+        hourly_rate: null,
+        phone: null,
+        is_featured: false,
+        availability: null,
+        free_minutes_remaining: 0,
+      },
+    );
+    setSubs([]);
     const { data: ss } = await supabase
       .from("sessions")
       .select("*")
@@ -315,10 +322,10 @@ function Dashboard() {
                 hint="per hour"
               />
               <StatCard
-                icon={Crown}
-                label="Status"
-                value={profile.is_featured ? "Premium" : "Standard"}
-                hint={profile.is_featured ? "featured tutor" : "subscribe to get featured"}
+                icon={Users}
+                label="Subjects"
+                value={(profile.subjects ?? []).length}
+                hint="listed on your profile"
               />
             </>
           ) : (
@@ -334,8 +341,8 @@ function Dashboard() {
               <StatCard
                 icon={Sparkles}
                 label="AI access"
-                value={approvedSub ? "Active" : "Locked"}
-                hint={approvedSub ? "premium unlocked" : "subscribe to unlock"}
+                value="Free"
+                hint="Coach & Toolkit included"
               />
             </>
           )}
@@ -645,11 +652,9 @@ function Dashboard() {
                       ? upcoming.length === 0
                         ? "Share your tutor profile link to attract your first booking."
                         : `You have ${upcoming.length} upcoming session${upcoming.length > 1 ? "s" : ""}. Prepare your notes in advance.`
-                      : !approvedSub
-                        ? "Subscribe to unlock the AI Coach for unlimited study help."
-                        : completedCount === 0
-                          ? "Book your first session and start your learning streak."
-                          : "Keep momentum — review last session with the AI Coach."}
+                      : completedCount === 0
+                        ? "Book your first session and start your learning streak."
+                        : "Keep momentum — review last session with the AI Coach."}
                   </p>
                 </CardContent>
               </Card>

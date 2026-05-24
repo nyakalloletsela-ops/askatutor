@@ -11,6 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { MobileTabBar } from "@/components/MobileTabBar";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 import appCss from "../styles.css?url";
 
@@ -76,8 +77,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/353d268d-b2bf-4c87-b265-9c526e9802b2" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "description", content: "Ask A Tutor Live connects students with Lesotho-based tutors in live virtual classrooms." },
+      { name: "theme-color", content: "#0b1220" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "AskATutor" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "apple-touch-icon", href: "/logo.png" },
+      { rel: "icon", href: "/logo.png" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -109,6 +120,7 @@ function RootComponent() {
             <Outlet />
           </div>
           <MobileTabBar />
+          <InstallPrompt />
           <Toaster richColors position="top-right" />
         </AuthProvider>
       </ThemeProvider>

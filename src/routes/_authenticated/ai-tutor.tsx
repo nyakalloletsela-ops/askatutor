@@ -66,9 +66,6 @@ function AiTutorPage() {
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-primary" />
         <h1 className="text-xl font-bold">AI Study Coach</h1>
-        <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-          Premium · 24/7
-        </span>
       </div>
       <p className="text-xs text-muted-foreground">
         I guide — I don't solve. Expect questions back, hints, and concept explanations.
