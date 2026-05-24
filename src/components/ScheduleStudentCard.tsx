@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBookingEmails } from "@/lib/booking-emails.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,19 +72,26 @@ export function ScheduleStudentCard({
       return;
     }
     setBusy(true);
-    const { error } = await supabase.from("sessions").insert({
-      tutor_id: tutorId,
-      student_id: studentId,
-      subject: subject || null,
-      scheduled_at: new Date(when).toISOString(),
-      duration_min: duration,
-      is_free: false,
-      status: "scheduled",
-    });
+    const { data: inserted, error } = await supabase
+      .from("sessions")
+      .insert({
+        tutor_id: tutorId,
+        student_id: studentId,
+        subject: subject || null,
+        scheduled_at: new Date(when).toISOString(),
+        duration_min: duration,
+        is_free: false,
+        status: "scheduled",
+      })
+      .select("id")
+      .single();
     setBusy(false);
     if (error) {
       toast.error(error.message);
       return;
+    }
+    if (inserted?.id) {
+      notifyBookingEmails({ data: { sessionId: inserted.id } }).catch(() => {});
     }
     toast.success("Session scheduled");
     setSubject("");

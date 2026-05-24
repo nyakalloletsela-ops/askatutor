@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyBookingEmails } from "@/lib/booking-emails.functions";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -205,11 +206,14 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
     try {
       const scheduledAt = new Date(`${date}T${time}`);
       if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) { toast.error("Pick a future date and time"); return; }
-      const { error } = await supabase.from("sessions").insert({
+      const { data: inserted, error } = await supabase.from("sessions").insert({
         tutor_id: tutor.id, student_id: user.id, subject: subject || null,
         scheduled_at: scheduledAt.toISOString(), duration_min: Number(duration), is_free: useFree,
-      });
+      }).select("id").single();
       if (error) throw error;
+      if (inserted?.id) {
+        notifyBookingEmails({ data: { sessionId: inserted.id } }).catch(() => {});
+      }
       toast.success("Session booked!");
       setOpen(false);
       navigate({ to: "/dashboard" });

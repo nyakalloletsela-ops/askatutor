@@ -13,19 +13,6 @@ const SENDER_DOMAIN = "notify.www.askatutorlive.com"
 // Can be the root domain when display_from_root is enabled — this is cosmetic only.
 const FROM_DOMAIN = "www.askatutorlive.com"
 
-// Whitelisted role-based sender aliases (left-hand side of the @).
-// Templates can pick one via `template.fromAlias`; callers can override
-// per-send via `fromAlias` in the request body. Defaults to "noreply".
-const ALLOWED_ALIASES = new Set(["noreply", "admin", "help", "tutors", "students", "billing"])
-const ALIAS_DISPLAY: Record<string, string> = {
-  noreply: "askatutor",
-  admin: "askatutor Admin",
-  help: "askatutor Help",
-  tutors: "askatutor Tutors",
-  students: "askatutor Students",
-  billing: "askatutor Billing",
-}
-
 function redactEmail(email: string | null | undefined): string {
   if (!email) return '***'
   const [localPart, domain] = email.split('@')
@@ -66,10 +53,12 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
 
         const token = authHeader.slice('Bearer '.length).trim()
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-        if (authError || !user) {
-          return Response.json({ error: 'Unauthorized' }, { status: 401 })
+        // Allow internal callers (server functions) to authenticate with the service role key.
+        if (token !== supabaseServiceKey) {
+          const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+          if (authError || !user) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 })
+          }
         }
 
         // Parse request body
@@ -78,7 +67,6 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
         let idempotencyKey: string
         let messageId: string
         let templateData: Record<string, any> = {}
-        let fromAliasBody: string | undefined
         try {
           const body = await request.json()
           templateName = body.templateName || body.template_name
@@ -88,7 +76,6 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           if (body.templateData && typeof body.templateData === 'object') {
             templateData = body.templateData
           }
-          if (typeof body.fromAlias === 'string') fromAliasBody = body.fromAlias
         } catch {
           return Response.json(
             { error: 'Invalid JSON in request body' },
@@ -105,7 +92,6 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
 
         // 1. Look up template from registry (early — needed to resolve recipient)
         const template = TEMPLATES[templateName]
-
 
         if (!template) {
           console.error('Template not found in registry', { templateName })
@@ -289,18 +275,12 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           status: 'pending',
         })
 
-        // Resolve sender alias: per-call override > template setting > "noreply"
-        const requestedAlias =
-          (fromAliasBody ?? (template as any).fromAlias ?? 'noreply').toLowerCase()
-        const alias = ALLOWED_ALIASES.has(requestedAlias) ? requestedAlias : 'noreply'
-        const fromHeader = `${ALIAS_DISPLAY[alias] ?? SITE_NAME} <${alias}@${FROM_DOMAIN}>`
-
         const { error: enqueueError } = await supabase.rpc('enqueue_email', {
           queue_name: 'transactional_emails',
           payload: {
             message_id: messageId,
             to: effectiveRecipient,
-            from: fromHeader,
+            from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
             sender_domain: SENDER_DOMAIN,
             subject: resolvedSubject,
             html,
