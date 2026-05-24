@@ -116,7 +116,15 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     });
     channel
       .on("broadcast", { event: "draw" }, ({ payload }) => applyMessage(payload as Msg))
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" && isHost) {
+          channel.send({
+            type: "broadcast",
+            event: "draw",
+            payload: { type: "perm", studentCanDraw } as PermMsg,
+          });
+        }
+      });
     channelRef.current = channel;
     return () => {
       channel.unsubscribe();
