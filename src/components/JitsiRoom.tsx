@@ -110,6 +110,7 @@ export function JitsiRoom({
   audioOnly = false,
   showParticipants = true,
   onParticipantsChange,
+  onDiagnosticsChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
@@ -117,12 +118,59 @@ export function JitsiRoom({
   const [started, setStarted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [diagnostics, setDiagnostics] = useState<MediaDiagnostics>(initialDiagnostics);
   const nested = isInPreviewIframe();
   const externalUrl = `https://meet.jit.si/AskATutor-${roomId}`;
+
+  const patchDiagnostics = (patch: Partial<MediaDiagnostics>) => {
+    setDiagnostics((current) => ({ ...current, ...patch, lastCheckedAt: Date.now() }));
+  };
+
+  const addJitsiMessage = (message: string) => {
+    setDiagnostics((current) => ({
+      ...current,
+      jitsiMessages: [message, ...current.jitsiMessages].slice(0, 5),
+      lastCheckedAt: Date.now(),
+    }));
+  };
+
+  const refreshDiagnostics = async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices) {
+      patchDiagnostics({
+        cameraAvailable: "unavailable",
+        microphoneAvailable: "unavailable",
+        cameraPermission: "unavailable",
+        microphonePermission: "unavailable",
+      });
+      return;
+    }
+
+    const [cameraPermission, microphonePermission] = await Promise.all([
+      readPermission("camera"),
+      readPermission("microphone"),
+    ]);
+    let cameraAvailable: MediaAvailabilityState = "unknown";
+    let microphoneAvailable: MediaAvailabilityState = "unknown";
+
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      cameraAvailable = devices.some((device) => device.kind === "videoinput") ? "available" : "missing";
+      microphoneAvailable = devices.some((device) => device.kind === "audioinput") ? "available" : "missing";
+    } catch {
+      cameraAvailable = cameraPermission === "denied" ? "blocked" : "unknown";
+      microphoneAvailable = microphonePermission === "denied" ? "blocked" : "unknown";
+    }
+
+    patchDiagnostics({ cameraAvailable, microphoneAvailable, cameraPermission, microphonePermission });
+  };
 
   useEffect(() => {
     audioOnlyRef.current = audioOnly;
   }, [audioOnly]);
+
+  useEffect(() => {
+    onDiagnosticsChange?.(diagnostics);
+  }, [diagnostics, onDiagnosticsChange]);
 
   useEffect(() => {
     onParticipantsChange?.(participants);
@@ -130,6 +178,7 @@ export function JitsiRoom({
 
   useEffect(() => {
     void loadJitsiScript().catch(() => undefined);
+    void refreshDiagnostics();
   }, []);
 
   const startConference = () => {
