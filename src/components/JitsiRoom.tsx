@@ -125,6 +125,7 @@ export function JitsiRoom({
   showParticipants = true,
   onParticipantsChange,
   onDiagnosticsChange,
+  onApiReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<JitsiApi | null>(null);
