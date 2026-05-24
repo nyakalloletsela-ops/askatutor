@@ -199,14 +199,8 @@ function Dashboard() {
     setSessions((ss as SessionRow[]) ?? []);
   };
 
-  const becomeTutor = async () => {
-    if (!user) return;
-    const { error } = await supabase.rpc("become_tutor");
-    if (error) return toast.error(error.message);
-    toast.success("You're now a tutor! Complete your profile.");
-    await refresh();
-    await refreshAll();
-  };
+  // Tutor onboarding now requires an application reviewed by an admin.
+
 
   const saveProfile = async () => {
     if (!profile || !user) return;
