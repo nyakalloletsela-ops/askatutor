@@ -142,8 +142,8 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
           <Lock className="h-10 w-10 text-primary" />
           <h3 className="text-lg font-semibold">Free lab quota reached</h3>
           <p className="max-w-md text-sm text-muted-foreground">
-            You've opened {limit} experiments on the free student tier. Upgrade your subscription
-            or book a session with a tutor to unlock unlimited access to all {LAB_MODULES.length}+ simulations.
+            You've opened {limit} experiments on the free student tier. Book a session with a
+            tutor to unlock unlimited access to all {LAB_MODULES.length}+ simulations.
           </p>
         </div>
       ) : selected ? (
