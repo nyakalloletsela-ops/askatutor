@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Users, Video } from "lucide-react";
 
@@ -17,8 +17,21 @@ declare global {
 
 export type ParticipantStatus = "connecting" | "joined";
 export type Participant = { id: string; displayName?: string; status: ParticipantStatus };
-export type MediaPermissionState = "checking" | "granted" | "prompt" | "denied" | "unknown" | "unavailable";
-export type MediaAvailabilityState = "checking" | "available" | "missing" | "blocked" | "in-use" | "unknown" | "unavailable";
+export type MediaPermissionState =
+  | "checking"
+  | "granted"
+  | "prompt"
+  | "denied"
+  | "unknown"
+  | "unavailable";
+export type MediaAvailabilityState =
+  | "checking"
+  | "available"
+  | "missing"
+  | "blocked"
+  | "in-use"
+  | "unknown"
+  | "unavailable";
 export type MediaDiagnostics = {
   cameraAvailable: MediaAvailabilityState;
   microphoneAvailable: MediaAvailabilityState;
