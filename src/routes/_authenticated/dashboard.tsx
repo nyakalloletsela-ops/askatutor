@@ -147,7 +147,7 @@ function SectionHeader({ title, action }: { title: string; action?: React.ReactN
 /* ---------- Page ---------- */
 
 function Dashboard() {
-  const { user, isTutor, roles, refresh } = useAuth();
+  const { user, isTutor, roles } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
