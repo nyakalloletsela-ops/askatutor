@@ -11,6 +11,7 @@ interface Props {
   email?: string;
   onParticipantsChange?: (participants: Participant[]) => void;
   onDiagnosticsChange?: (diagnostics: MediaDiagnostics) => void;
+  onApiReady?: (api: { executeCommand: (cmd: string, ...args: unknown[]) => void } | null) => void;
 }
 
 export function FloatingVideo({
@@ -19,6 +20,7 @@ export function FloatingVideo({
   email,
   onParticipantsChange,
   onDiagnosticsChange,
+  onApiReady,
 }: Props) {
   const [pos, setPos] = useState({ x: 16, y: 80 });
   const [size, setSize] = useState({ w: 320, h: 220 });
