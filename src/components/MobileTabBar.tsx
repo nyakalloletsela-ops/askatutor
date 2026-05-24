@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, LayoutDashboard, Sparkles, FlaskConical, User } from "lucide-react";
+import { Home, LayoutDashboard, Sparkles, FlaskConical, User, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 const tabs = [
@@ -7,11 +7,12 @@ const tabs = [
   { to: "/labs" as const, label: "Labs", icon: FlaskConical },
   { to: "/ai-tools" as const, label: "AI", icon: Sparkles, authed: true },
   { to: "/dashboard" as const, label: "Me", icon: LayoutDashboard, authed: true },
+  { to: "/admin" as const, label: "Admin", icon: Shield, admin: true },
   { to: "/auth" as const, label: "Sign in", icon: User, guest: true },
 ];
 
 export function MobileTabBar() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const path = useRouterState({ select: (r) => r.location.pathname });
 
   // Hide on classroom (immersive) routes
@@ -20,6 +21,9 @@ export function MobileTabBar() {
   const visible = tabs.filter((t) => {
     if (t.authed && !user) return false;
     if (t.guest && user) return false;
+    if (t.admin && !isAdmin) return false;
+    // Drop the generic "Me" tab for admins so Admin fits without crowding.
+    if (isAdmin && t.to === "/dashboard") return false;
     return true;
   });
 
