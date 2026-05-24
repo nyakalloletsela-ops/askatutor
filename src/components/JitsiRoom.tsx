@@ -19,8 +19,40 @@ export function JitsiRoom({ roomId, displayName, email }: Props) {
   const apiRef = useRef<{ dispose: () => void } | null>(null);
 
   useEffect(() => {
-    const start = () => {
+    let observer: MutationObserver | null = null;
+
+    const start = async () => {
       if (!containerRef.current || !window.JitsiMeetExternalAPI) return;
+
+      // Proactively request camera/mic permissions so the browser shows the
+      // prompt against the parent origin BEFORE Jitsi attempts to use them
+      // inside the iframe. Without this, embedded usage often silently fails.
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        stream.getTracks().forEach((t) => t.stop());
+      } catch (err) {
+        console.warn("Camera/mic permission not granted yet:", err);
+      }
+
+      // Set the iframe `allow` attribute BEFORE Jitsi finishes loading,
+      // otherwise the browser blocks camera/mic in the embedded context.
+      observer = new MutationObserver(() => {
+        const iframe = containerRef.current?.querySelector("iframe");
+        if (iframe) {
+          iframe.setAttribute(
+            "allow",
+            "camera; microphone; display-capture; autoplay; clipboard-write; fullscreen; speaker-selection",
+          );
+          iframe.setAttribute("allowfullscreen", "true");
+          observer?.disconnect();
+          observer = null;
+        }
+      });
+      observer.observe(containerRef.current, { childList: true, subtree: true });
+
       apiRef.current = new window.JitsiMeetExternalAPI("meet.jit.si", {
         roomName: `AskATutor-${roomId}`,
         parentNode: containerRef.current,
@@ -47,20 +79,7 @@ export function JitsiRoom({ roomId, displayName, email }: Props) {
           ],
         },
       });
-      // Ensure iframe has media permissions for camera/mic in embedded context.
-      requestAnimationFrame(() => {
-        const iframe = containerRef.current?.querySelector("iframe");
-        if (iframe) {
-          iframe.setAttribute(
-            "allow",
-            "camera; microphone; display-capture; autoplay; clipboard-write; fullscreen; speaker-selection",
-          );
-          iframe.setAttribute("allowfullscreen", "true");
-        }
-      });
     };
-
-
 
     if (!window.JitsiMeetExternalAPI) {
       const s = document.createElement("script");
@@ -73,6 +92,8 @@ export function JitsiRoom({ roomId, displayName, email }: Props) {
     }
 
     return () => {
+      observer?.disconnect();
+      observer = null;
       apiRef.current?.dispose();
       apiRef.current = null;
     };
