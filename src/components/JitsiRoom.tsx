@@ -47,7 +47,20 @@ export function JitsiRoom({ roomId, displayName, email }: Props) {
           ],
         },
       });
+      // Ensure iframe has media permissions for camera/mic in embedded context.
+      requestAnimationFrame(() => {
+        const iframe = containerRef.current?.querySelector("iframe");
+        if (iframe) {
+          iframe.setAttribute(
+            "allow",
+            "camera; microphone; display-capture; autoplay; clipboard-write; fullscreen; speaker-selection",
+          );
+          iframe.setAttribute("allowfullscreen", "true");
+        }
+      });
     };
+
+
 
     if (!window.JitsiMeetExternalAPI) {
       const s = document.createElement("script");
