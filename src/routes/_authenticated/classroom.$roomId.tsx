@@ -177,6 +177,8 @@ function ClassroomPage() {
       </div>
 
       <DiagnosticsPanel diagnostics={diagnostics} />
+      <DeviceSelector api={jitsiApi} />
+
 
       <main className="min-h-0 flex-1">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
