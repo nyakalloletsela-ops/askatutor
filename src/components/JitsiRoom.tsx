@@ -23,9 +23,15 @@ interface Props {
 
 type Participant = { id: string; displayName?: string };
 
+type JitsiApi = {
+  dispose: () => void;
+  addListener: (event: string, handler: (data: unknown) => void) => void;
+  executeCommand: (cmd: string, ...args: unknown[]) => void;
+};
+
 export function JitsiRoom({ roomId, displayName, email, audioOnly = false, showParticipants = true }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const apiRef = useRef<ReturnType<NonNullable<typeof window.JitsiMeetExternalAPI>> | null>(null);
+  const apiRef = useRef<JitsiApi | null>(null);
   const [started, setStarted] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
