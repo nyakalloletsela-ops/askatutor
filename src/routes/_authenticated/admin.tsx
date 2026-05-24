@@ -546,3 +546,132 @@ function ManualCreateUser() {
     </Card>
   );
 }
+
+/* ===================== TUTOR APPLICATIONS QUEUE ===================== */
+
+type AppRow = {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  bio: string;
+  subjects: string[];
+  qualifications: string;
+  status: "pending" | "approved" | "rejected" | "needs_info";
+  admin_notes: string | null;
+  submitted_at: string;
+};
+
+type AppDoc = { id: string; application_id: string; label: string; storage_path: string };
+
+function TutorApplicationsQueue() {
+  const [rows, setRows] = useState<AppRow[]>([]);
+  const [docs, setDocs] = useState<Record<string, AppDoc[]>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [filter, setFilter] = useState<"pending" | "all">("pending");
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("tutor_applications")
+      .select("*")
+      .order("submitted_at", { ascending: false });
+    const list = (data as AppRow[]) ?? [];
+    setRows(list);
+    if (list.length) {
+      const { data: ds } = await supabase
+        .from("tutor_application_documents")
+        .select("id, application_id, label, storage_path")
+        .in("application_id", list.map((r) => r.id));
+      const map: Record<string, AppDoc[]> = {};
+      ((ds as AppDoc[]) ?? []).forEach((d) => {
+        (map[d.application_id] ??= []).push(d);
+      });
+      setDocs(map);
+    }
+  };
+  useEffect(() => { load(); }, []);
+
+  const openDoc = async (path: string) => {
+    const { data, error } = await supabase.storage.from("tutor-applications").createSignedUrl(path, 600);
+    if (error || !data?.signedUrl) return toast.error(error?.message ?? "Failed to open file");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const decide = async (row: AppRow, approve: boolean) => {
+    setBusy(row.id);
+    const fn = approve ? "approve_tutor_application" : "reject_tutor_application";
+    const { error } = await supabase.rpc(fn, { _application_id: row.id, _notes: notes[row.id] ?? null });
+    setBusy(null);
+    if (error) return toast.error(error.message);
+    toast.success(approve ? "Approved — tutor role granted" : "Rejected");
+    load();
+  };
+
+  const visible = filter === "pending" ? rows.filter((r) => r.status === "pending" || r.status === "needs_info") : rows;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Tutor applications · {rows.filter((r) => r.status === "pending").length} pending</CardTitle>
+        <Select value={filter} onValueChange={(v) => setFilter(v as "pending" | "all")}>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent>
+        {visible.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No applications to review.</p>
+        ) : (
+          <ul className="space-y-4">
+            {visible.map((r) => (
+              <li key={r.id} className="rounded-lg border p-4">
+                <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold">{r.full_name} <Badge variant="secondary" className="ml-2">{r.status}</Badge></p>
+                    <p className="text-xs text-muted-foreground">{r.email}{r.phone ? ` · ${r.phone}` : ""} · submitted {new Date(r.submitted_at).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="mb-2 flex flex-wrap gap-1">
+                  {r.subjects.map((s) => <Badge key={s} variant="outline">{s}</Badge>)}
+                </div>
+                <p className="text-sm"><span className="font-medium">Bio:</span> {r.bio}</p>
+                <p className="mt-1 text-sm"><span className="font-medium">Qualifications:</span> {r.qualifications}</p>
+                <div className="mt-3">
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Documents</p>
+                  {(docs[r.id] ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No documents uploaded.</p>
+                  ) : (
+                    <ul className="mt-1 flex flex-wrap gap-2">
+                      {(docs[r.id] ?? []).map((d) => (
+                        <li key={d.id}>
+                          <button onClick={() => openDoc(d.storage_path)} className="rounded border bg-muted/30 px-2 py-1 text-xs hover:bg-muted">
+                            {d.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {r.admin_notes && <p className="mt-2 text-xs text-muted-foreground">Previous note: {r.admin_notes}</p>}
+                {(r.status === "pending" || r.status === "needs_info") && (
+                  <div className="mt-3 space-y-2">
+                    <Textarea rows={2} placeholder="Optional note to applicant" value={notes[r.id] ?? ""} onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })} />
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => decide(r, false)}>Reject</Button>
+                      <Button size="sm" disabled={busy === r.id} onClick={() => decide(r, true)}>Approve &amp; grant tutor role</Button>
+                    </div>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
