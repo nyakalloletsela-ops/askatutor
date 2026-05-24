@@ -205,6 +205,7 @@ function ClassroomPage() {
         email={user.email ?? ""}
         onParticipantsChange={setParticipants}
         onDiagnosticsChange={setDiagnostics}
+        onApiReady={setJitsiApi}
       />
     </div>
   );
