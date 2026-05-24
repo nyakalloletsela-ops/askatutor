@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Users } from "lucide-react";
+import { ExternalLink, Users, Video } from "lucide-react";
 
 declare global {
   interface Window {
@@ -31,6 +31,26 @@ type JitsiApi = {
   executeCommand: (cmd: string, ...args: unknown[]) => void;
 };
 
+const loadJitsiScript = () =>
+  new Promise<void>((resolve, reject) => {
+    if (typeof window === "undefined") return reject(new Error("Browser only"));
+    if (window.JitsiMeetExternalAPI) return resolve();
+
+    const existing = document.querySelector<HTMLScriptElement>('script[src="https://meet.jit.si/external_api.js"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Video service failed to load.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://meet.jit.si/external_api.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Video service failed to load."));
+    document.body.appendChild(script);
+  });
+
 const isInPreviewIframe = () => {
   try {
     return typeof window !== "undefined" && window.self !== window.top;
@@ -59,15 +79,6 @@ export function JitsiRoom({
     onParticipantsChange?.(participants);
   }, [participants, onParticipantsChange]);
 
-  // Auto-start on the live site (top-level frame). In the Lovable preview iframe
-  // browsers block getUserMedia, so we keep the manual button + "open in new tab" CTA.
-  useEffect(() => {
-    if (started || nested) return;
-    void requestMediaAndStart();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nested]);
-
-
   const requestMediaAndStart = async () => {
     setPermissionError(null);
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -75,26 +86,38 @@ export function JitsiRoom({
       return;
     }
     try {
+      await loadJitsiScript();
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       stream.getTracks().forEach((t) => t.stop());
       setStarted(true);
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
-        setPermissionError("Camera or microphone is blocked. Allow access in your browser settings, then try again.");
+        setPermissionError("Camera or microphone is blocked. Tap the lock icon in the address bar, allow camera and microphone, then tap Start again.");
       } else if (name === "NotFoundError") {
         setPermissionError("No camera or microphone was found on this device.");
       } else if (name === "NotReadableError") {
-        setPermissionError("Camera or microphone is already in use by another app.");
+        setPermissionError("Camera or microphone is already in use by another app. Close the other app, then try again.");
       } else {
         setPermissionError("Camera and microphone could not start. Check browser permissions and try again.");
       }
     }
   };
 
+  const startWithoutPreview = async () => {
+    setPermissionError(null);
+    try {
+      await loadJitsiScript();
+      setStarted(true);
+    } catch (err) {
+      setPermissionError(err instanceof Error ? err.message : "Video service failed to load.");
+    }
+  };
+
   useEffect(() => {
     if (!apiRef.current) return;
     try {
+      apiRef.current.executeCommand("unmuteAudio");
       apiRef.current.executeCommand(audioOnly ? "muteVideo" : "unmuteVideo");
     } catch {
       /* ignore */
