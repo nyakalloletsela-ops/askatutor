@@ -344,7 +344,14 @@ export function JitsiRoom({
 
   const requestMediaAndStart = async () => {
     setPermissionError(null);
-    await refreshDiagnostics();
+    if (scriptStatus !== "ready") {
+      setPermissionError(
+        scriptStatus === "error"
+          ? "Video service failed to load. Use Open class in new tab, then try again here."
+          : "Video service is still loading. Try again in a moment.",
+      );
+      return;
+    }
     if (!navigator.mediaDevices?.getUserMedia) {
       setPermissionError("This browser cannot access the camera or microphone.");
       patchDiagnostics({
@@ -364,8 +371,8 @@ export function JitsiRoom({
         cameraPermission: "granted",
         microphonePermission: "granted",
       });
-      await loadJitsiScript();
       startConference();
+      void refreshDiagnostics();
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
@@ -398,7 +405,10 @@ export function JitsiRoom({
   const startWithoutPreview = async () => {
     setPermissionError(null);
     try {
-      await loadJitsiScript();
+      if (scriptStatus !== "ready") {
+        setPermissionError("Video service is still loading. Try again in a moment.");
+        return;
+      }
       startConference();
     } catch (err) {
       setPermissionError(err instanceof Error ? err.message : "Video service failed to load.");
@@ -429,10 +439,11 @@ export function JitsiRoom({
     <div className="relative h-full w-full">
       <div
         ref={containerRef}
-        className="flex h-full w-full items-center justify-center bg-background"
+        className="h-full w-full bg-background"
       >
         {!started && (
-          <div className="flex max-w-xs flex-col items-center gap-3 p-4 text-center">
+          <div className="flex h-full w-full items-center justify-center p-4">
+          <div className="flex max-w-xs flex-col items-center gap-3 text-center">
             {nested && (
               <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-amber-200">
                 <p className="font-semibold">
@@ -456,6 +467,7 @@ export function JitsiRoom({
               Join with in-call permission prompt
             </Button>
             {permissionError && <p className="text-xs text-destructive">{permissionError}</p>}
+          </div>
           </div>
         )}
       </div>
