@@ -3,16 +3,23 @@ import { Minus, Move, Video, VideoOff, Maximize2 } from "lucide-react";
 import { JitsiRoom } from "@/components/JitsiRoom";
 import { Button } from "@/components/ui/button";
 
-import type { Participant } from "@/components/JitsiRoom";
+import type { MediaDiagnostics, Participant } from "@/components/JitsiRoom";
 
 interface Props {
   roomId: string;
   displayName?: string;
   email?: string;
   onParticipantsChange?: (participants: Participant[]) => void;
+  onDiagnosticsChange?: (diagnostics: MediaDiagnostics) => void;
 }
 
-export function FloatingVideo({ roomId, displayName, email, onParticipantsChange }: Props) {
+export function FloatingVideo({
+  roomId,
+  displayName,
+  email,
+  onParticipantsChange,
+  onDiagnosticsChange,
+}: Props) {
   const [pos, setPos] = useState({ x: 16, y: 80 });
   const [size, setSize] = useState({ w: 320, h: 220 });
   const [minimized, setMinimized] = useState(false);
@@ -109,6 +116,7 @@ export function FloatingVideo({ roomId, displayName, email, onParticipantsChange
           email={email}
           audioOnly={minimized}
           onParticipantsChange={onParticipantsChange}
+          onDiagnosticsChange={onDiagnosticsChange}
         />
       </div>
       {!minimized && (
