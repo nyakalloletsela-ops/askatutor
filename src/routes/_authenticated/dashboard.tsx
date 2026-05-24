@@ -188,6 +188,14 @@ function Dashboard() {
       .or(`tutor_id.eq.${user.id},student_id.eq.${user.id}`)
       .order("scheduled_at", { ascending: true });
     setSessions((ss as SessionRow[]) ?? []);
+    const { data: names } = await supabase.rpc("get_session_participant_names");
+    if (names) {
+      const map: Record<string, string> = {};
+      for (const r of names as Array<{ user_id: string; full_name: string | null }>) {
+        if (r.full_name) map[r.user_id] = r.full_name;
+      }
+      setParticipantNames(map);
+    }
   };
 
   const startSession = async (s: SessionRow) => {
