@@ -30,17 +30,27 @@ export function ScheduleStudentCard({
   const [duration, setDuration] = useState(60);
   const [busy, setBusy] = useState(false);
 
+  const [query, setQuery] = useState("");
+
   useEffect(() => {
     (async () => {
+      const { data, error } = await supabase.rpc("list_students_for_tutor");
+      if (!error && data) {
+        setStudents(
+          (data as { id: string; full_name: string | null }[]).map((s) => ({
+            id: s.id,
+            name: s.full_name ?? "Student",
+          })),
+        );
+        return;
+      }
+      // fallback: past students only
       const { data: ss } = await supabase
         .from("sessions")
         .select("student_id")
         .eq("tutor_id", tutorId);
       const ids = Array.from(new Set((ss ?? []).map((s) => s.student_id)));
-      if (ids.length === 0) {
-        setStudents([]);
-        return;
-      }
+      if (ids.length === 0) return setStudents([]);
       const { data: profs } = await supabase
         .from("profiles")
         .select("id, full_name")
@@ -50,6 +60,10 @@ export function ScheduleStudentCard({
       );
     })();
   }, [tutorId]);
+
+  const filtered = query
+    ? students.filter((s) => s.name.toLowerCase().includes(query.toLowerCase()))
+    : students;
 
   const submit = async () => {
     if (!studentId || !when) {
