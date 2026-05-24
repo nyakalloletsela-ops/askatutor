@@ -73,14 +73,6 @@ function Home() {
   const [content, setContent] = useState<Record<string, string>>(DEFAULT_CONTENT);
   const t = (k: string) => content[k] ?? DEFAULT_CONTENT[k] ?? "";
 
-  if (!loading && user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // hooks must run unconditionally — keep these above any early return that depends on async state
-
-
-
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.rpc("list_public_tutors");
@@ -96,6 +88,11 @@ function Home() {
       }
     })();
   }, []);
+
+  if (!loading && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
 
   const filtered = tutors.filter((t) => {
     if (subject && !(t.subjects ?? []).includes(subject)) return false;
