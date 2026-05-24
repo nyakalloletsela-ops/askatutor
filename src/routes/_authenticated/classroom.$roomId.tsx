@@ -132,6 +132,7 @@ function ClassroomPage() {
         roomId={roomId}
         displayName={user.email ?? "Guest"}
         email={user.email ?? ""}
+        onParticipantsChange={setParticipants}
       />
     </div>
   );
