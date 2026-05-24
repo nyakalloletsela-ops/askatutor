@@ -530,7 +530,6 @@ export type Database = {
           subject: string | null
           title: string | null
           updated_at: string | null
-          user_id: string | null
         }
         Relationships: [
           {
