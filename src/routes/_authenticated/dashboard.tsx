@@ -259,7 +259,8 @@ function Dashboard() {
   const upcoming = useMemo(
     () =>
       sessions
-        .filter((s) => s.status === "scheduled" && new Date(s.scheduled_at) >= new Date())
+        .filter((s) => (s.status === "scheduled" || s.status === "live") &&
+          (s.status === "live" || new Date(s.scheduled_at).getTime() + 2 * 60 * 60 * 1000 >= Date.now()))
         .slice(0, 5),
     [sessions],
   );
