@@ -27,9 +27,26 @@ export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
 
 function ClassroomPage() {
   const { roomId } = Route.useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const [isTutor, setIsTutor] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    // Demo rooms are owned by the user — they're the tutor of their own demo.
+    if (roomId.startsWith("demo-")) { setIsTutor(true); return; }
+    supabase
+      .from("sessions")
+      .select("tutor_id")
+      .eq("room_id", roomId)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setIsTutor(!!data && (data as { tutor_id: string }).tutor_id === user.id);
+      });
+  }, [roomId, user]);
 
   if (!user) return null;
+  const canControlBoard = isTutor || isAdmin;
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
