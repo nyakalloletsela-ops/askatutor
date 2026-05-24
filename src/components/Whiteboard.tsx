@@ -176,6 +176,10 @@ export function Whiteboard({ roomId, userId }: Props) {
       renderStroke(m.stroke);
       return;
     }
+    if (m.type === "perm") {
+      setStudentCanDraw(m.studentCanDraw);
+      return;
+    }
     historyRef.current.push(m);
     renderStroke(m);
   };
