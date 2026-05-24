@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2,
+  ChevronsUp, ChevronsDown, Lock,
+} from "lucide-react";
 
 type Pt = { x: number; y: number };
 type Stroke = {
