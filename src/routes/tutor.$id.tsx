@@ -55,7 +55,7 @@ function TutorProfile() {
       setTutor(found);
       const { data: r } = await supabase
         .from("tutor_reviews")
-        .select("id, rating, comment, created_at, student_id")
+        .select("id, rating, comment, created_at")
         .eq("tutor_id", id)
         .order("created_at", { ascending: false })
         .limit(20);
