@@ -463,10 +463,36 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           </Button>
         </div>
         <div className="ml-auto" />
+        {isHost && (
+          <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs">
+            {studentCanDraw ? (
+              <Pen className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+            <span className="font-medium">
+              {studentCanDraw ? "Student writing" : "Tutor writing"}
+            </span>
+            <Switch
+              checked={studentCanDraw}
+              onCheckedChange={(v) => {
+                setStudentCanDraw(v);
+                send({ type: "perm", studentCanDraw: v });
+              }}
+              aria-label="Toggle who can write"
+            />
+          </label>
+        )}
+        {!isHost && !studentCanDraw && (
+          <span className="flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground">
+            <Lock className="h-3.5 w-3.5" /> Tutor is writing
+          </span>
+        )}
         <Button size="sm" variant="destructive" onClick={clearCurrent}>
           <Trash2 className="mr-1 h-4 w-4" /> Clear page
         </Button>
       </div>
+
 
       {/* Hint */}
       <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
