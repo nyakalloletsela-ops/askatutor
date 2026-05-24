@@ -173,6 +173,22 @@ export function JitsiRoom({
       });
       apiRef.current = api;
 
+      window.setTimeout(() => {
+        try {
+          api.executeCommand("unmuteAudio");
+          if (audioOnly) api.executeCommand("muteVideo");
+        } catch {
+          /* ignore */
+        }
+      }, 1500);
+
+      api.addListener("micError", () => {
+        setPermissionError("Microphone did not start. Tap the lock icon in the address bar and allow microphone access.");
+      });
+      api.addListener("cameraError", () => {
+        setPermissionError("Camera did not start. Tap the lock icon in the address bar and allow camera access.");
+      });
+
       api.addListener("videoConferenceJoined", (d: unknown) => {
         const data = d as { id: string; displayName?: string };
         setParticipants((p) => {
@@ -249,7 +265,12 @@ export function JitsiRoom({
                 </Button>
               </div>
             )}
-            <Button onClick={requestMediaAndStart}>Start camera and mic</Button>
+            <Button onClick={requestMediaAndStart} className="w-full">
+              <Video className="mr-2 h-4 w-4" /> Start camera and mic
+            </Button>
+            <Button onClick={startWithoutPreview} variant="outline" className="w-full">
+              Join with in-call permission prompt
+            </Button>
             {permissionError && <p className="text-xs text-destructive">{permissionError}</p>}
           </div>
         )}
