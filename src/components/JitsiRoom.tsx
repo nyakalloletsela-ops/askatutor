@@ -348,7 +348,12 @@ export function JitsiRoom({
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
-        patchDiagnostics({ cameraAvailable: "blocked", microphoneAvailable: "blocked", cameraPermission: "denied", microphonePermission: "denied" });
+        patchDiagnostics({
+          cameraAvailable: "blocked",
+          microphoneAvailable: "blocked",
+          cameraPermission: "denied",
+          microphonePermission: "denied",
+        });
         setPermissionError(
           "Camera or microphone is blocked. Tap the lock icon in the address bar, allow camera and microphone, then tap Start again.",
         );
