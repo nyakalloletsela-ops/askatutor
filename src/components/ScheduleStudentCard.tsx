@@ -96,20 +96,28 @@ export function ScheduleStudentCard({
       <CardContent className="space-y-4 p-5">
         {students.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            You haven't taught any students yet. Once a student books you, you'll be able to schedule
-            follow-up sessions for them here.
+            No student accounts found yet. Once students sign up you'll be able to schedule
+            classes for them here.
           </p>
         ) : (
           <>
+            <div className="space-y-1.5">
+              <Label>Search students</Label>
+              <Input
+                placeholder="Type a name…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>Student</Label>
+                <Label>Student ({filtered.length})</Label>
                 <Select value={studentId} onValueChange={setStudentId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a student" />
                   </SelectTrigger>
                   <SelectContent>
-                    {students.map((s) => (
+                    {filtered.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.name}
                       </SelectItem>
