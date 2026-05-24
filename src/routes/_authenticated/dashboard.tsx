@@ -172,7 +172,28 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
     refreshAll();
+    const t = setInterval(() => { refreshSessions(); }, 15000);
+    return () => clearInterval(t);
   }, [user]);
+
+  const refreshSessions = async () => {
+    if (!user) return;
+    const { data: ss } = await supabase
+      .from("sessions")
+      .select("*")
+      .or(`tutor_id.eq.${user.id},student_id.eq.${user.id}`)
+      .order("scheduled_at", { ascending: true });
+    setSessions((ss as SessionRow[]) ?? []);
+  };
+
+  const startSession = async (s: SessionRow) => {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ status: "live" })
+      .eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    window.location.href = `/classroom/${s.room_id}`;
+  };
 
   const refreshAll = async () => {
     if (!user) return;
@@ -238,7 +259,8 @@ function Dashboard() {
   const upcoming = useMemo(
     () =>
       sessions
-        .filter((s) => s.status === "scheduled" && new Date(s.scheduled_at) >= new Date())
+        .filter((s) => (s.status === "scheduled" || s.status === "live") &&
+          (s.status === "live" || new Date(s.scheduled_at).getTime() + 2 * 60 * 60 * 1000 >= Date.now()))
         .slice(0, 5),
     [sessions],
   );
@@ -379,32 +401,62 @@ function Dashboard() {
                     </div>
                   ) : (
                     <ul className="divide-y divide-border/60">
-                      {upcoming.map((s) => (
-                        <li
-                          key={s.id}
-                          className="flex items-center justify-between gap-3 px-4 py-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">
-                              {s.subject ?? "Tutoring session"}
-                            </p>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {new Date(s.scheduled_at).toLocaleString(undefined, {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                          </div>
-                          <Button asChild size="sm" variant="outline">
-                            <Link to="/classroom/$roomId" params={{ roomId: s.room_id }}>
-                              Join
-                            </Link>
-                          </Button>
-                        </li>
-                      ))}
+                      {upcoming.map((s) => {
+                        const isLive = s.status === "live";
+                        const scheduledTs = new Date(s.scheduled_at).getTime();
+                        const withinJoinWindow = scheduledTs - Date.now() <= 10 * 60 * 1000;
+                        const tutorRow = s.tutor_id === user.id;
+                        const studentCanJoin = isLive || withinJoinWindow;
+                        return (
+                          <li
+                            key={s.id}
+                            className="flex items-center justify-between gap-3 px-4 py-3"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">
+                                {s.subject ?? "Tutoring session"}
+                                {isLive && (
+                                  <Badge className="ml-2 bg-green-500/15 text-green-600 hover:bg-green-500/15" variant="secondary">
+                                    Live
+                                  </Badge>
+                                )}
+                              </p>
+                              <p className="mt-0.5 text-xs text-muted-foreground">
+                                {new Date(s.scheduled_at).toLocaleString(undefined, {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                            {tutorRow ? (
+                              isLive ? (
+                                <Button asChild size="sm">
+                                  <Link to="/classroom/$roomId" params={{ roomId: s.room_id }}>
+                                    Open
+                                  </Link>
+                                </Button>
+                              ) : (
+                                <Button size="sm" onClick={() => startSession(s)}>
+                                  Start lesson
+                                </Button>
+                              )
+                            ) : studentCanJoin ? (
+                              <Button asChild size="sm" variant={isLive ? "default" : "outline"}>
+                                <Link to="/classroom/$roomId" params={{ roomId: s.room_id }}>
+                                  Join
+                                </Link>
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="outline" disabled>
+                                Waiting for tutor
+                              </Button>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                 </CardContent>
@@ -420,6 +472,7 @@ function Dashboard() {
                 </Button>
               </div>
             </section>
+
 
             {/* Tutor profile editor */}
             {isTutor && (
