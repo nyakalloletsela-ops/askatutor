@@ -392,6 +392,98 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_application_documents: {
+        Row: {
+          application_id: string
+          id: string
+          label: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          application_id: string
+          id?: string
+          label: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          application_id?: string
+          id?: string
+          label?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_application_documents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_applications: {
+        Row: {
+          admin_notes: string | null
+          bio: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          qualifications: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["tutor_application_status"]
+          subjects: string[]
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          bio: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          qualifications: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["tutor_application_status"]
+          subjects?: string[]
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          bio?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          qualifications?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["tutor_application_status"]
+          subjects?: string[]
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tutor_courses: {
         Row: {
           created_at: string
@@ -550,7 +642,10 @@ export type Database = {
       }
     }
     Functions: {
-      become_tutor: { Args: never; Returns: undefined }
+      approve_tutor_application: {
+        Args: { _application_id: string; _notes?: string }
+        Returns: undefined
+      }
       can_access_classroom_room: { Args: { _room: string }; Returns: boolean }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -599,6 +694,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reject_tutor_application: {
+        Args: { _application_id: string; _notes?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "tutor" | "student"
@@ -608,6 +707,11 @@ export type Database = {
       session_status: "scheduled" | "live" | "completed" | "cancelled"
       sub_status: "pending" | "approved" | "rejected"
       subject_level: "primary" | "high_school" | "tertiary"
+      tutor_application_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "needs_info"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -742,6 +846,12 @@ export const Constants = {
       session_status: ["scheduled", "live", "completed", "cancelled"],
       sub_status: ["pending", "approved", "rejected"],
       subject_level: ["primary", "high_school", "tertiary"],
+      tutor_application_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "needs_info",
+      ],
     },
   },
 } as const
