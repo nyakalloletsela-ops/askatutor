@@ -229,16 +229,29 @@ export function JitsiRoom({
       }
     }, 1500);
 
-    api.addListener("micError", () => {
+    api.addListener("micError", (d: unknown) => {
+      addJitsiMessage(describeJitsiPayload("Jitsi microphone error", d));
+      patchDiagnostics({ microphoneAvailable: "blocked", microphonePermission: "denied" });
       setPermissionError(
         "Microphone did not start. Tap the lock icon in the address bar and allow microphone access.",
       );
     });
-    api.addListener("cameraError", () => {
+    api.addListener("cameraError", (d: unknown) => {
+      addJitsiMessage(describeJitsiPayload("Jitsi camera error", d));
+      patchDiagnostics({ cameraAvailable: "blocked", cameraPermission: "denied" });
       setPermissionError(
         "Camera did not start. Tap the lock icon in the address bar and allow camera access.",
       );
     });
+    api.addListener("audioAvailabilityChanged", (d: unknown) => {
+      const data = d as { available?: boolean };
+      patchDiagnostics({ microphoneAvailable: data.available === false ? "missing" : "available" });
+    });
+    api.addListener("videoAvailabilityChanged", (d: unknown) => {
+      const data = d as { available?: boolean };
+      patchDiagnostics({ cameraAvailable: data.available === false ? "missing" : "available" });
+    });
+    api.addListener("readyToClose", () => addJitsiMessage("Jitsi meeting window closed"));
 
     api.addListener("videoConferenceJoined", (d: unknown) => {
       const data = d as { id: string; displayName?: string };
@@ -288,28 +301,45 @@ export function JitsiRoom({
 
   const requestMediaAndStart = async () => {
     setPermissionError(null);
+    await refreshDiagnostics();
     if (!navigator.mediaDevices?.getUserMedia) {
       setPermissionError("This browser cannot access the camera or microphone.");
+      patchDiagnostics({
+        cameraAvailable: "unavailable",
+        microphoneAvailable: "unavailable",
+        cameraPermission: "unavailable",
+        microphonePermission: "unavailable",
+      });
       return;
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       stream.getTracks().forEach((t) => t.stop());
+      patchDiagnostics({
+        cameraAvailable: "available",
+        microphoneAvailable: "available",
+        cameraPermission: "granted",
+        microphonePermission: "granted",
+      });
       await loadJitsiScript();
       startConference();
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
+        patchDiagnostics({ cameraAvailable: "blocked", microphoneAvailable: "blocked", cameraPermission: "denied", microphonePermission: "denied" });
         setPermissionError(
           "Camera or microphone is blocked. Tap the lock icon in the address bar, allow camera and microphone, then tap Start again.",
         );
       } else if (name === "NotFoundError") {
+        patchDiagnostics({ cameraAvailable: "missing", microphoneAvailable: "missing" });
         setPermissionError("No camera or microphone was found on this device.");
       } else if (name === "NotReadableError") {
+        patchDiagnostics({ cameraAvailable: "in-use", microphoneAvailable: "in-use" });
         setPermissionError(
           "Camera or microphone is already in use by another app. Close the other app, then try again.",
         );
       } else {
+        patchDiagnostics({ cameraAvailable: "unknown", microphoneAvailable: "unknown" });
         setPermissionError(
           "Camera and microphone could not start. Check browser permissions and try again.",
         );
