@@ -34,7 +34,7 @@ interface Props {
   isHost?: boolean;
 }
 
-export function Whiteboard({ roomId, userId }: Props) {
+export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -61,6 +61,18 @@ export function Whiteboard({ roomId, userId }: Props) {
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<"pen" | "eraser">("pen");
   const [currentPage, setCurrentPage] = useState(1);
+  // Tutor controls whether the student can draw. Default: only host draws.
+  const [studentCanDraw, setStudentCanDraw] = useState(false);
+  const canDraw = isHost || studentCanDraw;
+  // Collapse the toolbar (handy in landscape on small screens).
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
+    const apply = () => setToolbarCollapsed(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const pages = useMemo(() => Array.from({ length: PAGE_COUNT }, (_, i) => i), []);
 
