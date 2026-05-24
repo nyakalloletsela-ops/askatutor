@@ -13,7 +13,13 @@ interface Props {
   onDiagnosticsChange?: (diagnostics: MediaDiagnostics) => void;
 }
 
-export function FloatingVideo({ roomId, displayName, email, onParticipantsChange, onDiagnosticsChange }: Props) {
+export function FloatingVideo({
+  roomId,
+  displayName,
+  email,
+  onParticipantsChange,
+  onDiagnosticsChange,
+}: Props) {
   const [pos, setPos] = useState({ x: 16, y: 80 });
   const [size, setSize] = useState({ w: 320, h: 220 });
   const [minimized, setMinimized] = useState(false);
