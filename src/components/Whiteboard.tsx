@@ -20,7 +20,8 @@ type Stroke = {
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: Stroke };
-type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg;
+type PermMsg = { type: "perm"; studentCanDraw: boolean };
+type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
@@ -28,6 +29,9 @@ const PAGE_COUNT = 100;
 interface Props {
   roomId: string;
   userId: string;
+  /** When true the user is treated as the room host (tutor/admin) and can
+   *  toggle whether the other participant is allowed to draw. */
+  isHost?: boolean;
 }
 
 export function Whiteboard({ roomId, userId }: Props) {
