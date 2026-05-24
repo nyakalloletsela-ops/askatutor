@@ -91,6 +91,111 @@ export function JitsiRoom({
     onParticipantsChange?.(participants);
   }, [participants, onParticipantsChange]);
 
+  const startConference = () => {
+    if (!containerRef.current || !window.JitsiMeetExternalAPI || apiRef.current) return;
+
+    const api: JitsiApi = new window.JitsiMeetExternalAPI("meet.jit.si", {
+      roomName: `AskATutor-${roomId}`,
+      parentNode: containerRef.current,
+      width: "100%",
+      height: "100%",
+      userInfo: { displayName: displayName ?? "Guest", email: email ?? "" },
+      configOverwrite: {
+        prejoinPageEnabled: false,
+        disableDeepLinking: true,
+        startWithAudioMuted: false,
+        startWithVideoMuted: false,
+      },
+      interfaceConfigOverwrite: {
+        TOOLBAR_BUTTONS: [
+          "microphone",
+          "camera",
+          "desktop",
+          "fullscreen",
+          "hangup",
+          "chat",
+          "raisehand",
+          "tileview",
+          "settings",
+        ],
+      },
+    });
+    apiRef.current = api;
+    setStarted(true);
+
+    const iframe = containerRef.current.querySelector("iframe");
+    iframe?.setAttribute(
+      "allow",
+      "autoplay; camera; microphone; display-capture; clipboard-write; fullscreen; speaker-selection",
+    );
+    iframe?.setAttribute("allowfullscreen", "true");
+
+    window.setTimeout(() => {
+      try {
+        api.executeCommand("unmuteAudio");
+        if (audioOnlyRef.current) api.executeCommand("muteVideo");
+      } catch {
+        /* ignore */
+      }
+    }, 1500);
+
+    api.addListener("micError", () => {
+      setPermissionError(
+        "Microphone did not start. Tap the lock icon in the address bar and allow microphone access.",
+      );
+    });
+    api.addListener("cameraError", () => {
+      setPermissionError(
+        "Camera did not start. Tap the lock icon in the address bar and allow camera access.",
+      );
+    });
+
+    api.addListener("videoConferenceJoined", (d: unknown) => {
+      const data = d as { id: string; displayName?: string };
+      setParticipants((p) => {
+        const next = p.filter((x) => x.id !== data.id);
+        return [
+          ...next,
+          {
+            id: data.id,
+            displayName: data.displayName ?? displayName ?? "You",
+            status: "joined",
+          },
+        ];
+      });
+    });
+    api.addListener("participantJoined", (d: unknown) => {
+      const data = d as { id: string; displayName?: string };
+      setParticipants((p) => {
+        const next = p.filter((x) => x.id !== data.id);
+        return [
+          ...next,
+          { id: data.id, displayName: data.displayName ?? "Guest", status: "connecting" },
+        ];
+      });
+      window.setTimeout(() => {
+        setParticipants((p) =>
+          p.map((x) => (x.id === data.id ? { ...x, status: "joined" as ParticipantStatus } : x)),
+        );
+      }, 1500);
+    });
+    api.addListener("participantLeft", (d: unknown) => {
+      const data = d as { id: string };
+      setParticipants((p) => p.filter((x) => x.id !== data.id));
+    });
+    api.addListener("displayNameChange", (d: unknown) => {
+      const data = d as { id: string; displayname?: string };
+      setParticipants((p) =>
+        p.map((x) =>
+          x.id === data.id ? { ...x, displayName: data.displayname ?? x.displayName } : x,
+        ),
+      );
+    });
+    api.addListener("videoConferenceLeft", () => {
+      setParticipants([]);
+    });
+  };
+
   const requestMediaAndStart = async () => {
     setPermissionError(null);
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -101,7 +206,7 @@ export function JitsiRoom({
       await loadJitsiScript();
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       stream.getTracks().forEach((t) => t.stop());
-      setStarted(true);
+      startConference();
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
@@ -126,7 +231,7 @@ export function JitsiRoom({
     setPermissionError(null);
     try {
       await loadJitsiScript();
-      setStarted(true);
+      startConference();
     } catch (err) {
       setPermissionError(err instanceof Error ? err.message : "Video service failed to load.");
     }
