@@ -92,7 +92,10 @@ function ClassroomPage() {
   useEffect(() => {
     if (!user) return;
     // Demo rooms are owned by the user — they're the tutor of their own demo.
-    if (roomId.startsWith("demo-")) { setIsTutor(true); return; }
+    if (roomId.startsWith("demo-")) {
+      setIsTutor(true);
+      return;
+    }
     supabase
       .from("sessions")
       .select("tutor_id")
@@ -121,7 +124,13 @@ function ClassroomPage() {
             <p className="truncate text-xs text-muted-foreground sm:max-w-none">Room: {roomId}</p>
           </div>
         </div>
-        <Button asChild size="icon" variant="ghost" title="Open video in new tab" aria-label="Open video in new tab">
+        <Button
+          asChild
+          size="icon"
+          variant="ghost"
+          title="Open video in new tab"
+          aria-label="Open video in new tab"
+        >
           <a
             href={`https://meet.jit.si/AskATutor-${roomId}`}
             target="_blank"
@@ -131,7 +140,6 @@ function ClassroomPage() {
           </a>
         </Button>
       </header>
-
 
       <div className="border-b bg-muted/30 px-2 py-1.5 sm:px-4">
         <div className="flex items-center gap-2 overflow-x-auto">
