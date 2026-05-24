@@ -4,7 +4,10 @@ import { ExternalLink, Users, Video } from "lucide-react";
 
 declare global {
   interface Window {
-    JitsiMeetExternalAPI?: new (domain: string, options: Record<string, unknown>) => {
+    JitsiMeetExternalAPI?: new (
+      domain: string,
+      options: Record<string, unknown>,
+    ) => {
       dispose: () => void;
       addListener: (event: string, handler: (data: unknown) => void) => void;
       executeCommand: (cmd: string, ...args: unknown[]) => void;
@@ -36,10 +39,14 @@ const loadJitsiScript = () =>
     if (typeof window === "undefined") return reject(new Error("Browser only"));
     if (window.JitsiMeetExternalAPI) return resolve();
 
-    const existing = document.querySelector<HTMLScriptElement>('script[src="https://meet.jit.si/external_api.js"]');
+    const existing = document.querySelector<HTMLScriptElement>(
+      'script[src="https://meet.jit.si/external_api.js"]',
+    );
     if (existing) {
       existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("Video service failed to load.")), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Video service failed to load.")), {
+        once: true,
+      });
       return;
     }
 
@@ -93,13 +100,19 @@ export function JitsiRoom({
     } catch (err) {
       const name = err instanceof DOMException ? err.name : "";
       if (name === "NotAllowedError" || name === "SecurityError") {
-        setPermissionError("Camera or microphone is blocked. Tap the lock icon in the address bar, allow camera and microphone, then tap Start again.");
+        setPermissionError(
+          "Camera or microphone is blocked. Tap the lock icon in the address bar, allow camera and microphone, then tap Start again.",
+        );
       } else if (name === "NotFoundError") {
         setPermissionError("No camera or microphone was found on this device.");
       } else if (name === "NotReadableError") {
-        setPermissionError("Camera or microphone is already in use by another app. Close the other app, then try again.");
+        setPermissionError(
+          "Camera or microphone is already in use by another app. Close the other app, then try again.",
+        );
       } else {
-        setPermissionError("Camera and microphone could not start. Check browser permissions and try again.");
+        setPermissionError(
+          "Camera and microphone could not start. Check browser permissions and try again.",
+        );
       }
     }
   };
@@ -183,10 +196,14 @@ export function JitsiRoom({
       }, 1500);
 
       api.addListener("micError", () => {
-        setPermissionError("Microphone did not start. Tap the lock icon in the address bar and allow microphone access.");
+        setPermissionError(
+          "Microphone did not start. Tap the lock icon in the address bar and allow microphone access.",
+        );
       });
       api.addListener("cameraError", () => {
-        setPermissionError("Camera did not start. Tap the lock icon in the address bar and allow camera access.");
+        setPermissionError(
+          "Camera did not start. Tap the lock icon in the address bar and allow camera access.",
+        );
       });
 
       api.addListener("videoConferenceJoined", (d: unknown) => {
@@ -195,7 +212,11 @@ export function JitsiRoom({
           const next = p.filter((x) => x.id !== data.id);
           return [
             ...next,
-            { id: data.id, displayName: data.displayName ?? displayName ?? "You", status: "joined" },
+            {
+              id: data.id,
+              displayName: data.displayName ?? displayName ?? "You",
+              status: "joined",
+            },
           ];
         });
       });
@@ -203,7 +224,10 @@ export function JitsiRoom({
         const data = d as { id: string; displayName?: string };
         setParticipants((p) => {
           const next = p.filter((x) => x.id !== data.id);
-          return [...next, { id: data.id, displayName: data.displayName ?? "Guest", status: "connecting" }];
+          return [
+            ...next,
+            { id: data.id, displayName: data.displayName ?? "Guest", status: "connecting" },
+          ];
         });
         // Promote to joined shortly after — Jitsi has no per-peer "connected" event over the API
         window.setTimeout(() => {
@@ -219,7 +243,9 @@ export function JitsiRoom({
       api.addListener("displayNameChange", (d: unknown) => {
         const data = d as { id: string; displayname?: string };
         setParticipants((p) =>
-          p.map((x) => (x.id === data.id ? { ...x, displayName: data.displayname ?? x.displayName } : x)),
+          p.map((x) =>
+            x.id === data.id ? { ...x, displayName: data.displayname ?? x.displayName } : x,
+          ),
         );
       });
       api.addListener("videoConferenceLeft", () => {
@@ -248,15 +274,20 @@ export function JitsiRoom({
 
   return (
     <div className="relative h-full w-full">
-      <div ref={containerRef} className="flex h-full w-full items-center justify-center bg-background">
+      <div
+        ref={containerRef}
+        className="flex h-full w-full items-center justify-center bg-background"
+      >
         {!started && (
           <div className="flex max-w-xs flex-col items-center gap-3 p-4 text-center">
             {nested && (
               <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-amber-200">
-                <p className="font-semibold">Audio &amp; video may not work in the preview frame.</p>
+                <p className="font-semibold">
+                  Audio &amp; video may not work in the preview frame.
+                </p>
                 <p className="mt-1 opacity-90">
-                  Browsers block camera and microphone inside nested previews. Open the live class in a new tab for full
-                  audio/video.
+                  Browsers block camera and microphone inside nested previews. Open the live class
+                  in a new tab for full audio/video.
                 </p>
                 <Button asChild size="sm" className="mt-2 w-full">
                   <a href={externalUrl} target="_blank" rel="noopener noreferrer">
