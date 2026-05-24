@@ -6,6 +6,7 @@ import { FloatingVideo } from "@/components/FloatingVideo";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
+import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
