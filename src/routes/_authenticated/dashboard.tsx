@@ -410,12 +410,21 @@ function Dashboard() {
                         const withinJoinWindow = scheduledTs - Date.now() <= 10 * 60 * 1000;
                         const tutorRow = s.tutor_id === user.id;
                         const studentCanJoin = isLive || withinJoinWindow;
+                        const meetingUrl = `${window.location.origin}/classroom/${s.room_id}`;
+                        const copyLink = async () => {
+                          try {
+                            await navigator.clipboard.writeText(meetingUrl);
+                            toast.success("Meeting link copied");
+                          } catch {
+                            toast.error("Couldn't copy link");
+                          }
+                        };
                         return (
                           <li
                             key={s.id}
-                            className="flex items-center justify-between gap-3 px-4 py-3"
+                            className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                           >
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium">
                                 {s.subject ?? "Tutoring session"}
                                 {isLive && (
@@ -433,30 +442,48 @@ function Dashboard() {
                                   minute: "2-digit",
                                 })}
                               </p>
+                              {(tutorRow || isLive) && (
+                                <div className="mt-1.5 flex items-center gap-1.5">
+                                  <Link2 className="h-3 w-3 shrink-0 text-muted-foreground" />
+                                  <code className="truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                    {meetingUrl}
+                                  </code>
+                                  <button
+                                    type="button"
+                                    onClick={copyLink}
+                                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    aria-label="Copy meeting link"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            {tutorRow ? (
-                              isLive ? (
-                                <Button asChild size="sm">
+                            <div className="flex shrink-0 gap-2">
+                              {tutorRow ? (
+                                isLive ? (
+                                  <Button asChild size="sm">
+                                    <Link to="/classroom/$roomId" params={{ roomId: s.room_id }}>
+                                      Open meeting
+                                    </Link>
+                                  </Button>
+                                ) : (
+                                  <Button size="sm" onClick={() => startSession(s)}>
+                                    Generate link & start
+                                  </Button>
+                                )
+                              ) : studentCanJoin ? (
+                                <Button asChild size="sm" variant={isLive ? "default" : "outline"}>
                                   <Link to="/classroom/$roomId" params={{ roomId: s.room_id }}>
-                                    Open
+                                    Join
                                   </Link>
                                 </Button>
                               ) : (
-                                <Button size="sm" onClick={() => startSession(s)}>
-                                  Start lesson
+                                <Button size="sm" variant="outline" disabled>
+                                  Waiting for tutor
                                 </Button>
-                              )
-                            ) : studentCanJoin ? (
-                              <Button asChild size="sm" variant={isLive ? "default" : "outline"}>
-                                <Link to="/classroom/$roomId" params={{ roomId: s.room_id }}>
-                                  Join
-                                </Link>
-                              </Button>
-                            ) : (
-                              <Button size="sm" variant="outline" disabled>
-                                Waiting for tutor
-                              </Button>
-                            )}
+                              )}
+                            </div>
                           </li>
                         );
                       })}
