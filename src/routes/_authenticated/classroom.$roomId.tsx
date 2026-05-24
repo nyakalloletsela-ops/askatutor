@@ -1,5 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo } from "@/components/FloatingVideo";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
@@ -25,9 +27,26 @@ export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
 
 function ClassroomPage() {
   const { roomId } = Route.useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const [isTutor, setIsTutor] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    // Demo rooms are owned by the user — they're the tutor of their own demo.
+    if (roomId.startsWith("demo-")) { setIsTutor(true); return; }
+    supabase
+      .from("sessions")
+      .select("tutor_id")
+      .eq("room_id", roomId)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setIsTutor(!!data && (data as { tutor_id: string }).tutor_id === user.id);
+      });
+  }, [roomId, user]);
 
   if (!user) return null;
+  const canControlBoard = isTutor || isAdmin;
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -53,7 +72,7 @@ function ClassroomPage() {
             <TabsTrigger value="lab">Lordda Lab</TabsTrigger>
           </TabsList>
           <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
-            <Whiteboard roomId={roomId} userId={user.id} />
+            <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />
           </TabsContent>
           <TabsContent value="files" className="m-0 min-h-0 flex-1">
             <ClassroomFiles roomId={roomId} />

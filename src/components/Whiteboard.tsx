@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2,
+  ChevronsUp, ChevronsDown, Lock,
+} from "lucide-react";
 
 type Pt = { x: number; y: number };
 type Stroke = {
@@ -16,7 +20,8 @@ type Stroke = {
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: Stroke };
-type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg;
+type PermMsg = { type: "perm"; studentCanDraw: boolean };
+type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
@@ -24,9 +29,12 @@ const PAGE_COUNT = 100;
 interface Props {
   roomId: string;
   userId: string;
+  /** When true the user is treated as the room host (tutor/admin) and can
+   *  toggle whether the other participant is allowed to draw. */
+  isHost?: boolean;
 }
 
-export function Whiteboard({ roomId, userId }: Props) {
+export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -53,6 +61,18 @@ export function Whiteboard({ roomId, userId }: Props) {
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<"pen" | "eraser">("pen");
   const [currentPage, setCurrentPage] = useState(1);
+  // Tutor controls whether the student can draw. Default: only host draws.
+  const [studentCanDraw, setStudentCanDraw] = useState(false);
+  const canDraw = isHost || studentCanDraw;
+  // Collapse the toolbar (handy in landscape on small screens).
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
+    const apply = () => setToolbarCollapsed(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const pages = useMemo(() => Array.from({ length: PAGE_COUNT }, (_, i) => i), []);
 
@@ -96,7 +116,15 @@ export function Whiteboard({ roomId, userId }: Props) {
     });
     channel
       .on("broadcast", { event: "draw" }, ({ payload }) => applyMessage(payload as Msg))
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" && isHost) {
+          channel.send({
+            type: "broadcast",
+            event: "draw",
+            payload: { type: "perm", studentCanDraw } as PermMsg,
+          });
+        }
+      });
     channelRef.current = channel;
     return () => {
       channel.unsubscribe();
@@ -168,6 +196,10 @@ export function Whiteboard({ roomId, userId }: Props) {
       renderStroke(m.stroke);
       return;
     }
+    if (m.type === "perm") {
+      setStudentCanDraw(m.studentCanDraw);
+      return;
+    }
     historyRef.current.push(m);
     renderStroke(m);
   };
@@ -201,6 +233,9 @@ export function Whiteboard({ roomId, userId }: Props) {
       };
       return;
     }
+
+    if (!canDraw) return; // student without permission can only view + scroll
+
 
     // single touch / mouse — start drawing
     if (e.pointerType !== "touch") {

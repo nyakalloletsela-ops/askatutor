@@ -84,20 +84,23 @@ function LabsPage() {
           />
         )}
       </div>
-      {mode === "phet" && (
-        <div className="flex shrink-0 items-center justify-center gap-1 border-t bg-muted/30 px-3 py-1.5 text-[10px] text-muted-foreground">
-          <span>2D simulations by</span>
-          <a
-            href="https://phet.colorado.edu"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-0.5 underline hover:text-foreground"
-          >
-            PhET Interactive Simulations <ExternalLink className="h-2.5 w-2.5" />
-          </a>
-          <span>· University of Colorado Boulder · CC BY 4.0</span>
-        </div>
-      )}
+      <div className="flex shrink-0 flex-wrap items-center justify-center gap-1 border-t bg-muted/30 px-3 py-1.5 text-[10px] text-muted-foreground">
+        <span>
+          {mode === "phet" ? "2D simulations by" : "Inspired by simulations from"}
+        </span>
+        <a
+          href="https://phet.colorado.edu"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-0.5 underline hover:text-foreground"
+        >
+          PhET Interactive Simulations <ExternalLink className="h-2.5 w-2.5" />
+        </a>
+        <span>· University of Colorado Boulder · CC BY 4.0</span>
+        {mode === "3d" && (
+          <span className="ml-1 italic">— 3D scenes are independently rendered, not affiliated with PhET.</span>
+        )}
+      </div>
     </div>
   );
 }
