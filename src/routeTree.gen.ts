@@ -23,6 +23,7 @@ import { Route as AuthenticatedLabsRouteImport } from './routes/_authenticated/l
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCodeRouteImport } from './routes/_authenticated/code'
 import { Route as AuthenticatedCertificateRouteImport } from './routes/_authenticated/certificate'
+import { Route as AuthenticatedBecomeTutorRouteImport } from './routes/_authenticated/become-tutor'
 import { Route as AuthenticatedAiTutorRouteImport } from './routes/_authenticated/ai-tutor'
 import { Route as AuthenticatedAiToolsRouteImport } from './routes/_authenticated/ai-tools'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -102,6 +103,12 @@ const AuthenticatedCertificateRoute =
     path: '/certificate',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedBecomeTutorRoute =
+  AuthenticatedBecomeTutorRouteImport.update({
+    id: '/become-tutor',
+    path: '/become-tutor',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAiTutorRoute = AuthenticatedAiTutorRouteImport.update({
   id: '/ai-tutor',
   path: '/ai-tutor',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/become-tutor': typeof AuthenticatedBecomeTutorRoute
   '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -181,6 +189,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/become-tutor': typeof AuthenticatedBecomeTutorRoute
   '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -206,6 +215,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/ai-tools': typeof AuthenticatedAiToolsRoute
   '/_authenticated/ai-tutor': typeof AuthenticatedAiTutorRoute
+  '/_authenticated/become-tutor': typeof AuthenticatedBecomeTutorRoute
   '/_authenticated/certificate': typeof AuthenticatedCertificateRoute
   '/_authenticated/code': typeof AuthenticatedCodeRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
+    | '/become-tutor'
     | '/certificate'
     | '/code'
     | '/dashboard'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
+    | '/become-tutor'
     | '/certificate'
     | '/code'
     | '/dashboard'
@@ -278,6 +290,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/ai-tools'
     | '/_authenticated/ai-tutor'
+    | '/_authenticated/become-tutor'
     | '/_authenticated/certificate'
     | '/_authenticated/code'
     | '/_authenticated/dashboard'
@@ -408,6 +421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCertificateRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/become-tutor': {
+      id: '/_authenticated/become-tutor'
+      path: '/become-tutor'
+      fullPath: '/become-tutor'
+      preLoaderRoute: typeof AuthenticatedBecomeTutorRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/ai-tutor': {
       id: '/_authenticated/ai-tutor'
       path: '/ai-tutor'
@@ -471,6 +491,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedAiToolsRoute: typeof AuthenticatedAiToolsRoute
   AuthenticatedAiTutorRoute: typeof AuthenticatedAiTutorRoute
+  AuthenticatedBecomeTutorRoute: typeof AuthenticatedBecomeTutorRoute
   AuthenticatedCertificateRoute: typeof AuthenticatedCertificateRoute
   AuthenticatedCodeRoute: typeof AuthenticatedCodeRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -482,6 +503,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedAiToolsRoute: AuthenticatedAiToolsRoute,
   AuthenticatedAiTutorRoute: AuthenticatedAiTutorRoute,
+  AuthenticatedBecomeTutorRoute: AuthenticatedBecomeTutorRoute,
   AuthenticatedCertificateRoute: AuthenticatedCertificateRoute,
   AuthenticatedCodeRoute: AuthenticatedCodeRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
