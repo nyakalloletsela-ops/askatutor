@@ -172,7 +172,28 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
     refreshAll();
+    const t = setInterval(() => { refreshSessions(); }, 15000);
+    return () => clearInterval(t);
   }, [user]);
+
+  const refreshSessions = async () => {
+    if (!user) return;
+    const { data: ss } = await supabase
+      .from("sessions")
+      .select("*")
+      .or(`tutor_id.eq.${user.id},student_id.eq.${user.id}`)
+      .order("scheduled_at", { ascending: true });
+    setSessions((ss as SessionRow[]) ?? []);
+  };
+
+  const startSession = async (s: SessionRow) => {
+    const { error } = await supabase
+      .from("sessions")
+      .update({ status: "in_progress" })
+      .eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    window.location.href = `/classroom/${s.room_id}`;
+  };
 
   const refreshAll = async () => {
     if (!user) return;
