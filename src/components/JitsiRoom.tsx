@@ -50,6 +50,7 @@ interface Props {
   showParticipants?: boolean;
   onParticipantsChange?: (participants: Participant[]) => void;
   onDiagnosticsChange?: (diagnostics: MediaDiagnostics) => void;
+  onApiReady?: (api: { executeCommand: (cmd: string, ...args: unknown[]) => void } | null) => void;
 }
 
 type JitsiApi = {
