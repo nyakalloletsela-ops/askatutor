@@ -154,6 +154,7 @@ function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
   const [txnRef, setTxnRef] = useState("");
   const [payMethod, setPayMethod] = useState<"mpesa" | "ecocash">("mpesa");
   const [subjectInput, setSubjectInput] = useState("");
