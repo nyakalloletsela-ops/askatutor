@@ -214,11 +214,17 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
     try {
       const scheduledAt = new Date(`${date}T${time}`);
       if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) { toast.error("Pick a future date and time"); return; }
+      if (user.id === tutor.id) { toast.error("You can't book a session with yourself"); return; }
       const { data: inserted, error } = await supabase.from("sessions").insert({
         tutor_id: tutor.id, student_id: user.id, subject: subject || null,
         scheduled_at: scheduledAt.toISOString(), duration_min: Number(duration), is_free: useFree,
       }).select("id").single();
-      if (error) throw error;
+      if (error) {
+        const msg = /row-level security/i.test(error.message)
+          ? "You can't book this session. Make sure you're signed in as a student and not booking yourself."
+          : error.message;
+        throw new Error(msg);
+      }
       if (inserted?.id) {
         notifyBookingEmails({ data: { sessionId: inserted.id } }).catch(() => {});
       }
