@@ -145,25 +145,40 @@ function ClassroomPage() {
             </Link>
           </Button>
           <div className="min-w-0">
-            <p className="text-sm font-semibold">Live Classroom</p>
+            <p className="text-sm font-semibold">
+              Live Classroom
+              {sessionStatus === "completed" && (
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Completed
+                </span>
+              )}
+            </p>
             <p className="truncate text-xs text-muted-foreground sm:max-w-none">Room: {roomId}</p>
           </div>
         </div>
-        <Button
-          asChild
-          size="icon"
-          variant="ghost"
-          title="Open video in new tab"
-          aria-label="Open video in new tab"
-        >
-          <a
-            href={`https://meet.jit.si/AskATutor-${roomId}`}
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex items-center gap-1">
+          {canMarkComplete && (
+            <Button size="sm" variant="outline" onClick={markComplete} disabled={completing}>
+              <CheckCircle2 className="mr-1 h-4 w-4" />
+              {completing ? "Saving…" : "Mark complete"}
+            </Button>
+          )}
+          <Button
+            asChild
+            size="icon"
+            variant="ghost"
+            title="Open video in new tab"
+            aria-label="Open video in new tab"
           >
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </Button>
+            <a
+              href={`https://meet.jit.si/AskATutor-${roomId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </Button>
+        </div>
       </header>
 
       <div className="border-b bg-muted/30 px-2 py-1.5 sm:px-4">
