@@ -10,8 +10,9 @@ import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Camera, ExternalLink, Mic, Stethoscope, Users } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, ExternalLink, Mic, Stethoscope, Users } from "lucide-react";
 import { checkRoomMembership } from "@/lib/access.functions";
+import { toast } from "sonner";
 import type { MediaDiagnostics, Participant } from "@/components/JitsiRoom";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
