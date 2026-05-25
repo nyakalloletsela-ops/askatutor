@@ -637,6 +637,36 @@ export type Database = {
         }
         Relationships: []
       }
+      whiteboard_strokes: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          page: number
+          room_id: string
+          stroke_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          page: number
+          room_id: string
+          stroke_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          page?: number
+          room_id?: string
+          stroke_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       forum_posts_public: {

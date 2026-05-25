@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FlaskConical, RotateCw, ExternalLink, Search, Lock } from "lucide-react";
+import { FlaskConical, RotateCw, ExternalLink, Search, Lock, Users } from "lucide-react";
 import {
   LAB_MODULES,
   LAB_SUBJECTS,
@@ -22,14 +23,42 @@ type Props = {
   limit: number;
   /** Called when a new experiment is opened so the parent can update quota. */
   onOpen: (slug: string) => void;
+  /** When provided, the selected experiment is synchronized between participants of the classroom. */
+  roomId?: string;
 };
 
-export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
+export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: Props) {
   const [selected, setSelected] = useState<LabModule | null>(LAB_MODULES[0]);
   const [key, setKey] = useState(0);
   const [filter, setFilter] = useState<LabSubject | "All">("All");
   const [levelFilter, setLevelFilter] = useState<LabLevel | "All">("All");
   const [query, setQuery] = useState("");
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const remoteApplyRef = useRef(false);
+
+  // Sync the active experiment between classroom participants.
+  useEffect(() => {
+    if (!roomId) return;
+    const channel = supabase.channel(`lab:${roomId}`, {
+      config: { broadcast: { self: false } },
+    });
+    channel
+      .on("broadcast", { event: "select" }, ({ payload }) => {
+        const slug = (payload as { slug?: string })?.slug;
+        if (!slug) return;
+        const m = LAB_MODULES.find((x) => x.slug === slug);
+        if (!m) return;
+        remoteApplyRef.current = true;
+        setSelected(m);
+        setKey((k) => k + 1);
+      })
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      channel.unsubscribe();
+      channelRef.current = null;
+    };
+  }, [roomId]);
 
   const visible = useMemo(
     () =>
@@ -62,6 +91,14 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
     setSelected(m);
     setKey((k) => k + 1);
     onOpen(m.slug);
+    if (roomId && !remoteApplyRef.current) {
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "select",
+        payload: { slug: m.slug },
+      });
+    }
+    remoteApplyRef.current = false;
   };
 
   return (
@@ -72,6 +109,11 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
         {enforceLimit && (
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
             {usedCount}/{limit} experiments used
+          </span>
+        )}
+        {roomId && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
+            <Users className="h-3 w-3" /> Synced with classroom
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">

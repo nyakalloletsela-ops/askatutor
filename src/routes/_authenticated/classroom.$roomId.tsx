@@ -10,8 +10,9 @@ import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Camera, ExternalLink, Mic, Stethoscope, Users } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, ExternalLink, Mic, Stethoscope, Users } from "lucide-react";
 import { checkRoomMembership } from "@/lib/access.functions";
+import { toast } from "sonner";
 import type { MediaDiagnostics, Participant } from "@/components/JitsiRoom";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
@@ -87,30 +88,52 @@ function ClassroomPage() {
   const { roomId } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const [isTutor, setIsTutor] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [diagnostics, setDiagnostics] = useState<MediaDiagnostics>(initialDiagnostics);
   const [jitsiApi, setJitsiApi] = useState<JitsiDeviceApi | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    // Demo rooms are owned by the user — they're the tutor of their own demo.
     if (roomId.startsWith("demo-")) {
       setIsTutor(true);
       return;
     }
     supabase
       .from("sessions")
-      .select("tutor_id")
+      .select("id, tutor_id, status")
       .eq("room_id", roomId)
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
-        setIsTutor(!!data && (data as { tutor_id: string }).tutor_id === user.id);
+        const row = data as { id: string; tutor_id: string; status: string } | null;
+        setIsTutor(!!row && row.tutor_id === user.id);
+        setSessionId(row?.id ?? null);
+        setSessionStatus(row?.status ?? null);
       });
   }, [roomId, user]);
 
+  const markComplete = async () => {
+    if (!sessionId) return;
+    setCompleting(true);
+    const { error } = await supabase
+      .from("sessions")
+      .update({ status: "completed" })
+      .eq("id", sessionId);
+    setCompleting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSessionStatus("completed");
+    toast.success("Session marked complete. Files and whiteboard remain saved for this meeting.");
+  };
+
   if (!user) return null;
   const canControlBoard = isTutor || isAdmin;
+  const canMarkComplete = (isTutor || isAdmin) && sessionId && sessionStatus !== "completed";
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -122,25 +145,40 @@ function ClassroomPage() {
             </Link>
           </Button>
           <div className="min-w-0">
-            <p className="text-sm font-semibold">Live Classroom</p>
+            <p className="text-sm font-semibold">
+              Live Classroom
+              {sessionStatus === "completed" && (
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Completed
+                </span>
+              )}
+            </p>
             <p className="truncate text-xs text-muted-foreground sm:max-w-none">Room: {roomId}</p>
           </div>
         </div>
-        <Button
-          asChild
-          size="icon"
-          variant="ghost"
-          title="Open video in new tab"
-          aria-label="Open video in new tab"
-        >
-          <a
-            href={`https://meet.jit.si/AskATutor-${roomId}`}
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex items-center gap-1">
+          {canMarkComplete && (
+            <Button size="sm" variant="outline" onClick={markComplete} disabled={completing}>
+              <CheckCircle2 className="mr-1 h-4 w-4" />
+              {completing ? "Saving…" : "Mark complete"}
+            </Button>
+          )}
+          <Button
+            asChild
+            size="icon"
+            variant="ghost"
+            title="Open video in new tab"
+            aria-label="Open video in new tab"
           >
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </Button>
+            <a
+              href={`https://meet.jit.si/AskATutor-${roomId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </Button>
+        </div>
       </header>
 
       <div className="border-b bg-muted/30 px-2 py-1.5 sm:px-4">
@@ -194,7 +232,7 @@ function ClassroomPage() {
             <ClassroomFiles roomId={roomId} />
           </TabsContent>
           <TabsContent value="lab" className="m-0 min-h-0 flex-1">
-            <LorddaLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} />
+            <LorddaLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} roomId={roomId} />
           </TabsContent>
         </Tabs>
       </main>
