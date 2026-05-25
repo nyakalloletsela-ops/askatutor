@@ -390,6 +390,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     myRedoStackRef.current = [];
     setUndoTick((t) => t + 1);
     send(stroke);
+    persistStroke(stroke);
   };
 
   const undo = () => {
@@ -402,6 +403,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       redrawPage(stroke.page);
     }
     send({ type: "undo", id: stroke.id });
+    deletePersistedStroke(stroke.id);
     setUndoTick((t) => t + 1);
   };
 
@@ -412,6 +414,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     historyRef.current.push(stroke);
     renderStroke(stroke);
     send({ type: "restore", stroke });
+    persistStroke(stroke);
     setUndoTick((t) => t + 1);
   };
 
@@ -425,6 +428,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     myRedoStackRef.current = myRedoStackRef.current.filter((s) => s.page !== page);
     setUndoTick((t) => t + 1);
     send({ type: "clear", page });
+    deletePersistedPage(page);
   };
 
   return (
