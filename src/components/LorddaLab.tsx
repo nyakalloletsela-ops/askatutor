@@ -111,6 +111,11 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
             {usedCount}/{limit} experiments used
           </span>
         )}
+        {roomId && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
+            <Users className="h-3 w-3" /> Synced with classroom
+          </span>
+        )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
