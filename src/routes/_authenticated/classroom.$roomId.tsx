@@ -88,30 +88,52 @@ function ClassroomPage() {
   const { roomId } = Route.useParams();
   const { user, isAdmin } = useAuth();
   const [isTutor, setIsTutor] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [diagnostics, setDiagnostics] = useState<MediaDiagnostics>(initialDiagnostics);
   const [jitsiApi, setJitsiApi] = useState<JitsiDeviceApi | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    // Demo rooms are owned by the user — they're the tutor of their own demo.
     if (roomId.startsWith("demo-")) {
       setIsTutor(true);
       return;
     }
     supabase
       .from("sessions")
-      .select("tutor_id")
+      .select("id, tutor_id, status")
       .eq("room_id", roomId)
       .limit(1)
       .maybeSingle()
       .then(({ data }) => {
-        setIsTutor(!!data && (data as { tutor_id: string }).tutor_id === user.id);
+        const row = data as { id: string; tutor_id: string; status: string } | null;
+        setIsTutor(!!row && row.tutor_id === user.id);
+        setSessionId(row?.id ?? null);
+        setSessionStatus(row?.status ?? null);
       });
   }, [roomId, user]);
 
+  const markComplete = async () => {
+    if (!sessionId) return;
+    setCompleting(true);
+    const { error } = await supabase
+      .from("sessions")
+      .update({ status: "completed" })
+      .eq("id", sessionId);
+    setCompleting(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSessionStatus("completed");
+    toast.success("Session marked complete. Files and whiteboard remain saved for this meeting.");
+  };
+
   if (!user) return null;
   const canControlBoard = isTutor || isAdmin;
+  const canMarkComplete = (isTutor || isAdmin) && sessionId && sessionStatus !== "completed";
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
