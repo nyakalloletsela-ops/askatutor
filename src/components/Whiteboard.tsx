@@ -164,7 +164,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         stroke_id: stroke.id,
         user_id: userId,
         page: stroke.page,
-        data: stroke as unknown as Record<string, unknown>,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: stroke as any,
       })
       .then(({ error }) => {
         if (error) console.warn("whiteboard persist failed", error.message);
