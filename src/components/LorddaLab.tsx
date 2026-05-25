@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FlaskConical, RotateCw, ExternalLink, Search, Lock } from "lucide-react";
+import { FlaskConical, RotateCw, ExternalLink, Search, Lock, Users } from "lucide-react";
 import {
   LAB_MODULES,
   LAB_SUBJECTS,
@@ -22,6 +23,8 @@ type Props = {
   limit: number;
   /** Called when a new experiment is opened so the parent can update quota. */
   onOpen: (slug: string) => void;
+  /** When provided, the selected experiment is synchronized between participants of the classroom. */
+  roomId?: string;
 };
 
 export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
