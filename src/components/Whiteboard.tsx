@@ -109,6 +109,28 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── load persisted strokes ─────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("whiteboard_strokes")
+        .select("data")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: true });
+      if (cancelled || !data) return;
+      for (const row of data as Array<{ data: Stroke }>) {
+        const s = row.data;
+        if (s && s.type === "stroke") {
+          historyRef.current.push(s);
+          renderStroke(s);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
+
   // ── realtime ────────────────────────────────────────────────
   useEffect(() => {
     const channel = supabase.channel(`whiteboard:${roomId}`, {
@@ -132,6 +154,38 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
+
+  // ── persistence helpers ───────────────────────────────────
+  const persistStroke = (stroke: Stroke) => {
+    supabase
+      .from("whiteboard_strokes")
+      .insert({
+        room_id: roomId,
+        stroke_id: stroke.id,
+        user_id: userId,
+        page: stroke.page,
+        data: stroke as unknown as Record<string, unknown>,
+      })
+      .then(({ error }) => {
+        if (error) console.warn("whiteboard persist failed", error.message);
+      });
+  };
+  const deletePersistedStroke = (strokeId: string) => {
+    supabase
+      .from("whiteboard_strokes")
+      .delete()
+      .eq("room_id", roomId)
+      .eq("stroke_id", strokeId)
+      .then(() => undefined);
+  };
+  const deletePersistedPage = (page: number) => {
+    supabase
+      .from("whiteboard_strokes")
+      .delete()
+      .eq("room_id", roomId)
+      .eq("page", page)
+      .then(() => undefined);
+  };
 
   // ── drawing helpers ────────────────────────────────────────
   const drawSegment = (
