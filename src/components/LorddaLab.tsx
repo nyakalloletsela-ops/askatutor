@@ -27,12 +27,38 @@ type Props = {
   roomId?: string;
 };
 
-export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
+export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: Props) {
   const [selected, setSelected] = useState<LabModule | null>(LAB_MODULES[0]);
   const [key, setKey] = useState(0);
   const [filter, setFilter] = useState<LabSubject | "All">("All");
   const [levelFilter, setLevelFilter] = useState<LabLevel | "All">("All");
   const [query, setQuery] = useState("");
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const remoteApplyRef = useRef(false);
+
+  // Sync the active experiment between classroom participants.
+  useEffect(() => {
+    if (!roomId) return;
+    const channel = supabase.channel(`lab:${roomId}`, {
+      config: { broadcast: { self: false } },
+    });
+    channel
+      .on("broadcast", { event: "select" }, ({ payload }) => {
+        const slug = (payload as { slug?: string })?.slug;
+        if (!slug) return;
+        const m = LAB_MODULES.find((x) => x.slug === slug);
+        if (!m) return;
+        remoteApplyRef.current = true;
+        setSelected(m);
+        setKey((k) => k + 1);
+      })
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      channel.unsubscribe();
+      channelRef.current = null;
+    };
+  }, [roomId]);
 
   const visible = useMemo(
     () =>
@@ -65,6 +91,14 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
     setSelected(m);
     setKey((k) => k + 1);
     onOpen(m.slug);
+    if (roomId && !remoteApplyRef.current) {
+      channelRef.current?.send({
+        type: "broadcast",
+        event: "select",
+        payload: { slug: m.slug },
+      });
+    }
+    remoteApplyRef.current = false;
   };
 
   return (
