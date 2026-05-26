@@ -56,82 +56,87 @@ export function FloatingVideo({
     };
   }, []);
 
-  if (hidden) {
-    return (
-      <Button
-        size="sm"
-        onClick={() => setHidden(false)}
-        className="fixed bottom-4 right-4 z-50 shadow-lg"
-      >
-        <Video className="mr-1 h-4 w-4" /> Show video
-      </Button>
-    );
-  }
-
+  // IMPORTANT: never unmount NativeClassroomCall — that would tear down the
+  // media stream and drop the mic. When "hidden", we move the panel off-screen
+  // with width/height = 0, and surface a "Show video" button instead.
   return (
-    <div
-      className="fixed z-50 overflow-hidden rounded-lg border border-navy-foreground/30 bg-black shadow-2xl"
-      style={{
-        left: pos.x,
-        top: pos.y,
-        width: size.w,
-        height: minimized ? 36 : size.h,
-      }}
-    >
+    <>
+      {hidden && (
+        <Button
+          size="sm"
+          onClick={() => setHidden(false)}
+          className="fixed bottom-4 right-4 z-50 shadow-lg"
+        >
+          <Video className="mr-1 h-4 w-4" /> Show video
+        </Button>
+      )}
       <div
-        className="flex h-9 cursor-move items-center justify-between bg-navy px-2 text-xs text-navy-foreground"
-        onPointerDown={(e) => {
-          (e.target as HTMLElement).setPointerCapture(e.pointerId);
-          dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
-        }}
-      >
-        <span className="flex items-center gap-1 font-medium">
-          <Move className="h-3 w-3" /> Video
-        </span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setMinimized((m) => !m)}
-            className="rounded p-1 hover:bg-navy-foreground/20"
-            title={minimized ? "Expand" : "Minimize"}
-          >
-            {minimized ? <Maximize2 className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-          </button>
-          <button
-            onClick={() => setHidden(true)}
-            className="rounded p-1 hover:bg-navy-foreground/20"
-            title="Hide"
-          >
-            <VideoOff className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
-      <div
-        className="h-[calc(100%-36px)]"
+        className="fixed z-50 overflow-hidden rounded-lg border border-navy-foreground/30 bg-black shadow-2xl"
         style={{
-          visibility: minimized ? "hidden" : "visible",
-          pointerEvents: minimized ? "none" : "auto",
+          left: hidden ? -9999 : pos.x,
+          top: hidden ? -9999 : pos.y,
+          width: hidden ? 1 : size.w,
+          height: hidden ? 1 : (minimized ? 36 : size.h),
+          opacity: hidden ? 0 : 1,
+          pointerEvents: hidden ? "none" : "auto",
         }}
+        aria-hidden={hidden}
       >
-        <NativeClassroomCall
-          roomId={roomId}
-          displayName={displayName}
-          email={email}
-          audioOnly={minimized}
-          onParticipantsChange={onParticipantsChange}
-          onDiagnosticsChange={onDiagnosticsChange}
-          onApiReady={onApiReady}
-        />
-      </div>
-      {!minimized && (
         <div
-          className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize bg-navy-foreground/40"
-          style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}
+          className="flex h-9 cursor-move items-center justify-between bg-navy px-2 text-xs text-navy-foreground"
           onPointerDown={(e) => {
             (e.target as HTMLElement).setPointerCapture(e.pointerId);
-            resizeRef.current = { sx: e.clientX, sy: e.clientY, w: size.w, h: size.h };
+            dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
           }}
-        />
-      )}
-    </div>
+        >
+          <span className="flex items-center gap-1 font-medium">
+            <Move className="h-3 w-3" /> Video · mic on
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setMinimized((m) => !m)}
+              className="rounded p-1 hover:bg-navy-foreground/20"
+              title={minimized ? "Expand" : "Minimize (mic stays on)"}
+            >
+              {minimized ? <Maximize2 className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
+            </button>
+            <button
+              onClick={() => setHidden(true)}
+              className="rounded p-1 hover:bg-navy-foreground/20"
+              title="Hide (mic stays on)"
+            >
+              <VideoOff className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+        <div
+          className="h-[calc(100%-36px)]"
+          style={{
+            visibility: minimized ? "hidden" : "visible",
+            pointerEvents: minimized ? "none" : "auto",
+          }}
+        >
+          <NativeClassroomCall
+            roomId={roomId}
+            displayName={displayName}
+            email={email}
+            audioOnly={minimized || hidden}
+            onParticipantsChange={onParticipantsChange}
+            onDiagnosticsChange={onDiagnosticsChange}
+            onApiReady={onApiReady}
+          />
+        </div>
+        {!minimized && !hidden && (
+          <div
+            className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize bg-navy-foreground/40"
+            style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}
+            onPointerDown={(e) => {
+              (e.target as HTMLElement).setPointerCapture(e.pointerId);
+              resizeRef.current = { sx: e.clientX, sy: e.clientY, w: size.w, h: size.h };
+            }}
+          />
+        )}
+      </div>
+    </>
   );
 }
