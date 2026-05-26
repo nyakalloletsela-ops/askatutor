@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo } from "@/components/FloatingVideo";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
+import { ThreeDLab } from "@/components/ThreeDLab";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
 import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -220,10 +221,11 @@ function ClassroomPage() {
 
       <main className="min-h-0 flex-1">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
-          <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-md grid-cols-3">
+          <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-xl grid-cols-4">
             <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
-            <TabsTrigger value="lab">Lordda Lab</TabsTrigger>
+            <TabsTrigger value="lab">PhET Lab</TabsTrigger>
+            <TabsTrigger value="lab3d">3D Lab</TabsTrigger>
           </TabsList>
           <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
             <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />
@@ -233,6 +235,9 @@ function ClassroomPage() {
           </TabsContent>
           <TabsContent value="lab" className="m-0 min-h-0 flex-1">
             <LorddaLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} roomId={roomId} />
+          </TabsContent>
+          <TabsContent value="lab3d" className="m-0 min-h-0 flex-1">
+            <ThreeDLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} />
           </TabsContent>
         </Tabs>
       </main>
