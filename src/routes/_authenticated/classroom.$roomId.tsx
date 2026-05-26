@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo } from "@/components/FloatingVideo";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
+import { ThreeDLab } from "@/components/ThreeDLab";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
 import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
