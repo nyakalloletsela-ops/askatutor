@@ -66,18 +66,23 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     midY: 0,
   });
 
-  // remember all strokes so we can redraw on resize
-  const historyRef = useRef<Stroke[]>([]);
+  // remember all items so we can redraw on resize
+  const historyRef = useRef<AnyItem[]>([]);
 
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(3);
-  const [mode, setMode] = useState<"pen" | "eraser">("pen");
+  const [mode, setMode] = useState<"pen" | "eraser" | "text">("pen");
   const [currentPage, setCurrentPage] = useState(1);
   // Tutor controls whether the student can draw. Default: only host draws.
   const [studentCanDraw, setStudentCanDraw] = useState(false);
   const canDraw = isHost || studentCanDraw;
+  // inline text editor state
+  const [textEditor, setTextEditor] = useState<
+    { page: number; x: number; y: number; value: string } | null
+  >(null);
   // Collapse the toolbar (handy in landscape on small screens).
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+
   useEffect(() => {
     const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
     const apply = () => setToolbarCollapsed(mq.matches);
