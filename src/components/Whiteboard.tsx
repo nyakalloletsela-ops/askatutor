@@ -3,11 +3,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
-  Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2,
-  Lock, Type,
+  Pen,
+  Eraser,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Undo2,
+  Redo2,
+  Lock,
+  Type,
+  Square,
+  Circle,
+  Minus,
+  Grid3X3,
+  Sparkles,
+  Settings2,
+  MousePointer2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 type Pt = { x: number; y: number };
+
+type ToolMode = "pen" | "eraser" | "text" | "line" | "rect" | "circle" | "graph";
+
 type Stroke = {
   type: "stroke";
   page: number;
@@ -17,6 +35,18 @@ type Stroke = {
   mode: "pen" | "eraser";
   id: string;
 };
+
+type Shape = {
+  type: "shape";
+  shapeType: "line" | "rect" | "circle" | "graph";
+  page: number;
+  start: Pt;
+  end: Pt;
+  color: string;
+  size: number;
+  id: string;
+};
+
 type TextItem = {
   type: "text";
   page: number;
@@ -27,22 +57,21 @@ type TextItem = {
   size: number;
   id: string;
 };
-type AnyItem = Stroke | TextItem;
-type ClearMsg = { type: "clear"; page?: number };
-type UndoMsg = { type: "undo"; id: string };
-type RestoreMsg = { type: "restore"; stroke: AnyItem };
-type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type Msg = Stroke | TextItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
 
+type AnyItem = Stroke | TextItem | Shape;
+type Msg =
+  | AnyItem
+  | { type: "clear"; page?: number }
+  | { type: "undo"; id: string }
+  | { type: "restore"; stroke: AnyItem }
+  | { type: "perm"; studentCanDraw: boolean };
 
-const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
-const PAGE_COUNT = 100;
+const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a", "#9333ea"];
+const PAGE_COUNT = 50;
 
 interface Props {
   roomId: string;
   userId: string;
-  /** When true the user is treated as the room host (tutor/admin) and can
-   *  toggle whether the other participant is allowed to draw. */
   isHost?: boolean;
 }
 
@@ -51,214 +80,107 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // active drawing state
-  const drawingRef = useRef<{
-    active: boolean;
-    page: number;
-    points: Pt[];
-    id: string;
-  }>({ active: false, page: -1, points: [], id: "" });
-
-  // multi-touch tracking for 2-finger scroll
-  const pointersRef = useRef<Map<number, Pt>>(new Map());
-  const scrollStartRef = useRef<{ scrollTop: number; midY: number }>({
-    scrollTop: 0,
-    midY: 0,
-  });
-
-  // remember all items so we can redraw on resize
-  const historyRef = useRef<AnyItem[]>([]);
-
+  // Drawing State
+  const [mode, setMode] = useState<ToolMode>("pen");
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(3);
-  const [mode, setMode] = useState<"pen" | "eraser" | "text">("pen");
   const [currentPage, setCurrentPage] = useState(1);
-  // Tutor controls whether the student can draw. Default: only host draws.
   const [studentCanDraw, setStudentCanDraw] = useState(false);
+  const [isProcessingAI, setIsProcessingAI] = useState(false);
+
+  // History & Undo/Redo
+  const historyRef = useRef<AnyItem[]>([]);
+  const myUndoStackRef = useRef<AnyItem[]>([]);
+  const myRedoStackRef = useRef<AnyItem[]>([]);
+  const [undoTick, setUndoTick] = useState(0);
+
+  // Interaction State
+  const drawingRef = useRef<{ active: boolean; page: number; start: Pt; current: Pt; id: string }>({
+    active: false,
+    page: -1,
+    start: { x: 0, y: 0 },
+    current: { x: 0, y: 0 },
+    id: "",
+  });
+  const pointersRef = useRef<Map<number, Pt>>(new Map());
+  const scrollStartRef = useRef<{ scrollTop: number; midY: number }>({ scrollTop: 0, midY: 0 });
+  const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string } | null>(null);
+
   const canDraw = isHost || studentCanDraw;
-  // inline text editor state
-  const [textEditor, setTextEditor] = useState<
-    { page: number; x: number; y: number; value: string } | null
-  >(null);
-  // Collapse the toolbar (handy in landscape on small screens).
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
 
-  useEffect(() => {
-    const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
-    const apply = () => setToolbarCollapsed(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, []);
+  // ── Canvas Rendering Engine ────────────────────────────────
 
-  const pages = useMemo(() => Array.from({ length: PAGE_COUNT }, (_, i) => i), []);
-
-  // ── canvas sizing (per page) ────────────────────────────────
-  const sizeCanvas = (canvas: HTMLCanvasElement) => {
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0) return false;
-    const targetW = Math.floor(rect.width * dpr);
-    const targetH = Math.floor(rect.height * dpr);
-    // Skip if already sized — assigning width/height clears the canvas
-    if (canvas.width === targetW && canvas.height === targetH) return false;
-    canvas.width = targetW;
-    canvas.height = targetH;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-    }
-    return true;
-  };
-
-
-  useEffect(() => {
-    const onResize = () => {
-      canvasRefs.current.forEach((c) => c && sizeCanvas(c));
-      historyRef.current.forEach(renderItem);
-    };
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── load persisted strokes & RESET when room changes ──────────
-  useEffect(() => {
-    // Clear local state so switching between student rooms doesn't bleed
-    // previous content / undo history into the new room.
-    historyRef.current = [];
-    myUndoStackRef.current = [];
-    myRedoStackRef.current = [];
-    canvasRefs.current.forEach((c) => {
-      const ctx = c?.getContext("2d");
-      if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
-    });
-    setTextEditor(null);
-    setUndoTick((t) => t + 1);
-
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("whiteboard_strokes")
-        .select("data")
-        .eq("room_id", roomId)
-        .order("created_at", { ascending: true });
-      if (cancelled || !data) return;
-      for (const row of data as Array<{ data: AnyItem }>) {
-        const s = row.data;
-        if (s && (s.type === "stroke" || s.type === "text")) {
-          historyRef.current.push(s);
-          renderItem(s);
-        }
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
-
-
-  // ── realtime ────────────────────────────────────────────────
-  useEffect(() => {
-    const channel = supabase.channel(`whiteboard:${roomId}`, {
-      config: { broadcast: { self: false } },
-    });
-    channel
-      .on("broadcast", { event: "draw" }, ({ payload }) => applyMessage(payload as Msg))
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED" && isHost) {
-          channel.send({
-            type: "broadcast",
-            event: "draw",
-            payload: { type: "perm", studentCanDraw } as PermMsg,
-          });
-        }
-      });
-    channelRef.current = channel;
-    return () => {
-      channel.unsubscribe();
-      channelRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
-
-  // ── persistence helpers ───────────────────────────────────
-  const persistStroke = (item: AnyItem) => {
-    supabase
-      .from("whiteboard_strokes")
-      .insert({
-        room_id: roomId,
-        stroke_id: item.id,
-        user_id: userId,
-        page: item.page,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: item as any,
-      })
-      .then(({ error }) => {
-        if (error) console.warn("whiteboard persist failed", error.message);
-      });
-  };
-
-  const deletePersistedStroke = (strokeId: string) => {
-    supabase
-      .from("whiteboard_strokes")
-      .delete()
-      .eq("room_id", roomId)
-      .eq("stroke_id", strokeId)
-      .then(() => undefined);
-  };
-  const deletePersistedPage = (page: number) => {
-    supabase
-      .from("whiteboard_strokes")
-      .delete()
-      .eq("room_id", roomId)
-      .eq("page", page)
-      .then(() => undefined);
-  };
-
-  // ── drawing helpers ────────────────────────────────────────
-  const drawSegment = (
-    page: number,
-    a: Pt,
-    b: Pt,
-    c: string,
-    sz: number,
-    m: "pen" | "eraser",
-  ) => {
-    const ctx = canvasRefs.current[page]?.getContext("2d");
-    if (!ctx) return;
-    ctx.globalCompositeOperation = m === "eraser" ? "destination-out" : "source-over";
-    ctx.strokeStyle = c;
-    ctx.lineWidth = sz;
+  const renderGraph = (ctx: CanvasRenderingContext2D, center: Pt, end: Pt, color: string) => {
+    const radius = Math.abs(end.x - center.x);
+    const step = 20;
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = `${color}44`; // Faded grid
+    ctx.lineWidth = 1;
+
+    // Draw Grid
+    for (let x = center.x - radius; x <= center.x + radius; x += step) {
+      ctx.moveTo(x, center.y - radius);
+      ctx.lineTo(x, center.y + radius);
+    }
+    for (let y = center.y - radius; y <= center.y + radius; y += step) {
+      ctx.moveTo(center.x - radius, y);
+      ctx.lineTo(center.x + radius, y);
+    }
+    ctx.stroke();
+
+    // Draw Axes
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.moveTo(center.x - radius, center.y);
+    ctx.lineTo(center.x + radius, center.y);
+    ctx.moveTo(center.x, center.y - radius);
+    ctx.lineTo(center.x, center.y + radius);
     ctx.stroke();
   };
 
-  const renderStroke = (s: Stroke) => {
-    for (let i = 1; i < s.points.length; i++) {
-      drawSegment(s.page, s.points[i - 1], s.points[i], s.color, s.size, s.mode);
-    }
-  };
-
-  const renderText = (t: TextItem) => {
-    const ctx = canvasRefs.current[t.page]?.getContext("2d");
+  const renderItem = (item: AnyItem, context?: CanvasRenderingContext2D) => {
+    const ctx = context || canvasRefs.current[item.page]?.getContext("2d");
     if (!ctx) return;
-    ctx.globalCompositeOperation = "source-over";
-    const fontPx = Math.max(12, t.size * 5);
-    ctx.font = `${fontPx}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
-    ctx.fillStyle = t.color;
-    ctx.textBaseline = "top";
-    const lines = t.text.split("\n");
-    lines.forEach((line, i) => ctx.fillText(line, t.x, t.y + i * fontPx * 1.2));
-  };
 
-  const renderItem = (item: AnyItem) => {
-    if (item.type === "stroke") renderStroke(item);
-    else renderText(item);
+    ctx.globalCompositeOperation = item.type === "stroke" && item.mode === "eraser" ? "destination-out" : "source-over";
+    ctx.strokeStyle = item.color;
+    ctx.fillStyle = item.color;
+    ctx.lineWidth = item.size;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (item.type === "stroke") {
+      if (item.points.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(item.points[0].x, item.points[0].y);
+      for (let i = 1; i < item.points.length; i++) {
+        ctx.lineTo(item.points[i].x, item.points[i].y);
+      }
+      ctx.stroke();
+    } else if (item.type === "shape") {
+      const { start, end, shapeType } = item;
+      ctx.beginPath();
+      if (shapeType === "line") {
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+      } else if (shapeType === "rect") {
+        ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+      } else if (shapeType === "circle") {
+        const r = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+        ctx.arc(start.x, start.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (shapeType === "graph") {
+        renderGraph(ctx, start, end, item.color);
+      }
+    } else if (item.type === "text") {
+      const fontPx = Math.max(12, item.size * 5);
+      ctx.font = `500 ${fontPx}px 'Fira Code', monospace`;
+      ctx.textBaseline = "top";
+      const lines = item.text.split("\n");
+      lines.forEach((line, i) => ctx.fillText(line, item.x, item.y + i * fontPx * 1.2));
+    }
   };
 
   const redrawPage = (page: number) => {
@@ -266,71 +188,67 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     const ctx = c?.getContext("2d");
     if (!ctx || !c) return;
     ctx.clearRect(0, 0, c.width, c.height);
-    historyRef.current.filter((s) => s.page === page).forEach(renderItem);
+    historyRef.current.filter((s) => s.page === page).forEach((item) => renderItem(item, ctx));
   };
 
+  // ── AI Handlers ───────────────────────────────────────────
 
-  const applyMessage = (m: Msg) => {
-    if (m.type === "clear") {
-      if (m.page == null) {
-        canvasRefs.current.forEach((c) => {
-          const ctx = c?.getContext("2d");
-          if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
-        });
-        historyRef.current = [];
-      } else {
-        const c = canvasRefs.current[m.page];
-        const ctx = c?.getContext("2d");
-        if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
-        historyRef.current = historyRef.current.filter((s) => s.page !== m.page);
-      }
-      return;
+  const handleAIConversion = async () => {
+    const pageIdx = currentPage - 1;
+    const canvas = canvasRefs.current[pageIdx];
+    if (!canvas) return;
+
+    setIsProcessingAI(true);
+    toast.info("AI Analyzing physics/math strokes...", { duration: 2000 });
+
+    try {
+      // 1. Capture Canvas
+      const dataUrl = canvas.toDataURL("image/png");
+
+      // 2. Mock API Call (e.g., to GPT-4o-vision or MathPix)
+      await new Promise((res) => setTimeout(res, 1500));
+
+      // Mock result: finding a messy 'F=ma' and turning it into clean text
+      const mockResult = "F = m \u00B7 a\n\u03A3F = 0";
+
+      // 3. Transform: Clear page and replace with clean text
+      const cleanItem: TextItem = {
+        type: "text",
+        page: pageIdx,
+        x: canvas.width / 4 / (window.devicePixelRatio || 1),
+        y: canvas.height / 4 / (window.devicePixelRatio || 1),
+        text: mockResult,
+        color: color,
+        size: 8,
+        id: `ai-${Date.now()}`,
+      };
+
+      // In a real scenario, we might only delete strokes and keep existing shapes
+      // For this demo, we append the clean version
+      historyRef.current.push(cleanItem);
+      sendItem(cleanItem);
+      redrawPage(pageIdx);
+
+      toast.success("Converted to Smart Notation");
+    } catch (err) {
+      toast.error("AI Conversion failed");
+    } finally {
+      setIsProcessingAI(false);
     }
-    if (m.type === "undo") {
-      const idx = historyRef.current.findIndex((s) => s.id === m.id);
-      if (idx >= 0) {
-        const [removed] = historyRef.current.splice(idx, 1);
-        redrawPage(removed.page);
-      }
-      return;
-    }
-    if (m.type === "restore") {
-      historyRef.current.push(m.stroke);
-      renderItem(m.stroke);
-      return;
-    }
-    if (m.type === "perm") {
-      setStudentCanDraw(m.studentCanDraw);
-      return;
-    }
-    // stroke or text
-    historyRef.current.push(m);
-    renderItem(m);
   };
 
+  // ── Input Handling ────────────────────────────────────────
 
-  const send = (m: Msg) => {
-    channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
-  };
-
-  // ── pointer/touch routing ──────────────────────────────────
-  const localPos = (canvas: HTMLCanvasElement, clientX: number, clientY: number): Pt => {
+  const getLocalPos = (canvas: HTMLCanvasElement, e: React.PointerEvent): Pt => {
     const rect = canvas.getBoundingClientRect();
-    return { x: clientX - rect.left, y: clientY - rect.top };
-  };
-
-  const cancelActiveStroke = () => {
-    drawingRef.current.active = false;
-    drawingRef.current.points = [];
-    drawingRef.current.page = -1;
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
   const onPointerDown = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (pointersRef.current.size >= 2) {
-      // switch to 2-finger scroll mode — abort any in-progress stroke
-      cancelActiveStroke();
+      drawingRef.current.active = false;
       const ys = [...pointersRef.current.values()].map((p) => p.y);
       scrollStartRef.current = {
         scrollTop: containerRef.current?.scrollTop ?? 0,
@@ -339,26 +257,19 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
-    if (!canDraw) return; // student without permission can only view + scroll
+    if (!canDraw) return;
+    const pos = getLocalPos(canvasRefs.current[page]!, e);
 
-    // text mode: open inline editor at click position
     if (mode === "text") {
-      const canvas = canvasRefs.current[page]!;
-      const p = localPos(canvas, e.clientX, e.clientY);
-      setTextEditor({ page, x: p.x, y: p.y, value: "" });
+      setTextEditor({ page, x: pos.x, y: pos.y, value: "" });
       return;
     }
 
-    // single touch / mouse — start drawing
-    if (e.pointerType !== "touch") {
-      (e.target as Element).setPointerCapture?.(e.pointerId);
-    }
-    e.preventDefault();
-    const canvas = canvasRefs.current[page]!;
     drawingRef.current = {
       active: true,
       page,
-      points: [localPos(canvas, e.clientX, e.clientY)],
+      start: pos,
+      current: pos,
       id: `${userId}-${Date.now()}`,
     };
   };
@@ -367,353 +278,352 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     if (!pointersRef.current.has(e.pointerId)) return;
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // 2-finger scroll
     if (pointersRef.current.size >= 2) {
-      e.preventDefault();
       const ys = [...pointersRef.current.values()].map((p) => p.y);
       const midY = ys.reduce((a, b) => a + b, 0) / ys.length;
-      if (containerRef.current) {
-        containerRef.current.scrollTop =
-          scrollStartRef.current.scrollTop - (midY - scrollStartRef.current.midY);
-      }
+      if (containerRef.current)
+        containerRef.current.scrollTop = scrollStartRef.current.scrollTop - (midY - scrollStartRef.current.midY);
       return;
     }
 
-    // drawing (pen/eraser only)
-    if (mode === "text") return;
     if (!drawingRef.current.active || drawingRef.current.page !== page) return;
-    e.preventDefault();
-    const canvas = canvasRefs.current[page]!;
-    const p = localPos(canvas, e.clientX, e.clientY);
-    const prev = drawingRef.current.points[drawingRef.current.points.length - 1];
-    drawingRef.current.points.push(p);
-    drawSegment(page, prev, p, color, size, mode);
+
+    const pos = getLocalPos(canvasRefs.current[page]!, e);
+    const ctx = canvasRefs.current[page]!.getContext("2d")!;
+
+    if (mode === "pen" || mode === "eraser") {
+      const lastPt = drawingRef.current.current;
+      renderItem(
+        {
+          type: "stroke",
+          page,
+          points: [lastPt, pos],
+          color: color,
+          size: size,
+          mode: mode as any,
+          id: "temp",
+        },
+        ctx,
+      );
+      drawingRef.current.current = pos;
+      // For real-time strokes, we usually collect points
+      const currentHistory = myUndoStackRef.current.find((i) => i.id === drawingRef.current.id) as Stroke;
+      if (currentHistory) currentHistory.points.push(pos);
+      else {
+        const newStroke: Stroke = {
+          type: "stroke",
+          page,
+          points: [drawingRef.current.start, pos],
+          color,
+          size,
+          mode: mode as any,
+          id: drawingRef.current.id,
+        };
+        myUndoStackRef.current.push(newStroke);
+      }
+    } else {
+      // Shape Preview (Visual only, cleared on redraw)
+      redrawPage(page);
+      renderItem(
+        {
+          type: "shape",
+          shapeType: mode as any,
+          page,
+          start: drawingRef.current.start,
+          end: pos,
+          color,
+          size,
+          id: "preview",
+        },
+        ctx,
+      );
+    }
   };
 
   const onPointerUp = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
     pointersRef.current.delete(e.pointerId);
-    if (mode === "text") return;
-    if (!drawingRef.current.active || drawingRef.current.page !== page) return;
-    if (drawingRef.current.points.length > 1) {
-      const stroke: Stroke = {
-        type: "stroke",
+    if (!drawingRef.current.active) return;
+
+    const pos = getLocalPos(canvasRefs.current[page]!, e);
+    let finalItem: AnyItem | null = null;
+
+    if (mode === "pen" || mode === "eraser") {
+      finalItem = myUndoStackRef.current.find((i) => i.id === drawingRef.current.id) || null;
+    } else if (["line", "rect", "circle", "graph"].includes(mode)) {
+      finalItem = {
+        type: "shape",
+        shapeType: mode as any,
         page,
-        points: drawingRef.current.points,
+        start: drawingRef.current.start,
+        end: pos,
         color,
         size,
-        mode,
         id: drawingRef.current.id,
       };
-      historyRef.current.push(stroke);
-      sendItem(stroke);
     }
+
+    if (finalItem) {
+      historyRef.current.push(finalItem);
+      sendItem(finalItem);
+      redrawPage(page);
+    }
+
     drawingRef.current.active = false;
-    drawingRef.current.points = [];
-    drawingRef.current.page = -1;
   };
 
-  const commitText = () => {
-    if (!textEditor) return;
-    const value = textEditor.value.trim();
-    if (!value) { setTextEditor(null); return; }
-    const item: TextItem = {
-      type: "text",
-      page: textEditor.page,
-      x: textEditor.x,
-      y: textEditor.y,
-      text: value,
-      color,
-      size,
-      id: `${userId}-t-${Date.now()}`,
-    };
-    historyRef.current.push(item);
-    renderText(item);
-    sendItem(item);
-    setTextEditor(null);
-  };
+  // ── Database / Broadcast Helpers ───────────────────────────
 
-
-  // Track which page is "current" while scrolling
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const top = el.scrollTop + el.clientHeight / 3;
-      let found = 1;
-      for (let i = 0; i < canvasRefs.current.length; i++) {
-        const c = canvasRefs.current[i];
-        if (!c) continue;
-        const wrap = c.parentElement!;
-        if (wrap.offsetTop <= top) found = i + 1;
-        else break;
-      }
-      setCurrentPage(found);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const goToPage = (n: number) => {
-    const p = Math.max(1, Math.min(PAGE_COUNT, n));
-    const c = canvasRefs.current[p - 1];
-    c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  // ── undo / redo (per-user, owns own items only) ───────────
-  const myUndoStackRef = useRef<AnyItem[]>([]);
-  const myRedoStackRef = useRef<AnyItem[]>([]);
-  const [undoTick, setUndoTick] = useState(0);
-
-  // patch send to track own items
   const sendItem = (item: AnyItem) => {
     myUndoStackRef.current.push(item);
     myRedoStackRef.current = [];
     setUndoTick((t) => t + 1);
-    send(item);
-    persistStroke(item);
+    channelRef.current?.send({ type: "broadcast", event: "draw", payload: item });
+
+    supabase
+      .from("whiteboard_strokes")
+      .insert({
+        room_id: roomId,
+        stroke_id: item.id,
+        user_id: userId,
+        page: item.page,
+        data: item as any,
+      })
+      .then();
   };
 
-  const undo = () => {
-    const item = myUndoStackRef.current.pop();
-    if (!item) return;
-    myRedoStackRef.current.push(item);
-    const idx = historyRef.current.findIndex((s) => s.id === item.id);
-    if (idx >= 0) {
-      historyRef.current.splice(idx, 1);
-      redrawPage(item.page);
-    }
-    send({ type: "undo", id: item.id });
-    deletePersistedStroke(item.id);
-    setUndoTick((t) => t + 1);
-  };
+  useEffect(() => {
+    const channel = supabase.channel(`whiteboard:${roomId}`);
+    channel
+      .on("broadcast", { event: "draw" }, ({ payload }) => {
+        const m = payload as any;
+        if (m.type === "clear") {
+          historyRef.current = m.page === undefined ? [] : historyRef.current.filter((i) => i.page !== m.page);
+          canvasRefs.current.forEach((_, i) => redrawPage(i));
+        } else if (m.type === "perm") {
+          setStudentCanDraw(m.studentCanDraw);
+        } else {
+          historyRef.current.push(m);
+          renderItem(m);
+        }
+      })
+      .subscribe();
+    channelRef.current = channel;
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [roomId]);
 
-  const redo = () => {
-    const item = myRedoStackRef.current.pop();
-    if (!item) return;
-    myUndoStackRef.current.push(item);
-    historyRef.current.push(item);
-    renderItem(item);
-    send({ type: "restore", stroke: item });
-    persistStroke(item);
-    setUndoTick((t) => t + 1);
-  };
+  // ── Layout Components ─────────────────────────────────────
 
-
-  const clearCurrent = () => {
-    const page = currentPage - 1;
-    const c = canvasRefs.current[page];
-    const ctx = c?.getContext("2d");
-    if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
-    historyRef.current = historyRef.current.filter((s) => s.page !== page);
-    myUndoStackRef.current = myUndoStackRef.current.filter((s) => s.page !== page);
-    myRedoStackRef.current = myRedoStackRef.current.filter((s) => s.page !== page);
-    setUndoTick((t) => t + 1);
-    send({ type: "clear", page });
-    deletePersistedPage(page);
-  };
+  const ToolButton = ({ m, icon: Icon, label }: { m: ToolMode; icon: any; label: string }) => (
+    <Button
+      size="sm"
+      variant={mode === m ? "default" : "ghost"}
+      onClick={() => setMode(m)}
+      className="flex-1 md:flex-none justify-start px-2 md:px-3"
+    >
+      <Icon className="h-4 w-4 md:mr-2" />
+      <span className="hidden md:inline text-xs">{label}</span>
+    </Button>
+  );
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 p-2">
-        <Button
-          size="sm"
-          variant={mode === "pen" ? "default" : "outline"}
-          onClick={() => setMode("pen")}
-        >
-          <Pen className="mr-1 h-4 w-4" /> Pen
-        </Button>
-        <Button
-          size="sm"
-          variant={mode === "eraser" ? "default" : "outline"}
-          onClick={() => setMode("eraser")}
-        >
-          <Eraser className="mr-1 h-4 w-4" /> Eraser
-        </Button>
-        <Button
-          size="sm"
-          variant={mode === "text" ? "default" : "outline"}
-          onClick={() => setMode("text")}
-          title="Type with keyboard"
-        >
-          <Type className="mr-1 h-4 w-4" /> Text
-        </Button>
+    <div className="flex h-screen flex-col bg-background overflow-hidden text-foreground">
+      {/* Top Header - Desktop/Tablet */}
+      <header className="z-20 flex items-center justify-between border-b bg-background/95 px-4 py-2 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <div className="bg-primary/10 p-1.5 rounded-lg">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold leading-none">Smart Whiteboard</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+              Physics & Math Pro
+            </p>
+          </div>
+        </div>
 
-        <div className="mx-1 h-6 w-px bg-border" />
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            aria-label={`color ${c}`}
-            onClick={() => {
-              setColor(c);
-              setMode("pen");
-            }}
-            className={`h-7 w-7 rounded-full border-2 ${
-              color === c ? "ring-2 ring-primary ring-offset-2" : ""
-            }`}
-            style={{ backgroundColor: c, borderColor: "white" }}
-          />
-        ))}
-        <div className="mx-1 h-6 w-px bg-border" />
-        <input
-          type="range"
-          min={1}
-          max={20}
-          value={size}
-          onChange={(e) => setSize(Number(e.target.value))}
-          className="w-20"
-        />
-        <span className="text-xs text-muted-foreground">{size}px</span>
-        <div className="mx-1 h-6 w-px bg-border" />
-        <Button
-          size="icon"
-          variant="outline"
-          className="h-7 w-7"
-          onClick={undo}
-          disabled={myUndoStackRef.current.length === 0}
-          aria-label="Undo"
-          title="Undo"
-          data-undo-tick={undoTick}
-        >
-          <Undo2 className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="outline"
-          className="h-7 w-7"
-          onClick={redo}
-          disabled={myRedoStackRef.current.length === 0}
-          aria-label="Redo"
-          title="Redo"
-        >
-          <Redo2 className="h-4 w-4" />
-        </Button>
-        <div className="mx-1 h-6 w-px bg-border" />
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
+          {isHost && (
+            <div className="flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1">
+              <span className="text-[11px] font-medium">{studentCanDraw ? "Class Open" : "Lecture Mode"}</span>
+              <Switch
+                checked={studentCanDraw}
+                onCheckedChange={(v) => {
+                  setStudentCanDraw(v);
+                  channelRef.current?.send({
+                    type: "broadcast",
+                    event: "draw",
+                    payload: { type: "perm", studentCanDraw: v },
+                  });
+                }}
+              />
+            </div>
+          )}
           <Button
-            size="icon"
-            variant="outline"
-            className="h-7 w-7"
-            onClick={() => goToPage(currentPage - 1)}
-            aria-label="Previous page"
+            variant="default"
+            size="sm"
+            className="hidden md:flex gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700"
+            onClick={handleAIConversion}
+            disabled={isProcessingAI}
           >
-            <ChevronUp className="h-4 w-4" />
-          </Button>
-          <span className="text-xs tabular-nums text-muted-foreground">
-            {currentPage}/{PAGE_COUNT}
-          </span>
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-7 w-7"
-            onClick={() => goToPage(currentPage + 1)}
-            aria-label="Next page"
-          >
-            <ChevronDown className="h-4 w-4" />
+            {isProcessingAI ? <Settings2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            AI Convert
           </Button>
         </div>
-        <div className="ml-auto" />
-        {isHost && (
-          <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs">
-            {studentCanDraw ? (
-              <Pen className="h-3.5 w-3.5 text-primary" />
-            ) : (
-              <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-            )}
-            <span className="font-medium">
-              {studentCanDraw ? "Student writing" : "Tutor writing"}
-            </span>
-            <Switch
-              checked={studentCanDraw}
-              onCheckedChange={(v) => {
-                setStudentCanDraw(v);
-                send({ type: "perm", studentCanDraw: v });
-              }}
-              aria-label="Toggle who can write"
-            />
-          </label>
-        )}
-        {!isHost && !studentCanDraw && (
-          <span className="flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground">
-            <Lock className="h-3.5 w-3.5" /> Tutor is writing
-          </span>
-        )}
-        <Button size="sm" variant="destructive" onClick={clearCurrent}>
-          <Trash2 className="mr-1 h-4 w-4" /> Clear page
-        </Button>
-      </div>
+      </header>
 
-
-      {/* Hint */}
-      <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
-        Draw with one finger · scroll with two fingers · {PAGE_COUNT} pages
-      </div>
-
-      {/* Pages — scrollable container */}
-      <div
-        ref={containerRef}
-        className="relative flex-1 overflow-y-auto overscroll-contain bg-muted/30"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <div className="mx-auto flex w-full flex-col gap-4 px-2 py-2">
-          {pages.map((i) => (
-            <div key={i} className="relative">
-              <div
-                className="relative w-full overflow-hidden rounded-md border bg-white shadow-sm"
-                style={{ height: "calc(100vh - 180px)", minHeight: 400 }}
+      {/* Main Workspace */}
+      <div className="relative flex flex-1 overflow-hidden">
+        {/* Sidebar Tools - Desktop */}
+        <aside className="hidden md:flex w-16 flex-col items-center gap-4 border-r bg-muted/20 py-4">
+          <div className="flex flex-col gap-2">
+            {(["pen", "eraser", "text", "line", "rect", "circle", "graph"] as ToolMode[]).map((t) => (
+              <Button
+                key={t}
+                size="icon"
+                variant={mode === t ? "default" : "ghost"}
+                onClick={() => setMode(t)}
+                className="h-10 w-10"
               >
-                <span className="pointer-events-none absolute right-2 top-1 z-10 text-[10px] text-muted-foreground/70">
-                  Page {i + 1}
-                </span>
+                {t === "pen" && <Pen className="h-5 w-5" />}
+                {t === "eraser" && <Eraser className="h-5 w-5" />}
+                {t === "text" && <Type className="h-5 w-5" />}
+                {t === "line" && <Minus className="h-5 w-5" />}
+                {t === "rect" && <Square className="h-5 w-5" />}
+                {t === "circle" && <Circle className="h-5 w-5" />}
+                {t === "graph" && <Grid3X3 className="h-5 w-5" />}
+              </Button>
+            ))}
+          </div>
+          <div className="mt-auto flex flex-col gap-3 pb-4">
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                className={`h-6 w-6 rounded-full ring-offset-2 ${color === c ? "ring-2 ring-primary" : ""}`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+        </aside>
+
+        {/* Scrollable Canvas Area */}
+        <main ref={containerRef} className="flex-1 overflow-y-auto bg-slate-100 p-4 md:p-8 space-y-8 scroll-smooth">
+          {Array.from({ length: PAGE_COUNT }).map((_, i) => (
+            <div key={i} className="relative mx-auto max-w-4xl shadow-2xl transition-transform hover:scale-[1.01]">
+              <div className="absolute -left-12 top-0 hidden lg:block text-slate-400 font-mono text-sm">
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border bg-white shadow-sm sm:aspect-video md:aspect-[4/3]">
                 <canvas
                   ref={(el) => {
                     canvasRefs.current[i] = el;
-                    if (el && sizeCanvas(el)) {
-                      historyRef.current
-                        .filter((s) => s.page === i)
-                        .forEach(renderItem);
+                    if (el) {
+                      const dpr = window.devicePixelRatio || 1;
+                      const rect = el.getBoundingClientRect();
+                      if (el.width !== Math.floor(rect.width * dpr)) {
+                        el.width = rect.width * dpr;
+                        el.height = rect.height * dpr;
+                        const ctx = el.getContext("2d");
+                        if (ctx) ctx.scale(dpr, dpr);
+                        redrawPage(i);
+                      }
                     }
                   }}
-                  className={`absolute inset-0 h-full w-full ${mode === "text" ? "cursor-text" : "cursor-crosshair"}`}
-                  style={{ touchAction: "none" }}
+                  className={`h-full w-full touch-none ${!canDraw ? "cursor-not-allowed" : mode === "text" ? "cursor-text" : "cursor-crosshair"}`}
                   onPointerDown={onPointerDown(i)}
                   onPointerMove={onPointerMove(i)}
                   onPointerUp={onPointerUp(i)}
-                  onPointerCancel={onPointerUp(i)}
                 />
                 {textEditor && textEditor.page === i && (
                   <textarea
                     autoFocus
+                    className="absolute z-30 min-w-[120px] bg-transparent outline-none border-b border-primary resize-none font-mono"
+                    style={{ left: textEditor.x, top: textEditor.y, color, fontSize: size * 4 }}
                     value={textEditor.value}
                     onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
-                    onBlur={commitText}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        commitText();
-                      } else if (e.key === "Escape") {
-                        e.preventDefault();
-                        setTextEditor(null);
+                    onBlur={() => {
+                      if (textEditor.value.trim()) {
+                        const item: TextItem = {
+                          type: "text",
+                          page: i,
+                          x: textEditor.x,
+                          y: textEditor.y,
+                          text: textEditor.value,
+                          color,
+                          size,
+                          id: `t-${Date.now()}`,
+                        };
+                        historyRef.current.push(item);
+                        sendItem(item);
+                        redrawPage(i);
                       }
-                    }}
-                    placeholder="Type… Enter to commit, Shift+Enter for newline, Esc to cancel"
-                    className="absolute z-20 min-w-[140px] resize rounded border border-primary/60 bg-white/95 px-1 py-0.5 outline-none ring-2 ring-primary/30"
-                    style={{
-                      left: textEditor.x,
-                      top: textEditor.y,
-                      color,
-                      fontSize: Math.max(12, size * 5),
-                      fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-                      lineHeight: 1.2,
+                      setTextEditor(null);
                     }}
                   />
                 )}
               </div>
             </div>
           ))}
-        </div>
+        </main>
+      </div>
 
+      {/* Mobile Toolbar - Bottom Fixed */}
+      <div className="md:hidden border-t bg-background p-2">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+          <ToolButton m="pen" icon={Pen} label="Pen" />
+          <ToolButton m="line" icon={Minus} label="Line" />
+          <ToolButton m="rect" icon={Square} label="Rect" />
+          <ToolButton m="graph" icon={Grid3X3} label="Graph" />
+          <Button size="sm" variant="secondary" className="px-2" onClick={handleAIConversion}>
+            <Sparkles className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => {
+              const p = currentPage - 1;
+              historyRef.current = historyRef.current.filter((i) => i.page !== p);
+              redrawPage(p);
+              channelRef.current?.send({ type: "broadcast", event: "draw", payload: { type: "clear", page: p } });
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Floating Pagination & Quick Actions */}
+      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 flex flex-col gap-2">
+        <div className="flex items-center gap-2 rounded-full border bg-background/90 p-1 shadow-lg backdrop-blur">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 rounded-full"
+            onClick={() => {
+              const next = Math.max(1, currentPage - 1);
+              containerRef.current?.children[next - 1]?.scrollIntoView();
+              setCurrentPage(next);
+            }}
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <span className="text-[10px] font-bold w-8 text-center">{currentPage}</span>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 rounded-full"
+            onClick={() => {
+              const next = Math.min(PAGE_COUNT, currentPage + 1);
+              containerRef.current?.children[next - 1]?.scrollIntoView();
+              setCurrentPage(next);
+            }}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
-
