@@ -608,11 +608,14 @@ export default function AdvancedAIWhiteboard() {
                   }
                 }}
                 className="
-                  w-full
-                  h-[70vh]
-                  md:h-[85vh]
-                  touch-none
-                  bg-white
+                  className="
+                    w-full
+                    h-[70vh]
+                    md:h-[85vh]
+                    touch-none
+                    bg-white
+                    cursor-crosshair
+                    select-none
                 "
                 onPointerDown={handlePointerDown(i)}
                 onPointerMove={handlePointerMove(i)}
