@@ -661,7 +661,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                     if (el && sizeCanvas(el)) {
                       historyRef.current
                         .filter((s) => s.page === i)
-                        .forEach(renderStroke);
+                        .forEach(renderItem);
                     }
                   }}
                   className="absolute inset-0 h-full w-full cursor-crosshair"
