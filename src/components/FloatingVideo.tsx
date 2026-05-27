@@ -56,9 +56,6 @@ export function FloatingVideo({
     };
   }, []);
 
-  // IMPORTANT: never unmount NativeClassroomCall — that would tear down the
-  // media stream and drop the mic. When "hidden", we move the panel off-screen
-  // with width/height = 0, and surface a "Show video" button instead.
   return (
     <>
       {hidden && (
@@ -70,6 +67,7 @@ export function FloatingVideo({
           <Video className="mr-1 h-4 w-4" /> Show video
         </Button>
       )}
+
       <div
         className="fixed z-50 overflow-hidden rounded-lg border border-navy-foreground/30 bg-black shadow-2xl"
         style={{
