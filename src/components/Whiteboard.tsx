@@ -295,16 +295,18 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
-      renderStroke(m.stroke);
+      renderItem(m.stroke);
       return;
     }
     if (m.type === "perm") {
       setStudentCanDraw(m.studentCanDraw);
       return;
     }
+    // stroke or text
     historyRef.current.push(m);
-    renderStroke(m);
+    renderItem(m);
   };
+
 
   const send = (m: Msg) => {
     channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
