@@ -100,12 +100,13 @@ export function FloatingVideo({
             </button>
             <button
               onClick={() => setHidden(true)}
-              className="rounded p-1 hover:bg-navy-foreground/20"
-              title="Hide (mic stays on)"
+              className="flex items-center gap-1 rounded bg-navy-foreground/15 px-2 py-0.5 text-[11px] font-medium hover:bg-navy-foreground/30"
+              title="Hide panel — mic stays on"
             >
-              <VideoOff className="h-3 w-3" />
+              <VideoOff className="h-3 w-3" /> Hide
             </button>
           </div>
+
         </div>
         <div
           className="h-[calc(100%-36px)]"
