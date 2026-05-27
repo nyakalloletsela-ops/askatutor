@@ -340,6 +340,13 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
     if (!canDraw) return; // student without permission can only view + scroll
 
+    // text mode: open inline editor at click position
+    if (mode === "text") {
+      const canvas = canvasRefs.current[page]!;
+      const p = localPos(canvas, e.clientX, e.clientY);
+      setTextEditor({ page, x: p.x, y: p.y, value: "" });
+      return;
+    }
 
     // single touch / mouse — start drawing
     if (e.pointerType !== "touch") {
@@ -371,7 +378,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
-    // drawing
+    // drawing (pen/eraser only)
+    if (mode === "text") return;
     if (!drawingRef.current.active || drawingRef.current.page !== page) return;
     e.preventDefault();
     const canvas = canvasRefs.current[page]!;
@@ -383,6 +391,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   const onPointerUp = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
     pointersRef.current.delete(e.pointerId);
+    if (mode === "text") return;
     if (!drawingRef.current.active || drawingRef.current.page !== page) return;
     if (drawingRef.current.points.length > 1) {
       const stroke: Stroke = {
@@ -395,12 +404,33 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         id: drawingRef.current.id,
       };
       historyRef.current.push(stroke);
-      sendStroke(stroke);
+      sendItem(stroke);
     }
     drawingRef.current.active = false;
     drawingRef.current.points = [];
     drawingRef.current.page = -1;
   };
+
+  const commitText = () => {
+    if (!textEditor) return;
+    const value = textEditor.value.trim();
+    if (!value) { setTextEditor(null); return; }
+    const item: TextItem = {
+      type: "text",
+      page: textEditor.page,
+      x: textEditor.x,
+      y: textEditor.y,
+      text: value,
+      color,
+      size,
+      id: `${userId}-t-${Date.now()}`,
+    };
+    historyRef.current.push(item);
+    renderText(item);
+    sendItem(item);
+    setTextEditor(null);
+  };
+
 
   // Track which page is "current" while scrolling
   useEffect(() => {
