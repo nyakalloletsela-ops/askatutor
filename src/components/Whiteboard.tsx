@@ -185,21 +185,22 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   }, [roomId]);
 
   // ── persistence helpers ───────────────────────────────────
-  const persistStroke = (stroke: Stroke) => {
+  const persistStroke = (item: AnyItem) => {
     supabase
       .from("whiteboard_strokes")
       .insert({
         room_id: roomId,
-        stroke_id: stroke.id,
+        stroke_id: item.id,
         user_id: userId,
-        page: stroke.page,
+        page: item.page,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: stroke as any,
+        data: item as any,
       })
       .then(({ error }) => {
         if (error) console.warn("whiteboard persist failed", error.message);
       });
   };
+
   const deletePersistedStroke = (strokeId: string) => {
     supabase
       .from("whiteboard_strokes")
