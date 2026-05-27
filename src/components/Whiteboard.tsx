@@ -117,8 +117,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   useEffect(() => {
     const onResize = () => {
       canvasRefs.current.forEach((c) => c && sizeCanvas(c));
-      // redraw history
-      historyRef.current.forEach(renderStroke);
+      historyRef.current.forEach(renderItem);
     };
     onResize();
     window.addEventListener("resize", onResize);
@@ -126,8 +125,20 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── load persisted strokes ─────────────────────────────────
+  // ── load persisted strokes & RESET when room changes ──────────
   useEffect(() => {
+    // Clear local state so switching between student rooms doesn't bleed
+    // previous content / undo history into the new room.
+    historyRef.current = [];
+    myUndoStackRef.current = [];
+    myRedoStackRef.current = [];
+    canvasRefs.current.forEach((c) => {
+      const ctx = c?.getContext("2d");
+      if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+    });
+    setTextEditor(null);
+    setUndoTick((t) => t + 1);
+
     let cancelled = false;
     (async () => {
       const { data } = await supabase
@@ -136,17 +147,18 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         .eq("room_id", roomId)
         .order("created_at", { ascending: true });
       if (cancelled || !data) return;
-      for (const row of data as Array<{ data: Stroke }>) {
+      for (const row of data as Array<{ data: AnyItem }>) {
         const s = row.data;
-        if (s && s.type === "stroke") {
+        if (s && (s.type === "stroke" || s.type === "text")) {
           historyRef.current.push(s);
-          renderStroke(s);
+          renderItem(s);
         }
       }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
+
 
   // ── realtime ────────────────────────────────────────────────
   useEffect(() => {
