@@ -529,6 +529,15 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         >
           <Eraser className="mr-1 h-4 w-4" /> Eraser
         </Button>
+        <Button
+          size="sm"
+          variant={mode === "text" ? "default" : "outline"}
+          onClick={() => setMode("text")}
+          title="Type with keyboard"
+        >
+          <Type className="mr-1 h-4 w-4" /> Text
+        </Button>
+
         <div className="mx-1 h-6 w-px bg-border" />
         {COLORS.map((c) => (
           <button
