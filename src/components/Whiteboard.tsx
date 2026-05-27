@@ -458,44 +458,45 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // ── undo / redo (per-user, owns own strokes only) ───────────
-  const myUndoStackRef = useRef<Stroke[]>([]); // own strokes in order
-  const myRedoStackRef = useRef<Stroke[]>([]); // undone strokes ready to redo
+  // ── undo / redo (per-user, owns own items only) ───────────
+  const myUndoStackRef = useRef<AnyItem[]>([]);
+  const myRedoStackRef = useRef<AnyItem[]>([]);
   const [undoTick, setUndoTick] = useState(0);
 
-  // patch send to track own strokes
-  const sendStroke = (stroke: Stroke) => {
-    myUndoStackRef.current.push(stroke);
+  // patch send to track own items
+  const sendItem = (item: AnyItem) => {
+    myUndoStackRef.current.push(item);
     myRedoStackRef.current = [];
     setUndoTick((t) => t + 1);
-    send(stroke);
-    persistStroke(stroke);
+    send(item);
+    persistStroke(item);
   };
 
   const undo = () => {
-    const stroke = myUndoStackRef.current.pop();
-    if (!stroke) return;
-    myRedoStackRef.current.push(stroke);
-    const idx = historyRef.current.findIndex((s) => s.id === stroke.id);
+    const item = myUndoStackRef.current.pop();
+    if (!item) return;
+    myRedoStackRef.current.push(item);
+    const idx = historyRef.current.findIndex((s) => s.id === item.id);
     if (idx >= 0) {
       historyRef.current.splice(idx, 1);
-      redrawPage(stroke.page);
+      redrawPage(item.page);
     }
-    send({ type: "undo", id: stroke.id });
-    deletePersistedStroke(stroke.id);
+    send({ type: "undo", id: item.id });
+    deletePersistedStroke(item.id);
     setUndoTick((t) => t + 1);
   };
 
   const redo = () => {
-    const stroke = myRedoStackRef.current.pop();
-    if (!stroke) return;
-    myUndoStackRef.current.push(stroke);
-    historyRef.current.push(stroke);
-    renderStroke(stroke);
-    send({ type: "restore", stroke });
-    persistStroke(stroke);
+    const item = myRedoStackRef.current.pop();
+    if (!item) return;
+    myUndoStackRef.current.push(item);
+    historyRef.current.push(item);
+    renderItem(item);
+    send({ type: "restore", stroke: item });
+    persistStroke(item);
     setUndoTick((t) => t + 1);
   };
+
 
   const clearCurrent = () => {
     const page = currentPage - 1;
