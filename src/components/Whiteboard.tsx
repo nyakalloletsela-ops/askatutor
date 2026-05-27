@@ -243,13 +243,31 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
   };
 
+  const renderText = (t: TextItem) => {
+    const ctx = canvasRefs.current[t.page]?.getContext("2d");
+    if (!ctx) return;
+    ctx.globalCompositeOperation = "source-over";
+    const fontPx = Math.max(12, t.size * 5);
+    ctx.font = `${fontPx}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
+    ctx.fillStyle = t.color;
+    ctx.textBaseline = "top";
+    const lines = t.text.split("\n");
+    lines.forEach((line, i) => ctx.fillText(line, t.x, t.y + i * fontPx * 1.2));
+  };
+
+  const renderItem = (item: AnyItem) => {
+    if (item.type === "stroke") renderStroke(item);
+    else renderText(item);
+  };
+
   const redrawPage = (page: number) => {
     const c = canvasRefs.current[page];
     const ctx = c?.getContext("2d");
     if (!ctx || !c) return;
     ctx.clearRect(0, 0, c.width, c.height);
-    historyRef.current.filter((s) => s.page === page).forEach(renderStroke);
+    historyRef.current.filter((s) => s.page === page).forEach(renderItem);
   };
+
 
   const applyMessage = (m: Msg) => {
     if (m.type === "clear") {
