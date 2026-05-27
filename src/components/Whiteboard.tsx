@@ -72,18 +72,18 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   // Drawing State
   const [mode, setMode] = useState<ToolMode>("pen");
   const [color, setColor] = useState(COLORS[0]);
-  const [size, setSize] = useState(4); // Adjustable pen size state
+  const [size, setSize] = useState(4);
   const [currentPage, setCurrentPage] = useState(1);
   const [studentCanDraw, setStudentCanDraw] = useState(false);
   const [isAIProcessing, setIsAIProcessing] = useState(false);
 
-  // History & Undo/Redo Storage
+  // History / Undo / Redo
   const historyRef = useRef<AnyItem[]>([]);
   const myUndoStack = useRef<AnyItem[]>([]);
   const myRedoStack = useRef<AnyItem[]>([]);
   const [, setTick] = useState(0);
 
-  // Active Interaction Tracking
+  // Interaction State
   const drawingRef = useRef<{
     active: boolean;
     page: number;
@@ -96,18 +96,16 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   const canDraw = isHost || studentCanDraw;
 
-  // --- Rendering Engine ---
+  // --- Rendering Functions ---
 
   const drawArrow = (ctx: CanvasRenderingContext2D, start: Pt, end: Pt, size: number) => {
-    const headLength = Math.max(12, size * 3); // Arrowhead size relative to line width
+    const headLength = Math.max(12, size * 3);
     const angle = Math.atan2(end.y - start.y, end.x - start.x);
 
-    // Main shaft
     ctx.moveTo(start.x, start.y);
     ctx.lineTo(end.x, end.y);
     ctx.stroke();
 
-    // Arrowhead calculations
     ctx.beginPath();
     ctx.moveTo(end.x, end.y);
     ctx.lineTo(end.x - headLength * Math.cos(angle - Math.PI / 6), end.y - headLength * Math.sin(angle - Math.PI / 6));
@@ -126,7 +124,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     if (item.type === "stroke") {
       if (item.mode === "eraser") {
         ctx.globalCompositeOperation = "destination-out";
-        ctx.lineWidth = item.size * 10; // Substantially larger radius for modern eraser feel
+        ctx.lineWidth = item.size * 10;
       } else {
         ctx.globalCompositeOperation = "source-over";
       }
@@ -158,9 +156,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         } else if (shapeType === "graph") {
           const w = Math.abs(end.x - start.x);
           ctx.save();
-          ctx.strokeStyle = `${item.color}44`;
+          ctx.strokeStyle = `${item.color}33`;
           ctx.lineWidth = Math.max(1, item.size / 2);
-          // Faded Grid
           const step = 20;
           for (let val = -w; val <= w; val += step) {
             ctx.beginPath();
@@ -203,7 +200,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     historyRef.current.filter((item) => item.page === pageIdx).forEach((item) => drawItem(ctx, item));
   };
 
-  // --- Coordinate Alignment Mapping ---
+  // --- Coordinate Mapping ---
   const getPos = (canvas: HTMLCanvasElement, e: React.PointerEvent): Pt => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -220,7 +217,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     const pos = getPos(canvas, e);
 
     if (mode === "text") {
-      // Map scale coordinates down to screen pixels for HTML textarea alignment
       const rect = canvas.getBoundingClientRect();
       const pctX = pos.x / canvas.width;
       const pctY = pos.y / canvas.height;
@@ -305,7 +301,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     redrawPage(page);
   };
 
-  // --- Real-time Sync and Undo/Redo Controls ---
   const handleUndo = () => {
     const item = myUndoStack.current.pop();
     if (!item) return;
@@ -349,7 +344,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (len < 8) return;
 
       if (Math.abs(start.x - end.x) < 30 && Math.abs(start.y - end.y) < 30 && len > 18) {
-        // Circle Detection
         smartItems.push({
           type: "shape",
           shapeType: "circle",
@@ -361,7 +355,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           end: pts[Math.floor(len / 3)],
         });
       } else if (len < 16) {
-        // Linear Stroke
         smartItems.push({
           type: "shape",
           shapeType: "line",
@@ -373,7 +366,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           end,
         });
       } else {
-        // Handwritten Equations -> Standard Monospace Typographic rendering
         smartItems.push({
           type: "text",
           page: pageIdx,
@@ -392,7 +384,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     channelRef.current?.send({ type: "broadcast", event: "sync", payload: historyRef.current });
     redrawPage(pageIdx);
     setIsAIProcessing(false);
-    toast.success("Converted page perfectly!");
+    toast.success("Converted page successfully!");
   };
 
   useEffect(() => {
@@ -414,89 +406,91 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   }, [roomId]);
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50 overflow-hidden font-sans">
-      {/* Upper Control Bar */}
-      <div className="z-30 flex flex-wrap items-center gap-2 border-b bg-white p-2 shadow-sm">
-        <div className="flex rounded-md bg-slate-100 p-1 gap-0.5">
+    <div className="flex h-full flex-col bg-slate-50 overflow-hidden font-sans">
+      {/* Redesigned Structural Toolbar with explicit text-slate-700 & styling overrides */}
+      <div className="z-30 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+        {/* Draw Tools Panel */}
+        <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 gap-1">
           <Button
             size="icon"
             variant={mode === "pen" ? "default" : "ghost"}
             onClick={() => setMode("pen")}
-            className="h-9 w-9"
+            className={`h-8 w-8 ${mode === "pen" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
             title="Pen"
           >
-            <Pen className="h-4 w-4" />
+            <Pen className={`h-4 w-4 ${mode === "pen" ? "text-white" : "text-slate-700"}`} />
           </Button>
           <Button
             size="icon"
             variant={mode === "eraser" ? "default" : "ghost"}
             onClick={() => setMode("eraser")}
-            className="h-9 w-9"
+            className={`h-8 w-8 ${mode === "eraser" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
             title="Eraser"
           >
-            <Eraser className="h-4 w-4" />
+            <Eraser className={`h-4 w-4 ${mode === "eraser" ? "text-white" : "text-slate-700"}`} />
           </Button>
           <Button
             size="icon"
             variant={mode === "text" ? "default" : "ghost"}
             onClick={() => setMode("text")}
-            className="h-9 w-9"
+            className={`h-8 w-8 ${mode === "text" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
             title="Text Input"
           >
-            <Type className="h-4 w-4" />
+            <Type className={`h-4 w-4 ${mode === "text" ? "text-white" : "text-slate-700"}`} />
           </Button>
         </div>
 
-        <div className="flex rounded-md bg-slate-100 p-1 gap-0.5">
+        {/* Vector Shapes Panel */}
+        <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 gap-1">
           <Button
             size="icon"
             variant={mode === "line" ? "default" : "ghost"}
             onClick={() => setMode("line")}
-            className="h-9 w-9"
+            className={`h-8 w-8 ${mode === "line" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
             title="Line"
           >
-            <Minus className="h-4 w-4" />
+            <Minus className={`h-4 w-4 ${mode === "line" ? "text-white" : "text-slate-700"}`} />
           </Button>
           <Button
             size="icon"
             variant={mode === "arrow" ? "default" : "ghost"}
             onClick={() => setMode("arrow")}
-            className="h-9 w-9"
+            className={`h-8 w-8 ${mode === "arrow" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
             title="Arrow"
           >
-            <MoveRight className="h-4 w-4" />
+            <MoveRight className={`h-4 w-4 ${mode === "arrow" ? "text-white" : "text-slate-700"}`} />
           </Button>
           <Button
             size="icon"
             variant={mode === "rect" ? "default" : "ghost"}
             onClick={() => setMode("rect")}
-            className="h-9 w-9"
+            className={`h-8 w-8 ${mode === "rect" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
             title="Rectangle"
           >
-            <Square className="h-4 w-4" />
+            <Square className={`h-4 w-4 ${mode === "rect" ? "text-white" : "text-slate-700"}`} />
           </Button>
           <Button
             size="icon"
             variant={mode === "circle" ? "default" : "ghost"}
             onClick={() => setMode("circle")}
-            className="h-9 w-9"
+            className={`h-8 w-8 ${mode === "circle" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
             title="Circle"
           >
-            <Circle className="h-4 w-4" />
+            <Circle className={`h-4 w-4 ${mode === "circle" ? "text-white" : "text-slate-700"}`} />
           </Button>
           <Button
             size="icon"
             variant={mode === "graph" ? "default" : "ghost"}
             onClick={() => setMode("graph")}
-            className="h-9 w-9"
-            title="Graph Grid"
+            className={`h-8 w-8 ${mode === "graph" ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200"}`}
+            title="Coordinate Axis"
           >
-            <Grid3X3 className="h-4 w-4" />
+            <Grid3X3 className={`h-4 w-4 ${mode === "graph" ? "text-white" : "text-slate-700"}`} />
           </Button>
         </div>
 
         {/* Color Palette */}
-        <div className="flex items-center gap-1.5 px-2">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
           {COLORS.map((c) => (
             <button
               key={c}
@@ -504,33 +498,34 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                 setColor(c);
                 if (mode === "eraser") setMode("pen");
               }}
-              className={`h-6 w-6 rounded-full border-2 transition-all ${color === c ? "border-slate-500 scale-125" : "border-transparent"}`}
+              className={`h-6 w-6 rounded-full border-2 transition-all ${color === c ? "border-slate-500 scale-110" : "border-transparent"}`}
               style={{ backgroundColor: c }}
             />
           ))}
         </div>
 
-        {/* Adjust Line Thickness */}
-        <div className="flex items-center gap-2 border-l pl-3">
-          <span className="text-[11px] font-bold text-slate-500">THICKNESS</span>
+        {/* Thickness Settings Panel */}
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 h-10">
+          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Size</span>
           <input
             type="range"
             min="1"
             max="20"
             value={size}
             onChange={(e) => setSize(Number(e.target.value))}
-            className="w-20 accent-indigo-600"
+            className="w-20 accent-slate-800 cursor-pointer"
           />
-          <span className="text-xs font-mono font-bold w-5">{size}px</span>
+          <span className="text-xs font-mono font-bold w-5 text-slate-700">{size}px</span>
         </div>
 
-        <div className="flex rounded-md bg-slate-100 p-1 gap-0.5">
+        {/* Undo / Redo controls */}
+        <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1">
           <Button
             size="icon"
             variant="ghost"
             onClick={handleUndo}
             disabled={myUndoStack.current.length === 0}
-            className="h-9 w-9"
+            className="h-8 w-8 text-slate-700 hover:bg-slate-200"
           >
             <Undo2 className="h-4 w-4" />
           </Button>
@@ -539,27 +534,47 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
             variant="ghost"
             onClick={handleRedo}
             disabled={myRedoStack.current.length === 0}
-            className="h-9 w-9"
+            className="h-8 w-8 text-slate-700 hover:bg-slate-200"
           >
             <Redo2 className="h-4 w-4" />
           </Button>
         </div>
 
+        {/* Page Clear Option */}
+        <Button
+          variant="ghost"
+          onClick={() => {
+            const page = currentPage - 1;
+            historyRef.current = historyRef.current.filter((s) => s.page !== page);
+            redrawPage(page);
+            channelRef.current?.send({ type: "broadcast", event: "sync", payload: historyRef.current });
+          }}
+          className="h-10 text-slate-700 border border-slate-200 bg-slate-50 hover:bg-red-50 hover:text-red-600 gap-1"
+        >
+          <Trash2 className="h-4 w-4" />
+          <span className="text-xs font-semibold hidden sm:inline">Clear</span>
+        </Button>
+
+        {/* Administrative Rights and Conversion Controls */}
         <div className="ml-auto flex items-center gap-2">
           <Button
             onClick={handleSmartConvert}
             disabled={isAIProcessing}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center h-10 px-3"
             size="sm"
           >
-            {isAIProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-            Smart Convert
+            {isAIProcessing ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-1.5 h-4 w-4" />
+            )}
+            <span className="text-xs font-semibold">AI Convert</span>
           </Button>
 
           {isHost && (
-            <div className="flex items-center gap-2 border-l pl-3">
-              <span className="text-[10px] font-bold text-slate-500 uppercase">
-                {studentCanDraw ? "Shared Write" : "Tutor Lock"}
+            <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 h-10 shadow-sm">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                {studentCanDraw ? "Shared" : "Lock"}
               </span>
               <Switch checked={studentCanDraw} onCheckedChange={setStudentCanDraw} />
             </div>
@@ -567,10 +582,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         </div>
       </div>
 
-      {/* Pages Workspace */}
+      {/* Viewport Workspace */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto bg-slate-200/40 p-4 md:p-8 space-y-10"
+        className="flex-1 overflow-y-auto bg-slate-200/50 p-4 md:p-8 space-y-8"
         onScroll={() => {
           const top = containerRef.current?.scrollTop || 0;
           setCurrentPage(Math.floor(top / 850) + 1);
@@ -579,13 +594,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         {Array.from({ length: PAGE_COUNT }).map((_, i) => (
           <div key={i} className="relative mx-auto max-w-5xl">
             <div className="absolute -left-12 top-0 text-slate-400 font-mono text-xs hidden md:block">PAGE {i + 1}</div>
-            <div className="relative aspect-video w-full rounded-lg border bg-white shadow-lg overflow-hidden">
+            <div className="relative aspect-video w-full rounded-lg border border-slate-300 bg-white shadow-md overflow-hidden">
               <canvas
                 ref={(el) => {
                   canvasRefs.current[i] = el;
                   if (el && !el.width) {
                     const rect = el.getBoundingClientRect();
-                    // Setup absolute backing store size for coordinate mapping fidelity
                     el.width = rect.width * 1.5;
                     el.height = rect.height * 1.5;
                     redrawPage(i);
@@ -597,11 +611,11 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                 onPointerUp={onPointerUp(i)}
               />
 
-              {/* Responsive Input Overlay */}
+              {/* Text Input Block */}
               {textEditor && textEditor.page === i && (
                 <textarea
                   autoFocus
-                  className="absolute z-50 border-none bg-transparent p-0 font-mono focus:ring-0 resize-none outline-none overflow-hidden"
+                  className="absolute z-50 border-none bg-transparent p-0 font-mono focus:ring-0 resize-none outline-none overflow-hidden text-slate-800"
                   style={{
                     left: `${textEditor.x}px`,
                     top: `${textEditor.y}px`,
@@ -616,7 +630,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                     if (textEditor.value.trim() && canvasRefs.current[i]) {
                       const canvas = canvasRefs.current[i]!;
                       const rect = canvas.getBoundingClientRect();
-                      // Translate overlay coordinates back to canvas backing store scale coordinates
                       const finalX = (textEditor.x / rect.width) * canvas.width;
                       const finalY = (textEditor.y / rect.height) * canvas.height;
 
@@ -645,37 +658,28 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         ))}
       </div>
 
-      {/* Floating Pagination Footer */}
-      <div className="fixed bottom-6 right-6 flex items-center gap-1 rounded-full bg-white/80 p-1 shadow-xl backdrop-blur-md">
+      {/* Bottom Floating Navigation controls */}
+      <div className="fixed bottom-6 right-6 flex items-center gap-1 rounded-full bg-white/80 p-1.5 shadow-xl backdrop-blur-md border border-slate-200">
         <Button
           size="icon"
           variant="ghost"
           onClick={() => containerRef.current?.scrollBy(0, -850)}
-          className="h-8 w-8 rounded-full"
+          className="h-8 w-8 rounded-full text-slate-700 hover:bg-slate-200"
         >
           <ChevronUp className="h-4 w-4" />
         </Button>
-        <span className="px-3 text-xs font-bold">
+        <span className="px-3 text-xs font-bold text-slate-800">
           {currentPage} / {PAGE_COUNT}
         </span>
         <Button
           size="icon"
           variant="ghost"
           onClick={() => containerRef.current?.scrollBy(0, 850)}
-          className="h-8 w-8 rounded-full"
+          className="h-8 w-8 rounded-full text-slate-700 hover:bg-slate-200"
         >
           <ChevronDown className="h-4 w-4" />
         </Button>
       </div>
-
-      {/* Mobile Screen Floating AI Trigger */}
-      <Button
-        onClick={handleSmartConvert}
-        className="fixed bottom-6 left-6 h-12 w-12 rounded-full bg-indigo-600 shadow-lg md:hidden hover:bg-indigo-700"
-        size="icon"
-      >
-        <Sparkles className="h-5 w-5 text-white" />
-      </Button>
     </div>
   );
 }
