@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
   Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2,
-  ChevronsUp, ChevronsDown, Lock,
+  Lock, Type,
 } from "lucide-react";
 
 type Pt = { x: number; y: number };
@@ -17,11 +17,23 @@ type Stroke = {
   mode: "pen" | "eraser";
   id: string;
 };
+type TextItem = {
+  type: "text";
+  page: number;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  size: number;
+  id: string;
+};
+type AnyItem = Stroke | TextItem;
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
-type RestoreMsg = { type: "restore"; stroke: Stroke };
+type RestoreMsg = { type: "restore"; stroke: AnyItem };
 type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type Msg = Stroke | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
+type Msg = Stroke | TextItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
+
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
