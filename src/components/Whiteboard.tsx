@@ -673,14 +673,40 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                         .forEach(renderItem);
                     }
                   }}
-                  className="absolute inset-0 h-full w-full cursor-crosshair"
+                  className={`absolute inset-0 h-full w-full ${mode === "text" ? "cursor-text" : "cursor-crosshair"}`}
                   style={{ touchAction: "none" }}
                   onPointerDown={onPointerDown(i)}
                   onPointerMove={onPointerMove(i)}
                   onPointerUp={onPointerUp(i)}
                   onPointerCancel={onPointerUp(i)}
                 />
-
+                {textEditor && textEditor.page === i && (
+                  <textarea
+                    autoFocus
+                    value={textEditor.value}
+                    onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
+                    onBlur={commitText}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        commitText();
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        setTextEditor(null);
+                      }
+                    }}
+                    placeholder="Type… Enter to commit, Shift+Enter for newline, Esc to cancel"
+                    className="absolute z-20 min-w-[140px] resize rounded border border-primary/60 bg-white/95 px-1 py-0.5 outline-none ring-2 ring-primary/30"
+                    style={{
+                      left: textEditor.x,
+                      top: textEditor.y,
+                      color,
+                      fontSize: Math.max(12, size * 5),
+                      fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                      lineHeight: 1.2,
+                    }}
+                  />
+                )}
               </div>
             </div>
           ))}
@@ -690,3 +716,4 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     </div>
   );
 }
+
