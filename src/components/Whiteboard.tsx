@@ -311,7 +311,7 @@ export function Whiteboard({ roomId, userId, isHost }: WhiteboardProps) {
       stroke_id: s.id,
       user_id: userId,
       page: s.page,
-      data: s as unknown as Record<string, unknown>,
+      data: JSON.parse(JSON.stringify(s)),
     });
     if (error) console.warn("whiteboard insert", error.message);
   };
