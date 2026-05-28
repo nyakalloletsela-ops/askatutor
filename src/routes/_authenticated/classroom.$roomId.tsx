@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo } from "@/components/FloatingVideo";
@@ -75,9 +75,7 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: MediaDiagnostics }) {
             Mic permission {statusText(diagnostics.microphonePermission)}
           </span>
           {diagnostics.jitsiMessages.length > 0 && (
-            <span className="w-full text-destructive sm:w-auto">
-              Jitsi: {diagnostics.jitsiMessages[0]}
-            </span>
+            <span className="w-full text-destructive sm:w-auto">Jitsi: {diagnostics.jitsiMessages[0]}</span>
           )}
         </div>
       </div>
@@ -119,10 +117,7 @@ function ClassroomPage() {
   const markComplete = async () => {
     if (!sessionId) return;
     setCompleting(true);
-    const { error } = await supabase
-      .from("sessions")
-      .update({ status: "completed" })
-      .eq("id", sessionId);
+    const { error } = await supabase.from("sessions").update({ status: "completed" }).eq("id", sessionId);
     setCompleting(false);
     if (error) {
       toast.error(error.message);
@@ -136,8 +131,13 @@ function ClassroomPage() {
   const canControlBoard = isTutor || isAdmin;
   const canMarkComplete = (isTutor || isAdmin) && sessionId && sessionStatus !== "completed";
 
+  // FIX 1: Shield whiteboard from parent component re-renders triggered by Jitsi events
+  const memoizedWhiteboard = React.useMemo(() => {
+    return <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />;
+  }, [roomId, user.id, canControlBoard]);
+
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-background text-foreground relative overflow-hidden">
       <header className="flex items-center justify-between gap-2 border-b px-2 py-2 sm:px-4">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button asChild size="sm" variant="ghost">
@@ -164,18 +164,8 @@ function ClassroomPage() {
               {completing ? "Saving…" : "Mark complete"}
             </Button>
           )}
-          <Button
-            asChild
-            size="icon"
-            variant="ghost"
-            title="Open video in new tab"
-            aria-label="Open video in new tab"
-          >
-            <a
-              href={`https://meet.jit.si/AskATutor-${roomId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+          <Button asChild size="icon" variant="ghost" title="Open video in new tab" aria-label="Open video in new tab">
+            <a href={`https://meet.jit.si/AskATutor-${roomId}`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" />
             </a>
           </Button>
@@ -185,9 +175,7 @@ function ClassroomPage() {
       <div className="border-b bg-muted/30 px-2 py-1.5 sm:px-4">
         <div className="flex items-center gap-2 overflow-x-auto">
           <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">
-            In room ({participants.length})
-          </span>
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">In room ({participants.length})</span>
           {participants.length === 0 ? (
             <span className="text-xs text-muted-foreground">Waiting for participants…</span>
           ) : (
@@ -218,8 +206,8 @@ function ClassroomPage() {
       <DiagnosticsPanel diagnostics={diagnostics} />
       <DeviceSelector api={jitsiApi} />
 
-
-      <main className="min-h-0 flex-1">
+      {/* FIX 2: Set strict layout layers so the workspace panels don't get covered up */}
+      <main className="min-h-0 flex-1 relative z-10">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
           <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-xl grid-cols-4">
             <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
@@ -227,9 +215,11 @@ function ClassroomPage() {
             <TabsTrigger value="lab">PhET Lab</TabsTrigger>
             <TabsTrigger value="lab3d">3D Lab</TabsTrigger>
           </TabsList>
-          <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
-            <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />
+
+          <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1 relative">
+            {memoizedWhiteboard}
           </TabsContent>
+
           <TabsContent value="files" className="m-0 min-h-0 flex-1">
             <ClassroomFiles roomId={roomId} />
           </TabsContent>
@@ -242,14 +232,21 @@ function ClassroomPage() {
         </Tabs>
       </main>
 
-      <FloatingVideo
-        roomId={roomId}
-        displayName={user.email ?? "Guest"}
-        email={user.email ?? ""}
-        onParticipantsChange={setParticipants}
-        onDiagnosticsChange={setDiagnostics}
-        onApiReady={setJitsiApi}
-      />
+      {/* FIX 3: Force the floating video element layer to bypass pointer capture blocking */}
+      <div className="pointer-events-none fixed inset-0 z-40">
+        <div className="pointer-events-auto w-full h-full">
+          <FloatingVideo
+            roomId={roomId}
+            displayName={user.email ?? "Guest"}
+            email={user.email ?? ""}
+            onParticipantsChange={setParticipants}
+            onDiagnosticsChange={setDiagnostics}
+            onApiReady={setJitsiApi}
+          />
+        </div>
+      </div>
     </div>
   );
 }
+
+export default ClassroomPage;
