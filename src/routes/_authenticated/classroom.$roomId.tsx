@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo } from "@/components/FloatingVideo";
@@ -131,13 +131,8 @@ function ClassroomPage() {
   const canControlBoard = isTutor || isAdmin;
   const canMarkComplete = (isTutor || isAdmin) && sessionId && sessionStatus !== "completed";
 
-  // FIX 1: Shield whiteboard from parent component re-renders triggered by Jitsi events
-  const memoizedWhiteboard = React.useMemo(() => {
-    return <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />;
-  }, [roomId, user.id, canControlBoard]);
-
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground relative overflow-hidden">
+    <div className="flex h-screen flex-col bg-background text-foreground">
       <header className="flex items-center justify-between gap-2 border-b px-2 py-2 sm:px-4">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Button asChild size="sm" variant="ghost">
@@ -206,8 +201,7 @@ function ClassroomPage() {
       <DiagnosticsPanel diagnostics={diagnostics} />
       <DeviceSelector api={jitsiApi} />
 
-      {/* FIX 2: Set strict layout layers so the workspace panels don't get covered up */}
-      <main className="min-h-0 flex-1 relative z-10">
+      <main className="min-h-0 flex-1">
         <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
           <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-xl grid-cols-4">
             <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
@@ -215,11 +209,9 @@ function ClassroomPage() {
             <TabsTrigger value="lab">PhET Lab</TabsTrigger>
             <TabsTrigger value="lab3d">3D Lab</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1 relative">
-            {memoizedWhiteboard}
+          <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
+            <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />
           </TabsContent>
-
           <TabsContent value="files" className="m-0 min-h-0 flex-1">
             <ClassroomFiles roomId={roomId} />
           </TabsContent>
@@ -232,21 +224,14 @@ function ClassroomPage() {
         </Tabs>
       </main>
 
-      {/* FIX 3: Force the floating video element layer to bypass pointer capture blocking */}
-      <div className="pointer-events-none fixed inset-0 z-40">
-        <div className="pointer-events-auto w-full h-full">
-          <FloatingVideo
-            roomId={roomId}
-            displayName={user.email ?? "Guest"}
-            email={user.email ?? ""}
-            onParticipantsChange={setParticipants}
-            onDiagnosticsChange={setDiagnostics}
-            onApiReady={setJitsiApi}
-          />
-        </div>
-      </div>
+      <FloatingVideo
+        roomId={roomId}
+        displayName={user.email ?? "Guest"}
+        email={user.email ?? ""}
+        onParticipantsChange={setParticipants}
+        onDiagnosticsChange={setDiagnostics}
+        onApiReady={setJitsiApi}
+      />
     </div>
   );
 }
-
-export default ClassroomPage;
