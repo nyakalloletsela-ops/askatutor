@@ -1,724 +1,687 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  PenTool,
-  Eraser,
-  Highlighter,
-  Undo2,
-  Redo2,
-  Trash2,
-  Sparkles,
-  Minus,
-  MoveRight,
-  Square,
-  Circle,
-  Grid3X3,
-  Lock,
-  Unlock,
-  ChevronLeft,
-  ChevronRight,
-  Hand,
-  Copy as CopyIcon,
-  X,
-} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useServerFn } from "@tanstack/react-start";
-import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2, Lock, Type } from "lucide-react";
 
-// ----- Types -----
-
-type Point = { x: number; y: number; p?: number };
-
-type Tool =
-  | "pen"
-  | "highlighter"
-  | "eraser"
-  | "line"
-  | "arrow"
-  | "rect"
-  | "circle"
-  | "graph"
-  | "pan";
-
-interface Stroke {
-  id: string;
-  tool: Exclude<Tool, "pan">;
-  color: string;
-  width: number;
+type Pt = { x: number; y: number };
+type Stroke = {
+  type: "stroke";
   page: number;
-  points: Point[];
-}
+  points: Pt[];
+  color: string;
+  size: number;
+  mode: "pen" | "eraser";
+  id: string;
+};
+type TextItem = {
+  type: "text";
+  page: number;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  size: number;
+  id: string;
+};
+type AnyItem = Stroke | TextItem;
+type ClearMsg = { type: "clear"; page?: number };
+type UndoMsg = { type: "undo"; id: string };
+type RestoreMsg = { type: "restore"; stroke: AnyItem };
+type PermMsg = { type: "perm"; studentCanDraw: boolean };
+type Msg = Stroke | TextItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
 
-interface WhiteboardProps {
+const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
+const PAGE_COUNT = 100;
+
+interface Props {
   roomId: string;
   userId: string;
-  isHost: boolean;
+  /** When true the user is treated as the room host (tutor/admin) and can
+   *  toggle whether the other participant is allowed to draw. */
+  isHost?: boolean;
 }
 
-const COLORS = [
-  "#000000",
-  "#ffffff",
-  "#2563eb",
-  "#dc2626",
-  "#16a34a",
-  "#9333ea",
-  "#ea580c",
-  "#facc15",
-];
+export function Whiteboard({ roomId, userId, isHost = false }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-// Logical canvas size in CSS pixels — fixed so coordinates sync across devices.
-const BOARD_W = 1600;
-const BOARD_H = 1000;
-
-export function Whiteboard({ roomId, userId, isHost }: WhiteboardProps) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-
-  const [tool, setTool] = useState<Tool>("pen");
-  const [color, setColor] = useState("#000000");
-  const [width, setWidth] = useState(4);
-  const [eraserSize, setEraserSize] = useState(36);
-  const [page, setPage] = useState(0);
-  const [pageCount, setPageCount] = useState(1);
-  const [studentCanDraw, setStudentCanDraw] = useState(true);
-  const [isConverting, setIsConverting] = useState(false);
-  const [aiResult, setAiResult] = useState<string | null>(null);
-
-  // Pan / zoom
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-
-  // Drawing state
-  const strokesRef = useRef<Stroke[]>([]);
-  const undoStackRef = useRef<string[]>([]); // local stroke ids the user can undo
-  const redoStackRef = useRef<Stroke[]>([]);
-  const currentRef = useRef<Stroke | null>(null);
-  const lastPointRef = useRef<Point | null>(null);
-
-  // Multi-touch tracking
-  const pointersRef = useRef<Map<number, Point>>(new Map());
-  const gestureRef = useRef<{
+  // active drawing state
+  const drawingRef = useRef<{
     active: boolean;
-    startDist: number;
-    startZoom: number;
-    startMid: Point;
-    startPan: { x: number; y: number };
-  }>({ active: false, startDist: 0, startZoom: 1, startMid: { x: 0, y: 0 }, startPan: { x: 0, y: 0 } });
+    page: number;
+    points: Pt[];
+    id: string;
+  }>({ active: false, page: -1, points: [], id: "" });
 
+  // multi-touch tracking for 2-finger scroll
+  const pointersRef = useRef<Map<number, Pt>>(new Map());
+  const scrollStartRef = useRef<{ scrollTop: number; midY: number }>({
+    scrollTop: 0,
+    midY: 0,
+  });
+
+  // remember all items so we can redraw on resize
+  const historyRef = useRef<AnyItem[]>([]);
+
+  const [color, setColor] = useState(COLORS[0]);
+  const [size, setSize] = useState(3);
+  const [mode, setMode] = useState<"pen" | "eraser" | "text">("pen");
+  const [currentPage, setCurrentPage] = useState(1);
+  // Tutor controls whether the student can draw. Default: only host draws.
+  const [studentCanDraw, setStudentCanDraw] = useState(false);
   const canDraw = isHost || studentCanDraw;
+  // inline text editor state
+  const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string } | null>(null);
+  // Collapse the toolbar (handy in landscape on small screens).
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
 
-  // ----- Canvas setup -----
-  const setupCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
+    const apply = () => setToolbarCollapsed(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  const pages = useMemo(() => Array.from({ length: PAGE_COUNT }, (_, i) => i), []);
+
+  // ── canvas sizing (per page) ────────────────────────────────
+  const sizeCanvas = (canvas: HTMLCanvasElement) => {
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = BOARD_W * dpr;
-    canvas.height = BOARD_H * dpr;
-    canvas.style.width = `${BOARD_W}px`;
-    canvas.style.height = `${BOARD_H}px`;
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return false;
+    const targetW = Math.floor(rect.width * dpr);
+    const targetH = Math.floor(rect.height * dpr);
+    // Skip if already sized — assigning width/height clears the canvas
+    if (canvas.width === targetW && canvas.height === targetH) return false;
+    canvas.width = targetW;
+    canvas.height = targetH;
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
     }
-    redraw();
+    return true;
+  };
+
+  useEffect(() => {
+    const onResize = () => {
+      canvasRefs.current.forEach((c) => c && sizeCanvas(c));
+      historyRef.current.forEach(renderItem);
+    };
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── load persisted strokes & RESET when room changes ──────────
   useEffect(() => {
-    setupCanvas();
-  }, [setupCanvas]);
+    // Clear local state so switching between student rooms doesn't bleed
+    // previous content / undo history into the new room.
+    historyRef.current = [];
+    myUndoStackRef.current = [];
+    myRedoStackRef.current = [];
+    canvasRefs.current.forEach((c) => {
+      const ctx = c?.getContext("2d");
+      if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+    });
+    setTextEditor(null);
+    setUndoTick((t) => t + 1);
 
-  // ----- Draw a stroke onto context -----
-  const drawStroke = (ctx: CanvasRenderingContext2D, s: Stroke) => {
-    if (s.page !== page) return;
-    if (s.points.length === 0) return;
-    ctx.save();
-    ctx.strokeStyle = s.color;
-    ctx.fillStyle = s.color;
-    ctx.lineWidth = s.width;
-
-    if (s.tool === "highlighter") ctx.globalAlpha = 0.25;
-    if (s.tool === "eraser") {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = s.width;
-    }
-
-    const pts = s.points;
-    if (s.tool === "pen" || s.tool === "highlighter" || s.tool === "eraser") {
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      if (pts.length === 1) {
-        ctx.lineTo(pts[0].x + 0.01, pts[0].y + 0.01);
-      } else {
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      }
-      ctx.stroke();
-    } else if (s.tool === "line" && pts.length >= 2) {
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
-      ctx.stroke();
-    } else if (s.tool === "arrow" && pts.length >= 2) {
-      const a = pts[0], b = pts[pts.length - 1];
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-      const ang = Math.atan2(b.y - a.y, b.x - a.x);
-      const h = Math.max(10, s.width * 3);
-      ctx.beginPath();
-      ctx.moveTo(b.x, b.y);
-      ctx.lineTo(b.x - h * Math.cos(ang - Math.PI / 6), b.y - h * Math.sin(ang - Math.PI / 6));
-      ctx.lineTo(b.x - h * Math.cos(ang + Math.PI / 6), b.y - h * Math.sin(ang + Math.PI / 6));
-      ctx.closePath();
-      ctx.fill();
-    } else if (s.tool === "rect" && pts.length >= 2) {
-      const a = pts[0], b = pts[pts.length - 1];
-      ctx.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
-    } else if (s.tool === "circle" && pts.length >= 2) {
-      const a = pts[0], b = pts[pts.length - 1];
-      const r = Math.hypot(b.x - a.x, b.y - a.y);
-      ctx.beginPath();
-      ctx.arc(a.x, a.y, r, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (s.tool === "graph" && pts.length >= 1) {
-      const c = pts[0];
-      const size = 240, step = 24;
-      ctx.strokeStyle = "#cbd5e1";
-      ctx.lineWidth = 1;
-      for (let x = -size; x <= size; x += step) {
-        ctx.beginPath();
-        ctx.moveTo(c.x + x, c.y - size);
-        ctx.lineTo(c.x + x, c.y + size);
-        ctx.stroke();
-      }
-      for (let y = -size; y <= size; y += step) {
-        ctx.beginPath();
-        ctx.moveTo(c.x - size, c.y + y);
-        ctx.lineTo(c.x + size, c.y + y);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(c.x - size, c.y);
-      ctx.lineTo(c.x + size, c.y);
-      ctx.moveTo(c.x, c.y - size);
-      ctx.lineTo(c.x, c.y + size);
-      ctx.stroke();
-    }
-    ctx.restore();
-  };
-
-  const redraw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.restore();
-    for (const s of strokesRef.current) {
-      if (s.page === page) drawStroke(ctx, s);
-    }
-    if (currentRef.current && currentRef.current.page === page) {
-      drawStroke(ctx, currentRef.current);
-    }
-  }, [page]);
-
-  useEffect(() => {
-    redraw();
-  }, [page, redraw]);
-
-  // ----- Reset on room change -----
-  useEffect(() => {
-    strokesRef.current = [];
-    undoStackRef.current = [];
-    redoStackRef.current = [];
-    currentRef.current = null;
-    setPage(0);
-    setPageCount(1);
-    redraw();
-  }, [roomId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ----- Load + realtime -----
-  useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("whiteboard_strokes")
-        .select("stroke_id,page,data")
+        .select("data")
         .eq("room_id", roomId)
         .order("created_at", { ascending: true });
-      if (cancelled) return;
-      if (!error && data) {
-        const loaded: Stroke[] = data
-          .map((r) => {
-            const d = r.data as Stroke | null;
-            if (!d) return null;
-            return { ...d, id: r.stroke_id, page: r.page };
-          })
-          .filter((s): s is Stroke => !!s);
-        strokesRef.current = loaded;
-        const maxPage = loaded.reduce((m, s) => Math.max(m, s.page), 0);
-        setPageCount(maxPage + 1);
-        redraw();
+      if (cancelled || !data) return;
+      for (const row of data as Array<{ data: AnyItem }>) {
+        const s = row.data;
+        if (s && (s.type === "stroke" || s.type === "text")) {
+          historyRef.current.push(s);
+          renderItem(s);
+        }
       }
     })();
-
-    const channel = supabase
-      .channel(`wb-${roomId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "whiteboard_strokes", filter: `room_id=eq.${roomId}` },
-        (payload) => {
-          const row = payload.new as { stroke_id: string; user_id: string; page: number; data: Stroke };
-          if (row.user_id === userId) return;
-          if (strokesRef.current.some((s) => s.id === row.stroke_id)) return;
-          const s = { ...(row.data as Stroke), id: row.stroke_id, page: row.page };
-          strokesRef.current.push(s);
-          setPageCount((c) => Math.max(c, row.page + 1));
-          redraw();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "whiteboard_strokes", filter: `room_id=eq.${roomId}` },
-        (payload) => {
-          const old = payload.old as { stroke_id?: string };
-          if (!old?.stroke_id) return;
-          strokesRef.current = strokesRef.current.filter((s) => s.id !== old.stroke_id);
-          redraw();
-        },
-      )
-      .subscribe();
-
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
     };
-  }, [roomId, userId, redraw]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
 
-  // ----- Persistence -----
-  const persistStroke = async (s: Stroke) => {
-    const { error } = await supabase.from("whiteboard_strokes").insert({
-      room_id: roomId,
-      stroke_id: s.id,
-      user_id: userId,
-      page: s.page,
-      data: JSON.parse(JSON.stringify(s)),
+  // ── realtime ────────────────────────────────────────────────
+  useEffect(() => {
+    const channel = supabase.channel(`whiteboard:${roomId}`, {
+      config: { broadcast: { self: false } },
     });
-    if (error) console.warn("whiteboard insert", error.message);
-  };
-
-  const deleteStrokeRemote = async (id: string) => {
-    await supabase.from("whiteboard_strokes").delete().eq("room_id", roomId).eq("stroke_id", id);
-  };
-
-  // ----- Coordinate helpers -----
-  const toBoard = (clientX: number, clientY: number): Point => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const sx = BOARD_W / rect.width;
-    const sy = BOARD_H / rect.height;
-    return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
-  };
-
-  // ----- Pointer handlers -----
-  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    // Two-finger gesture starts
-    if (pointersRef.current.size >= 2) {
-      currentRef.current = null;
-      const [a, b] = Array.from(pointersRef.current.values());
-      gestureRef.current = {
-        active: true,
-        startDist: Math.hypot(b.x - a.x, b.y - a.y),
-        startZoom: zoom,
-        startMid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
-        startPan: { ...pan },
-      };
-      redraw();
-      return;
-    }
-
-    if (tool === "pan") return;
-    if (!canDraw) {
-      toast.message("Tutor has locked drawing");
-      return;
-    }
-
-    const pt = toBoard(e.clientX, e.clientY);
-    lastPointRef.current = pt;
-    const isEraser = tool === "eraser";
-    currentRef.current = {
-      id: crypto.randomUUID(),
-      tool: tool as Exclude<Tool, "pan">,
-      color,
-      width: isEraser ? eraserSize : width,
-      page,
-      points: [pt],
-    };
-    redraw();
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!pointersRef.current.has(e.pointerId)) return;
-    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-    if (gestureRef.current.active && pointersRef.current.size >= 2) {
-      const [a, b] = Array.from(pointersRef.current.values());
-      const dist = Math.hypot(b.x - a.x, b.y - a.y);
-      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      const g = gestureRef.current;
-      const newZoom = Math.min(4, Math.max(0.3, g.startZoom * (dist / g.startDist)));
-      setZoom(newZoom);
-      setPan({
-        x: g.startPan.x + (mid.x - g.startMid.x),
-        y: g.startPan.y + (mid.y - g.startMid.y),
+    channel
+      .on("broadcast", { event: "draw" }, ({ payload }) => applyMessage(payload as Msg))
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED" && isHost) {
+          channel.send({
+            type: "broadcast",
+            event: "draw",
+            payload: { type: "perm", studentCanDraw } as PermMsg,
+          });
+        }
       });
-      return;
-    }
+    channelRef.current = channel;
+    return () => {
+      channel.unsubscribe();
+      channelRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId]);
 
-    if (!currentRef.current) return;
-    const pt = toBoard(e.clientX, e.clientY);
-    // throttle by min distance
-    const last = lastPointRef.current;
-    if (last && Math.hypot(pt.x - last.x, pt.y - last.y) < 1.2) return;
-    lastPointRef.current = pt;
-    currentRef.current.points.push(pt);
-    redraw();
+  // ── persistence helpers ───────────────────────────────────
+  const persistStroke = (item: AnyItem) => {
+    supabase
+      .from("whiteboard_strokes")
+      .insert({
+        room_id: roomId,
+        stroke_id: item.id,
+        user_id: userId,
+        page: item.page,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: item as any,
+      })
+      .then(({ error }) => {
+        if (error) console.warn("whiteboard persist failed", error.message);
+      });
   };
 
-  const finishPointer = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    pointersRef.current.delete(e.pointerId);
-    if (pointersRef.current.size < 2 && gestureRef.current.active) {
-      gestureRef.current.active = false;
-    }
-    if (!currentRef.current) return;
-    if (pointersRef.current.size > 0) {
-      // still other pointer down — drop the stroke
-      currentRef.current = null;
-      redraw();
-      return;
-    }
-    const s = currentRef.current;
-    currentRef.current = null;
-    if (s.points.length === 0) return;
-    strokesRef.current.push(s);
-    undoStackRef.current.push(s.id);
-    redoStackRef.current = [];
-    redraw();
-    void persistStroke(s);
-  };
-
-  // ----- Toolbar actions -----
-  const undo = () => {
-    const id = undoStackRef.current.pop();
-    if (!id) return;
-    const idx = strokesRef.current.findIndex((s) => s.id === id);
-    if (idx === -1) return;
-    const [removed] = strokesRef.current.splice(idx, 1);
-    redoStackRef.current.push(removed);
-    redraw();
-    void deleteStrokeRemote(id);
-  };
-
-  const redo = () => {
-    const s = redoStackRef.current.pop();
-    if (!s) return;
-    strokesRef.current.push(s);
-    undoStackRef.current.push(s.id);
-    redraw();
-    void persistStroke(s);
-  };
-
-  const clearPage = async () => {
-    if (!isHost) {
-      toast.error("Only the tutor can clear the board");
-      return;
-    }
-    const ids = strokesRef.current.filter((s) => s.page === page).map((s) => s.id);
-    strokesRef.current = strokesRef.current.filter((s) => s.page !== page);
-    undoStackRef.current = undoStackRef.current.filter((id) => !ids.includes(id));
-    redraw();
-    if (ids.length === 0) return;
-    await supabase
+  const deletePersistedStroke = (strokeId: string) => {
+    supabase
       .from("whiteboard_strokes")
       .delete()
       .eq("room_id", roomId)
-      .eq("page", page);
+      .eq("stroke_id", strokeId)
+      .then(() => undefined);
+  };
+  const deletePersistedPage = (page: number) => {
+    supabase
+      .from("whiteboard_strokes")
+      .delete()
+      .eq("room_id", roomId)
+      .eq("page", page)
+      .then(() => undefined);
   };
 
-  // ----- AI Convert -----
-  const runConvert = useServerFn(whiteboardConvert);
-  const handleAIConvert = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    setIsConverting(true);
-    setAiResult(null);
-    try {
-      // Render current page on a clean white canvas at smaller size for upload
-      const off = document.createElement("canvas");
-      const maxW = 1400;
-      const scale = Math.min(1, maxW / BOARD_W);
-      off.width = Math.round(BOARD_W * scale);
-      off.height = Math.round(BOARD_H * scale);
-      const octx = off.getContext("2d")!;
-      octx.fillStyle = "#ffffff";
-      octx.fillRect(0, 0, off.width, off.height);
-      octx.scale(scale, scale);
-      for (const s of strokesRef.current) if (s.page === page) drawStroke(octx, s);
-      const dataUrl = off.toDataURL("image/png");
-      const res = await runConvert({ data: { imageDataUrl: dataUrl } });
-      setAiResult(res.text || "(no text detected)");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "AI conversion failed";
-      toast.error(msg);
-    } finally {
-      setIsConverting(false);
+  // ── drawing helpers ────────────────────────────────────────
+  const drawSegment = (page: number, a: Pt, b: Pt, c: string, sz: number, m: "pen" | "eraser") => {
+    const ctx = canvasRefs.current[page]?.getContext("2d");
+    if (!ctx) return;
+    ctx.globalCompositeOperation = m === "eraser" ? "destination-out" : "source-over";
+    ctx.strokeStyle = c;
+    ctx.lineWidth = sz;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+  };
+
+  const renderStroke = (s: Stroke) => {
+    for (let i = 1; i < s.points.length; i++) {
+      drawSegment(s.page, s.points[i - 1], s.points[i], s.color, s.size, s.mode);
     }
   };
 
-  // ----- Page nav -----
-  const goPage = (n: number) => {
-    if (n < 0) return;
-    if (n >= pageCount) setPageCount(n + 1);
-    setPage(n);
+  const renderText = (t: TextItem) => {
+    const ctx = canvasRefs.current[t.page]?.getContext("2d");
+    if (!ctx) return;
+    ctx.globalCompositeOperation = "source-over";
+    const fontPx = Math.max(12, t.size * 5);
+    ctx.font = `${fontPx}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
+    ctx.fillStyle = t.color;
+    ctx.textBaseline = "top";
+    const lines = t.text.split("\n");
+    lines.forEach((line, i) => ctx.fillText(line, t.x, t.y + i * fontPx * 1.2));
   };
 
-  // ----- UI -----
-  const toolBtn = (t: Tool, icon: React.ReactNode, label: string, active = tool === t) => (
-    <button
-      onClick={() => setTool(t)}
-      title={label}
-      aria-label={label}
-      className={`p-2 rounded-md border text-sm flex items-center justify-center ${
-        active
-          ? "bg-primary text-primary-foreground border-primary"
-          : "bg-background hover:bg-muted border-border"
-      }`}
-    >
-      {icon}
-    </button>
-  );
+  const renderItem = (item: AnyItem) => {
+    if (item.type === "stroke") renderStroke(item);
+    else renderText(item);
+  };
+
+  const redrawPage = (page: number) => {
+    const c = canvasRefs.current[page];
+    const ctx = c?.getContext("2d");
+    if (!ctx || !c) return;
+    ctx.clearRect(0, 0, c.width, c.height);
+    historyRef.current.filter((s) => s.page === page).forEach(renderItem);
+  };
+
+  const applyMessage = (m: Msg) => {
+    if (m.type === "clear") {
+      if (m.page == null) {
+        canvasRefs.current.forEach((c) => {
+          const ctx = c?.getContext("2d");
+          if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+        });
+        historyRef.current = [];
+      } else {
+        const c = canvasRefs.current[m.page];
+        const ctx = c?.getContext("2d");
+        if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+        historyRef.current = historyRef.current.filter((s) => s.page !== m.page);
+      }
+      return;
+    }
+    if (m.type === "undo") {
+      const idx = historyRef.current.findIndex((s) => s.id === m.id);
+      if (idx >= 0) {
+        const [removed] = historyRef.current.splice(idx, 1);
+        redrawPage(removed.page);
+      }
+      return;
+    }
+    if (m.type === "restore") {
+      historyRef.current.push(m.stroke);
+      renderItem(m.stroke);
+      return;
+    }
+    if (m.type === "perm") {
+      setStudentCanDraw(m.studentCanDraw);
+      return;
+    }
+    // stroke or text
+    historyRef.current.push(m);
+    renderItem(m);
+  };
+
+  const send = (m: Msg) => {
+    channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
+  };
+
+  // ── pointer/touch routing ──────────────────────────────────
+  const localPos = (canvas: HTMLCanvasElement, clientX: number, clientY: number): Pt => {
+    const rect = canvas.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  };
+
+  const cancelActiveStroke = () => {
+    drawingRef.current.active = false;
+    drawingRef.current.points = [];
+    drawingRef.current.page = -1;
+  };
+
+  const onPointerDown = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointersRef.current.size >= 2) {
+      // switch to 2-finger scroll mode — abort any in-progress stroke
+      cancelActiveStroke();
+      const ys = [...pointersRef.current.values()].map((p) => p.y);
+      scrollStartRef.current = {
+        scrollTop: containerRef.current?.scrollTop ?? 0,
+        midY: ys.reduce((a, b) => a + b, 0) / ys.length,
+      };
+      return;
+    }
+
+    if (!canDraw) return; // student without permission can only view + scroll
+
+    // text mode: open inline editor at click position
+    if (mode === "text") {
+      const canvas = canvasRefs.current[page]!;
+      const p = localPos(canvas, e.clientX, e.clientY);
+      setTextEditor({ page, x: p.x, y: p.y, value: "" });
+      return;
+    }
+
+    // single touch / mouse — start drawing
+    if (e.pointerType !== "touch") {
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    }
+    e.preventDefault();
+    const canvas = canvasRefs.current[page]!;
+    drawingRef.current = {
+      active: true,
+      page,
+      points: [localPos(canvas, e.clientX, e.clientY)],
+      id: `${userId}-${Date.now()}`,
+    };
+  };
+
+  const onPointerMove = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // 2-finger scroll
+    if (pointersRef.current.size >= 2) {
+      e.preventDefault();
+      const ys = [...pointersRef.current.values()].map((p) => p.y);
+      const midY = ys.reduce((a, b) => a + b, 0) / ys.length;
+      if (containerRef.current) {
+        containerRef.current.scrollTop = scrollStartRef.current.scrollTop - (midY - scrollStartRef.current.midY);
+      }
+      return;
+    }
+
+    // drawing (pen/eraser only)
+    if (mode === "text") return;
+    if (!drawingRef.current.active || drawingRef.current.page !== page) return;
+    e.preventDefault();
+    const canvas = canvasRefs.current[page]!;
+    const p = localPos(canvas, e.clientX, e.clientY);
+    const prev = drawingRef.current.points[drawingRef.current.points.length - 1];
+    drawingRef.current.points.push(p);
+    drawSegment(page, prev, p, color, size, mode);
+  };
+
+  const onPointerUp = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointersRef.current.delete(e.pointerId);
+    if (mode === "text") return;
+    if (!drawingRef.current.active || drawingRef.current.page !== page) return;
+    if (drawingRef.current.points.length > 1) {
+      const stroke: Stroke = {
+        type: "stroke",
+        page,
+        points: drawingRef.current.points,
+        color,
+        size,
+        mode,
+        id: drawingRef.current.id,
+      };
+      historyRef.current.push(stroke);
+      sendItem(stroke);
+    }
+    drawingRef.current.active = false;
+    drawingRef.current.points = [];
+    drawingRef.current.page = -1;
+  };
+
+  const commitText = () => {
+    if (!textEditor) return;
+    const value = textEditor.value.trim();
+    if (!value) {
+      setTextEditor(null);
+      return;
+    }
+    const item: TextItem = {
+      type: "text",
+      page: textEditor.page,
+      x: textEditor.x,
+      y: textEditor.y,
+      text: value,
+      color,
+      size,
+      id: `${userId}-t-${Date.now()}`,
+    };
+    historyRef.current.push(item);
+    renderText(item);
+    sendItem(item);
+    setTextEditor(null);
+  };
+
+  // Track which page is "current" while scrolling
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const top = el.scrollTop + el.clientHeight / 3;
+      let found = 1;
+      for (let i = 0; i < canvasRefs.current.length; i++) {
+        const c = canvasRefs.current[i];
+        if (!c) continue;
+        const wrap = c.parentElement!;
+        if (wrap.offsetTop <= top) found = i + 1;
+        else break;
+      }
+      setCurrentPage(found);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const goToPage = (n: number) => {
+    const p = Math.max(1, Math.min(PAGE_COUNT, n));
+    const c = canvasRefs.current[p - 1];
+    c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  // ── undo / redo (per-user, owns own items only) ───────────
+  const myUndoStackRef = useRef<AnyItem[]>([]);
+  const myRedoStackRef = useRef<AnyItem[]>([]);
+  const [undoTick, setUndoTick] = useState(0);
+
+  // patch send to track own items
+  const sendItem = (item: AnyItem) => {
+    myUndoStackRef.current.push(item);
+    myRedoStackRef.current = [];
+    setUndoTick((t) => t + 1);
+    send(item);
+    persistStroke(item);
+  };
+
+  const undo = () => {
+    const item = myUndoStackRef.current.pop();
+    if (!item) return;
+    myRedoStackRef.current.push(item);
+    const idx = historyRef.current.findIndex((s) => s.id === item.id);
+    if (idx >= 0) {
+      historyRef.current.splice(idx, 1);
+      redrawPage(item.page);
+    }
+    send({ type: "undo", id: item.id });
+    deletePersistedStroke(item.id);
+    setUndoTick((t) => t + 1);
+  };
+
+  const redo = () => {
+    const item = myRedoStackRef.current.pop();
+    if (!item) return;
+    myUndoStackRef.current.push(item);
+    historyRef.current.push(item);
+    renderItem(item);
+    send({ type: "restore", stroke: item });
+    persistStroke(item);
+    setUndoTick((t) => t + 1);
+  };
+
+  const clearCurrent = () => {
+    const page = currentPage - 1;
+    const c = canvasRefs.current[page];
+    const ctx = c?.getContext("2d");
+    if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
+    historyRef.current = historyRef.current.filter((s) => s.page !== page);
+    myUndoStackRef.current = myUndoStackRef.current.filter((s) => s.page !== page);
+    myRedoStackRef.current = myRedoStackRef.current.filter((s) => s.page !== page);
+    setUndoTick((t) => t + 1);
+    send({ type: "clear", page });
+    deletePersistedPage(page);
+  };
 
   return (
-    <div className="flex h-full w-full flex-col bg-slate-100">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b bg-white p-2 shadow-sm">
-        {toolBtn("pen", <PenTool size={18} />, "Pen")}
-        {toolBtn("highlighter", <Highlighter size={18} />, "Highlighter")}
-        {toolBtn("eraser", <Eraser size={18} />, "Eraser")}
-        {toolBtn("line", <Minus size={18} />, "Line")}
-        {toolBtn("arrow", <MoveRight size={18} />, "Arrow")}
-        {toolBtn("rect", <Square size={18} />, "Rectangle")}
-        {toolBtn("circle", <Circle size={18} />, "Circle")}
-        {toolBtn("graph", <Grid3X3 size={18} />, "Graph axes")}
-        {toolBtn("pan", <Hand size={18} />, "Pan (or use two fingers)")}
+    <div className="flex h-full flex-col">
+      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 p-2">
+        <Button size="sm" variant={mode === "pen" ? "default" : "outline"} onClick={() => setMode("pen")}>
+          <Pen className="mr-1 h-4 w-4" /> Pen
+        </Button>
+        <Button size="sm" variant={mode === "eraser" ? "default" : "outline"} onClick={() => setMode("eraser")}>
+          <Eraser className="mr-1 h-4 w-4" /> Eraser
+        </Button>
+        <Button
+          size="sm"
+          variant={mode === "text" ? "default" : "outline"}
+          onClick={() => setMode("text")}
+          title="Type with keyboard"
+        >
+          <Type className="mr-1 h-4 w-4" /> Text
+        </Button>
 
-        <div className="mx-1 h-7 w-px bg-border" />
-
-        {/* Colors */}
+        <div className="mx-1 h-6 w-px bg-border" />
+        {COLORS.map((c) => (
+          <button
+            key={c}
+            aria-label={`color ${c}`}
+            onClick={() => {
+              setColor(c);
+              setMode("pen");
+            }}
+            className={`h-7 w-7 rounded-full border-2 ${color === c ? "ring-2 ring-primary ring-offset-2" : ""}`}
+            style={{ backgroundColor: c, borderColor: "white" }}
+          />
+        ))}
+        <div className="mx-1 h-6 w-px bg-border" />
+        <input
+          type="range"
+          min={1}
+          max={20}
+          value={size}
+          onChange={(e) => setSize(Number(e.target.value))}
+          className="w-20"
+        />
+        <span className="text-xs text-muted-foreground">{size}px</span>
+        <div className="mx-1 h-6 w-px bg-border" />
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-7 w-7"
+          onClick={undo}
+          disabled={myUndoStackRef.current.length === 0}
+          aria-label="Undo"
+          title="Undo"
+          data-undo-tick={undoTick}
+        >
+          <Undo2 className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-7 w-7"
+          onClick={redo}
+          disabled={myRedoStackRef.current.length === 0}
+          aria-label="Redo"
+          title="Redo"
+        >
+          <Redo2 className="h-4 w-4" />
+        </Button>
+        <div className="mx-1 h-6 w-px bg-border" />
         <div className="flex items-center gap-1">
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              aria-label={`color ${c}`}
-              className={`h-7 w-7 rounded-full border-2 ${
-                color === c ? "border-foreground scale-110" : "border-border"
-              }`}
-              style={{ backgroundColor: c }}
-            />
-          ))}
-          <input
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="h-7 w-7 cursor-pointer rounded-md border border-border bg-transparent p-0"
-            aria-label="Custom color"
-          />
-        </div>
-
-        <div className="mx-1 h-7 w-px bg-border" />
-
-        {/* Width */}
-        {tool === "eraser" ? (
-          <label className="flex items-center gap-2 text-xs text-slate-700">
-            Eraser
-            <input
-              type="range"
-              min={10}
-              max={120}
-              value={eraserSize}
-              onChange={(e) => setEraserSize(Number(e.target.value))}
-            />
-            <span className="w-8 text-right tabular-nums">{eraserSize}</span>
-          </label>
-        ) : (
-          <label className="flex items-center gap-2 text-xs text-slate-700">
-            Size
-            <input
-              type="range"
-              min={1}
-              max={24}
-              value={width}
-              onChange={(e) => setWidth(Number(e.target.value))}
-            />
-            <span className="w-8 text-right tabular-nums">{width}</span>
-          </label>
-        )}
-
-        <div className="mx-1 h-7 w-px bg-border" />
-
-        <button onClick={undo} title="Undo" className="rounded-md border border-border bg-background p-2 hover:bg-muted">
-          <Undo2 size={18} />
-        </button>
-        <button onClick={redo} title="Redo" className="rounded-md border border-border bg-background p-2 hover:bg-muted">
-          <Redo2 size={18} />
-        </button>
-        <button
-          onClick={clearPage}
-          title="Clear page (tutor)"
-          className="rounded-md border border-border bg-background p-2 hover:bg-muted disabled:opacity-50"
-          disabled={!isHost}
-        >
-          <Trash2 size={18} />
-        </button>
-
-        {isHost && (
-          <button
-            onClick={() => setStudentCanDraw((v) => !v)}
-            title={studentCanDraw ? "Lock student drawing" : "Unlock student drawing"}
-            className={`flex items-center gap-1 rounded-md p-2 text-sm text-white ${
-              studentCanDraw ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
-            }`}
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-7 w-7"
+            onClick={() => goToPage(currentPage - 1)}
+            aria-label="Previous page"
           >
-            {studentCanDraw ? <Unlock size={16} /> : <Lock size={16} />}
-            <span className="hidden sm:inline">{studentCanDraw ? "Students can draw" : "Students locked"}</span>
-          </button>
-        )}
-
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => goPage(page - 1)}
-            disabled={page === 0}
-            className="rounded-md border border-border bg-background p-2 hover:bg-muted disabled:opacity-40"
-            title="Previous page"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <span className="text-xs text-slate-700 tabular-nums">
-            Page {page + 1} / {pageCount}
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {currentPage}/{PAGE_COUNT}
           </span>
-          <button
-            onClick={() => goPage(page + 1)}
-            className="rounded-md border border-border bg-background p-2 hover:bg-muted"
-            title="Next page"
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-7 w-7"
+            onClick={() => goToPage(currentPage + 1)}
+            aria-label="Next page"
           >
-            <ChevronRight size={18} />
-          </button>
-
-          <button
-            onClick={handleAIConvert}
-            disabled={isConverting}
-            className="ml-2 flex items-center gap-2 rounded-md bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-60"
-          >
-            <Sparkles size={16} className={isConverting ? "animate-spin" : ""} />
-            {isConverting ? "Converting…" : "AI Convert"}
-          </button>
+            <ChevronDown className="h-4 w-4" />
+          </Button>
         </div>
-      </div>
-
-      {/* Board */}
-      <div
-        ref={wrapRef}
-        className="relative flex-1 overflow-hidden bg-slate-200"
-        style={{ touchAction: "none" }}
-      >
-        <div
-          className="absolute left-1/2 top-1/2"
-          style={{
-            transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: "center center",
-          }}
-        >
-          <canvas
-            ref={canvasRef}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={finishPointer}
-            onPointerCancel={finishPointer}
-            onPointerLeave={(e) => {
-              if (pointersRef.current.has(e.pointerId)) finishPointer(e);
-            }}
-            onContextMenu={(e) => e.preventDefault()}
-            className="block bg-white shadow-xl ring-1 ring-slate-300"
-            style={{
-              touchAction: "none",
-              cursor:
-                tool === "pan"
-                  ? "grab"
-                  : tool === "eraser"
-                    ? "cell"
-                    : "crosshair",
-            }}
-          />
-        </div>
-
-        {!canDraw && (
-          <div className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-rose-600/90 px-3 py-1 text-xs text-white shadow">
-            Tutor has locked drawing
-          </div>
+        <div className="ml-auto" />
+        {isHost && (
+          <label className="flex items-center gap-2 rounded-md border bg-background px-2 py-1 text-xs">
+            {studentCanDraw ? (
+              <Pen className="h-3.5 w-3.5 text-primary" />
+            ) : (
+              <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+            <span className="font-medium">{studentCanDraw ? "Student writing" : "Tutor writing"}</span>
+            <Switch
+              checked={studentCanDraw}
+              onCheckedChange={(v) => {
+                setStudentCanDraw(v);
+                send({ type: "perm", studentCanDraw: v });
+              }}
+              aria-label="Toggle who can write"
+            />
+          </label>
         )}
-
-        <div className="pointer-events-none absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-[10px] text-white">
-          Pinch to zoom · two fingers to pan · stylus & finger supported
-        </div>
+        {!isHost && !studentCanDraw && (
+          <span className="flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground">
+            <Lock className="h-3.5 w-3.5" /> Tutor is writing
+          </span>
+        )}
+        <Button size="sm" variant="destructive" onClick={clearCurrent}>
+          <Trash2 className="mr-1 h-4 w-4" /> Clear page
+        </Button>
       </div>
 
-      {/* AI result */}
-      {aiResult !== null && (
-        <div className="border-t bg-white p-3">
-          <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-800">AI transcription</h4>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  void navigator.clipboard.writeText(aiResult);
-                  toast.success("Copied");
-                }}
-                className="flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted"
+      {/* Hint */}
+      <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
+        Draw with one finger · scroll with two fingers · {PAGE_COUNT} pages
+      </div>
+
+      {/* Pages — scrollable container */}
+      <div
+        ref={containerRef}
+        className="relative flex-1 overflow-y-auto overscroll-contain bg-muted/30"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="mx-auto flex w-full flex-col gap-4 px-2 py-2">
+          {pages.map((i) => (
+            <div key={i} className="relative">
+              <div
+                className="relative w-full overflow-hidden rounded-md border bg-white shadow-sm"
+                style={{ height: "calc(100vh - 180px)", minHeight: 400 }}
               >
-                <CopyIcon size={12} /> Copy
-              </button>
-              <button
-                onClick={() => setAiResult(null)}
-                className="rounded-md border border-border bg-background p-1 hover:bg-muted"
-                aria-label="Close"
-              >
-                <X size={14} />
-              </button>
+                <span className="pointer-events-none absolute right-2 top-1 z-10 text-[10px] text-muted-foreground/70">
+                  Page {i + 1}
+                </span>
+                <canvas
+                  ref={(el) => {
+                    canvasRefs.current[i] = el;
+                    if (el && sizeCanvas(el)) {
+                      historyRef.current.filter((s) => s.page === i).forEach(renderItem);
+                    }
+                  }}
+                  className={`absolute inset-0 h-full w-full ${mode === "text" ? "cursor-text" : "cursor-crosshair"}`}
+                  style={{ touchAction: "none" }}
+                  onPointerDown={onPointerDown(i)}
+                  onPointerMove={onPointerMove(i)}
+                  onPointerUp={onPointerUp(i)}
+                  onPointerCancel={onPointerUp(i)}
+                />
+                {textEditor && textEditor.page === i && (
+                  <textarea
+                    autoFocus
+                    value={textEditor.value}
+                    onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
+                    onBlur={commitText}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        commitText();
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        setTextEditor(null);
+                      }
+                    }}
+                    placeholder="Type… Enter to commit, Shift+Enter for newline, Esc to cancel"
+                    className="absolute z-20 min-w-[140px] resize rounded border border-primary/60 bg-white/95 px-1 py-0.5 outline-none ring-2 ring-primary/30"
+                    style={{
+                      left: textEditor.x,
+                      top: textEditor.y,
+                      color,
+                      fontSize: Math.max(12, size * 5),
+                      fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                      lineHeight: 1.2,
+                    }}
+                  />
+                )}
+              </div>
             </div>
-          </div>
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-slate-50 p-2 text-xs text-slate-800">
-            {aiResult}
-          </pre>
-          <p className="mt-1 text-[10px] text-slate-500">
-            Equations are returned as LaTeX between $$…$$. Plain notes stay as text.
-          </p>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
-
-export default Whiteboard;
