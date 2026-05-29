@@ -48,6 +48,11 @@ export function Navbar() {
     return () => { alive = false; clearInterval(t); };
   }, [isAdmin]);
 
+  if (APP_SHELL_PREFIXES.some((p) => path === p || path.startsWith(p + "/"))) {
+    return null;
+  }
+
+
 
 
   const links = (
