@@ -1,0 +1,351 @@
+import { type ReactNode, useMemo } from "react";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import {
+  LayoutDashboard,
+  Users,
+  GraduationCap,
+  FileText,
+  StickyNote,
+  Sparkles,
+  MessageSquare,
+  Calendar,
+  Settings,
+  Bell,
+  Moon,
+  Sun,
+  LogOut,
+  Search,
+  ShieldCheck,
+  BarChart3,
+  Wallet,
+  Flag,
+  PencilRuler,
+  FlaskConical,
+  ChevronRight,
+  Menu,
+  Code2,
+} from "lucide-react";
+import logoUrl from "@/assets/logo.png";
+import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarRail,
+} from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
+
+type NavItem = {
+  label: string;
+  to: string;
+  icon: typeof LayoutDashboard;
+  badge?: string;
+  soon?: boolean;
+};
+
+const baseNav: NavItem[] = [
+  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+  { label: "Tutors", to: "/", icon: GraduationCap },
+  { label: "Messages", to: "/messages", icon: MessageSquare },
+  { label: "Assignments", to: "/assignments", icon: FileText, soon: true },
+  { label: "Notes", to: "/notes", icon: StickyNote, soon: true },
+  { label: "Calendar", to: "/calendar", icon: Calendar, soon: true },
+];
+
+const learningNav: NavItem[] = [
+  { label: "AI Coach", to: "/ai-tutor", icon: Sparkles },
+  { label: "AI Toolkit", to: "/ai-tools", icon: PencilRuler },
+  { label: "Virtual Labs", to: "/labs", icon: FlaskConical },
+  { label: "Code", to: "/code", icon: Code2 },
+];
+
+const adminNav: NavItem[] = [
+  { label: "Admin Console", to: "/admin", icon: ShieldCheck },
+  { label: "Analytics", to: "/admin", icon: BarChart3 },
+  { label: "Payments", to: "/admin", icon: Wallet },
+  { label: "Moderation", to: "/admin", icon: Flag },
+];
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const path = useRouterState({ select: (r) => r.location.pathname });
+  const { user, isAdmin, signOut } = useAuth();
+  const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
+
+  // Immersive routes: render children only, no shell chrome
+  const immersive = path.startsWith("/classroom/");
+  if (immersive) return <>{children}</>;
+
+  const initials = useMemo(() => {
+    const name =
+      (user?.user_metadata as { full_name?: string } | undefined)?.full_name ??
+      user?.email ??
+      "U";
+    return name
+      .split(/\s+/)
+      .map((s) => s[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+  }, [user]);
+
+  const crumbs = useMemo(() => buildCrumbs(path), [path]);
+
+  const isActive = (to: string) => {
+    if (to === "/") return path === "/";
+    if (to === "/dashboard") return path === "/dashboard";
+    if (to === "/admin") return path.startsWith("/admin");
+    return path.startsWith(to);
+  };
+
+  return (
+    <SidebarProvider>
+      <Sidebar collapsible="icon" className="border-r">
+        <SidebarHeader>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <img src={logoUrl} alt="Logo" className="h-7 w-7 rounded-md object-contain" />
+            <div className="flex-1 truncate group-data-[collapsible=icon]:hidden">
+              <p className="truncate text-sm font-semibold tracking-tight">Ask A Tutor</p>
+              <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+                {isAdmin ? "Admin" : "Workspace"}
+              </p>
+            </div>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {baseNav.map((item) => (
+                  <NavLink key={item.label} item={item} active={isActive(item.to)} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupLabel>Learning</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {learningNav.map((item) => (
+                  <NavLink key={item.label} item={item} active={isActive(item.to)} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {isAdmin && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Administration</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {adminNav.map((item) => (
+                    <NavLink key={item.label} item={item} active={isActive(item.to)} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Settings">
+                <Link to="/dashboard">
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+
+      <SidebarInset>
+        {/* Topbar */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-xl sm:px-4">
+          <SidebarTrigger className="md:hidden">
+            <Menu className="h-4 w-4" />
+          </SidebarTrigger>
+          <SidebarTrigger className="hidden md:flex" />
+
+          {/* Breadcrumbs */}
+          <nav className="hidden min-w-0 items-center gap-1 text-sm md:flex">
+            {crumbs.map((c, i) => (
+              <div key={c.to} className="flex items-center gap-1">
+                {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+                {i === crumbs.length - 1 ? (
+                  <span className="truncate font-medium">{c.label}</span>
+                ) : (
+                  <Link
+                    to={c.to as never}
+                    className="truncate text-muted-foreground hover:text-foreground"
+                  >
+                    {c.label}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </nav>
+
+          {/* Search */}
+          <div className="relative ml-auto hidden max-w-sm flex-1 sm:flex">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              placeholder="Search…"
+              className="h-9 w-full rounded-md border bg-muted/40 pl-8 pr-12 text-sm outline-none ring-0 transition focus:border-foreground/20 focus:bg-background"
+            />
+            <kbd className="pointer-events-none absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 select-none items-center gap-0.5 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground sm:flex">
+              ⌘K
+            </kbd>
+          </div>
+
+          <div className="ml-auto flex items-center gap-1 sm:ml-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Notifications"
+              className="relative h-9 w-9"
+            >
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Toggle theme"
+              className="h-9 w-9"
+              onClick={toggle}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-9 gap-2 px-2">
+                  <Avatar className="h-7 w-7">
+                    <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
+                  </Avatar>
+                  <span className="hidden text-sm font-medium md:inline">
+                    {(user?.user_metadata as { full_name?: string } | undefined)?.full_name?.split(" ")[0] ??
+                      user?.email?.split("@")[0]}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <p className="text-sm font-medium">
+                    {(user?.user_metadata as { full_name?: string } | undefined)?.full_name ??
+                      "Account"}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/messages">
+                    <MessageSquare className="mr-2 h-4 w-4" /> Messages
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await signOut();
+                    navigate({ to: "/" });
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        <div className="min-h-[calc(100svh-3.5rem)] bg-muted/20">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+  const inner = (
+    <SidebarMenuButton
+      asChild
+      isActive={active}
+      tooltip={item.label}
+      className={cn(item.soon && "opacity-70")}
+    >
+      <Link to={item.to as never}>
+        <item.icon className="h-4 w-4" />
+        <span className="truncate">{item.label}</span>
+        {item.soon && (
+          <Badge
+            variant="secondary"
+            className="ml-auto h-4 px-1 text-[9px] font-medium uppercase tracking-wider group-data-[collapsible=icon]:hidden"
+          >
+            Soon
+          </Badge>
+        )}
+        {item.badge && (
+          <Badge className="ml-auto h-4 px-1 text-[10px] group-data-[collapsible=icon]:hidden">
+            {item.badge}
+          </Badge>
+        )}
+      </Link>
+    </SidebarMenuButton>
+  );
+  return <SidebarMenuItem>{inner}</SidebarMenuItem>;
+}
+
+function buildCrumbs(path: string): { label: string; to: string }[] {
+  if (path === "/dashboard") return [{ label: "Dashboard", to: "/dashboard" }];
+  const segs = path.split("/").filter(Boolean);
+  const crumbs: { label: string; to: string }[] = [
+    { label: "Dashboard", to: "/dashboard" },
+  ];
+  let acc = "";
+  for (const s of segs) {
+    acc += "/" + s;
+    if (s === "dashboard") continue;
+    crumbs.push({ label: prettify(s), to: acc });
+  }
+  return crumbs;
+}
+
+function prettify(s: string) {
+  if (s.startsWith("$")) return "Detail";
+  return s
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
