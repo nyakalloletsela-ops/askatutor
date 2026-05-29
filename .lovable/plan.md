@@ -1,73 +1,69 @@
-## Reality check
+# AskATutorLive Dashboard System — Phased Rebuild
 
-What you described is a multi-month roadmap (landing, 12 AI tools, virtual labs, coding IDE, parent accounts, payments, forums, leaderboards, certificates, admin analytics, mobile bottom-nav, dark mode, etc.). Built all at once it would be shallow everywhere. I'll ship it in phases — each phase is **production-quality** before we move to the next — and you approve as we go.
+Linear/Notion aesthetic. Reuses existing auth, roles, sessions, whiteboard, classroom, messages, AI tools. Adds the missing modules end-to-end with real schemas.
 
-The current app already has: auth (email + Google), student/tutor/admin roles, profiles, sessions, classroom (Jitsi + whiteboard + Lordda lab), bookings, M-Pesa/EcoCash subscriptions, AI tutor chat, free welcome lessons, reviews. We **build on that**, not replace it.
+## Design tokens (applied globally in `src/styles.css`)
+- Background `oklch(0.99 0 0)` / surface `oklch(0.97 0.005 240)` / border `oklch(0.92 0.005 240)`
+- Primary `oklch(0.55 0.18 255)` (blue 500-ish), foreground neutral slate
+- Dark mode mirror with `oklch(0.14 0.02 250)` background
+- Radius `0.625rem`, soft shadows (`0 1px 2px rgb(0 0 0 / 0.04)`), generous spacing, Inter font
 
----
+## Phase 1 — Shared shell (this turn)
+1. **`AppShell` layout** (`src/components/dashboard/AppShell.tsx`)
+   - Collapsible sidebar (shadcn `Sidebar`, `collapsible="icon"`), active-route highlighting, mobile sheet, framer-motion transitions
+   - Topbar: breadcrumbs, command-palette search (⌘K), notifications bell w/ unread badge, theme toggle, profile dropdown
+   - Role-aware nav links (student / tutor / admin sets)
+2. **Mount on `_authenticated.tsx`** wrapping the existing `<Outlet />` so every protected route gets the new chrome. Existing `MobileTabBar` retired.
+3. **Reusable primitives** in `src/components/dashboard/`: `StatCard`, `SectionHeader`, `EmptyState`, `DataTable`, `PageContainer`.
+4. **Restyle existing `/dashboard`** to use the new shell + StatCards. Role-branch into 3 dashboard components:
+   - `StudentDashboard` — Upcoming classes, completed lessons, study hours, free minutes, subject progress (derived from sessions)
+   - `TutorDashboard` — Earnings (sum sessions × rate), students count, sessions completed, avg rating, upcoming schedule, quick-launch classroom
+   - `AdminDashboard` — totals (users/tutors/students/sessions/revenue), live sessions, recent signups, pending tutor apps
 
-## Phase 1 — Brand + Landing (this turn, if approved)
+## Phase 2 — Missing modules (schemas + routes)
+Single migration adds these tables (all with GRANTs + RLS scoped to owner/admin, service_role full):
 
-Rebrand to **"Ask A Tutor Live — Lesotho's Smartest AI Learning Platform"** and ship a cinematic landing page.
+| Table | Purpose |
+|---|---|
+| `assignments` | tutor-created homework: title, description, subject, due_at, tutor_id, student_id, attachment_path, status |
+| `assignment_submissions` | student uploads: assignment_id, student_id, file_path, note, submitted_at, grade, feedback |
+| `notes` | personal notes/bookmarks: user_id, title, body, kind (`note`/`bookmark`/`whiteboard`/`ai`), ref_id |
+| `notifications` | user_id, type, title, body, link, read_at |
+| `tutor_availability` | tutor_id, weekday, start_min, end_min |
+| `tutor_resources` | tutor_id, title, kind, storage_path, subject, visibility |
 
-- New design tokens in `src/styles.css`: deep blue / purple / cyan palette, glow accents, glassmorphism utility classes, dark-mode-first.
-- New landing sections (all on `/`):
-  1. **Hero** — animated gradient + floating equations/particles, headline "Master your coursework with Live Tutors + AI", 3 CTAs (Find a Tutor / Start Free / Explore Labs).
-  2. **Trust strip** — animated counters (students, tutors, lessons, pass-rate ↑).
-  3. **Levels** — Primary · High school · IGCSE · A-Level · Foundation · Undergraduate cards.
-  4. **Subjects grid** — 12 STEM subjects with tutor counts (live from DB).
-  5. **Features** — Live Tutoring, AI Homework, Virtual Labs, Coding Playground, Exam Prep, Analytics (6 cards, gradient + motion).
-  6. **AI tools showcase** — preview of the 12 AI tools (real ones shipped in Phase 3).
-  7. **How it works** — 3 steps.
-  8. **Tutors carousel** — pulls live from `list_public_tutors`.
-  9. **Testimonials + Final CTA + Footer**.
-- Light/dark toggle in navbar, Framer Motion entrance + scroll animations, mobile-first layout.
-- Update navbar logo + tagline; SEO `<title>` + meta on every route.
+Realtime enabled on `notifications` only (others stay polled — keeps `profiles`/`sessions` out of realtime per security memory).
 
----
+New routes under `_authenticated/`:
+- `assignments.tsx` (split view by role)
+- `notes.tsx`
+- `calendar.tsx` (month + agenda view from `sessions` + `assignments`)
+- `notifications.tsx` (full inbox; bell shows last 8)
+- `resources.tsx` (tutor uploads)
+- `_authenticated/admin/payments.tsx`, `admin/reports.tsx`, `admin/moderation.tsx`, `admin/analytics.tsx` (recharts: users over time, revenue, session volume)
 
-## Phase 2 — Mobile shell + Dashboards polish
+Server fns for each module in `src/lib/{name}.functions.ts` (TanStack `createServerFn` + `requireSupabaseAuth`).
 
-- Bottom tab navigation on mobile (Home · Tutors · AI · Sessions · Profile).
-- Premium student dashboard: progress rings, study streak, upcoming lessons, AI recommendations, achievements.
-- Tutor dashboard upgrade: earnings card, availability calendar, ratings widget, student list.
-- Tutor profile pages (`/tutor/$id`) — qualifications, intro video field, full reviews list, response time, "Book Trial" CTA.
+## Phase 3 — Polish & integrations
+- Notifications: triggers on `sessions` insert (reminder), `assignments` insert, new `messages` insert, `student_subscriptions` status change
+- Real-time bell + toast via Supabase channel
+- Dark mode via existing `use-theme` hook wired into topbar toggle, persisted
+- Framer-motion page transitions, skeleton loaders, recharts for all analytics
+- Mobile: sidebar becomes Sheet, topbar collapses, cards stack
 
----
+## Technical notes
+- Stack stays: TanStack Router/Query/Start, Supabase, Tailwind v4, shadcn, framer-motion (add `bun add framer-motion recharts` — recharts already present, check)
+- All new tables: explicit `GRANT` for `authenticated` + `service_role`, no anon; RLS scoped to `auth.uid()` with admin override via `has_role`
+- No edits to existing whiteboard/classroom/Jitsi code in this rebuild
+- `MobileTabBar` removed in favor of sidebar Sheet
+- Keep `list_public_tutors()` RPC as the only public-tutor surface
 
-## Phase 3 — AI Toolkit expansion
+## Out of scope (will flag separately)
+- Real payment processing (Stripe/Paddle) — admin payments page reads existing `*_subscriptions` tables only
+- Session recording (no infra for it)
+- Group chat (current `messages` is 1:1; would need rooms table)
 
-Use the existing Lovable AI Gateway. Ship as `/ai-tutor` tabbed workspace:
-- Homework Solver, Formula Explainer, Quiz Generator, Flashcards, Lesson Summarizer, Study Planner, Exam Predictor, Note Generator, Research Assistant, Coding Assistant, Assignment Helper.
-- Persisted history per user (Supabase table `ai_conversations`).
-- Suggested prompts, streaming responses, voice input (Web Speech API).
+## Delivery order
+Phase 1 ships first (visible improvement immediately). Phase 2 ships as one migration + per-route follow-ups. Phase 3 is polish on top of Phase 2.
 
----
-
-## Phase 4 — Virtual Labs + Coding Playground
-
-- Expand existing Lordda Lab into discipline picker: Physics (projectile, circuits), Chemistry (titration, reactions), Biology (cell, dissection), Engineering (statics, signals). 2D canvas simulations with experiment scoring + lab reports.
-- Coding playground at `/code`: Monaco editor, Python (Pyodide in-browser), JS (eval sandbox), C++/Java via Piston API. AI assistant side-panel.
-
----
-
-## Phase 5 — Community & Growth
-
-Forums, study groups, leaderboard, referral codes, downloadable certificates, parent accounts, Stripe (intl) alongside M-Pesa/EcoCash, admin analytics dashboard, email reminders.
-
----
-
-## What I'd push back on
-
-- **"Like Khan Academy + Coursera + Duolingo + Notion"** — those are billion-dollar products built by hundreds of people. We'll make *yours* genuinely premium and African-first, not a clone of all five.
-- **Zoom/Google Meet integration** — you already have Jitsi (free, no API keys, embedded). Adding Zoom needs a paid Zoom dev account. Recommend skipping unless you specifically need it.
-- **Photorealistic 3D virtual labs** — true digital-twin simulations need Unity/Three.js + asset budget. Phase 4 ships polished 2D interactive sims (proven model — PhET uses this). 3D can come later.
-- **Parent accounts** — large surface (linking, permissions, billing). Keep for Phase 5.
-
----
-
-## Approve to start Phase 1?
-
-If yes, I ship the full landing + rebrand in this turn (large but cohesive change). Then you review, and we go to Phase 2.
-
-If you'd rather skip ahead (e.g. "do Phase 1 + Phase 3 AI tools first"), tell me which phases and I'll resequence.
+Approve to start Phase 1.

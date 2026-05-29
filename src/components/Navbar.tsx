@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LogOut, Moon, Sun, Menu, X, Bell } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useEffect, useState } from "react";
@@ -7,12 +7,32 @@ import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
+// Routes where the AppShell already provides its own top bar.
+// Returning null avoids duplicate chrome without touching every page.
+const APP_SHELL_PREFIXES = [
+  "/dashboard",
+  "/admin",
+  "/ai-tools",
+  "/ai-tutor",
+  "/messages",
+  "/assignments",
+  "/notes",
+  "/calendar",
+  "/code",
+  "/become-tutor",
+  "/certificate",
+  "/labs",
+  "/classroom",
+];
+
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
+  const path = useRouterState({ select: (r) => r.location.pathname });
   const [open, setOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -27,6 +47,11 @@ export function Navbar() {
     const t = setInterval(load, 30000);
     return () => { alive = false; clearInterval(t); };
   }, [isAdmin]);
+
+  if (APP_SHELL_PREFIXES.some((p) => path === p || path.startsWith(p + "/"))) {
+    return null;
+  }
+
 
 
 

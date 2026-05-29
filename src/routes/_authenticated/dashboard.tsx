@@ -296,19 +296,16 @@ function Dashboard() {
 
   if (!user || !profile) {
     return (
-      <div className="min-h-screen">
-        <Navbar />
-        <div className="p-8 text-sm text-muted-foreground">Loading…</div>
-      </div>
+      <div className="p-8 text-sm text-muted-foreground">Loading…</div>
     );
   }
 
   const firstName = profile.full_name?.split(" ")[0] ?? "";
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="mx-auto max-w-6xl space-y-8 px-4 py-8 pb-24 md:pb-12">
+    <div>
+      <main className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>

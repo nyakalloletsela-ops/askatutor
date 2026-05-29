@@ -15,8 +15,23 @@ export function MobileTabBar() {
   const { user, isAdmin } = useAuth();
   const path = useRouterState({ select: (r) => r.location.pathname });
 
-  // Hide on classroom (immersive) routes
-  if (path.startsWith("/classroom/")) return null;
+  // Hide on classroom (immersive) and authenticated routes (AppShell sidebar handles nav)
+  if (
+    path.startsWith("/classroom/") ||
+    path.startsWith("/dashboard") ||
+    path.startsWith("/admin") ||
+    path.startsWith("/ai-tools") ||
+    path.startsWith("/ai-tutor") ||
+    path.startsWith("/messages") ||
+    path.startsWith("/assignments") ||
+    path.startsWith("/notes") ||
+    path.startsWith("/calendar") ||
+    path.startsWith("/code") ||
+    path.startsWith("/become-tutor") ||
+    path.startsWith("/certificate")
+  )
+    return null;
+
 
   const visible = tabs.filter((t) => {
     if (t.authed && !user) return false;
