@@ -1,5 +1,7 @@
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useEffect, useMemo } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   Users,
@@ -24,6 +26,7 @@ import {
   ChevronRight,
   Menu,
   Code2,
+  FolderOpen,
 } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
@@ -69,9 +72,10 @@ const baseNav: NavItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Tutors", to: "/", icon: GraduationCap },
   { label: "Messages", to: "/messages", icon: MessageSquare },
-  { label: "Assignments", to: "/assignments", icon: FileText, soon: true },
-  { label: "Notes", to: "/notes", icon: StickyNote, soon: true },
-  { label: "Calendar", to: "/calendar", icon: Calendar, soon: true },
+  { label: "Assignments", to: "/assignments", icon: FileText },
+  { label: "Notes", to: "/notes", icon: StickyNote },
+  { label: "Calendar", to: "/calendar", icon: Calendar },
+  { label: "Resources", to: "/resources", icon: FolderOpen },
 ];
 
 const learningNav: NavItem[] = [
@@ -83,9 +87,10 @@ const learningNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { label: "Admin Console", to: "/admin", icon: ShieldCheck },
-  { label: "Analytics", to: "/admin", icon: BarChart3 },
-  { label: "Payments", to: "/admin", icon: Wallet },
-  { label: "Moderation", to: "/admin", icon: Flag },
+  { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
+  { label: "Payments", to: "/admin/payments", icon: Wallet },
+  { label: "Reports", to: "/admin/reports", icon: MessageSquare },
+  { label: "Moderation", to: "/admin/moderation", icon: Flag },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -229,14 +234,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-1 sm:ml-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Notifications"
-              className="relative h-9 w-9"
-            >
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationsBell />
+
             <Button
               variant="ghost"
               size="icon"
@@ -348,4 +347,50 @@ function prettify(s: string) {
   return s
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function NotificationsBell() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data: count = 0 } = useQuery({
+    queryKey: ["notif-unread", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null);
+      if (error) return 0;
+      return count ?? 0;
+    },
+    enabled: !!user,
+    refetchInterval: 60_000,
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel(`notif-bell-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => qc.invalidateQueries({ queryKey: ["notif-unread"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [user, qc]);
+
+  return (
+    <Button asChild variant="ghost" size="icon" aria-label="Notifications" className="relative h-9 w-9">
+      <Link to="/notifications">
+        <Bell className="h-4 w-4" />
+        {count > 0 && (
+          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+            {count > 9 ? "9+" : count}
+          </span>
+        )}
+      </Link>
+    </Button>
+  );
 }

@@ -14,6 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
+      assignment_submissions: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          feedback: string | null
+          file_path: string | null
+          grade: string | null
+          graded_at: string | null
+          id: string
+          note: string | null
+          student_id: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          feedback?: string | null
+          file_path?: string | null
+          grade?: string | null
+          graded_at?: string | null
+          id?: string
+          note?: string | null
+          student_id: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          feedback?: string | null
+          file_path?: string | null
+          grade?: string | null
+          graded_at?: string | null
+          id?: string
+          note?: string | null
+          student_id?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assignments: {
+        Row: {
+          attachment_path: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          status: string
+          student_id: string
+          subject: string | null
+          title: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachment_path?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          status?: string
+          student_id: string
+          subject?: string | null
+          title: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachment_path?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          status?: string
+          student_id?: string
+          subject?: string | null
+          title?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -209,6 +301,72 @@ export type Database = {
           read_at?: string | null
           recipient_id?: string
           sender_id?: string
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          ref_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          ref_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          ref_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -511,6 +669,33 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_availability: {
+        Row: {
+          created_at: string
+          end_min: number
+          id: string
+          start_min: number
+          tutor_id: string
+          weekday: number
+        }
+        Insert: {
+          created_at?: string
+          end_min: number
+          id?: string
+          start_min: number
+          tutor_id: string
+          weekday: number
+        }
+        Update: {
+          created_at?: string
+          end_min?: number
+          id?: string
+          start_min?: number
+          tutor_id?: string
+          weekday?: number
+        }
+        Relationships: []
+      }
       tutor_courses: {
         Row: {
           created_at: string
@@ -544,6 +729,42 @@ export type Database = {
           reviewed_by?: string | null
           status?: Database["public"]["Enums"]["course_status"]
           tutor_id?: string
+        }
+        Relationships: []
+      }
+      tutor_resources: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          storage_path: string | null
+          subject: string | null
+          title: string
+          tutor_id: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          storage_path?: string | null
+          subject?: string | null
+          title: string
+          tutor_id: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          storage_path?: string | null
+          subject?: string | null
+          title?: string
+          tutor_id?: string
+          updated_at?: string
+          visibility?: string
         }
         Relationships: []
       }
