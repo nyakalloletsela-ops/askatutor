@@ -69,9 +69,10 @@ const baseNav: NavItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
   { label: "Tutors", to: "/", icon: GraduationCap },
   { label: "Messages", to: "/messages", icon: MessageSquare },
-  { label: "Assignments", to: "/assignments", icon: FileText, soon: true },
-  { label: "Notes", to: "/notes", icon: StickyNote, soon: true },
-  { label: "Calendar", to: "/calendar", icon: Calendar, soon: true },
+  { label: "Assignments", to: "/assignments", icon: FileText },
+  { label: "Notes", to: "/notes", icon: StickyNote },
+  { label: "Calendar", to: "/calendar", icon: Calendar },
+  { label: "Resources", to: "/resources", icon: FolderOpen },
 ];
 
 const learningNav: NavItem[] = [
@@ -83,9 +84,10 @@ const learningNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { label: "Admin Console", to: "/admin", icon: ShieldCheck },
-  { label: "Analytics", to: "/admin", icon: BarChart3 },
-  { label: "Payments", to: "/admin", icon: Wallet },
-  { label: "Moderation", to: "/admin", icon: Flag },
+  { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
+  { label: "Payments", to: "/admin/payments", icon: Wallet },
+  { label: "Reports", to: "/admin/reports", icon: MessageSquare },
+  { label: "Moderation", to: "/admin/moderation", icon: Flag },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
