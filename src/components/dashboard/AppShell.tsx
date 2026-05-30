@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Menu,
   Code2,
+  FolderOpen,
 } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
