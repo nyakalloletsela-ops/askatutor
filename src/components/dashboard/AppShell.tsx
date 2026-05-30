@@ -346,3 +346,49 @@ function prettify(s: string) {
     .replace(/[-_]/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
+function NotificationsBell() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data: count = 0 } = useQuery({
+    queryKey: ["notif-unread", user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null);
+      if (error) return 0;
+      return count ?? 0;
+    },
+    enabled: !!user,
+    refetchInterval: 60_000,
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel(`notif-bell-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => qc.invalidateQueries({ queryKey: ["notif-unread"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [user, qc]);
+
+  return (
+    <Button asChild variant="ghost" size="icon" aria-label="Notifications" className="relative h-9 w-9">
+      <Link to="/notifications">
+        <Bell className="h-4 w-4" />
+        {count > 0 && (
+          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold text-primary-foreground">
+            {count > 9 ? "9+" : count}
+          </span>
+        )}
+      </Link>
+    </Button>
+  );
+}
