@@ -232,14 +232,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <div className="ml-auto flex items-center gap-1 sm:ml-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Notifications"
-              className="relative h-9 w-9"
-            >
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationsBell />
+
             <Button
               variant="ghost"
               size="icon"
