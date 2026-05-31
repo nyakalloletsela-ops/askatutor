@@ -77,6 +77,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string } | null>(null);
   // Collapse the toolbar (handy in landscape on small screens).
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const [mathOpen, setMathOpen] = useState(false);
+  void toolbarCollapsed;
 
   useEffect(() => {
     const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
