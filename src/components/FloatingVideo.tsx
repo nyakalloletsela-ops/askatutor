@@ -1,9 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { Minus, Move, Video, VideoOff, Maximize2 } from "lucide-react";
+import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
+import { Minus, Move, Video, VideoOff, Maximize2, Maximize, Minimize } from "lucide-react";
 import { NativeClassroomCall } from "@/components/NativeClassroomCall";
 import { Button } from "@/components/ui/button";
 
 import type { MediaDiagnostics, Participant } from "@/components/JitsiRoom";
+
+export interface FloatingVideoHandle {
+  hide: () => void;
+  show: () => void;
+  toggleHidden: () => void;
+  minimize: () => void;
+  expand: () => void;
+  toggleMinimized: () => void;
+  isHidden: () => boolean;
+  isMinimized: () => boolean;
+}
 
 interface Props {
   roomId: string;
@@ -14,20 +25,32 @@ interface Props {
   onApiReady?: (api: { executeCommand: (cmd: string, ...args: unknown[]) => void } | null) => void;
 }
 
-export function FloatingVideo({
-  roomId,
-  displayName,
-  email,
-  onParticipantsChange,
-  onDiagnosticsChange,
-  onApiReady,
-}: Props) {
+export const FloatingVideo = forwardRef<FloatingVideoHandle, Props>(function FloatingVideo(
+  { roomId, displayName, email, onParticipantsChange, onDiagnosticsChange, onApiReady },
+  ref,
+) {
   const [pos, setPos] = useState({ x: 16, y: 80 });
   const [size, setSize] = useState({ w: 320, h: 220 });
   const [minimized, setMinimized] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
   const resizeRef = useRef<{ sx: number; sy: number; w: number; h: number } | null>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      hide: () => setHidden(true),
+      show: () => setHidden(false),
+      toggleHidden: () => setHidden((h) => !h),
+      minimize: () => setMinimized(true),
+      expand: () => setMinimized(false),
+      toggleMinimized: () => setMinimized((m) => !m),
+      isHidden: () => hidden,
+      isMinimized: () => minimized,
+    }),
+    [hidden, minimized],
+  );
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -56,14 +79,19 @@ export function FloatingVideo({
     };
   }, []);
 
+  const fsStyle = fullscreen
+    ? { left: 0, top: 0, width: "100vw", height: "100vh" as const }
+    : {
+        left: hidden ? -9999 : pos.x,
+        top: hidden ? -9999 : pos.y,
+        width: hidden ? 1 : size.w,
+        height: hidden ? 1 : minimized ? 36 : size.h,
+      };
+
   return (
     <>
       {hidden && (
-        <Button
-          size="sm"
-          onClick={() => setHidden(false)}
-          className="fixed bottom-4 right-4 z-50 shadow-lg"
-        >
+        <Button size="sm" onClick={() => setHidden(false)} className="fixed bottom-4 right-4 z-50 shadow-lg">
           <Video className="mr-1 h-4 w-4" /> Show video
         </Button>
       )}
@@ -71,10 +99,7 @@ export function FloatingVideo({
       <div
         className="fixed z-50 overflow-hidden rounded-lg border border-navy-foreground/30 bg-black shadow-2xl"
         style={{
-          left: hidden ? -9999 : pos.x,
-          top: hidden ? -9999 : pos.y,
-          width: hidden ? 1 : size.w,
-          height: hidden ? 1 : (minimized ? 36 : size.h),
+          ...fsStyle,
           opacity: hidden ? 0 : 1,
           pointerEvents: hidden ? "none" : "auto",
         }}
@@ -83,6 +108,7 @@ export function FloatingVideo({
         <div
           className="flex h-9 cursor-move items-center justify-between bg-navy px-2 text-xs text-navy-foreground"
           onPointerDown={(e) => {
+            if (fullscreen) return;
             (e.target as HTMLElement).setPointerCapture(e.pointerId);
             dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
           }}
@@ -91,6 +117,13 @@ export function FloatingVideo({
             <Move className="h-3 w-3" /> Video · mic on
           </span>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => setFullscreen((f) => !f)}
+              className="rounded p-1 hover:bg-navy-foreground/20"
+              title={fullscreen ? "Exit full screen" : "Full screen"}
+            >
+              {fullscreen ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+            </button>
             <button
               onClick={() => setMinimized((m) => !m)}
               className="rounded p-1 hover:bg-navy-foreground/20"
@@ -106,7 +139,6 @@ export function FloatingVideo({
               <VideoOff className="h-3 w-3" /> Hide
             </button>
           </div>
-
         </div>
         <div
           className="h-[calc(100%-36px)]"
@@ -125,7 +157,7 @@ export function FloatingVideo({
             onApiReady={onApiReady}
           />
         </div>
-        {!minimized && !hidden && (
+        {!minimized && !hidden && !fullscreen && (
           <div
             className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize bg-navy-foreground/40"
             style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}
@@ -138,4 +170,4 @@ export function FloatingVideo({
       </div>
     </>
   );
-}
+});
