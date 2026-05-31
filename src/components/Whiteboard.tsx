@@ -613,10 +613,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
             <Lock className="h-3.5 w-3.5" /> Tutor is writing
           </span>
         )}
+        <Button size="sm" variant="outline" onClick={() => setMathOpen(true)} title="Math & Science tools">
+          <Sigma className="mr-1 h-4 w-4" /> Math
+        </Button>
         <Button size="sm" variant="destructive" onClick={clearCurrent}>
           <Trash2 className="mr-1 h-4 w-4" /> Clear page
         </Button>
       </div>
+      <MathTools open={mathOpen} onClose={() => setMathOpen(false)} />
 
       {/* Hint */}
       <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
