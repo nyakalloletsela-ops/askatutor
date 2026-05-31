@@ -1,8 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { FloatingVideo } from "@/components/FloatingVideo";
+import { FloatingVideo, type FloatingVideoHandle } from "@/components/FloatingVideo";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
 import { ThreeDLab } from "@/components/ThreeDLab";
@@ -11,7 +11,22 @@ import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Camera, CheckCircle2, ExternalLink, Mic, Stethoscope, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Camera,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Focus,
+  Mic,
+  Stethoscope,
+  Users,
+  Video,
+  VideoOff,
+  Minus,
+  Maximize2,
+} from "lucide-react";
 import { checkRoomMembership } from "@/lib/access.functions";
 import { toast } from "sonner";
 import type { MediaDiagnostics, Participant } from "@/components/JitsiRoom";
@@ -54,24 +69,16 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: MediaDiagnostics }) {
           <Stethoscope className="h-3.5 w-3.5" /> Diagnostics
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraAvailable)}`}
-          >
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraAvailable)}`}>
             <Camera className="h-3 w-3" /> Camera {statusText(diagnostics.cameraAvailable)}
           </span>
-          <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraPermission)}`}
-          >
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.cameraPermission)}`}>
             Camera permission {statusText(diagnostics.cameraPermission)}
           </span>
-          <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphoneAvailable)}`}
-          >
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphoneAvailable)}`}>
             <Mic className="h-3 w-3" /> Mic {statusText(diagnostics.microphoneAvailable)}
           </span>
-          <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphonePermission)}`}
-          >
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${statusClassName(diagnostics.microphonePermission)}`}>
             Mic permission {statusText(diagnostics.microphonePermission)}
           </span>
           {diagnostics.jitsiMessages.length > 0 && (
@@ -80,6 +87,41 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: MediaDiagnostics }) {
         </div>
       </div>
     </section>
+  );
+}
+
+function NotesPanel({ roomId }: { roomId: string }) {
+  const storageKey = `classroom-notes:${roomId}`;
+  const [value, setValue] = useState("");
+  useEffect(() => {
+    try {
+      setValue(localStorage.getItem(storageKey) ?? "");
+    } catch {
+      /* noop */
+    }
+  }, [storageKey]);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(storageKey, value);
+      } catch {
+        /* noop */
+      }
+    }, 300);
+    return () => clearTimeout(id);
+  }, [storageKey, value]);
+  return (
+    <div className="flex h-full flex-col p-3">
+      <p className="mb-2 text-xs text-muted-foreground">
+        Private notes for this session — auto-saved on this device.
+      </p>
+      <textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Take notes during the lesson…"
+        className="min-h-0 flex-1 resize-none rounded-md border bg-card p-3 font-mono text-sm leading-relaxed outline-none focus:ring-2 focus:ring-primary/40"
+      />
+    </div>
   );
 }
 
@@ -93,6 +135,12 @@ function ClassroomPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [diagnostics, setDiagnostics] = useState<MediaDiagnostics>(initialDiagnostics);
   const [jitsiApi, setJitsiApi] = useState<JitsiDeviceApi | null>(null);
+  const [focusMode, setFocusMode] = useState(false);
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
+  const [videoHidden, setVideoHidden] = useState(false);
+  const [videoMinimized, setVideoMinimized] = useState(false);
+  const [activeTab, setActiveTab] = useState("whiteboard");
+  const videoRef = useRef<FloatingVideoHandle>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -127,6 +175,42 @@ function ClassroomPage() {
     toast.success("Session marked complete. Files and whiteboard remain saved for this meeting.");
   };
 
+  const toggleFocus = () => {
+    setFocusMode((f) => {
+      const next = !f;
+      if (next) {
+        videoRef.current?.minimize();
+        setVideoMinimized(true);
+        setControlsCollapsed(true);
+      } else {
+        videoRef.current?.expand();
+        setVideoMinimized(false);
+        setControlsCollapsed(false);
+      }
+      return next;
+    });
+  };
+
+  const toggleVideoHidden = () => {
+    if (videoHidden) {
+      videoRef.current?.show();
+      setVideoHidden(false);
+    } else {
+      videoRef.current?.hide();
+      setVideoHidden(true);
+    }
+  };
+
+  const toggleVideoMinimized = () => {
+    if (videoMinimized) {
+      videoRef.current?.expand();
+      setVideoMinimized(false);
+    } else {
+      videoRef.current?.minimize();
+      setVideoMinimized(true);
+    }
+  };
+
   if (!user) return null;
   const canControlBoard = isTutor || isAdmin;
   const canMarkComplete = (isTutor || isAdmin) && sessionId && sessionStatus !== "completed";
@@ -152,7 +236,36 @@ function ClassroomPage() {
             <p className="truncate text-xs text-muted-foreground sm:max-w-none">Room: {roomId}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
+          <Button
+            size="sm"
+            variant={focusMode ? "default" : "outline"}
+            onClick={toggleFocus}
+            title="Hide chrome, maximize the workspace"
+          >
+            <Focus className="mr-1 h-4 w-4" /> {focusMode ? "Exit focus" : "Focus mode"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={toggleVideoHidden} title={videoHidden ? "Show video" : "Hide video"}>
+            {videoHidden ? <Video className="mr-1 h-4 w-4" /> : <VideoOff className="mr-1 h-4 w-4" />}
+            {videoHidden ? "Show" : "Hide"} video
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={toggleVideoMinimized}
+            title={videoMinimized ? "Expand video" : "Minimize video"}
+          >
+            {videoMinimized ? <Maximize2 className="mr-1 h-4 w-4" /> : <Minus className="mr-1 h-4 w-4" />}
+            {videoMinimized ? "Expand" : "Minimize"}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setControlsCollapsed((c) => !c)}
+            title={controlsCollapsed ? "Show panels" : "Hide panels"}
+          >
+            {controlsCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </Button>
           {canMarkComplete && (
             <Button size="sm" variant="outline" onClick={markComplete} disabled={completing}>
               <CheckCircle2 className="mr-1 h-4 w-4" />
@@ -167,50 +280,58 @@ function ClassroomPage() {
         </div>
       </header>
 
-      <div className="border-b bg-muted/30 px-2 py-1.5 sm:px-4">
-        <div className="flex items-center gap-2 overflow-x-auto">
-          <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">In room ({participants.length})</span>
-          {participants.length === 0 ? (
-            <span className="text-xs text-muted-foreground">Waiting for participants…</span>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              {participants.map((p) => (
-                <span
-                  key={p.id}
-                  className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs ${
-                    p.status === "joined"
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
-                      : "border-amber-500/40 bg-amber-500/10 text-amber-200"
-                  }`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      p.status === "joined" ? "bg-emerald-400" : "animate-pulse bg-amber-400"
-                    }`}
-                  />
-                  {p.displayName ?? "Guest"}
-                  <span className="opacity-70">{p.status === "joined" ? "" : "· connecting"}</span>
-                </span>
-              ))}
+      {!focusMode && !controlsCollapsed && (
+        <>
+          <div className="border-b bg-muted/30 px-2 py-1.5 sm:px-4">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="shrink-0 text-xs font-medium text-muted-foreground">In room ({participants.length})</span>
+              {participants.length === 0 ? (
+                <span className="text-xs text-muted-foreground">Waiting for participants…</span>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  {participants.map((p) => (
+                    <span
+                      key={p.id}
+                      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs ${
+                        p.status === "joined"
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
+                          : "border-amber-500/40 bg-amber-500/10 text-amber-200"
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          p.status === "joined" ? "bg-emerald-400" : "animate-pulse bg-amber-400"
+                        }`}
+                      />
+                      {p.displayName ?? "Guest"}
+                      <span className="opacity-70">{p.status === "joined" ? "" : "· connecting"}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      <DiagnosticsPanel diagnostics={diagnostics} />
-      <DeviceSelector api={jitsiApi} />
+          <DiagnosticsPanel diagnostics={diagnostics} />
+          <DeviceSelector api={jitsiApi} />
+        </>
+      )}
 
       <main className="min-h-0 flex-1">
-        <Tabs defaultValue="whiteboard" className="flex h-full flex-col">
-          <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-xl grid-cols-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex h-full flex-col">
+          <TabsList className="m-2 grid w-[calc(100%-1rem)] max-w-2xl grid-cols-5">
             <TabsTrigger value="whiteboard">Whiteboard</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
             <TabsTrigger value="lab">PhET Lab</TabsTrigger>
             <TabsTrigger value="lab3d">3D Lab</TabsTrigger>
           </TabsList>
           <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
             <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />
+          </TabsContent>
+          <TabsContent value="notes" className="m-0 min-h-0 flex-1">
+            <NotesPanel roomId={roomId} />
           </TabsContent>
           <TabsContent value="files" className="m-0 min-h-0 flex-1">
             <ClassroomFiles roomId={roomId} />
@@ -225,6 +346,7 @@ function ClassroomPage() {
       </main>
 
       <FloatingVideo
+        ref={videoRef}
         roomId={roomId}
         displayName={user.email ?? "Guest"}
         email={user.email ?? ""}

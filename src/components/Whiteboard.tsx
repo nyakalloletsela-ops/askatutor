@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2, Lock, Type } from "lucide-react";
+import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2, Lock, Type, Sigma } from "lucide-react";
+import { MathTools } from "@/components/MathTools";
 
 type Pt = { x: number; y: number };
 type Stroke = {
@@ -76,6 +77,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string } | null>(null);
   // Collapse the toolbar (handy in landscape on small screens).
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const [mathOpen, setMathOpen] = useState(false);
+  void toolbarCollapsed;
 
   useEffect(() => {
     const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
@@ -610,10 +613,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
             <Lock className="h-3.5 w-3.5" /> Tutor is writing
           </span>
         )}
+        <Button size="sm" variant="outline" onClick={() => setMathOpen(true)} title="Math & Science tools">
+          <Sigma className="mr-1 h-4 w-4" /> Math
+        </Button>
         <Button size="sm" variant="destructive" onClick={clearCurrent}>
           <Trash2 className="mr-1 h-4 w-4" /> Clear page
         </Button>
       </div>
+      <MathTools open={mathOpen} onClose={() => setMathOpen(false)} />
 
       {/* Hint */}
       <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
