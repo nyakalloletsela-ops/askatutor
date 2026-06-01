@@ -23,10 +23,8 @@ export function ConfigToggle({
   const qc = useQueryClient();
   const value = config[k];
   const update = async (v: boolean | number) => {
-    const { error } = await supabase
-      .from("platform_config")
-      .update({ [k]: v })
-      .eq("id", 1);
+    const patch = { [k]: v } as unknown as Record<string, never>;
+    const { error } = await supabase.from("platform_config").update(patch).eq("id", 1);
     if (error) toast.error(error.message);
     else {
       toast.success("Saved");
