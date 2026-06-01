@@ -37,8 +37,10 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as AuthenticatedClassroomRoomIdRouteImport } from './routes/_authenticated/classroom.$roomId'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin.reports'
+import { Route as AuthenticatedAdminPromotionsRouteImport } from './routes/_authenticated/admin.promotions'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
 import { Route as AuthenticatedAdminModerationRouteImport } from './routes/_authenticated/admin.moderation'
+import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -189,6 +191,12 @@ const AuthenticatedAdminReportsRoute =
     path: '/reports',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminPromotionsRoute =
+  AuthenticatedAdminPromotionsRouteImport.update({
+    id: '/promotions',
+    path: '/promotions',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminPaymentsRoute =
   AuthenticatedAdminPaymentsRouteImport.update({
     id: '/payments',
@@ -201,6 +209,11 @@ const AuthenticatedAdminModerationRoute =
     path: '/moderation',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
@@ -252,8 +265,10 @@ export interface FileRoutesByFullPath {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -287,8 +302,10 @@ export interface FileRoutesByTo {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -324,8 +341,10 @@ export interface FileRoutesById {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/_authenticated/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -361,8 +380,10 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/admin/analytics'
+    | '/admin/audit'
     | '/admin/moderation'
     | '/admin/payments'
+    | '/admin/promotions'
     | '/admin/reports'
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
@@ -396,8 +417,10 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/admin/analytics'
+    | '/admin/audit'
     | '/admin/moderation'
     | '/admin/payments'
+    | '/admin/promotions'
     | '/admin/reports'
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
@@ -432,8 +455,10 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/audit'
     | '/_authenticated/admin/moderation'
     | '/_authenticated/admin/payments'
+    | '/_authenticated/admin/promotions'
     | '/_authenticated/admin/reports'
     | '/_authenticated/classroom/$roomId'
     | '/lovable/email/suppression'
@@ -658,6 +683,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/promotions': {
+      id: '/_authenticated/admin/promotions'
+      path: '/promotions'
+      fullPath: '/admin/promotions'
+      preLoaderRoute: typeof AuthenticatedAdminPromotionsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/payments': {
       id: '/_authenticated/admin/payments'
       path: '/payments'
@@ -670,6 +702,13 @@ declare module '@tanstack/react-router' {
       path: '/moderation'
       fullPath: '/admin/moderation'
       preLoaderRoute: typeof AuthenticatedAdminModerationRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/audit': {
+      id: '/_authenticated/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/analytics': {
@@ -705,15 +744,19 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
   AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
+  AuthenticatedAdminPromotionsRoute: typeof AuthenticatedAdminPromotionsRoute
   AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
   AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
+  AuthenticatedAdminPromotionsRoute: AuthenticatedAdminPromotionsRoute,
   AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
 }
 
@@ -780,3 +823,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
