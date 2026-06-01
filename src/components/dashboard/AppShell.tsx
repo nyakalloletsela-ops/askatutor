@@ -73,6 +73,7 @@ const baseNav: NavItem[] = [
   { label: "Tutors", to: "/", icon: GraduationCap },
   { label: "Messages", to: "/messages", icon: MessageSquare },
   { label: "Assignments", to: "/assignments", icon: FileText },
+  { label: "Records", to: "/records", icon: FolderOpen },
   { label: "Notes", to: "/notes", icon: StickyNote },
   { label: "Calendar", to: "/calendar", icon: Calendar },
   { label: "Resources", to: "/resources", icon: FolderOpen },
@@ -87,8 +88,15 @@ const learningNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { label: "Admin Console", to: "/admin", icon: ShieldCheck },
+  { label: "Platform Audit", to: "/admin/audit", icon: ShieldCheck },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
   { label: "Payments", to: "/admin/payments", icon: Wallet },
+  { label: "Promotions", to: "/admin/promotions", icon: Wallet },
+  { label: "AI Controls", to: "/admin/ai", icon: Sparkles },
+  { label: "Classrooms", to: "/admin/classrooms", icon: Users },
+  { label: "Whiteboard", to: "/admin/whiteboard", icon: PencilRuler },
+  { label: "Tutors", to: "/admin/tutors", icon: GraduationCap },
+  { label: "Students", to: "/admin/students", icon: Users },
   { label: "Reports", to: "/admin/reports", icon: MessageSquare },
   { label: "Moderation", to: "/admin/moderation", icon: Flag },
 ];

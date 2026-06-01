@@ -370,6 +370,48 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_config: {
+        Row: {
+          ai_enabled: boolean
+          ai_token_limit_per_user: number
+          classrooms_enabled: boolean
+          id: number
+          is_subscriptions_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          whiteboard_export_enabled: boolean
+          whiteboard_graphing_enabled: boolean
+          whiteboard_latex_enabled: boolean
+          whiteboard_ocr_enabled: boolean
+        }
+        Insert: {
+          ai_enabled?: boolean
+          ai_token_limit_per_user?: number
+          classrooms_enabled?: boolean
+          id?: number
+          is_subscriptions_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whiteboard_export_enabled?: boolean
+          whiteboard_graphing_enabled?: boolean
+          whiteboard_latex_enabled?: boolean
+          whiteboard_ocr_enabled?: boolean
+        }
+        Update: {
+          ai_enabled?: boolean
+          ai_token_limit_per_user?: number
+          classrooms_enabled?: boolean
+          id?: number
+          is_subscriptions_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whiteboard_export_enabled?: boolean
+          whiteboard_graphing_enabled?: boolean
+          whiteboard_latex_enabled?: boolean
+          whiteboard_ocr_enabled?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           availability: Json | null
@@ -414,6 +456,131 @@ export type Database = {
           is_featured?: boolean
           phone?: string | null
           subjects?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promotions: {
+        Row: {
+          active: boolean
+          amount: number
+          code: string
+          created_at: string
+          created_by: string
+          discount_type: string
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          updated_at: string
+          uses: number
+        }
+        Insert: {
+          active?: boolean
+          amount: number
+          code: string
+          created_at?: string
+          created_by: string
+          discount_type: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          updated_at?: string
+          uses?: number
+        }
+        Update: {
+          active?: boolean
+          amount?: number
+          code?: string
+          created_at?: string
+          created_by?: string
+          discount_type?: string
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          updated_at?: string
+          uses?: number
+        }
+        Relationships: []
+      }
+      session_files: {
+        Row: {
+          created_at: string
+          file_type: string | null
+          filename: string
+          id: string
+          record_id: string
+          room_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_type?: string | null
+          filename: string
+          id?: string
+          record_id: string
+          room_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_type?: string | null
+          filename?: string
+          id?: string
+          record_id?: string
+          room_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_files_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "session_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_records: {
+        Row: {
+          ai_summary: string | null
+          chat_transcript: string | null
+          created_at: string
+          created_by: string
+          id: string
+          meeting_recording_url: string | null
+          room_id: string
+          session_id: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          chat_transcript?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          meeting_recording_url?: string | null
+          room_id: string
+          session_id?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          chat_transcript?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          meeting_recording_url?: string | null
+          room_id?: string
+          session_id?: string | null
+          title?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -21,6 +21,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIdRouteImport } from './routes/tutor.$id'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthenticatedResourcesRouteImport } from './routes/_authenticated/resources'
+import { Route as AuthenticatedRecordsRouteImport } from './routes/_authenticated/records'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
@@ -36,10 +37,17 @@ import { Route as AuthenticatedAiToolsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as AuthenticatedClassroomRoomIdRouteImport } from './routes/_authenticated/classroom.$roomId'
+import { Route as AuthenticatedAdminWhiteboardRouteImport } from './routes/_authenticated/admin.whiteboard'
+import { Route as AuthenticatedAdminTutorsRouteImport } from './routes/_authenticated/admin.tutors'
+import { Route as AuthenticatedAdminStudentsRouteImport } from './routes/_authenticated/admin.students'
 import { Route as AuthenticatedAdminReportsRouteImport } from './routes/_authenticated/admin.reports'
+import { Route as AuthenticatedAdminPromotionsRouteImport } from './routes/_authenticated/admin.promotions'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated/admin.payments'
 import { Route as AuthenticatedAdminModerationRouteImport } from './routes/_authenticated/admin.moderation'
+import { Route as AuthenticatedAdminClassroomsRouteImport } from './routes/_authenticated/admin.classrooms'
+import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
+import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticated/admin.ai'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -101,6 +109,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
 const AuthenticatedResourcesRoute = AuthenticatedResourcesRouteImport.update({
   id: '/resources',
   path: '/resources',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRecordsRoute = AuthenticatedRecordsRouteImport.update({
+  id: '/records',
+  path: '/records',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedNotificationsRoute =
@@ -183,10 +196,34 @@ const AuthenticatedClassroomRoomIdRoute =
     path: '/classroom/$roomId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminWhiteboardRoute =
+  AuthenticatedAdminWhiteboardRouteImport.update({
+    id: '/whiteboard',
+    path: '/whiteboard',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminTutorsRoute =
+  AuthenticatedAdminTutorsRouteImport.update({
+    id: '/tutors',
+    path: '/tutors',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminStudentsRoute =
+  AuthenticatedAdminStudentsRouteImport.update({
+    id: '/students',
+    path: '/students',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminReportsRoute =
   AuthenticatedAdminReportsRouteImport.update({
     id: '/reports',
     path: '/reports',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPromotionsRoute =
+  AuthenticatedAdminPromotionsRouteImport.update({
+    id: '/promotions',
+    path: '/promotions',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminPaymentsRoute =
@@ -201,12 +238,28 @@ const AuthenticatedAdminModerationRoute =
     path: '/moderation',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminClassroomsRoute =
+  AuthenticatedAdminClassroomsRouteImport.update({
+    id: '/classrooms',
+    path: '/classrooms',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
     id: '/analytics',
     path: '/analytics',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAiRoute = AuthenticatedAdminAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -248,13 +301,21 @@ export interface FileRoutesByFullPath {
   '/messages': typeof AuthenticatedMessagesRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/records': typeof AuthenticatedRecordsRoute
   '/resources': typeof AuthenticatedResourcesRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
+  '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/classrooms': typeof AuthenticatedAdminClassroomsRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/admin/students': typeof AuthenticatedAdminStudentsRoute
+  '/admin/tutors': typeof AuthenticatedAdminTutorsRoute
+  '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -283,13 +344,21 @@ export interface FileRoutesByTo {
   '/messages': typeof AuthenticatedMessagesRoute
   '/notes': typeof AuthenticatedNotesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/records': typeof AuthenticatedRecordsRoute
   '/resources': typeof AuthenticatedResourcesRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
+  '/admin/ai': typeof AuthenticatedAdminAiRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/admin/classrooms': typeof AuthenticatedAdminClassroomsRoute
   '/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/admin/students': typeof AuthenticatedAdminStudentsRoute
+  '/admin/tutors': typeof AuthenticatedAdminTutorsRoute
+  '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -320,13 +389,21 @@ export interface FileRoutesById {
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/records': typeof AuthenticatedRecordsRoute
   '/_authenticated/resources': typeof AuthenticatedResourcesRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
+  '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
+  '/_authenticated/admin/classrooms': typeof AuthenticatedAdminClassroomsRoute
   '/_authenticated/admin/moderation': typeof AuthenticatedAdminModerationRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/_authenticated/admin/promotions': typeof AuthenticatedAdminPromotionsRoute
   '/_authenticated/admin/reports': typeof AuthenticatedAdminReportsRoute
+  '/_authenticated/admin/students': typeof AuthenticatedAdminStudentsRoute
+  '/_authenticated/admin/tutors': typeof AuthenticatedAdminTutorsRoute
+  '/_authenticated/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -357,13 +434,21 @@ export interface FileRouteTypes {
     | '/messages'
     | '/notes'
     | '/notifications'
+    | '/records'
     | '/resources'
     | '/email/unsubscribe'
     | '/tutor/$id'
+    | '/admin/ai'
     | '/admin/analytics'
+    | '/admin/audit'
+    | '/admin/classrooms'
     | '/admin/moderation'
     | '/admin/payments'
+    | '/admin/promotions'
     | '/admin/reports'
+    | '/admin/students'
+    | '/admin/tutors'
+    | '/admin/whiteboard'
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
     | '/lovable/email/queue/process'
@@ -392,13 +477,21 @@ export interface FileRouteTypes {
     | '/messages'
     | '/notes'
     | '/notifications'
+    | '/records'
     | '/resources'
     | '/email/unsubscribe'
     | '/tutor/$id'
+    | '/admin/ai'
     | '/admin/analytics'
+    | '/admin/audit'
+    | '/admin/classrooms'
     | '/admin/moderation'
     | '/admin/payments'
+    | '/admin/promotions'
     | '/admin/reports'
+    | '/admin/students'
+    | '/admin/tutors'
+    | '/admin/whiteboard'
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
     | '/lovable/email/queue/process'
@@ -428,13 +521,21 @@ export interface FileRouteTypes {
     | '/_authenticated/messages'
     | '/_authenticated/notes'
     | '/_authenticated/notifications'
+    | '/_authenticated/records'
     | '/_authenticated/resources'
     | '/email/unsubscribe'
     | '/tutor/$id'
+    | '/_authenticated/admin/ai'
     | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/audit'
+    | '/_authenticated/admin/classrooms'
     | '/_authenticated/admin/moderation'
     | '/_authenticated/admin/payments'
+    | '/_authenticated/admin/promotions'
     | '/_authenticated/admin/reports'
+    | '/_authenticated/admin/students'
+    | '/_authenticated/admin/tutors'
+    | '/_authenticated/admin/whiteboard'
     | '/_authenticated/classroom/$roomId'
     | '/lovable/email/suppression'
     | '/lovable/email/queue/process'
@@ -546,6 +647,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedResourcesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/records': {
+      id: '/_authenticated/records'
+      path: '/records'
+      fullPath: '/records'
+      preLoaderRoute: typeof AuthenticatedRecordsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/notifications': {
       id: '/_authenticated/notifications'
       path: '/notifications'
@@ -651,11 +759,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClassroomRoomIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/whiteboard': {
+      id: '/_authenticated/admin/whiteboard'
+      path: '/whiteboard'
+      fullPath: '/admin/whiteboard'
+      preLoaderRoute: typeof AuthenticatedAdminWhiteboardRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/tutors': {
+      id: '/_authenticated/admin/tutors'
+      path: '/tutors'
+      fullPath: '/admin/tutors'
+      preLoaderRoute: typeof AuthenticatedAdminTutorsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/students': {
+      id: '/_authenticated/admin/students'
+      path: '/students'
+      fullPath: '/admin/students'
+      preLoaderRoute: typeof AuthenticatedAdminStudentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/reports': {
       id: '/_authenticated/admin/reports'
       path: '/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/promotions': {
+      id: '/_authenticated/admin/promotions'
+      path: '/promotions'
+      fullPath: '/admin/promotions'
+      preLoaderRoute: typeof AuthenticatedAdminPromotionsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/payments': {
@@ -672,11 +808,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminModerationRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/classrooms': {
+      id: '/_authenticated/admin/classrooms'
+      path: '/classrooms'
+      fullPath: '/admin/classrooms'
+      preLoaderRoute: typeof AuthenticatedAdminClassroomsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/audit': {
+      id: '/_authenticated/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/analytics': {
       id: '/_authenticated/admin/analytics'
       path: '/analytics'
       fullPath: '/admin/analytics'
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/ai': {
+      id: '/_authenticated/admin/ai'
+      path: '/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AuthenticatedAdminAiRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/lovable/email/transactional/send': {
@@ -704,17 +861,31 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminClassroomsRoute: typeof AuthenticatedAdminClassroomsRoute
   AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
+  AuthenticatedAdminPromotionsRoute: typeof AuthenticatedAdminPromotionsRoute
   AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
+  AuthenticatedAdminStudentsRoute: typeof AuthenticatedAdminStudentsRoute
+  AuthenticatedAdminTutorsRoute: typeof AuthenticatedAdminTutorsRoute
+  AuthenticatedAdminWhiteboardRoute: typeof AuthenticatedAdminWhiteboardRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+  AuthenticatedAdminClassroomsRoute: AuthenticatedAdminClassroomsRoute,
   AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
+  AuthenticatedAdminPromotionsRoute: AuthenticatedAdminPromotionsRoute,
   AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
+  AuthenticatedAdminStudentsRoute: AuthenticatedAdminStudentsRoute,
+  AuthenticatedAdminTutorsRoute: AuthenticatedAdminTutorsRoute,
+  AuthenticatedAdminWhiteboardRoute: AuthenticatedAdminWhiteboardRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
@@ -734,6 +905,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedRecordsRoute: typeof AuthenticatedRecordsRoute
   AuthenticatedResourcesRoute: typeof AuthenticatedResourcesRoute
   AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
 }
@@ -752,6 +924,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedRecordsRoute: AuthenticatedRecordsRoute,
   AuthenticatedResourcesRoute: AuthenticatedResourcesRoute,
   AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
 }
@@ -780,13 +953,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
