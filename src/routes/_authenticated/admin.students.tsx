@@ -28,7 +28,7 @@ function StudentsAdmin() {
     queryKey: ["admin-users"],
     queryFn: async () => adminListUsers(),
   });
-  const users = (data?.users ?? []) as Array<{
+  const users = (data ?? []) as Array<{
     id: string;
     email: string;
     full_name?: string | null;
