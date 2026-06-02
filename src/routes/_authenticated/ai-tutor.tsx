@@ -26,6 +26,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 function AiTutorPage() {
   const send = useServerFn(aiTutorChat);
+  const [mode, setMode] = useState<"tutor" | "student" | null>(null);
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
@@ -49,7 +50,8 @@ function AiTutorPage() {
     setInput("");
     setLoading(true);
     try {
-      const { reply } = await send({ data: { messages: next } });
+      const { reply, mode: serverMode } = await send({ data: { messages: next } });
+      if (serverMode) setMode(serverMode);
       setMessages([...next, { role: "assistant", content: reply || "…" }]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
@@ -66,9 +68,16 @@ function AiTutorPage() {
       <div className="flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-primary" />
         <h1 className="text-xl font-bold">AI Study Coach</h1>
+        {mode && (
+          <span className="ml-auto rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            {mode === "tutor" ? "Tutor mode · full solutions" : "Student mode · guided hints"}
+          </span>
+        )}
       </div>
       <p className="text-xs text-muted-foreground">
-        I guide — I don't solve. Expect questions back, hints, and concept explanations.
+        {mode === "tutor"
+          ? "You are signed in as a tutor — the assistant will provide full worked solutions, marking schemes, and teaching notes."
+          : "I guide — I don't solve. Expect questions back, hints, and concept explanations."}
       </p>
 
       <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
