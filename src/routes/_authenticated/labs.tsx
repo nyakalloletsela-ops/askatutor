@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { LorddaLab } from "@/components/LorddaLab";
-import { ThreeDLab } from "@/components/ThreeDLab";
+import { WebGLLab } from "@/components/WebGLLab";
 import { FlaskConical, Boxes, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -76,7 +76,7 @@ function LabsPage() {
             onOpen={handleOpen}
           />
         ) : (
-          <ThreeDLab
+          <WebGLLab
             enforceLimit={enforceLimit}
             viewedSlugs={viewed}
             limit={STUDENT_LAB_LIMIT}
