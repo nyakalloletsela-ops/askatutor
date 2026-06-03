@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo, type FloatingVideoHandle } from "@/components/FloatingVideo";
 import { Whiteboard } from "@/components/Whiteboard";
 import { LorddaLab } from "@/components/LorddaLab";
-import { ThreeDLab } from "@/components/ThreeDLab";
+import { WebGLLab } from "@/components/WebGLLab";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
 import { DeviceSelector, type JitsiDeviceApi } from "@/components/DeviceSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -340,7 +340,7 @@ function ClassroomPage() {
             <LorddaLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} roomId={roomId} />
           </TabsContent>
           <TabsContent value="lab3d" className="m-0 min-h-0 flex-1">
-            <ThreeDLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} />
+            <WebGLLab enforceLimit={false} viewedSlugs={[]} limit={Infinity} onOpen={() => {}} />
           </TabsContent>
         </Tabs>
       </main>
