@@ -60,13 +60,17 @@ export const SCENES: Scene[] = [
         draw: (t) => {
           const spin = m4.rotateY(m4.identity(), t * 0.4);
           const place = (p: Vec3, s: number): Mat4 => m4.scale(m4.translate(spin, p), [s, s, s]);
-          return [
+          const calls: DrawCall[] = [
             { mesh: sph, model: place(O, 0.55), color: [0.85, 0.25, 0.25] },
             { mesh: sph, model: place(H1, 0.32), color: [0.92, 0.92, 0.95] },
             { mesh: sph, model: place(H2, 0.32), color: [0.92, 0.92, 0.95] },
-            bond(O, H1, cyl, [0.7, 0.7, 0.8]),
-            bond(O, H2, cyl, [0.7, 0.7, 0.8]),
-          ].map((c) => ({ ...c, model: m4.multiply(spin, c.model) === c.model ? c.model : c.model }));
+          ];
+          const b1 = bond(O, H1, cyl, [0.7, 0.7, 0.8]);
+          const b2 = bond(O, H2, cyl, [0.7, 0.7, 0.8]);
+          b1.model = m4.multiply(spin, b1.model);
+          b2.model = m4.multiply(spin, b2.model);
+          calls.push(b1, b2);
+          return calls;
         },
         dispose: () => { sph.dispose(); cyl.dispose(); },
       };
