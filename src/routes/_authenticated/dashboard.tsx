@@ -384,7 +384,7 @@ function Dashboard() {
                 action={
                   !isTutor && (
                     <Button asChild size="sm" variant="ghost">
-                      <Link to="/">
+                      <Link to="/tutors">
                         <Plus className="mr-1 h-3.5 w-3.5" /> Book
                       </Link>
                     </Button>
@@ -404,7 +404,7 @@ function Dashboard() {
                       </p>
                       {!isTutor && (
                         <Button asChild size="sm" className="mt-4">
-                          <Link to="/">Browse tutors</Link>
+                          <Link to="/tutors">Browse tutors</Link>
                         </Button>
                       )}
                     </div>
