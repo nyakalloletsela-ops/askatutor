@@ -70,7 +70,7 @@ type NavItem = {
 
 const baseNav: NavItem[] = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Tutors", to: "/", icon: GraduationCap },
+  { label: "Tutors", to: "/tutors", icon: GraduationCap },
   { label: "Messages", to: "/messages", icon: MessageSquare },
   { label: "Assignments", to: "/assignments", icon: FileText },
   { label: "Records", to: "/records", icon: FolderOpen },
