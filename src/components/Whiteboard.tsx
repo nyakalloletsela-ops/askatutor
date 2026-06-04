@@ -821,31 +821,51 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                   onPointerCancel={onPointerUp(i)}
                 />
                 {textEditor && textEditor.page === i && (
-                  <textarea
-                    autoFocus
-                    value={textEditor.value}
-                    onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
-                    onBlur={commitText}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        commitText();
-                      } else if (e.key === "Escape") {
-                        e.preventDefault();
-                        setTextEditor(null);
-                      }
-                    }}
-                    placeholder="Type… Enter to commit, Shift+Enter for newline, Esc to cancel"
-                    className="absolute z-20 min-w-[140px] resize rounded border border-primary/60 bg-white/95 px-1 py-0.5 outline-none ring-2 ring-primary/30"
-                    style={{
-                      left: textEditor.x,
-                      top: textEditor.y,
-                      color,
-                      fontSize: Math.max(12, size * 5),
-                      fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-                      lineHeight: 1.2,
-                    }}
-                  />
+                  <div
+                    className="absolute z-20 flex flex-col gap-1"
+                    style={{ left: textEditor.x, top: textEditor.y }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <textarea
+                      autoFocus
+                      value={textEditor.value}
+                      onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
+                      onKeyDown={(e) => {
+                        // Stop the canvas / page from intercepting keys
+                        e.stopPropagation();
+                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault();
+                          commitText();
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          setTextEditor(null);
+                        }
+                      }}
+                      placeholder="Type… Ctrl/Cmd+Enter to save, Esc to cancel"
+                      rows={3}
+                      className="min-h-[60px] min-w-[220px] resize rounded border border-primary/60 bg-white/95 px-2 py-1 outline-none ring-2 ring-primary/30"
+                      style={{
+                        color,
+                        fontSize: Math.max(14, size * 5),
+                        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                        lineHeight: 1.3,
+                        touchAction: "auto",
+                      }}
+                    />
+                    <div className="flex gap-1">
+                      <Button size="sm" className="h-7 px-2" onClick={commitText}>
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2"
+                        onClick={() => setTextEditor(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
