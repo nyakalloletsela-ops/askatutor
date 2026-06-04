@@ -259,9 +259,31 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     lines.forEach((line, i) => ctx.fillText(line, t.x, t.y + i * fontPx * 1.2));
   };
 
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const renderImage = (it: ImageItem) => {
+    const ctx = canvasRefs.current[it.page]?.getContext("2d");
+    if (!ctx) return;
+    let img = imageCache.current.get(it.id);
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(img, it.x, it.y, it.w, it.h);
+      return;
+    }
+    img = new Image();
+    img.onload = () => {
+      const ctx2 = canvasRefs.current[it.page]?.getContext("2d");
+      if (!ctx2) return;
+      ctx2.globalCompositeOperation = "source-over";
+      ctx2.drawImage(img!, it.x, it.y, it.w, it.h);
+    };
+    img.src = it.src;
+    imageCache.current.set(it.id, img);
+  };
+
   const renderItem = (item: AnyItem) => {
     if (item.type === "stroke") renderStroke(item);
-    else renderText(item);
+    else if (item.type === "text") renderText(item);
+    else renderImage(item);
   };
 
   const redrawPage = (page: number) => {
