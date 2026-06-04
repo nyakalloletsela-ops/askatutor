@@ -28,12 +28,22 @@ type TextItem = {
   size: number;
   id: string;
 };
-type AnyItem = Stroke | TextItem;
+type ImageItem = {
+  type: "image";
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  src: string; // data URL
+  id: string;
+};
+type AnyItem = Stroke | TextItem | ImageItem;
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: AnyItem };
 type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type Msg = Stroke | TextItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
+type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
