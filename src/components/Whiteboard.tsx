@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2, Lock, Type, Sigma } from "lucide-react";
+import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2, Lock, Type, Sigma, Wand2, ImageIcon } from "lucide-react";
 import { MathTools } from "@/components/MathTools";
+import { useServerFn } from "@tanstack/react-start";
+import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
+import { toast } from "sonner";
 
 type Pt = { x: number; y: number };
 type Stroke = {
