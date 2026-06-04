@@ -787,7 +787,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
       {/* Hint */}
       <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
-        Draw with one finger · scroll with two fingers · {PAGE_COUNT} pages
+        Draw with one finger · scroll with two fingers · paste images with Ctrl/Cmd+V · {PAGE_COUNT} pages
       </div>
 
       {/* Pages — scrollable container */}
