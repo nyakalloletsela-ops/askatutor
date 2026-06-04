@@ -158,7 +158,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (cancelled || !data) return;
       for (const row of data as Array<{ data: AnyItem }>) {
         const s = row.data;
-        if (s && (s.type === "stroke" || s.type === "text")) {
+        if (s && (s.type === "stroke" || s.type === "text" || s.type === "image")) {
           historyRef.current.push(s);
           renderItem(s);
         }
