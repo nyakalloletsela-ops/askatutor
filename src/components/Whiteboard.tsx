@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2, Lock, Type, Sigma } from "lucide-react";
+import { Pen, Eraser, Trash2, ChevronUp, ChevronDown, Undo2, Redo2, Lock, Type, Sigma, Wand2, ImageIcon } from "lucide-react";
 import { MathTools } from "@/components/MathTools";
+import { useServerFn } from "@tanstack/react-start";
+import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
+import { toast } from "sonner";
 
 type Pt = { x: number; y: number };
 type Stroke = {
@@ -25,12 +28,22 @@ type TextItem = {
   size: number;
   id: string;
 };
-type AnyItem = Stroke | TextItem;
+type ImageItem = {
+  type: "image";
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  src: string; // data URL
+  id: string;
+};
+type AnyItem = Stroke | TextItem | ImageItem;
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: AnyItem };
 type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type Msg = Stroke | TextItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
+type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
@@ -145,7 +158,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (cancelled || !data) return;
       for (const row of data as Array<{ data: AnyItem }>) {
         const s = row.data;
-        if (s && (s.type === "stroke" || s.type === "text")) {
+        if (s && (s.type === "stroke" || s.type === "text" || s.type === "image")) {
           historyRef.current.push(s);
           renderItem(s);
         }
@@ -246,9 +259,31 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     lines.forEach((line, i) => ctx.fillText(line, t.x, t.y + i * fontPx * 1.2));
   };
 
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const renderImage = (it: ImageItem) => {
+    const ctx = canvasRefs.current[it.page]?.getContext("2d");
+    if (!ctx) return;
+    let img = imageCache.current.get(it.id);
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(img, it.x, it.y, it.w, it.h);
+      return;
+    }
+    img = new Image();
+    img.onload = () => {
+      const ctx2 = canvasRefs.current[it.page]?.getContext("2d");
+      if (!ctx2) return;
+      ctx2.globalCompositeOperation = "source-over";
+      ctx2.drawImage(img!, it.x, it.y, it.w, it.h);
+    };
+    img.src = it.src;
+    imageCache.current.set(it.id, img);
+  };
+
   const renderItem = (item: AnyItem) => {
     if (item.type === "stroke") renderStroke(item);
-    else renderText(item);
+    else if (item.type === "text") renderText(item);
+    else renderImage(item);
   };
 
   const redrawPage = (page: number) => {
@@ -399,10 +434,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     drawingRef.current.page = -1;
   };
 
-  const commitText = () => {
+  const commitText = useCallback(() => {
     if (!textEditor) return;
-    const value = textEditor.value.trim();
-    if (!value) {
+    const value = textEditor.value;
+    if (!value.trim()) {
       setTextEditor(null);
       return;
     }
@@ -420,7 +455,108 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     renderText(item);
     sendItem(item);
     setTextEditor(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [textEditor, color, size, userId]);
+
+  // ── paste images from clipboard ────────────────────────────
+  const placeImage = useCallback(
+    (dataUrl: string, page: number) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRefs.current[page];
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        // Scale image so its longer edge is <= 60% of the page
+        const max = Math.min(rect.width, rect.height) * 0.6;
+        const ratio = Math.min(max / img.naturalWidth, max / img.naturalHeight, 1);
+        const w = img.naturalWidth * ratio;
+        const h = img.naturalHeight * ratio;
+        const x = Math.max(20, (rect.width - w) / 2);
+        const y = 30;
+        const item: ImageItem = {
+          type: "image",
+          page,
+          x,
+          y,
+          w,
+          h,
+          src: dataUrl,
+          id: `${userId}-i-${Date.now()}`,
+        };
+        historyRef.current.push(item);
+        renderImage(item);
+        sendItem(item);
+      };
+      img.src = dataUrl;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userId],
+  );
+
+  useEffect(() => {
+    if (!canDraw) return;
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it.kind === "file" && it.type.startsWith("image/")) {
+          const file = it.getAsFile();
+          if (!file) continue;
+          e.preventDefault();
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result;
+            if (typeof result === "string") {
+              placeImage(result, currentPage - 1);
+              toast.success("Image pasted to page " + currentPage);
+            }
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [canDraw, currentPage, placeImage]);
+
+  // ── AI: convert handwriting to LaTeX/text ──────────────────
+  const convert = useServerFn(whiteboardConvert);
+  const [converting, setConverting] = useState(false);
+  const runOcr = async () => {
+    const page = currentPage - 1;
+    const canvas = canvasRefs.current[page];
+    if (!canvas) return;
+    setConverting(true);
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const { text } = await convert({ data: { imageDataUrl: dataUrl } });
+      if (!text) {
+        toast.message("Nothing recognised on this page.");
+        return;
+      }
+      const item: TextItem = {
+        type: "text",
+        page,
+        x: 20,
+        y: 20,
+        text,
+        color: "#0f172a",
+        size: 3,
+        id: `${userId}-ocr-${Date.now()}`,
+      };
+      historyRef.current.push(item);
+      renderText(item);
+      sendItem(item);
+      toast.success("Handwriting converted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Conversion failed");
+    } finally {
+      setConverting(false);
+    }
   };
+
 
   // Track which page is "current" while scrolling
   useEffect(() => {
@@ -616,6 +752,33 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         <Button size="sm" variant="outline" onClick={() => setMathOpen(true)} title="Math & Science tools">
           <Sigma className="mr-1 h-4 w-4" /> Math
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={runOcr}
+          disabled={converting || !canDraw}
+          title="Convert handwriting on this page to LaTeX & text (AI)"
+        >
+          <Wand2 className="mr-1 h-4 w-4" /> {converting ? "Converting…" : "AI convert"}
+        </Button>
+        <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs hover:bg-accent">
+          <ImageIcon className="h-3.5 w-3.5" /> Image
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                if (typeof reader.result === "string") placeImage(reader.result, currentPage - 1);
+              };
+              reader.readAsDataURL(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
         <Button size="sm" variant="destructive" onClick={clearCurrent}>
           <Trash2 className="mr-1 h-4 w-4" /> Clear page
         </Button>
@@ -624,7 +787,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
       {/* Hint */}
       <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
-        Draw with one finger · scroll with two fingers · {PAGE_COUNT} pages
+        Draw with one finger · scroll with two fingers · paste images with Ctrl/Cmd+V · {PAGE_COUNT} pages
       </div>
 
       {/* Pages — scrollable container */}
@@ -658,31 +821,51 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                   onPointerCancel={onPointerUp(i)}
                 />
                 {textEditor && textEditor.page === i && (
-                  <textarea
-                    autoFocus
-                    value={textEditor.value}
-                    onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
-                    onBlur={commitText}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        commitText();
-                      } else if (e.key === "Escape") {
-                        e.preventDefault();
-                        setTextEditor(null);
-                      }
-                    }}
-                    placeholder="Type… Enter to commit, Shift+Enter for newline, Esc to cancel"
-                    className="absolute z-20 min-w-[140px] resize rounded border border-primary/60 bg-white/95 px-1 py-0.5 outline-none ring-2 ring-primary/30"
-                    style={{
-                      left: textEditor.x,
-                      top: textEditor.y,
-                      color,
-                      fontSize: Math.max(12, size * 5),
-                      fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-                      lineHeight: 1.2,
-                    }}
-                  />
+                  <div
+                    className="absolute z-20 flex flex-col gap-1"
+                    style={{ left: textEditor.x, top: textEditor.y }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <textarea
+                      autoFocus
+                      value={textEditor.value}
+                      onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
+                      onKeyDown={(e) => {
+                        // Stop the canvas / page from intercepting keys
+                        e.stopPropagation();
+                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                          e.preventDefault();
+                          commitText();
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          setTextEditor(null);
+                        }
+                      }}
+                      placeholder="Type… Ctrl/Cmd+Enter to save, Esc to cancel"
+                      rows={3}
+                      className="min-h-[60px] min-w-[220px] resize rounded border border-primary/60 bg-white/95 px-2 py-1 outline-none ring-2 ring-primary/30"
+                      style={{
+                        color,
+                        fontSize: Math.max(14, size * 5),
+                        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                        lineHeight: 1.3,
+                        touchAction: "auto",
+                      }}
+                    />
+                    <div className="flex gap-1">
+                      <Button size="sm" className="h-7 px-2" onClick={commitText}>
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2"
+                        onClick={() => setTextEditor(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
