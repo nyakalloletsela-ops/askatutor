@@ -434,10 +434,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     drawingRef.current.page = -1;
   };
 
-  const commitText = () => {
+  const commitText = useCallback(() => {
     if (!textEditor) return;
-    const value = textEditor.value.trim();
-    if (!value) {
+    const value = textEditor.value;
+    if (!value.trim()) {
       setTextEditor(null);
       return;
     }
@@ -455,7 +455,108 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     renderText(item);
     sendItem(item);
     setTextEditor(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [textEditor, color, size, userId]);
+
+  // ── paste images from clipboard ────────────────────────────
+  const placeImage = useCallback(
+    (dataUrl: string, page: number) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasRefs.current[page];
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        // Scale image so its longer edge is <= 60% of the page
+        const max = Math.min(rect.width, rect.height) * 0.6;
+        const ratio = Math.min(max / img.naturalWidth, max / img.naturalHeight, 1);
+        const w = img.naturalWidth * ratio;
+        const h = img.naturalHeight * ratio;
+        const x = Math.max(20, (rect.width - w) / 2);
+        const y = 30;
+        const item: ImageItem = {
+          type: "image",
+          page,
+          x,
+          y,
+          w,
+          h,
+          src: dataUrl,
+          id: `${userId}-i-${Date.now()}`,
+        };
+        historyRef.current.push(item);
+        renderImage(item);
+        sendItem(item);
+      };
+      img.src = dataUrl;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userId],
+  );
+
+  useEffect(() => {
+    if (!canDraw) return;
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it.kind === "file" && it.type.startsWith("image/")) {
+          const file = it.getAsFile();
+          if (!file) continue;
+          e.preventDefault();
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result;
+            if (typeof result === "string") {
+              placeImage(result, currentPage - 1);
+              toast.success("Image pasted to page " + currentPage);
+            }
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, [canDraw, currentPage, placeImage]);
+
+  // ── AI: convert handwriting to LaTeX/text ──────────────────
+  const convert = useServerFn(whiteboardConvert);
+  const [converting, setConverting] = useState(false);
+  const runOcr = async () => {
+    const page = currentPage - 1;
+    const canvas = canvasRefs.current[page];
+    if (!canvas) return;
+    setConverting(true);
+    try {
+      const dataUrl = canvas.toDataURL("image/png");
+      const { text } = await convert({ data: { imageDataUrl: dataUrl } });
+      if (!text) {
+        toast.message("Nothing recognised on this page.");
+        return;
+      }
+      const item: TextItem = {
+        type: "text",
+        page,
+        x: 20,
+        y: 20,
+        text,
+        color: "#0f172a",
+        size: 3,
+        id: `${userId}-ocr-${Date.now()}`,
+      };
+      historyRef.current.push(item);
+      renderText(item);
+      sendItem(item);
+      toast.success("Handwriting converted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Conversion failed");
+    } finally {
+      setConverting(false);
+    }
   };
+
 
   // Track which page is "current" while scrolling
   useEffect(() => {
