@@ -752,6 +752,33 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         <Button size="sm" variant="outline" onClick={() => setMathOpen(true)} title="Math & Science tools">
           <Sigma className="mr-1 h-4 w-4" /> Math
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={runOcr}
+          disabled={converting || !canDraw}
+          title="Convert handwriting on this page to LaTeX & text (AI)"
+        >
+          <Wand2 className="mr-1 h-4 w-4" /> {converting ? "Converting…" : "AI convert"}
+        </Button>
+        <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs hover:bg-accent">
+          <ImageIcon className="h-3.5 w-3.5" /> Image
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                if (typeof reader.result === "string") placeImage(reader.result, currentPage - 1);
+              };
+              reader.readAsDataURL(file);
+              e.target.value = "";
+            }}
+          />
+        </label>
         <Button size="sm" variant="destructive" onClick={clearCurrent}>
           <Trash2 className="mr-1 h-4 w-4" /> Clear page
         </Button>
