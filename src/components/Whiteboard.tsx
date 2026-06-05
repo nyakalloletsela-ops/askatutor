@@ -854,6 +854,27 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                   onPointerUp={onPointerUp(i)}
                   onPointerCancel={onPointerUp(i)}
                 />
+                {/* HTML overlay for text items — KaTeX renders $$...$$ as equations */}
+                <TextOverlay
+                  page={i}
+                  items={historyRef.current.filter(
+                    (s): s is TextItem =>
+                      s.type === "text" &&
+                      s.page === i &&
+                      (textEditor?.editingId ?? "") !== s.id,
+                  )}
+                  tick={textTick}
+                  onEdit={(it) =>
+                    setTextEditor({
+                      page: it.page,
+                      x: it.x,
+                      y: it.y,
+                      value: it.text,
+                      editingId: it.id,
+                    })
+                  }
+                />
+
                 {textEditor && textEditor.page === i && (
                   <div
                     className="absolute z-20 flex flex-col gap-1"
