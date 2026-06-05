@@ -19,7 +19,7 @@ import { sendSubscriptionDecisionEmail } from "@/lib/help.functions";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { redirect } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/_authenticated/admin/")({
   beforeLoad: async () => {
     try {
       const { isAdmin } = await checkIsAdmin();
