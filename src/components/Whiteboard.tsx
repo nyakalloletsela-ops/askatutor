@@ -90,7 +90,11 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const [studentCanDraw, setStudentCanDraw] = useState(false);
   const canDraw = isHost || studentCanDraw;
   // inline text editor state
-  const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string } | null>(null);
+  const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string; editingId?: string } | null>(null);
+  // Bumped whenever text items change so the HTML overlay re-renders.
+  const [textTick, setTextTick] = useState(0);
+  const bumpText = useCallback(() => setTextTick((t) => t + 1), []);
+
   // Collapse the toolbar (handy in landscape on small screens).
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
   const [mathOpen, setMathOpen] = useState(false);
