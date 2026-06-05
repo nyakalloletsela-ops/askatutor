@@ -562,12 +562,27 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         (it) => !(it.page === page && it.type === "stroke"),
       );
       redrawPage(page);
-      strokeIds.forEach((id) => send({ type: "undo", id }));
+      strokeIds.forEach((id) => {
+        send({ type: "undo", id });
+        deletePersistedStroke(id);
+      });
 
-      // Open the text editor seeded with recognised content so the user can edit
-      setMode("text");
-      setTextEditor({ page, x: 20, y: 20, value: text });
-      toast.success("Handwriting converted — edit and save");
+      // Save the recognised LaTeX/text as a rendered item (KaTeX overlay)
+      const item: TextItem = {
+        type: "text",
+        page,
+        x: 20,
+        y: 20,
+        text,
+        color: "#0f172a",
+        size: 4,
+        id: `${userId}-ocr-${Date.now()}`,
+      };
+      historyRef.current.push(item);
+      sendItem(item);
+      bumpText();
+      toast.success("Handwriting converted — click the equation to edit");
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
