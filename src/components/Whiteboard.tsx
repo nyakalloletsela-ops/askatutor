@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -7,6 +9,7 @@ import { MathTools } from "@/components/MathTools";
 import { useServerFn } from "@tanstack/react-start";
 import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
 import { toast } from "sonner";
+
 
 type Pt = { x: number; y: number };
 type Stroke = {
@@ -87,7 +90,11 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const [studentCanDraw, setStudentCanDraw] = useState(false);
   const canDraw = isHost || studentCanDraw;
   // inline text editor state
-  const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string } | null>(null);
+  const [textEditor, setTextEditor] = useState<{ page: number; x: number; y: number; value: string; editingId?: string } | null>(null);
+  // Bumped whenever text items change so the HTML overlay re-renders.
+  const [textTick, setTextTick] = useState(0);
+  const bumpText = useCallback(() => setTextTick((t) => t + 1), []);
+
   // Collapse the toolbar (handy in landscape on small screens).
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
   const [mathOpen, setMathOpen] = useState(false);
@@ -163,6 +170,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           renderItem(s);
         }
       }
+      bumpText();
+
     })();
     return () => {
       cancelled = true;
@@ -247,17 +256,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
   };
 
-  const renderText = (t: TextItem) => {
-    const ctx = canvasRefs.current[t.page]?.getContext("2d");
-    if (!ctx) return;
-    ctx.globalCompositeOperation = "source-over";
-    const fontPx = Math.max(12, t.size * 5);
-    ctx.font = `${fontPx}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
-    ctx.fillStyle = t.color;
-    ctx.textBaseline = "top";
-    const lines = t.text.split("\n");
-    lines.forEach((line, i) => ctx.fillText(line, t.x, t.y + i * fontPx * 1.2));
+  const renderText = (_t: TextItem) => {
+    // Text items are rendered as HTML overlays (with KaTeX) on top of the
+    // canvas — see the JSX below. We intentionally do nothing on the canvas
+    // so the same item is not painted twice and stays editable.
   };
+
 
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const renderImage = (it: ImageItem) => {
@@ -308,6 +312,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
         historyRef.current = historyRef.current.filter((s) => s.page !== m.page);
       }
+      bumpText();
       return;
     }
     if (m.type === "undo") {
@@ -315,12 +320,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (idx >= 0) {
         const [removed] = historyRef.current.splice(idx, 1);
         redrawPage(removed.page);
+        if (removed.type === "text") bumpText();
       }
       return;
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
       renderItem(m.stroke);
+      if (m.stroke.type === "text") bumpText();
       return;
     }
     if (m.type === "perm") {
@@ -330,7 +337,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     // stroke or text
     historyRef.current.push(m);
     renderItem(m);
+    if (m.type === "text") bumpText();
   };
+
 
   const send = (m: Msg) => {
     channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
@@ -437,8 +446,16 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const commitText = useCallback(() => {
     if (!textEditor) return;
     const value = textEditor.value;
+    // If editing an existing item, remove it first (and broadcast the undo)
+    if (textEditor.editingId) {
+      const idx = historyRef.current.findIndex((s) => s.id === textEditor.editingId);
+      if (idx >= 0) historyRef.current.splice(idx, 1);
+      send({ type: "undo", id: textEditor.editingId });
+      deletePersistedStroke(textEditor.editingId);
+    }
     if (!value.trim()) {
       setTextEditor(null);
+      bumpText();
       return;
     }
     const item: TextItem = {
@@ -452,11 +469,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       id: `${userId}-t-${Date.now()}`,
     };
     historyRef.current.push(item);
-    renderText(item);
     sendItem(item);
+    bumpText();
     setTextEditor(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textEditor, color, size, userId]);
+
 
   // ── paste images from clipboard ────────────────────────────
   const placeImage = useCallback(
@@ -544,12 +562,27 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         (it) => !(it.page === page && it.type === "stroke"),
       );
       redrawPage(page);
-      strokeIds.forEach((id) => send({ type: "undo", id }));
+      strokeIds.forEach((id) => {
+        send({ type: "undo", id });
+        deletePersistedStroke(id);
+      });
 
-      // Open the text editor seeded with recognised content so the user can edit
-      setMode("text");
-      setTextEditor({ page, x: 20, y: 20, value: text });
-      toast.success("Handwriting converted — edit and save");
+      // Save the recognised LaTeX/text as a rendered item (KaTeX overlay)
+      const item: TextItem = {
+        type: "text",
+        page,
+        x: 20,
+        y: 20,
+        text,
+        color: "#0f172a",
+        size: 4,
+        id: `${userId}-ocr-${Date.now()}`,
+      };
+      historyRef.current.push(item);
+      sendItem(item);
+      bumpText();
+      toast.success("Handwriting converted — click the equation to edit");
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
@@ -821,6 +854,27 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                   onPointerUp={onPointerUp(i)}
                   onPointerCancel={onPointerUp(i)}
                 />
+                {/* HTML overlay for text items — KaTeX renders $$...$$ as equations */}
+                <TextOverlay
+                  page={i}
+                  items={historyRef.current.filter(
+                    (s): s is TextItem =>
+                      s.type === "text" &&
+                      s.page === i &&
+                      (textEditor?.editingId ?? "") !== s.id,
+                  )}
+                  tick={textTick}
+                  onEdit={(it) =>
+                    setTextEditor({
+                      page: it.page,
+                      x: it.x,
+                      y: it.y,
+                      value: it.text,
+                      editingId: it.id,
+                    })
+                  }
+                />
+
                 {textEditor && textEditor.page === i && (
                   <div
                     className="absolute z-20 flex flex-col gap-1"
@@ -876,3 +930,87 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────
+// TextOverlay — renders text items as HTML on top of the canvas.
+// Splits on $$...$$ blocks and renders them with KaTeX so OCR output
+// like "$$x^2+2x$$" appears as a typeset equation. Click to edit.
+// ────────────────────────────────────────────────────────────
+
+function TextOverlay({
+  page,
+  items,
+  tick,
+  onEdit,
+}: {
+  page: number;
+  items: TextItem[];
+  tick: number;
+  onEdit: (item: TextItem) => void;
+}) {
+  void page;
+  void tick;
+  return (
+    <>
+      {items.map((it) => (
+        <button
+          key={it.id}
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(it);
+          }}
+          className="absolute z-10 max-w-[90%] cursor-text rounded px-1 text-left hover:bg-primary/5"
+          style={{
+            left: it.x,
+            top: it.y,
+            color: it.color,
+            fontSize: Math.max(14, it.size * 5),
+            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+            lineHeight: 1.3,
+          }}
+          title="Click to edit"
+        >
+          <KatexInline text={it.text} />
+        </button>
+      ))}
+    </>
+  );
+}
+
+function KatexInline({ text }: { text: string }) {
+  // Split on $$...$$ blocks. Even indices = prose, odd = LaTeX.
+  const parts = useMemo(() => text.split(/\$\$([\s\S]+?)\$\$/g), [text]);
+  return (
+    <>
+      {parts.map((part, idx) => {
+        if (idx % 2 === 1) {
+          let html = "";
+          try {
+            html = katex.renderToString(part, {
+              throwOnError: false,
+              displayMode: true,
+              output: "html",
+            });
+          } catch {
+            html = `<code>$$${part}$$</code>`;
+          }
+          return (
+            <span
+              key={idx}
+              className="my-1 block"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          );
+        }
+        return (
+          <span key={idx} style={{ whiteSpace: "pre-wrap" }}>
+            {part}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
