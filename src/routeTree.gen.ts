@@ -34,7 +34,7 @@ import { Route as AuthenticatedBecomeTutorRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAssignmentsRouteImport } from './routes/_authenticated/assignments'
 import { Route as AuthenticatedAiTutorRouteImport } from './routes/_authenticated/ai-tutor'
 import { Route as AuthenticatedAiToolsRouteImport } from './routes/_authenticated/ai-tools'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as AuthenticatedClassroomRoomIdRouteImport } from './routes/_authenticated/classroom.$roomId'
 import { Route as AuthenticatedAdminWhiteboardRouteImport } from './routes/_authenticated/admin.whiteboard'
@@ -180,9 +180,9 @@ const AuthenticatedAiToolsRoute = AuthenticatedAiToolsRouteImport.update({
   path: '/ai-tools',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
@@ -198,67 +198,67 @@ const AuthenticatedClassroomRoomIdRoute =
   } as any)
 const AuthenticatedAdminWhiteboardRoute =
   AuthenticatedAdminWhiteboardRouteImport.update({
-    id: '/whiteboard',
-    path: '/whiteboard',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/whiteboard',
+    path: '/admin/whiteboard',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminTutorsRoute =
   AuthenticatedAdminTutorsRouteImport.update({
-    id: '/tutors',
-    path: '/tutors',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/tutors',
+    path: '/admin/tutors',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminStudentsRoute =
   AuthenticatedAdminStudentsRouteImport.update({
-    id: '/students',
-    path: '/students',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/students',
+    path: '/admin/students',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminReportsRoute =
   AuthenticatedAdminReportsRouteImport.update({
-    id: '/reports',
-    path: '/reports',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/reports',
+    path: '/admin/reports',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminPromotionsRoute =
   AuthenticatedAdminPromotionsRouteImport.update({
-    id: '/promotions',
-    path: '/promotions',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/promotions',
+    path: '/admin/promotions',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminPaymentsRoute =
   AuthenticatedAdminPaymentsRouteImport.update({
-    id: '/payments',
-    path: '/payments',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/payments',
+    path: '/admin/payments',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminModerationRoute =
   AuthenticatedAdminModerationRouteImport.update({
-    id: '/moderation',
-    path: '/moderation',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/moderation',
+    path: '/admin/moderation',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminClassroomsRoute =
   AuthenticatedAdminClassroomsRouteImport.update({
-    id: '/classrooms',
-    path: '/classrooms',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/classrooms',
+    path: '/admin/classrooms',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminAuditRoute = AuthenticatedAdminAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => AuthenticatedAdminRoute,
+  id: '/admin/audit',
+  path: '/admin/audit',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAdminAnalyticsRoute =
   AuthenticatedAdminAnalyticsRouteImport.update({
-    id: '/analytics',
-    path: '/analytics',
-    getParentRoute: () => AuthenticatedAdminRoute,
+    id: '/admin/analytics',
+    path: '/admin/analytics',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminAiRoute = AuthenticatedAdminAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
-  getParentRoute: () => AuthenticatedAdminRoute,
+  id: '/admin/ai',
+  path: '/admin/ai',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
@@ -288,7 +288,6 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/tutors': typeof TutorsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
   '/assignments': typeof AuthenticatedAssignmentsRoute
@@ -318,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -331,7 +331,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/tutors': typeof TutorsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/ai-tools': typeof AuthenticatedAiToolsRoute
   '/ai-tutor': typeof AuthenticatedAiTutorRoute
   '/assignments': typeof AuthenticatedAssignmentsRoute
@@ -361,6 +360,7 @@ export interface FileRoutesByTo {
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -376,7 +376,6 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/tutors': typeof TutorsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/ai-tools': typeof AuthenticatedAiToolsRoute
   '/_authenticated/ai-tutor': typeof AuthenticatedAiTutorRoute
   '/_authenticated/assignments': typeof AuthenticatedAssignmentsRoute
@@ -406,6 +405,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -421,7 +421,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/tutors'
     | '/unsubscribe'
-    | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
     | '/assignments'
@@ -451,6 +450,7 @@ export interface FileRouteTypes {
     | '/admin/whiteboard'
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
+    | '/admin/'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -464,7 +464,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/tutors'
     | '/unsubscribe'
-    | '/admin'
     | '/ai-tools'
     | '/ai-tutor'
     | '/assignments'
@@ -494,6 +493,7 @@ export interface FileRouteTypes {
     | '/admin/whiteboard'
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
+    | '/admin'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -508,7 +508,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/tutors'
     | '/unsubscribe'
-    | '/_authenticated/admin'
     | '/_authenticated/ai-tools'
     | '/_authenticated/ai-tutor'
     | '/_authenticated/assignments'
@@ -538,6 +537,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/whiteboard'
     | '/_authenticated/classroom/$roomId'
     | '/lovable/email/suppression'
+    | '/_authenticated/admin/'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -738,11 +738,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAiToolsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
       path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/lovable/email/suppression': {
@@ -761,80 +761,80 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/admin/whiteboard': {
       id: '/_authenticated/admin/whiteboard'
-      path: '/whiteboard'
+      path: '/admin/whiteboard'
       fullPath: '/admin/whiteboard'
       preLoaderRoute: typeof AuthenticatedAdminWhiteboardRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/tutors': {
       id: '/_authenticated/admin/tutors'
-      path: '/tutors'
+      path: '/admin/tutors'
       fullPath: '/admin/tutors'
       preLoaderRoute: typeof AuthenticatedAdminTutorsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/students': {
       id: '/_authenticated/admin/students'
-      path: '/students'
+      path: '/admin/students'
       fullPath: '/admin/students'
       preLoaderRoute: typeof AuthenticatedAdminStudentsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/reports': {
       id: '/_authenticated/admin/reports'
-      path: '/reports'
+      path: '/admin/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AuthenticatedAdminReportsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/promotions': {
       id: '/_authenticated/admin/promotions'
-      path: '/promotions'
+      path: '/admin/promotions'
       fullPath: '/admin/promotions'
       preLoaderRoute: typeof AuthenticatedAdminPromotionsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/payments': {
       id: '/_authenticated/admin/payments'
-      path: '/payments'
+      path: '/admin/payments'
       fullPath: '/admin/payments'
       preLoaderRoute: typeof AuthenticatedAdminPaymentsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/moderation': {
       id: '/_authenticated/admin/moderation'
-      path: '/moderation'
+      path: '/admin/moderation'
       fullPath: '/admin/moderation'
       preLoaderRoute: typeof AuthenticatedAdminModerationRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/classrooms': {
       id: '/_authenticated/admin/classrooms'
-      path: '/classrooms'
+      path: '/admin/classrooms'
       fullPath: '/admin/classrooms'
       preLoaderRoute: typeof AuthenticatedAdminClassroomsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/audit': {
       id: '/_authenticated/admin/audit'
-      path: '/audit'
+      path: '/admin/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AuthenticatedAdminAuditRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/analytics': {
       id: '/_authenticated/admin/analytics'
-      path: '/analytics'
+      path: '/admin/analytics'
       fullPath: '/admin/analytics'
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/ai': {
       id: '/_authenticated/admin/ai'
-      path: '/ai'
+      path: '/admin/ai'
       fullPath: '/admin/ai'
       preLoaderRoute: typeof AuthenticatedAdminAiRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      parentRoute: typeof AuthenticatedRoute
     }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
@@ -860,39 +860,7 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
-  AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
-  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
-  AuthenticatedAdminClassroomsRoute: typeof AuthenticatedAdminClassroomsRoute
-  AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
-  AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
-  AuthenticatedAdminPromotionsRoute: typeof AuthenticatedAdminPromotionsRoute
-  AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
-  AuthenticatedAdminStudentsRoute: typeof AuthenticatedAdminStudentsRoute
-  AuthenticatedAdminTutorsRoute: typeof AuthenticatedAdminTutorsRoute
-  AuthenticatedAdminWhiteboardRoute: typeof AuthenticatedAdminWhiteboardRoute
-}
-
-const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
-  AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
-  AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
-  AuthenticatedAdminClassroomsRoute: AuthenticatedAdminClassroomsRoute,
-  AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
-  AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
-  AuthenticatedAdminPromotionsRoute: AuthenticatedAdminPromotionsRoute,
-  AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
-  AuthenticatedAdminStudentsRoute: AuthenticatedAdminStudentsRoute,
-  AuthenticatedAdminTutorsRoute: AuthenticatedAdminTutorsRoute,
-  AuthenticatedAdminWhiteboardRoute: AuthenticatedAdminWhiteboardRoute,
-}
-
-const AuthenticatedAdminRouteWithChildren =
-  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
-
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAiToolsRoute: typeof AuthenticatedAiToolsRoute
   AuthenticatedAiTutorRoute: typeof AuthenticatedAiTutorRoute
   AuthenticatedAssignmentsRoute: typeof AuthenticatedAssignmentsRoute
@@ -907,11 +875,22 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedRecordsRoute: typeof AuthenticatedRecordsRoute
   AuthenticatedResourcesRoute: typeof AuthenticatedResourcesRoute
+  AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
+  AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
+  AuthenticatedAdminClassroomsRoute: typeof AuthenticatedAdminClassroomsRoute
+  AuthenticatedAdminModerationRoute: typeof AuthenticatedAdminModerationRoute
+  AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
+  AuthenticatedAdminPromotionsRoute: typeof AuthenticatedAdminPromotionsRoute
+  AuthenticatedAdminReportsRoute: typeof AuthenticatedAdminReportsRoute
+  AuthenticatedAdminStudentsRoute: typeof AuthenticatedAdminStudentsRoute
+  AuthenticatedAdminTutorsRoute: typeof AuthenticatedAdminTutorsRoute
+  AuthenticatedAdminWhiteboardRoute: typeof AuthenticatedAdminWhiteboardRoute
   AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAiToolsRoute: AuthenticatedAiToolsRoute,
   AuthenticatedAiTutorRoute: AuthenticatedAiTutorRoute,
   AuthenticatedAssignmentsRoute: AuthenticatedAssignmentsRoute,
@@ -926,7 +905,19 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedRecordsRoute: AuthenticatedRecordsRoute,
   AuthenticatedResourcesRoute: AuthenticatedResourcesRoute,
+  AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
+  AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
+  AuthenticatedAdminClassroomsRoute: AuthenticatedAdminClassroomsRoute,
+  AuthenticatedAdminModerationRoute: AuthenticatedAdminModerationRoute,
+  AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
+  AuthenticatedAdminPromotionsRoute: AuthenticatedAdminPromotionsRoute,
+  AuthenticatedAdminReportsRoute: AuthenticatedAdminReportsRoute,
+  AuthenticatedAdminStudentsRoute: AuthenticatedAdminStudentsRoute,
+  AuthenticatedAdminTutorsRoute: AuthenticatedAdminTutorsRoute,
+  AuthenticatedAdminWhiteboardRoute: AuthenticatedAdminWhiteboardRoute,
   AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
