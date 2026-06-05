@@ -312,6 +312,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         if (ctx && c) ctx.clearRect(0, 0, c.width, c.height);
         historyRef.current = historyRef.current.filter((s) => s.page !== m.page);
       }
+      bumpText();
       return;
     }
     if (m.type === "undo") {
@@ -319,12 +320,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (idx >= 0) {
         const [removed] = historyRef.current.splice(idx, 1);
         redrawPage(removed.page);
+        if (removed.type === "text") bumpText();
       }
       return;
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
       renderItem(m.stroke);
+      if (m.stroke.type === "text") bumpText();
       return;
     }
     if (m.type === "perm") {
@@ -334,7 +337,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     // stroke or text
     historyRef.current.push(m);
     renderItem(m);
+    if (m.type === "text") bumpText();
   };
+
 
   const send = (m: Msg) => {
     channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
