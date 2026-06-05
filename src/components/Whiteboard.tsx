@@ -254,17 +254,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
   };
 
-  const renderText = (t: TextItem) => {
-    const ctx = canvasRefs.current[t.page]?.getContext("2d");
-    if (!ctx) return;
-    ctx.globalCompositeOperation = "source-over";
-    const fontPx = Math.max(12, t.size * 5);
-    ctx.font = `${fontPx}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
-    ctx.fillStyle = t.color;
-    ctx.textBaseline = "top";
-    const lines = t.text.split("\n");
-    lines.forEach((line, i) => ctx.fillText(line, t.x, t.y + i * fontPx * 1.2));
+  const renderText = (_t: TextItem) => {
+    // Text items are rendered as HTML overlays (with KaTeX) on top of the
+    // canvas — see the JSX below. We intentionally do nothing on the canvas
+    // so the same item is not painted twice and stays editable.
   };
+
 
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const renderImage = (it: ImageItem) => {
