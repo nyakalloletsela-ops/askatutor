@@ -930,3 +930,87 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     </div>
   );
 }
+
+// ────────────────────────────────────────────────────────────
+// TextOverlay — renders text items as HTML on top of the canvas.
+// Splits on $$...$$ blocks and renders them with KaTeX so OCR output
+// like "$$x^2+2x$$" appears as a typeset equation. Click to edit.
+// ────────────────────────────────────────────────────────────
+
+function TextOverlay({
+  page,
+  items,
+  tick,
+  onEdit,
+}: {
+  page: number;
+  items: TextItem[];
+  tick: number;
+  onEdit: (item: TextItem) => void;
+}) {
+  void page;
+  void tick;
+  return (
+    <>
+      {items.map((it) => (
+        <button
+          key={it.id}
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(it);
+          }}
+          className="absolute z-10 max-w-[90%] cursor-text rounded px-1 text-left hover:bg-primary/5"
+          style={{
+            left: it.x,
+            top: it.y,
+            color: it.color,
+            fontSize: Math.max(14, it.size * 5),
+            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+            lineHeight: 1.3,
+          }}
+          title="Click to edit"
+        >
+          <KatexInline text={it.text} />
+        </button>
+      ))}
+    </>
+  );
+}
+
+function KatexInline({ text }: { text: string }) {
+  // Split on $$...$$ blocks. Even indices = prose, odd = LaTeX.
+  const parts = useMemo(() => text.split(/\$\$([\s\S]+?)\$\$/g), [text]);
+  return (
+    <>
+      {parts.map((part, idx) => {
+        if (idx % 2 === 1) {
+          let html = "";
+          try {
+            html = katex.renderToString(part, {
+              throwOnError: false,
+              displayMode: true,
+              output: "html",
+            });
+          } catch {
+            html = `<code>$$${part}$$</code>`;
+          }
+          return (
+            <span
+              key={idx}
+              className="my-1 block"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          );
+        }
+        return (
+          <span key={idx} style={{ whiteSpace: "pre-wrap" }}>
+            {part}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
