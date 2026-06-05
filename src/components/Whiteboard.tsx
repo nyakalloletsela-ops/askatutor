@@ -446,8 +446,16 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const commitText = useCallback(() => {
     if (!textEditor) return;
     const value = textEditor.value;
+    // If editing an existing item, remove it first (and broadcast the undo)
+    if (textEditor.editingId) {
+      const idx = historyRef.current.findIndex((s) => s.id === textEditor.editingId);
+      if (idx >= 0) historyRef.current.splice(idx, 1);
+      send({ type: "undo", id: textEditor.editingId });
+      deletePersistedStroke(textEditor.editingId);
+    }
     if (!value.trim()) {
       setTextEditor(null);
+      bumpText();
       return;
     }
     const item: TextItem = {
@@ -461,11 +469,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       id: `${userId}-t-${Date.now()}`,
     };
     historyRef.current.push(item);
-    renderText(item);
     sendItem(item);
+    bumpText();
     setTextEditor(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textEditor, color, size, userId]);
+
 
   // ── paste images from clipboard ────────────────────────────
   const placeImage = useCallback(
