@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -7,6 +9,7 @@ import { MathTools } from "@/components/MathTools";
 import { useServerFn } from "@tanstack/react-start";
 import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
 import { toast } from "sonner";
+
 
 type Pt = { x: number; y: number };
 type Stroke = {
