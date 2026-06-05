@@ -170,6 +170,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           renderItem(s);
         }
       }
+      bumpText();
+
     })();
     return () => {
       cancelled = true;
