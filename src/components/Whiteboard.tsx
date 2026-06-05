@@ -22,7 +22,6 @@ import { MathTools } from "@/components/MathTools";
 import { useServerFn } from "@tanstack/react-start";
 import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
 import { toast } from "sonner";
-import { Rnd } from "react-rnd"; // NEW: Drag and drop library
 
 type Pt = { x: number; y: number };
 type Stroke = {
@@ -55,14 +54,11 @@ type ImageItem = {
   id: string;
 };
 type AnyItem = Stroke | TextItem | ImageItem;
-
-// NEW: Added UpdateMsg to sync dragging and resizing across the network
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: AnyItem };
 type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type UpdateMsg = { type: "update"; id: string; changes: Partial<AnyItem> };
-type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg | UpdateMsg;
+type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
@@ -70,6 +66,8 @@ const PAGE_COUNT = 100;
 interface Props {
   roomId: string;
   userId: string;
+  /** When true the user is treated as the room host (tutor/admin) and can
+   *  toggle whether the other participant is allowed to draw. */
   isHost?: boolean;
 }
 
@@ -78,6 +76,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
+  // active drawing state
   const drawingRef = useRef<{
     active: boolean;
     page: number;
@@ -85,21 +84,24 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     id: string;
   }>({ active: false, page: -1, points: [], id: "" });
 
+  // multi-touch tracking for 2-finger scroll
   const pointersRef = useRef<Map<number, Pt>>(new Map());
   const scrollStartRef = useRef<{ scrollTop: number; midY: number }>({
     scrollTop: 0,
     midY: 0,
   });
 
+  // remember all items so we can redraw on resize
   const historyRef = useRef<AnyItem[]>([]);
 
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<"pen" | "eraser" | "text">("pen");
   const [currentPage, setCurrentPage] = useState(1);
+  // Tutor controls whether the student can draw. Default: only host draws.
   const [studentCanDraw, setStudentCanDraw] = useState(false);
   const canDraw = isHost || studentCanDraw;
-
+  // inline text editor state
   const [textEditor, setTextEditor] = useState<{
     page: number;
     x: number;
@@ -107,11 +109,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     value: string;
     editingId?: string;
   } | null>(null);
+  // Bumped whenever text items change so the HTML overlay re-renders.
   const [textTick, setTextTick] = useState(0);
   const bumpText = useCallback(() => setTextTick((t) => t + 1), []);
 
+  // Collapse the toolbar (handy in landscape on small screens).
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
   const [mathOpen, setMathOpen] = useState(false);
+  void toolbarCollapsed;
 
   useEffect(() => {
     const mq = window.matchMedia("(orientation: landscape) and (max-height: 500px)");
@@ -123,12 +128,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   const pages = useMemo(() => Array.from({ length: PAGE_COUNT }, (_, i) => i), []);
 
+  // ── canvas sizing (per page) ────────────────────────────────
   const sizeCanvas = (canvas: HTMLCanvasElement) => {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     if (rect.width === 0) return false;
     const targetW = Math.floor(rect.width * dpr);
     const targetH = Math.floor(rect.height * dpr);
+    // Skip if already sized — assigning width/height clears the canvas
     if (canvas.width === targetW && canvas.height === targetH) return false;
     canvas.width = targetW;
     canvas.height = targetH;
@@ -149,9 +156,13 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     onResize();
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── load persisted strokes & RESET when room changes ──────────
   useEffect(() => {
+    // Clear local state so switching between student rooms doesn't bleed
+    // previous content / undo history into the new room.
     historyRef.current = [];
     myUndoStackRef.current = [];
     myRedoStackRef.current = [];
@@ -182,8 +193,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
+  // ── realtime ────────────────────────────────────────────────
   useEffect(() => {
     const channel = supabase.channel(`whiteboard:${roomId}`, {
       config: { broadcast: { self: false } },
@@ -204,8 +217,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       channel.unsubscribe();
       channelRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
+  // ── persistence helpers ───────────────────────────────────
   const persistStroke = (item: AnyItem) => {
     supabase
       .from("whiteboard_strokes")
@@ -214,6 +229,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         stroke_id: item.id,
         user_id: userId,
         page: item.page,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: item as any,
       })
       .then(({ error }) => {
@@ -222,38 +238,23 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   };
 
   const deletePersistedStroke = (strokeId: string) => {
-    supabase.from("whiteboard_strokes").delete().eq("room_id", roomId).eq("stroke_id", strokeId).then();
+    supabase
+      .from("whiteboard_strokes")
+      .delete()
+      .eq("room_id", roomId)
+      .eq("stroke_id", strokeId)
+      .then(() => undefined);
   };
-
   const deletePersistedPage = (page: number) => {
-    supabase.from("whiteboard_strokes").delete().eq("room_id", roomId).eq("page", page).then();
+    supabase
+      .from("whiteboard_strokes")
+      .delete()
+      .eq("room_id", roomId)
+      .eq("page", page)
+      .then(() => undefined);
   };
 
-  // NEW: Update persistent item state in DB for drags/resizes
-  const updatePersistedItem = useCallback(
-    (id: string, changes: Partial<AnyItem>) => {
-      const itemIdx = historyRef.current.findIndex((i) => i.id === id);
-      if (itemIdx === -1) return;
-
-      const updatedItem = { ...historyRef.current[itemIdx], ...changes } as AnyItem;
-      historyRef.current[itemIdx] = updatedItem;
-
-      // Broadcast to peers
-      channelRef.current?.send({ type: "broadcast", event: "draw", payload: { type: "update", id, changes } });
-
-      // Save to DB
-      supabase
-        .from("whiteboard_strokes")
-        .update({ data: updatedItem as any })
-        .eq("room_id", roomId)
-        .eq("stroke_id", id)
-        .then();
-
-      bumpText();
-    },
-    [roomId, bumpText],
-  );
-
+  // ── drawing helpers ────────────────────────────────────────
   const drawSegment = (page: number, a: Pt, b: Pt, c: string, sz: number, m: "pen" | "eraser") => {
     const ctx = canvasRefs.current[page]?.getContext("2d");
     if (!ctx) return;
@@ -273,11 +274,30 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   };
 
   const renderText = (_t: TextItem) => {
-    // Intentionally do nothing on canvas
+    // Text items are rendered as HTML overlays (with KaTeX) on top of the
+    // canvas — see the JSX below. We intentionally do nothing on the canvas
+    // so the same item is not painted twice and stays editable.
   };
 
-  const renderImage = (_it: ImageItem) => {
-    // UPGRADE: Intentionally do nothing on canvas so image remains draggable HTML overlay
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const renderImage = (it: ImageItem) => {
+    const ctx = canvasRefs.current[it.page]?.getContext("2d");
+    if (!ctx) return;
+    let img = imageCache.current.get(it.id);
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.drawImage(img, it.x, it.y, it.w, it.h);
+      return;
+    }
+    img = new Image();
+    img.onload = () => {
+      const ctx2 = canvasRefs.current[it.page]?.getContext("2d");
+      if (!ctx2) return;
+      ctx2.globalCompositeOperation = "source-over";
+      ctx2.drawImage(img!, it.x, it.y, it.w, it.h);
+    };
+    img.src = it.src;
+    imageCache.current.set(it.id, img);
   };
 
   const renderItem = (item: AnyItem) => {
@@ -316,39 +336,31 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (idx >= 0) {
         const [removed] = historyRef.current.splice(idx, 1);
         redrawPage(removed.page);
-        if (removed.type === "text" || removed.type === "image") bumpText();
+        if (removed.type === "text") bumpText();
       }
       return;
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
       renderItem(m.stroke);
-      if (m.stroke.type === "text" || m.stroke.type === "image") bumpText();
+      if (m.stroke.type === "text") bumpText();
       return;
     }
     if (m.type === "perm") {
       setStudentCanDraw(m.studentCanDraw);
       return;
     }
-    // NEW: Handle incoming updates for drag/resize
-    if (m.type === "update") {
-      const idx = historyRef.current.findIndex((s) => s.id === m.id);
-      if (idx >= 0) {
-        historyRef.current[idx] = { ...historyRef.current[idx], ...m.changes } as AnyItem;
-        bumpText();
-      }
-      return;
-    }
-
+    // stroke or text
     historyRef.current.push(m);
     renderItem(m);
-    if (m.type === "text" || m.type === "image") bumpText();
+    if (m.type === "text") bumpText();
   };
 
   const send = (m: Msg) => {
     channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
   };
 
+  // ── pointer/touch routing ──────────────────────────────────
   const localPos = (canvas: HTMLCanvasElement, clientX: number, clientY: number): Pt => {
     const rect = canvas.getBoundingClientRect();
     return { x: clientX - rect.left, y: clientY - rect.top };
@@ -362,7 +374,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   const onPointerDown = (page: number) => (e: React.PointerEvent<HTMLCanvasElement>) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
     if (pointersRef.current.size >= 2) {
+      // switch to 2-finger scroll mode — abort any in-progress stroke
       cancelActiveStroke();
       const ys = [...pointersRef.current.values()].map((p) => p.y);
       scrollStartRef.current = {
@@ -372,8 +386,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
-    if (!canDraw) return;
+    if (!canDraw) return; // student without permission can only view + scroll
 
+    // text mode: open inline editor at click position
     if (mode === "text") {
       const canvas = canvasRefs.current[page]!;
       const p = localPos(canvas, e.clientX, e.clientY);
@@ -381,6 +396,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
+    // single touch / mouse — start drawing
     if (e.pointerType !== "touch") {
       (e.target as Element).setPointerCapture?.(e.pointerId);
     }
@@ -398,6 +414,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     if (!pointersRef.current.has(e.pointerId)) return;
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
+    // 2-finger scroll
     if (pointersRef.current.size >= 2) {
       e.preventDefault();
       const ys = [...pointersRef.current.values()].map((p) => p.y);
@@ -408,6 +425,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
+    // drawing (pen/eraser only)
     if (mode === "text") return;
     if (!drawingRef.current.active || drawingRef.current.page !== page) return;
     e.preventDefault();
@@ -443,6 +461,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const commitText = useCallback(() => {
     if (!textEditor) return;
     const value = textEditor.value;
+    // If editing an existing item, remove it first (and broadcast the undo)
     if (textEditor.editingId) {
       const idx = historyRef.current.findIndex((s) => s.id === textEditor.editingId);
       if (idx >= 0) historyRef.current.splice(idx, 1);
@@ -468,8 +487,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     sendItem(item);
     bumpText();
     setTextEditor(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [textEditor, color, size, userId]);
 
+  // ── paste images from clipboard ────────────────────────────
   const placeImage = useCallback(
     (dataUrl: string, page: number) => {
       const img = new Image();
@@ -477,6 +498,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         const canvas = canvasRefs.current[page];
         if (!canvas) return;
         const rect = canvas.getBoundingClientRect();
+        // Scale image so its longer edge is <= 60% of the page
         const max = Math.min(rect.width, rect.height) * 0.6;
         const ratio = Math.min(max / img.naturalWidth, max / img.naturalHeight, 1);
         const w = img.naturalWidth * ratio;
@@ -494,11 +516,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           id: `${userId}-i-${Date.now()}`,
         };
         historyRef.current.push(item);
+        renderImage(item);
         sendItem(item);
-        bumpText(); // Trigger re-render to show image
       };
       img.src = dataUrl;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [userId],
   );
 
@@ -530,9 +553,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     return () => window.removeEventListener("paste", handlePaste);
   }, [canDraw, currentPage, placeImage]);
 
+  // ── AI: convert handwriting to LaTeX/text ──────────────────
   const convert = useServerFn(whiteboardConvert);
   const [converting, setConverting] = useState(false);
-
   const runOcr = async () => {
     const page = currentPage - 1;
     const canvas = canvasRefs.current[page];
@@ -545,6 +568,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         toast.message("Nothing recognised on this page.");
         return;
       }
+      // Remove handwritten strokes on this page (keep images/text), broadcast
       const strokeIds = historyRef.current.filter((it) => it.page === page && it.type === "stroke").map((it) => it.id);
       historyRef.current = historyRef.current.filter((it) => !(it.page === page && it.type === "stroke"));
       redrawPage(page);
@@ -552,6 +576,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         send({ type: "undo", id });
         deletePersistedStroke(id);
       });
+
+      // Save the recognised LaTeX/text as a rendered item (KaTeX overlay)
       const item: TextItem = {
         type: "text",
         page,
@@ -573,6 +599,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
   };
 
+  // Track which page is "current" while scrolling
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -598,10 +625,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // ── undo / redo (per-user, owns own items only) ───────────
   const myUndoStackRef = useRef<AnyItem[]>([]);
   const myRedoStackRef = useRef<AnyItem[]>([]);
   const [undoTick, setUndoTick] = useState(0);
 
+  // patch send to track own items
   const sendItem = (item: AnyItem) => {
     myUndoStackRef.current.push(item);
     myRedoStackRef.current = [];
@@ -650,7 +679,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 p-2 z-20">
+      <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 p-2">
         <Button size="sm" variant={mode === "pen" ? "default" : "outline"} onClick={() => setMode("pen")}>
           <Pen className="mr-1 h-4 w-4" /> Pen
         </Button>
@@ -797,10 +826,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       </div>
       <MathTools open={mathOpen} onClose={() => setMathOpen(false)} />
 
+      {/* Hint */}
       <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
-        Draw: 1 finger · Scroll: 2 fingers · Drag/Zoom Elements · Paste: Ctrl/Cmd+V
+        Draw with one finger · scroll with two fingers · paste images with Ctrl/Cmd+V · {PAGE_COUNT} pages
       </div>
 
+      {/* Pages — scrollable container */}
       <div
         ref={containerRef}
         className="relative flex-1 overflow-y-auto overscroll-contain bg-muted/30"
@@ -830,27 +861,27 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                   onPointerUp={onPointerUp(i)}
                   onPointerCancel={onPointerUp(i)}
                 />
-
-                {/* UPGRADED: Combined Interactive Elements Overlay */}
-                <ItemOverlays
+                {/* HTML overlay for text items — KaTeX renders $$...$$ as equations */}
+                <TextOverlay
                   page={i}
                   items={historyRef.current.filter(
-                    (s): s is TextItem | ImageItem => (s.type === "text" || s.type === "image") && s.page === i,
+                    (s): s is TextItem => s.type === "text" && s.page === i && (textEditor?.editingId ?? "") !== s.id,
                   )}
                   tick={textTick}
-                  canDraw={canDraw}
-                  editingId={textEditor?.editingId}
-                  onEdit={(it) => {
-                    if (it.type === "text") {
-                      setTextEditor({ page: it.page, x: it.x, y: it.y, value: it.text, editingId: it.id });
-                    }
-                  }}
-                  onUpdate={updatePersistedItem}
+                  onEdit={(it) =>
+                    setTextEditor({
+                      page: it.page,
+                      x: it.x,
+                      y: it.y,
+                      value: it.text,
+                      editingId: it.id,
+                    })
+                  }
                 />
 
                 {textEditor && textEditor.page === i && (
                   <div
-                    className="absolute z-30 flex flex-col gap-1"
+                    className="absolute z-20 flex flex-col gap-1"
                     style={{ left: textEditor.x, top: textEditor.y }}
                     onPointerDown={(e) => e.stopPropagation()}
                   >
@@ -859,6 +890,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                       value={textEditor.value}
                       onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
                       onKeyDown={(e) => {
+                        // Stop the canvas / page from intercepting keys
                         e.stopPropagation();
                         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                           e.preventDefault();
@@ -899,90 +931,55 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 }
 
 // ────────────────────────────────────────────────────────────
-// UPGRADED: ItemOverlays — Handles both Text and Images with
-// react-rnd for dragging and resizing.
+// TextOverlay — renders text items as HTML on top of the canvas.
+// Splits on $$...$$ blocks and renders them with KaTeX so OCR output
+// like "$$x^2+2x$$" appears as a typeset equation. Click to edit.
 // ────────────────────────────────────────────────────────────
 
-function ItemOverlays({
+function TextOverlay({
   page,
   items,
   tick,
-  canDraw,
-  editingId,
   onEdit,
-  onUpdate,
 }: {
   page: number;
-  items: (TextItem | ImageItem)[];
+  items: TextItem[];
   tick: number;
-  canDraw: boolean;
-  editingId?: string;
-  onEdit: (item: TextItem | ImageItem) => void;
-  onUpdate: (id: string, changes: Partial<AnyItem>) => void;
+  onEdit: (item: TextItem) => void;
 }) {
   void page;
   void tick;
-
   return (
     <>
-      {items.map((it) => {
-        if (it.id === editingId) return null;
-
-        return (
-          <Rnd
-            key={it.id}
-            position={{ x: it.x, y: it.y }}
-            size={it.type === "image" ? { width: it.w, height: it.h } : undefined}
-            disableDragging={!canDraw}
-            enableResizing={canDraw && it.type === "image"}
-            lockAspectRatio={it.type === "image"}
-            onDragStop={(e, d) => onUpdate(it.id, { x: d.x, y: d.y })}
-            onResizeStop={(e, direction, ref, delta, position) => {
-              if (it.type === "image") {
-                onUpdate(it.id, {
-                  w: parseFloat(ref.style.width),
-                  h: parseFloat(ref.style.height),
-                  ...position,
-                });
-              }
-            }}
-            bounds="parent"
-            className="absolute z-20 group hover:ring-2 hover:ring-primary/30 rounded"
-            onPointerDown={(e) => e.stopPropagation()} // Prevent canvas drawing while interacting
-          >
-            {it.type === "text" ? (
-              <div
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(it);
-                }}
-                className="w-full h-full cursor-text"
-                style={{
-                  color: it.color,
-                  fontSize: Math.max(14, it.size * 5),
-                  fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-                  lineHeight: 1.3,
-                }}
-                title="Double click to edit, drag to move"
-              >
-                <KatexInline text={it.text} />
-              </div>
-            ) : (
-              <img
-                src={it.src}
-                alt="Whiteboard Element"
-                className="w-full h-full object-contain cursor-move"
-                draggable={false}
-              />
-            )}
-          </Rnd>
-        );
-      })}
+      {items.map((it) => (
+        <button
+          key={it.id}
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(it);
+          }}
+          className="absolute z-10 max-w-[90%] cursor-text rounded px-1 text-left hover:bg-primary/5"
+          style={{
+            left: it.x,
+            top: it.y,
+            color: it.color,
+            fontSize: Math.max(14, it.size * 5),
+            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+            lineHeight: 1.3,
+          }}
+          title="Click to edit"
+        >
+          <KatexInline text={it.text} />
+        </button>
+      ))}
     </>
   );
 }
 
 function KatexInline({ text }: { text: string }) {
+  // Split on $$...$$ blocks. Even indices = prose, odd = LaTeX.
   const parts = useMemo(() => text.split(/\$\$([\s\S]+?)\$\$/g), [text]);
   return (
     <>
