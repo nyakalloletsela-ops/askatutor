@@ -536,26 +536,27 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         toast.message("Nothing recognised on this page.");
         return;
       }
-      const item: TextItem = {
-        type: "text",
-        page,
-        x: 20,
-        y: 20,
-        text,
-        color: "#0f172a",
-        size: 3,
-        id: `${userId}-ocr-${Date.now()}`,
-      };
-      historyRef.current.push(item);
-      renderText(item);
-      sendItem(item);
-      toast.success("Handwriting converted");
+      // Remove handwritten strokes on this page (keep images/text), broadcast
+      const strokeIds = historyRef.current
+        .filter((it) => it.page === page && it.type === "stroke")
+        .map((it) => it.id);
+      historyRef.current = historyRef.current.filter(
+        (it) => !(it.page === page && it.type === "stroke"),
+      );
+      redrawPage(page);
+      strokeIds.forEach((id) => send({ type: "undo", id }));
+
+      // Open the text editor seeded with recognised content so the user can edit
+      setMode("text");
+      setTextEditor({ page, x: 20, y: 20, value: text });
+      toast.success("Handwriting converted — edit and save");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
       setConverting(false);
     }
   };
+
 
 
   // Track which page is "current" while scrolling
