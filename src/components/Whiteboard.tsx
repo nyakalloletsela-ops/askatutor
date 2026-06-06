@@ -225,14 +225,17 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const persistStroke = (item: AnyItem) => {
     supabase
       .from("whiteboard_strokes")
-      .insert({
-        room_id: roomId,
-        stroke_id: item.id,
-        user_id: userId,
-        page: item.page,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: item as any,
-      })
+      .upsert(
+        {
+          room_id: roomId,
+          stroke_id: item.id,
+          user_id: userId,
+          page: item.page,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: item as any,
+        },
+        { onConflict: "room_id,stroke_id" },
+      )
       .then(({ error }) => {
         if (error) console.warn("whiteboard persist failed", error.message);
       });
