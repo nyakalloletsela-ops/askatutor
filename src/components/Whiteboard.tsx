@@ -518,8 +518,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           id: `${userId}-i-${Date.now()}`,
         };
         historyRef.current.push(item);
-        renderImage(item);
         sendItem(item);
+        bumpText();
       };
       img.src = dataUrl;
     },
