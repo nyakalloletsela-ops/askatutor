@@ -579,21 +579,32 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         deletePersistedStroke(id);
       });
 
-      // Save the recognised LaTeX/text as a rendered item (KaTeX overlay)
+      // Find next free vertical slot so converted equations don't overlap
+      // existing text/image overlays on the page.
+      const existing = historyRef.current.filter(
+        (it) => it.page === page && (it.type === "text" || it.type === "image"),
+      );
+      let nextY = 16;
+      for (const it of existing) {
+        const bottom = it.type === "image" ? it.y + it.h : it.y + 80;
+        if (bottom + 8 > nextY) nextY = bottom + 8;
+      }
+
+      // Save the recognised LaTeX/text as a small, draggable overlay item.
       const item: TextItem = {
         type: "text",
         page,
-        x: 20,
-        y: 20,
+        x: 16,
+        y: nextY,
         text,
         color: "#0f172a",
-        size: 4,
+        size: 2,
         id: `${userId}-ocr-${Date.now()}`,
       };
       historyRef.current.push(item);
       sendItem(item);
       bumpText();
-      toast.success("Handwriting converted — click the equation to edit");
+      toast.success("Converted — drag to move, click to edit");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
