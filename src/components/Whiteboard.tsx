@@ -337,24 +337,39 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (idx >= 0) {
         const [removed] = historyRef.current.splice(idx, 1);
         redrawPage(removed.page);
-        if (removed.type === "text") bumpText();
+        if (removed.type !== "stroke") bumpText();
       }
       return;
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
       renderItem(m.stroke);
-      if (m.stroke.type === "text") bumpText();
+      if (m.stroke.type !== "stroke") bumpText();
+      return;
+    }
+    if (m.type === "update") {
+      const it = historyRef.current.find((s) => s.id === m.id);
+      if (it && it.type !== "stroke") {
+        it.x = m.x;
+        it.y = m.y;
+        if (it.type === "image" && m.w != null && m.h != null) {
+          it.w = m.w;
+          it.h = m.h;
+        }
+        bumpText();
+      }
       return;
     }
     if (m.type === "perm") {
       setStudentCanDraw(m.studentCanDraw);
       return;
     }
-    // stroke or text
-    historyRef.current.push(m);
+    // stroke / text / image — replace if id already exists (idempotent sync)
+    const existing = historyRef.current.findIndex((s) => s.id === m.id);
+    if (existing >= 0) historyRef.current.splice(existing, 1, m);
+    else historyRef.current.push(m);
     renderItem(m);
-    if (m.type === "text") bumpText();
+    if (m.type !== "stroke") bumpText();
   };
 
   const send = (m: Msg) => {
