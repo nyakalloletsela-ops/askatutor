@@ -678,6 +678,22 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     setUndoTick((t) => t + 1);
   };
 
+  // Update an item's position (and optionally size for images), broadcast,
+  // and persist via upsert.
+  const updateItem = (id: string, x: number, y: number, w?: number, h?: number) => {
+    const it = historyRef.current.find((s) => s.id === id);
+    if (!it || it.type === "stroke") return;
+    it.x = x;
+    it.y = y;
+    if (it.type === "image" && w != null && h != null) {
+      it.w = w;
+      it.h = h;
+    }
+    send({ type: "update", id, x, y, w, h });
+    persistStroke(it);
+    bumpText();
+  };
+
   const clearCurrent = () => {
     const page = currentPage - 1;
     const c = canvasRefs.current[page];
