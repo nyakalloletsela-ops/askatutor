@@ -582,7 +582,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       // Find next free vertical slot so converted equations don't overlap
       // existing text/image overlays on the page.
       const existing = historyRef.current.filter(
-        (it) => it.page === page && (it.type === "text" || it.type === "image"),
+        (it): it is TextItem | ImageItem =>
+          it.page === page && (it.type === "text" || it.type === "image"),
       );
       let nextY = 16;
       for (const it of existing) {
