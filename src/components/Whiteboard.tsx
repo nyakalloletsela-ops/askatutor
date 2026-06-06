@@ -57,8 +57,9 @@ type AnyItem = Stroke | TextItem | ImageItem;
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: AnyItem };
+type UpdateMsg = { type: "update"; id: string; x: number; y: number; w?: number; h?: number };
 type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
+type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | UpdateMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
