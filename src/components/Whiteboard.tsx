@@ -57,8 +57,9 @@ type AnyItem = Stroke | TextItem | ImageItem;
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: AnyItem };
+type UpdateMsg = { type: "update"; id: string; x: number; y: number; w?: number; h?: number };
 type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
+type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | UpdateMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
@@ -224,14 +225,17 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const persistStroke = (item: AnyItem) => {
     supabase
       .from("whiteboard_strokes")
-      .insert({
-        room_id: roomId,
-        stroke_id: item.id,
-        user_id: userId,
-        page: item.page,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: item as any,
-      })
+      .upsert(
+        {
+          room_id: roomId,
+          stroke_id: item.id,
+          user_id: userId,
+          page: item.page,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: item as any,
+        },
+        { onConflict: "room_id,stroke_id" },
+      )
       .then(({ error }) => {
         if (error) console.warn("whiteboard persist failed", error.message);
       });
@@ -279,25 +283,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     // so the same item is not painted twice and stays editable.
   };
 
-  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
-  const renderImage = (it: ImageItem) => {
-    const ctx = canvasRefs.current[it.page]?.getContext("2d");
-    if (!ctx) return;
-    let img = imageCache.current.get(it.id);
-    if (img && img.complete && img.naturalWidth > 0) {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.drawImage(img, it.x, it.y, it.w, it.h);
-      return;
-    }
-    img = new Image();
-    img.onload = () => {
-      const ctx2 = canvasRefs.current[it.page]?.getContext("2d");
-      if (!ctx2) return;
-      ctx2.globalCompositeOperation = "source-over";
-      ctx2.drawImage(img!, it.x, it.y, it.w, it.h);
-    };
-    img.src = it.src;
-    imageCache.current.set(it.id, img);
+  const renderImage = (_it: ImageItem) => {
+    // Rendered as draggable/resizable HTML overlay below — see ItemOverlay.
   };
 
   const renderItem = (item: AnyItem) => {
@@ -336,24 +323,39 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (idx >= 0) {
         const [removed] = historyRef.current.splice(idx, 1);
         redrawPage(removed.page);
-        if (removed.type === "text") bumpText();
+        if (removed.type !== "stroke") bumpText();
       }
       return;
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
       renderItem(m.stroke);
-      if (m.stroke.type === "text") bumpText();
+      if (m.stroke.type !== "stroke") bumpText();
+      return;
+    }
+    if (m.type === "update") {
+      const it = historyRef.current.find((s) => s.id === m.id);
+      if (it && it.type !== "stroke") {
+        it.x = m.x;
+        it.y = m.y;
+        if (it.type === "image" && m.w != null && m.h != null) {
+          it.w = m.w;
+          it.h = m.h;
+        }
+        bumpText();
+      }
       return;
     }
     if (m.type === "perm") {
       setStudentCanDraw(m.studentCanDraw);
       return;
     }
-    // stroke or text
-    historyRef.current.push(m);
+    // stroke / text / image — replace if id already exists (idempotent sync)
+    const existing = historyRef.current.findIndex((s) => s.id === m.id);
+    if (existing >= 0) historyRef.current.splice(existing, 1, m);
+    else historyRef.current.push(m);
     renderItem(m);
-    if (m.type === "text") bumpText();
+    if (m.type !== "stroke") bumpText();
   };
 
   const send = (m: Msg) => {
@@ -516,8 +518,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           id: `${userId}-i-${Date.now()}`,
         };
         historyRef.current.push(item);
-        renderImage(item);
         sendItem(item);
+        bumpText();
       };
       img.src = dataUrl;
     },
@@ -577,21 +579,33 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         deletePersistedStroke(id);
       });
 
-      // Save the recognised LaTeX/text as a rendered item (KaTeX overlay)
+      // Find next free vertical slot so converted equations don't overlap
+      // existing text/image overlays on the page.
+      const existing = historyRef.current.filter(
+        (it): it is TextItem | ImageItem =>
+          it.page === page && (it.type === "text" || it.type === "image"),
+      );
+      let nextY = 16;
+      for (const it of existing) {
+        const bottom = it.type === "image" ? it.y + it.h : it.y + 80;
+        if (bottom + 8 > nextY) nextY = bottom + 8;
+      }
+
+      // Save the recognised LaTeX/text as a small, draggable overlay item.
       const item: TextItem = {
         type: "text",
         page,
-        x: 20,
-        y: 20,
+        x: 16,
+        y: nextY,
         text,
         color: "#0f172a",
-        size: 4,
+        size: 2,
         id: `${userId}-ocr-${Date.now()}`,
       };
       historyRef.current.push(item);
       sendItem(item);
       bumpText();
-      toast.success("Handwriting converted — click the equation to edit");
+      toast.success("Converted — drag to move, click to edit");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
@@ -662,6 +676,22 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     send({ type: "restore", stroke: item });
     persistStroke(item);
     setUndoTick((t) => t + 1);
+  };
+
+  // Update an item's position (and optionally size for images), broadcast,
+  // and persist via upsert.
+  const updateItem = (id: string, x: number, y: number, w?: number, h?: number) => {
+    const it = historyRef.current.find((s) => s.id === id);
+    if (!it || it.type === "stroke") return;
+    it.x = x;
+    it.y = y;
+    if (it.type === "image" && w != null && h != null) {
+      it.w = w;
+      it.h = h;
+    }
+    send({ type: "update", id, x, y, w, h });
+    persistStroke(it);
+    bumpText();
   };
 
   const clearCurrent = () => {
@@ -868,6 +898,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                     (s): s is TextItem => s.type === "text" && s.page === i && (textEditor?.editingId ?? "") !== s.id,
                   )}
                   tick={textTick}
+                  canEdit={canDraw}
+                  onMove={(id, x, y) => updateItem(id, x, y)}
                   onEdit={(it) =>
                     setTextEditor({
                       page: it.page,
@@ -877,6 +909,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                       editingId: it.id,
                     })
                   }
+                />
+                {/* HTML overlay for images — draggable & resizable */}
+                <ImageOverlay
+                  page={i}
+                  items={historyRef.current.filter((s): s is ImageItem => s.type === "image" && s.page === i)}
+                  tick={textTick}
+                  canEdit={canDraw}
+                  onMove={(id, x, y, w, h) => updateItem(id, x, y, w, h)}
                 />
 
                 {textEditor && textEditor.page === i && (
@@ -941,40 +981,191 @@ function TextOverlay({
   items,
   tick,
   onEdit,
+  onMove,
+  canEdit,
 }: {
   page: number;
   items: TextItem[];
   tick: number;
   onEdit: (item: TextItem) => void;
+  onMove: (id: string, x: number, y: number) => void;
+  canEdit: boolean;
 }) {
   void page;
   void tick;
   return (
     <>
       {items.map((it) => (
-        <button
+        <DraggableOverlay
           key={it.id}
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(it);
-          }}
-          className="absolute z-10 max-w-[90%] cursor-text rounded px-1 text-left hover:bg-primary/5"
+          x={it.x}
+          y={it.y}
+          canDrag={canEdit}
+          onCommit={(x, y) => onMove(it.id, x, y)}
+          onClick={() => canEdit && onEdit(it)}
+          className="absolute z-10 max-w-[90%] select-none rounded px-1 hover:bg-primary/5"
           style={{
-            left: it.x,
-            top: it.y,
             color: it.color,
             fontSize: Math.max(14, it.size * 5),
             fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
             lineHeight: 1.3,
           }}
-          title="Click to edit"
+          title={canEdit ? "Drag to move · click to edit" : ""}
         >
           <KatexInline text={it.text} />
-        </button>
+        </DraggableOverlay>
       ))}
     </>
+  );
+}
+
+function ImageOverlay({
+  page,
+  items,
+  tick,
+  onMove,
+  canEdit,
+}: {
+  page: number;
+  items: ImageItem[];
+  tick: number;
+  onMove: (id: string, x: number, y: number, w?: number, h?: number) => void;
+  canEdit: boolean;
+}) {
+  void page;
+  void tick;
+  return (
+    <>
+      {items.map((it) => (
+        <ResizableImage key={it.id} item={it} canEdit={canEdit} onCommit={onMove} />
+      ))}
+    </>
+  );
+}
+
+function ResizableImage({
+  item,
+  canEdit,
+  onCommit,
+}: {
+  item: ImageItem;
+  canEdit: boolean;
+  onCommit: (id: string, x: number, y: number, w?: number, h?: number) => void;
+}) {
+  const [pos, setPos] = useState({ x: item.x, y: item.y, w: item.w, h: item.h });
+  useEffect(() => {
+    setPos({ x: item.x, y: item.y, w: item.w, h: item.h });
+  }, [item.x, item.y, item.w, item.h]);
+
+  const dragRef = useRef<{ mode: "move" | "resize"; startX: number; startY: number; orig: typeof pos } | null>(null);
+
+  const onPointerDown = (mode: "move" | "resize") => (e: React.PointerEvent) => {
+    if (!canEdit) return;
+    e.stopPropagation();
+    e.preventDefault();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dragRef.current = { mode, startX: e.clientX, startY: e.clientY, orig: { ...pos } };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    e.stopPropagation();
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    const o = dragRef.current.orig;
+    if (dragRef.current.mode === "move") {
+      setPos({ ...o, x: o.x + dx, y: o.y + dy });
+    } else {
+      setPos({ ...o, w: Math.max(40, o.w + dx), h: Math.max(40, o.h + dy) });
+    }
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    e.stopPropagation();
+    dragRef.current = null;
+    onCommit(item.id, pos.x, pos.y, pos.w, pos.h);
+  };
+
+  return (
+    <div
+      className="absolute z-10 select-none rounded border border-transparent hover:border-primary/40"
+      style={{ left: pos.x, top: pos.y, width: pos.w, height: pos.h, touchAction: "none" }}
+      onPointerDown={onPointerDown("move")}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      title={canEdit ? "Drag to move · drag corner to resize" : ""}
+    >
+      <img src={item.src} alt="" draggable={false} className="pointer-events-none h-full w-full object-contain" />
+      {canEdit && (
+        <span
+          onPointerDown={onPointerDown("resize")}
+          className="absolute -bottom-1 -right-1 h-3 w-3 cursor-nwse-resize rounded-sm border border-primary bg-white"
+        />
+      )}
+    </div>
+  );
+}
+
+function DraggableOverlay({
+  x,
+  y,
+  canDrag,
+  onCommit,
+  onClick,
+  className,
+  style,
+  title,
+  children,
+}: {
+  x: number;
+  y: number;
+  canDrag: boolean;
+  onCommit: (x: number, y: number) => void;
+  onClick: () => void;
+  className?: string;
+  style?: React.CSSProperties;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  const [pos, setPos] = useState({ x, y });
+  useEffect(() => setPos({ x, y }), [x, y]);
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    if (!canDrag) return;
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (!dragRef.current.moved && Math.abs(dx) + Math.abs(dy) > 4) dragRef.current.moved = true;
+    if (dragRef.current.moved) {
+      e.stopPropagation();
+      setPos({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
+    }
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d) return;
+    e.stopPropagation();
+    if (d.moved) onCommit(pos.x, pos.y);
+    else onClick();
+  };
+  return (
+    <div
+      className={className}
+      style={{ ...style, left: pos.x, top: pos.y, touchAction: "none", cursor: canDrag ? "grab" : "default" }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      title={title}
+    >
+      {children}
+    </div>
   );
 }
 
