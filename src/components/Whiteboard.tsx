@@ -283,25 +283,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     // so the same item is not painted twice and stays editable.
   };
 
-  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
-  const renderImage = (it: ImageItem) => {
-    const ctx = canvasRefs.current[it.page]?.getContext("2d");
-    if (!ctx) return;
-    let img = imageCache.current.get(it.id);
-    if (img && img.complete && img.naturalWidth > 0) {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.drawImage(img, it.x, it.y, it.w, it.h);
-      return;
-    }
-    img = new Image();
-    img.onload = () => {
-      const ctx2 = canvasRefs.current[it.page]?.getContext("2d");
-      if (!ctx2) return;
-      ctx2.globalCompositeOperation = "source-over";
-      ctx2.drawImage(img!, it.x, it.y, it.w, it.h);
-    };
-    img.src = it.src;
-    imageCache.current.set(it.id, img);
+  const renderImage = (_it: ImageItem) => {
+    // Rendered as draggable/resizable HTML overlay below — see ItemOverlay.
   };
 
   const renderItem = (item: AnyItem) => {
