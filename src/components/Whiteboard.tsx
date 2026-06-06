@@ -898,6 +898,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                     (s): s is TextItem => s.type === "text" && s.page === i && (textEditor?.editingId ?? "") !== s.id,
                   )}
                   tick={textTick}
+                  canEdit={canDraw}
+                  onMove={(id, x, y) => updateItem(id, x, y)}
                   onEdit={(it) =>
                     setTextEditor({
                       page: it.page,
@@ -907,6 +909,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                       editingId: it.id,
                     })
                   }
+                />
+                {/* HTML overlay for images — draggable & resizable */}
+                <ImageOverlay
+                  page={i}
+                  items={historyRef.current.filter((s): s is ImageItem => s.type === "image" && s.page === i)}
+                  tick={textTick}
+                  canEdit={canDraw}
+                  onMove={(id, x, y, w, h) => updateItem(id, x, y, w, h)}
                 />
 
                 {textEditor && textEditor.page === i && (
