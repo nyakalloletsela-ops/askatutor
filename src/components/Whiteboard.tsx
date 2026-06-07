@@ -867,10 +867,20 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           size="sm"
           variant="outline"
           onClick={runOcr}
-          disabled={converting || !canDraw}
+          disabled={converting || convertingAll || !canDraw}
           title="Convert handwriting on this page to LaTeX & text (AI)"
         >
           <Wand2 className="mr-1 h-4 w-4" /> {converting ? "Converting…" : "AI convert"}
+        </Button>
+        <Button
+          size="sm"
+          variant="default"
+          onClick={runOcrAll}
+          disabled={converting || convertingAll || !canDraw}
+          title="Convert handwriting on every page in one click"
+        >
+          <Wand2 className="mr-1 h-4 w-4" />
+          {convertingAll ? "Converting all…" : "Convert all"}
         </Button>
         <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs hover:bg-accent">
           <ImageIcon className="h-3.5 w-3.5" /> Image
