@@ -558,58 +558,98 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   // ── AI: convert handwriting to LaTeX/text ──────────────────
   const convert = useServerFn(whiteboardConvert);
   const [converting, setConverting] = useState(false);
+  const [convertingAll, setConvertingAll] = useState(false);
+
+  const convertPage = async (page: number): Promise<boolean> => {
+    const canvas = canvasRefs.current[page];
+    if (!canvas) return false;
+    const hasStrokes = historyRef.current.some((it) => it.page === page && it.type === "stroke");
+    if (!hasStrokes) return false;
+    const dataUrl = canvas.toDataURL("image/png");
+    const { text } = await convert({ data: { imageDataUrl: dataUrl } });
+    if (!text) return false;
+
+    // Remove handwritten strokes on this page (keep images/text), broadcast & persist
+    const strokeIds = historyRef.current
+      .filter((it) => it.page === page && it.type === "stroke")
+      .map((it) => it.id);
+    historyRef.current = historyRef.current.filter((it) => !(it.page === page && it.type === "stroke"));
+    redrawPage(page);
+    strokeIds.forEach((id) => {
+      send({ type: "undo", id });
+      deletePersistedStroke(id);
+    });
+
+    // Find next free vertical slot so converted equations don't overlap
+    const existing = historyRef.current.filter(
+      (it): it is TextItem | ImageItem =>
+        it.page === page && (it.type === "text" || it.type === "image"),
+    );
+    let nextY = 16;
+    for (const it of existing) {
+      const bottom = it.type === "image" ? it.y + it.h : it.y + 80;
+      if (bottom + 8 > nextY) nextY = bottom + 8;
+    }
+
+    const item: TextItem = {
+      type: "text",
+      page,
+      x: 16,
+      y: nextY,
+      text,
+      color: "#0f172a",
+      size: 2,
+      id: `${userId}-ocr-${Date.now()}-${page}`,
+    };
+    historyRef.current.push(item);
+    sendItem(item);
+    bumpText();
+    return true;
+  };
+
   const runOcr = async () => {
     const page = currentPage - 1;
-    const canvas = canvasRefs.current[page];
-    if (!canvas) return;
     setConverting(true);
     try {
-      const dataUrl = canvas.toDataURL("image/png");
-      const { text } = await convert({ data: { imageDataUrl: dataUrl } });
-      if (!text) {
-        toast.message("Nothing recognised on this page.");
-        return;
-      }
-      // Remove handwritten strokes on this page (keep images/text), broadcast
-      const strokeIds = historyRef.current.filter((it) => it.page === page && it.type === "stroke").map((it) => it.id);
-      historyRef.current = historyRef.current.filter((it) => !(it.page === page && it.type === "stroke"));
-      redrawPage(page);
-      strokeIds.forEach((id) => {
-        send({ type: "undo", id });
-        deletePersistedStroke(id);
-      });
-
-      // Find next free vertical slot so converted equations don't overlap
-      // existing text/image overlays on the page.
-      const existing = historyRef.current.filter(
-        (it): it is TextItem | ImageItem =>
-          it.page === page && (it.type === "text" || it.type === "image"),
-      );
-      let nextY = 16;
-      for (const it of existing) {
-        const bottom = it.type === "image" ? it.y + it.h : it.y + 80;
-        if (bottom + 8 > nextY) nextY = bottom + 8;
-      }
-
-      // Save the recognised LaTeX/text as a small, draggable overlay item.
-      const item: TextItem = {
-        type: "text",
-        page,
-        x: 16,
-        y: nextY,
-        text,
-        color: "#0f172a",
-        size: 2,
-        id: `${userId}-ocr-${Date.now()}`,
-      };
-      historyRef.current.push(item);
-      sendItem(item);
-      bumpText();
-      toast.success("Converted — drag to move, click to edit");
+      const ok = await convertPage(page);
+      if (!ok) toast.message("Nothing recognised on this page.");
+      else toast.success("Converted — drag to move, click to edit");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
       setConverting(false);
+    }
+  };
+
+  const runOcrAll = async () => {
+    const pagesWithInk = Array.from(
+      new Set(
+        historyRef.current.filter((it) => it.type === "stroke").map((it) => it.page),
+      ),
+    ).sort((a, b) => a - b);
+    if (pagesWithInk.length === 0) {
+      toast.message("No handwriting to convert.");
+      return;
+    }
+    setConvertingAll(true);
+    let converted = 0;
+    try {
+      for (const p of pagesWithInk) {
+        try {
+          if (await convertPage(p)) converted += 1;
+        } catch (err) {
+          toast.error(
+            `Page ${p + 1}: ${err instanceof Error ? err.message : "conversion failed"}`,
+          );
+        }
+      }
+      if (converted > 0) {
+        toast.success(`Converted ${converted} page${converted === 1 ? "" : "s"} — drag anything to reposition`);
+      } else {
+        toast.message("Nothing recognised.");
+      }
+    } finally {
+      setConvertingAll(false);
     }
   };
 
@@ -827,10 +867,20 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           size="sm"
           variant="outline"
           onClick={runOcr}
-          disabled={converting || !canDraw}
+          disabled={converting || convertingAll || !canDraw}
           title="Convert handwriting on this page to LaTeX & text (AI)"
         >
           <Wand2 className="mr-1 h-4 w-4" /> {converting ? "Converting…" : "AI convert"}
+        </Button>
+        <Button
+          size="sm"
+          variant="default"
+          onClick={runOcrAll}
+          disabled={converting || convertingAll || !canDraw}
+          title="Convert handwriting on every page in one click"
+        >
+          <Wand2 className="mr-1 h-4 w-4" />
+          {convertingAll ? "Converting all…" : "Convert all"}
         </Button>
         <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs hover:bg-accent">
           <ImageIcon className="h-3.5 w-3.5" /> Image
