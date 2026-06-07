@@ -18,11 +18,15 @@ export const whiteboardConvert = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("AI is not configured");
 
     const system =
-      "You are an OCR engine specialised in mathematics, science and chemistry handwriting on whiteboards. " +
-      "Look at the image and transcribe ALL handwritten content exactly. " +
-      "For every mathematical or chemical equation, output it as LaTeX wrapped in $$...$$ on its own line. " +
-      "For plain prose, output it as plain text. Preserve line breaks and reading order. " +
-      "Do not add commentary, headers or explanations — output only the transcription.";
+      "You are an OCR + digitiser for whiteboards used in mathematics, science and chemistry tutoring. " +
+      "Reproduce the page as a clean, polished digital version with ZERO handwritten elements remaining. Strict rules:\n" +
+      "1. Plain handwriting → output as plain text, preserving line breaks and reading order.\n" +
+      "2. Equations / formulas / chemical reactions → output as LaTeX wrapped in $$...$$ on its own line.\n" +
+      "3. Diagrams, sketches, graphs, shapes, arrows, chemistry apparatus, geometric figures → REDRAW them as inline SVG using `<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 W H\" width=\"W\" height=\"H\">…</svg>`. " +
+      "Use smooth precise lines (stroke=\"#0f172a\", stroke-width=\"2\", fill=\"none\" unless a shape is filled). Preserve the original proportions and any labels — put labels INSIDE the SVG with <text> elements. " +
+      "CRITICAL: do NOT replace a visual drawing with a written description or a name — every diagram must remain a visual diagram.\n" +
+      "4. Preserve reading order: interleave text, $$LaTeX$$ blocks and <svg> blocks exactly where they appear on the board.\n" +
+      "5. Do NOT add commentary, headings, code fences or explanations — output only the digitised content.";
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
