@@ -1170,30 +1170,62 @@ function DraggableOverlay({
 }
 
 function KatexInline({ text }: { text: string }) {
-  // Split on $$...$$ blocks. Even indices = prose, odd = LaTeX.
-  const parts = useMemo(() => text.split(/\$\$([\s\S]+?)\$\$/g), [text]);
+  // Split the OCR output into a sequence of segments:
+  //   - $$...$$  → typeset with KaTeX
+  //   - <svg>…</svg> → rendered as-is (sanitised: only the svg element is kept)
+  //   - everything else → plain text
+  const segments = useMemo(() => {
+    const out: { kind: "text" | "tex" | "svg"; value: string }[] = [];
+    const re = /(\$\$[\s\S]+?\$\$)|(<svg[\s\S]*?<\/svg>)/gi;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push({ kind: "text", value: text.slice(last, m.index) });
+      if (m[1]) out.push({ kind: "tex", value: m[1].slice(2, -2) });
+      else if (m[2]) out.push({ kind: "svg", value: m[2] });
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push({ kind: "text", value: text.slice(last) });
+    return out;
+  }, [text]);
+
   return (
     <>
-      {parts.map((part, idx) => {
-        if (idx % 2 === 1) {
+      {segments.map((seg, idx) => {
+        if (seg.kind === "tex") {
           let html = "";
           try {
-            html = katex.renderToString(part, {
+            html = katex.renderToString(seg.value, {
               throwOnError: false,
               displayMode: true,
               output: "html",
             });
           } catch {
-            html = `<code>$$${part}$$</code>`;
+            html = `<code>$$${seg.value}$$</code>`;
           }
           return <span key={idx} className="my-1 block" dangerouslySetInnerHTML={{ __html: html }} />;
         }
+        if (seg.kind === "svg") {
+          // Strip <script> tags + on* handlers as a basic safety measure.
+          const safe = seg.value
+            .replace(/<script[\s\S]*?<\/script>/gi, "")
+            .replace(/\son\w+="[^"]*"/gi, "")
+            .replace(/\son\w+='[^']*'/gi, "");
+          return (
+            <span
+              key={idx}
+              className="my-1 block max-w-full [&_svg]:max-w-full [&_svg]:h-auto"
+              dangerouslySetInnerHTML={{ __html: safe }}
+            />
+          );
+        }
         return (
           <span key={idx} style={{ whiteSpace: "pre-wrap" }}>
-            {part}
+            {seg.value}
           </span>
         );
       })}
     </>
   );
 }
+
