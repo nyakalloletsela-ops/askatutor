@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo, type FloatingVideoHandle } from "@/components/FloatingVideo";
-import { Whiteboard } from "@/components/Whiteboard";
+import { ClassroomWorkspace } from "@/components/classroom/ClassroomWorkspace";
 import { LorddaLab } from "@/components/LorddaLab";
 import { WebGLLab } from "@/components/WebGLLab";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
@@ -328,7 +328,12 @@ function ClassroomPage() {
             <TabsTrigger value="lab3d">3D Lab</TabsTrigger>
           </TabsList>
           <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1">
-            <Whiteboard roomId={roomId} userId={user.id} isHost={canControlBoard} />
+            <ClassroomWorkspace
+              roomId={roomId}
+              userId={user.id}
+              displayName={user.email ?? "Guest"}
+              canEdit={canControlBoard}
+            />
           </TabsContent>
           <TabsContent value="notes" className="m-0 min-h-0 flex-1">
             <NotesPanel roomId={roomId} />
