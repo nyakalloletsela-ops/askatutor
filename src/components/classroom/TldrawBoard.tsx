@@ -132,13 +132,12 @@ export const TldrawBoard = forwardRef<TldrawBoardHandle, Props>(function TldrawB
     pendingRef.current = { added: {}, updated: {}, removed: {} };
     if (!added.length && !updated.length && !removedIds.length) return;
 
-    const rows: { whiteboard_id: string; user_id: string; mutation_type: string; mutation_payload: unknown }[] =
-      [];
-    if (added.length) rows.push({ whiteboard_id: whiteboardId, user_id: userId, mutation_type: "add", mutation_payload: { records: added } });
-    if (updated.length) rows.push({ whiteboard_id: whiteboardId, user_id: userId, mutation_type: "update", mutation_payload: { records: updated } });
+    const rows: Array<{ whiteboard_id: string; user_id: string; mutation_type: string; mutation_payload: Record<string, unknown> }> = [];
+    if (added.length) rows.push({ whiteboard_id: whiteboardId, user_id: userId, mutation_type: "add", mutation_payload: { records: added as unknown as Record<string, unknown>[] } });
+    if (updated.length) rows.push({ whiteboard_id: whiteboardId, user_id: userId, mutation_type: "update", mutation_payload: { records: updated as unknown as Record<string, unknown>[] } });
     if (removedIds.length) rows.push({ whiteboard_id: whiteboardId, user_id: userId, mutation_type: "remove", mutation_payload: { ids: removedIds } });
 
-    const { error } = await supabase.from("whiteboard_mutations").insert(rows);
+    const { error } = await supabase.from("whiteboard_mutations").insert(rows as never);
     if (error) console.warn("mutation insert failed", error.message);
   };
 
