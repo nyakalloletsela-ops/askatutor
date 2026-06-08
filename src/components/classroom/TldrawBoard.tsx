@@ -44,7 +44,7 @@ export const TldrawBoard = forwardRef<TldrawBoardHandle, Props>(function TldrawB
           type: "text",
           x: view.midX - 100,
           y: view.midY,
-          props: { text: value, size: "m", w: 320, autoSize: false },
+          props: { richText: toRichText(value), w: 320, autoSize: false },
         });
       },
     }),
