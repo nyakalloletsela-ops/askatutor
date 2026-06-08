@@ -183,7 +183,7 @@ export const TldrawBoard = forwardRef<TldrawBoardHandle, Props>(function TldrawB
       if (typeof document !== "undefined" && document.hidden) return;
       dirtyRef.current = false;
       try {
-        const snapshot = editor.store.getSnapshot();
+        const snapshot = editor.getSnapshot();
         const { error } = await supabase
           .from("whiteboard_snapshots")
           .insert({ whiteboard_id: whiteboardId, snapshot_data: snapshot as never });
