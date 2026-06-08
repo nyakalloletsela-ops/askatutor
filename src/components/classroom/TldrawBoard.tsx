@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import "tldraw/tldraw.css";
-import { Tldraw, type Editor, type TLRecord, createShapeId } from "tldraw";
+import { Tldraw, type Editor, type TLRecord, createShapeId, toRichText } from "tldraw";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
