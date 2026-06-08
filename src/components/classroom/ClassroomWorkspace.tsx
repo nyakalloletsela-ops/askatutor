@@ -50,13 +50,7 @@ export function ClassroomWorkspace({ roomId, userId, displayName, canEdit }: Pro
     toast.success("Inserted onto board");
   };
 
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        Could not load whiteboard: {error}
-      </div>
-    );
-  }
+  // Note: board may fail (e.g. demo-* rooms with no session row) — chat/AI/presence still work.
 
   return (
     <div
@@ -116,6 +110,10 @@ export function ClassroomWorkspace({ roomId, userId, displayName, canEdit }: Pro
                   canEdit={canEdit}
                 />
               </Suspense>
+            ) : error ? (
+              <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
+                Whiteboard unavailable for this room ({error}). Chat and AI still work.
+              </div>
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                 Connecting…
