@@ -70,7 +70,7 @@ export const TldrawBoard = forwardRef<TldrawBoardHandle, Props>(function TldrawB
       try {
         if (snap?.snapshot_data) {
           try {
-            editor.store.loadSnapshot(snap.snapshot_data as never);
+            editor.loadSnapshot(snap.snapshot_data as never);
           } catch (e) {
             console.warn("snapshot load failed", e);
           }
