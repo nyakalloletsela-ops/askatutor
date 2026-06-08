@@ -85,7 +85,8 @@ export const TldrawBoard = forwardRef<TldrawBoardHandle, Props>(function TldrawB
         if (lastSnapshotAtRef.current) q = q.gt("created_at", lastSnapshotAtRef.current);
         const { data: muts } = await q;
         if (cancelled) return;
-        for (const m of muts ?? []) applyRemoteMutation(editor, m.mutation_type, m.mutation_payload);
+        for (const m of muts ?? [])
+          applyRemoteMutation(editor, m.mutation_type, (m.mutation_payload ?? {}) as Record<string, unknown>);
       } finally {
         remoteApplyingRef.current = false;
       }
