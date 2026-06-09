@@ -18,11 +18,12 @@ export const Route = createFileRoute("/_authenticated/classroom/$roomId/lab3d")(
 });
 
 function Page() {
+  const { roomId } = Route.useParams();
   return (
     <div className="flex h-screen flex-col bg-background">
       <header className="flex items-center gap-2 border-b px-3 py-2">
         <Button asChild size="sm" variant="ghost">
-          <Link to="/classroom/$roomId" params={{ roomId: useParamsRoomId() }}>
+          <Link to="/classroom/$roomId" params={{ roomId }}>
             <ArrowLeft className="mr-1 h-4 w-4" /> Back to whiteboard
           </Link>
         </Button>
@@ -33,8 +34,4 @@ function Page() {
       </main>
     </div>
   );
-}
-
-function useParamsRoomId() {
-  return Route.useParams().roomId;
 }
