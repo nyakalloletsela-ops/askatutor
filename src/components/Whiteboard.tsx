@@ -67,12 +67,9 @@ const PAGE_COUNT = 100;
 interface Props {
   roomId: string;
   userId: string;
-  /** When true the user is treated as the room host (tutor/admin) and can
-   * toggle whether the other participant is allowed to draw. */
   isHost?: boolean;
 }
 
-// Helper to extract editable text nodes inside an SVG string safely without full DOM libraries
 function parseSvgTexts(svgString: string): { original: string; current: string }[] {
   const matches: { original: string; current: string }[] = [];
   const regex = /<text[^>]*>([\s\S]*?)<\/text>/gi;
@@ -86,11 +83,9 @@ function parseSvgTexts(svgString: string): { original: string; current: string }
   return matches;
 }
 
-// Helper to replace text nodes inside an SVG string
 function updateSvgTexts(svgString: string, updates: { original: string; current: string }[]): string {
   let updated = svgString;
   updates.forEach((up) => {
-    // Escapes match strings safely to replace exact textual targets
     const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`(<text[^>]*>)\\s*${escapeRegExp(up.original)}\\s*(<\/text>)`, "gi");
     updated = updated.replace(regex, `$1${up.current}$2`);
@@ -103,7 +98,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // active drawing state
   const drawingRef = useRef<{
     active: boolean;
     page: number;
@@ -111,25 +105,21 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     id: string;
   }>({ active: false, page: -1, points: [], id: "" });
 
-  // multi-touch tracking for 2-finger scroll
   const pointersRef = useRef<Map<number, Pt>>(new Map());
   const scrollStartRef = useRef<{ scrollTop: number; midY: number }>({
     scrollTop: 0,
     midY: 0,
   });
 
-  // remember all items so we can redraw on resize
   const historyRef = useRef<AnyItem[]>([]);
 
   const [color, setColor] = useState(COLORS[0]);
   const [size, setSize] = useState(3);
   const [mode, setMode] = useState<"pen" | "eraser" | "text">("pen");
   const [currentPage, setCurrentPage] = useState(1);
-  // Tutor controls whether the student can draw. Default: only host draws.
   const [studentCanDraw, setStudentCanDraw] = useState(false);
   const canDraw = isHost || studentCanDraw;
 
-  // inline text editor state
   const [textEditor, setTextEditor] = useState<{
     page: number;
     x: number;
@@ -140,11 +130,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     svgFields?: { original: string; current: string }[];
   } | null>(null);
 
-  // Bumped whenever text items change so the HTML overlay re-renders.
   const [textTick, setTextTick] = useState(0);
   const bumpText = useCallback(() => setTextTick((t) => t + 1), []);
 
-  // Collapse the toolbar (handy in landscape on small screens).
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
   const [mathOpen, setMathOpen] = useState(false);
   void toolbarCollapsed;
@@ -159,15 +147,16 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   const pages = useMemo(() => Array.from({ length: PAGE_COUNT }, (_, i) => i), []);
 
-  // ── canvas sizing (per page) ────────────────────────────────
   const sizeCanvas = (canvas: HTMLCanvasElement) => {
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0) return false;
+    if (rect.width === 0 || rect.height === 0) return false;
+
     const targetW = Math.floor(rect.width * dpr);
     const targetH = Math.floor(rect.height * dpr);
-    // Skip if already sized — assigning width/height clears the canvas
+
     if (canvas.width === targetW && canvas.height === targetH) return false;
+
     canvas.width = targetW;
     canvas.height = targetH;
     const ctx = canvas.getContext("2d");
@@ -179,18 +168,30 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     return true;
   };
 
-  useEffect(() => {
-    const onResize = () => {
-      canvasRefs.current.forEach((c) => c && sizeCanvas(c));
-      historyRef.current.forEach(renderItem);
-    };
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Safe canvas resizing triggers redraw accurately
+  const resizeAllAndRedraw = useCallback(() => {
+    canvasRefs.current.forEach((c) => {
+      if (c) {
+        sizeCanvas(c);
+        const pageIdx = canvasRefs.current.indexOf(c);
+        if (pageIdx !== -1) redrawPage(pageIdx);
+      }
+    });
   }, []);
 
-  // ── load persisted strokes & RESET when room changes ──────────
+  useEffect(() => {
+    // Run after structural paint confirms client bounding boxes exist
+    const timer = setTimeout(() => {
+      resizeAllAndRedraw();
+    }, 100);
+
+    window.addEventListener("resize", resizeAllAndRedraw);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", resizeAllAndRedraw);
+    };
+  }, [resizeAllAndRedraw]);
+
   useEffect(() => {
     historyRef.current = [];
     myUndoStackRef.current = [];
@@ -210,22 +211,26 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         .eq("room_id", roomId)
         .order("created_at", { ascending: true });
       if (cancelled || !data) return;
+
       for (const row of data as Array<{ data: AnyItem }>) {
         const s = row.data;
         if (s && (s.type === "stroke" || s.type === "text" || s.type === "image")) {
           historyRef.current.push(s);
-          renderItem(s);
         }
       }
-      bumpText();
+
+      // Allow canvas widths to calculate before forcing the initial visual dump
+      setTimeout(() => {
+        if (cancelled) return;
+        canvasRefs.current.forEach((_, idx) => redrawPage(idx));
+        bumpText();
+      }, 50);
     })();
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, [roomId, bumpText]);
 
-  // ── realtime ────────────────────────────────────────────────
   useEffect(() => {
     const channel = supabase.channel(`whiteboard:${roomId}`, {
       config: { broadcast: { self: false } },
@@ -246,10 +251,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       channel.unsubscribe();
       channelRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, [roomId, studentCanDraw, isHost]);
 
-  // ── persistence helpers ───────────────────────────────────
   const persistStroke = (item: AnyItem) => {
     supabase
       .from("whiteboard_strokes")
@@ -259,7 +262,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           stroke_id: item.id,
           user_id: userId,
           page: item.page,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           data: item as any,
         },
         { onConflict: "room_id,stroke_id" },
@@ -277,6 +279,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       .eq("stroke_id", strokeId)
       .then(() => undefined);
   };
+
   const deletePersistedPage = (page: number) => {
     supabase
       .from("whiteboard_strokes")
@@ -286,7 +289,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       .then(() => undefined);
   };
 
-  // ── drawing helpers ────────────────────────────────────────
   const drawSegment = (page: number, a: Pt, b: Pt, c: string, sz: number, m: "pen" | "eraser") => {
     const ctx = canvasRefs.current[page]?.getContext("2d");
     if (!ctx) return;
@@ -305,13 +307,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
   };
 
-  const renderText = (_t: TextItem) => {};
-  const renderImage = (_it: ImageItem) => {};
-
+  // Text layer elements and images live directly in the HTML overlay wrapper
+  // to stay crisp, clean, editable, and responsive to scale.
   const renderItem = (item: AnyItem) => {
-    if (item.type === "stroke") renderStroke(item);
-    else if (item.type === "text") renderText(item);
-    else renderImage(item);
+    if (item.type === "stroke") {
+      renderStroke(item);
+    }
   };
 
   const redrawPage = (page: number) => {
@@ -344,14 +345,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (idx >= 0) {
         const [removed] = historyRef.current.splice(idx, 1);
         redrawPage(removed.page);
-        if (removed.type !== "stroke") bumpText();
+        bumpText();
       }
       return;
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
       renderItem(m.stroke);
-      if (m.stroke.type !== "stroke") bumpText();
+      bumpText();
       return;
     }
     if (m.type === "update") {
@@ -375,14 +376,13 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     if (existing >= 0) historyRef.current.splice(existing, 1, m);
     else historyRef.current.push(m);
     renderItem(m);
-    if (m.type !== "stroke") bumpText();
+    bumpText();
   };
 
   const send = (m: Msg) => {
     channelRef.current?.send({ type: "broadcast", event: "draw", payload: m });
   };
 
-  // ── pointer/touch routing ──────────────────────────────────
   const localPos = (canvas: HTMLCanvasElement, clientX: number, clientY: number): Pt => {
     const rect = canvas.getBoundingClientRect();
     return { x: clientX - rect.left, y: clientY - rect.top };
@@ -480,7 +480,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
     let finalValue = textEditor.value;
 
-    // If we're operating inside visual SVG fields parsing layer, pack values back together
     if (textEditor.isSvgMode && textEditor.svgFields) {
       finalValue = updateSvgTexts(textEditor.value, textEditor.svgFields);
     }
@@ -512,10 +511,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     sendItem(item);
     bumpText();
     setTextEditor(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [textEditor, color, size, userId]);
+  }, [textEditor, color, size, userId, bumpText]);
 
-  // ── paste images from clipboard ────────────────────────────
   const placeImage = useCallback(
     (dataUrl: string, page: number) => {
       const img = new Image();
@@ -545,8 +542,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       };
       img.src = dataUrl;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userId],
+    [userId, bumpText],
   );
 
   useEffect(() => {
@@ -577,7 +573,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     return () => window.removeEventListener("paste", handlePaste);
   }, [canDraw, currentPage, placeImage]);
 
-  // ── AI: convert handwriting to LaTeX/text ──────────────────
   const convert = useServerFn(whiteboardConvert);
   const [converting, setConverting] = useState(false);
   const [convertingAll, setConvertingAll] = useState(false);
@@ -691,7 +686,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     c?.parentElement?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // ── undo / redo (per-user, owns own items only) ───────────
   const myUndoStackRef = useRef<AnyItem[]>([]);
   const myRedoStackRef = useRef<AnyItem[]>([]);
   const [undoTick, setUndoTick] = useState(0);
@@ -716,6 +710,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     send({ type: "undo", id: item.id });
     deletePersistedStroke(item.id);
     setUndoTick((t) => t + 1);
+    bumpText();
   };
 
   const redo = () => {
@@ -727,6 +722,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     send({ type: "restore", stroke: item });
     persistStroke(item);
     setUndoTick((t) => t + 1);
+    bumpText();
   };
 
   const updateItem = (id: string, x: number, y: number, w?: number, h?: number) => {
@@ -754,6 +750,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     setUndoTick((t) => t + 1);
     send({ type: "clear", page });
     deletePersistedPage(page);
+    bumpText();
   };
 
   return (
@@ -937,9 +934,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                 <canvas
                   ref={(el) => {
                     canvasRefs.current[i] = el;
-                    if (el && sizeCanvas(el)) {
-                      historyRef.current.filter((s) => s.page === i).forEach(renderItem);
-                    }
                   }}
                   className={`absolute inset-0 h-full w-full ${mode === "text" ? "cursor-text" : "cursor-crosshair"}`}
                   style={{ touchAction: "none" }}
@@ -965,7 +959,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                         page: it.page,
                         x: it.x,
                         y: it.y,
-                        value: it.text, // Keep entire SVG intact in value background
+                        value: it.text,
                         editingId: it.id,
                         isSvgMode: true,
                         svgFields: parsedFields,
@@ -998,7 +992,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     {textEditor.isSvgMode ? (
-                      // ── NO CODE EDITING CONTAINER FOR SVGS ──
                       <div className="flex flex-col gap-3 min-w-[240px]">
                         <div className="text-xs font-semibold text-muted-foreground mb-1">Modify Diagram Values:</div>
                         {textEditor.svgFields && textEditor.svgFields.length > 0 ? (
@@ -1020,7 +1013,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                             </div>
                           ))
                         ) : (
-                          // Fallback layout when SVG has shapes but no editable text nodes
                           <textarea
                             value={textEditor.value}
                             onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
@@ -1029,7 +1021,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                         )}
                       </div>
                     ) : (
-                      // ── STANDARD PLAIN TEXT AREA EDITOR ──
                       <textarea
                         autoFocus
                         value={textEditor.value}
@@ -1081,9 +1072,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   );
 }
 
-// ────────────────────────────────────────────────────────────
-// TextOverlay
-// ────────────────────────────────────────────────────────────
 function TextOverlay({
   items,
   onEdit,
