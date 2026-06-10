@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import "tldraw/tldraw.css";
-import { Tldraw, type Editor, type TLRecord, createShapeId, toRichText, exportToBlob } from "tldraw";
+import { Tldraw, type Editor, type TLRecord, createShapeId, toRichText } from "tldraw";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
@@ -53,13 +53,7 @@ export const TldrawBoard = forwardRef<TldrawBoardHandle, Props>(function TldrawB
         if (!editor) throw new Error("Whiteboard not ready");
         const ids = Array.from(editor.getCurrentPageShapeIds());
         if (!ids.length) throw new Error("Whiteboard is empty");
-        const blob = await exportToBlob({ editor, ids, format: "png", opts: { background: true, scale: 2 } });
-        const dataUrl: string = await new Promise((resolve, reject) => {
-          const fr = new FileReader();
-          fr.onload = () => resolve(fr.result as string);
-          fr.onerror = () => reject(fr.error);
-          fr.readAsDataURL(blob);
-        });
+        const { url: dataUrl } = await editor.toImageDataUrl(ids, { format: "png", background: true, scale: 2 });
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const i = new Image();
           i.onload = () => resolve(i);
