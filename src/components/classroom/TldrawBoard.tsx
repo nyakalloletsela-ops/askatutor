@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
 import "tldraw/tldraw.css";
-import { Tldraw, type Editor, type TLRecord, createShapeId, toRichText } from "tldraw";
+import { Tldraw, type Editor, type TLRecord, createShapeId, toRichText, exportToBlob } from "tldraw";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 export interface TldrawBoardHandle {
   insertText: (value: string) => void;
+  exportPdf: (filename?: string) => Promise<void>;
 }
 
 interface Props {
@@ -42,14 +44,50 @@ export const TldrawBoard = forwardRef<TldrawBoardHandle, Props>(function TldrawB
         editor.createShape({
           id,
           type: "text",
-          x: view.midX - 100,
+          x: view.midX - 160,
           y: view.midY,
           props: { richText: toRichText(value), w: 320, autoSize: false },
         });
       },
+      exportPdf: async (filename = `whiteboard-${new Date().toISOString().slice(0, 10)}.pdf`) => {
+        if (!editor) throw new Error("Whiteboard not ready");
+        const ids = Array.from(editor.getCurrentPageShapeIds());
+        if (!ids.length) throw new Error("Whiteboard is empty");
+        const blob = await exportToBlob({ editor, ids, format: "png", opts: { background: true, scale: 2 } });
+        const dataUrl: string = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result as string);
+          fr.onerror = () => reject(fr.error);
+          fr.readAsDataURL(blob);
+        });
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const i = new Image();
+          i.onload = () => resolve(i);
+          i.onerror = reject;
+          i.src = dataUrl;
+        });
+        const landscape = img.width >= img.height;
+        const pdf = new jsPDF({ orientation: landscape ? "landscape" : "portrait", unit: "pt", format: "a4" });
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const margin = 24;
+        const maxW = pageW - margin * 2;
+        const maxH = pageH - margin * 2;
+        const ratio = Math.min(maxW / img.width, maxH / img.height);
+        const w = img.width * ratio;
+        const h = img.height * ratio;
+        pdf.addImage(dataUrl, "PNG", (pageW - w) / 2, (pageH - h) / 2, w, h);
+        pdf.save(filename);
+      },
     }),
     [editor],
   );
+
+  // Apply canEdit toggle live
+  useEffect(() => {
+    if (!editor) return;
+    editor.updateInstanceState({ isReadonly: !canEdit });
+  }, [editor, canEdit]);
 
   // Initial load: latest snapshot + replay mutations after it
   useEffect(() => {
