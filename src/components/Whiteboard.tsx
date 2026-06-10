@@ -57,8 +57,9 @@ type AnyItem = Stroke | TextItem | ImageItem;
 type ClearMsg = { type: "clear"; page?: number };
 type UndoMsg = { type: "undo"; id: string };
 type RestoreMsg = { type: "restore"; stroke: AnyItem };
+type UpdateMsg = { type: "update"; id: string; x: number; y: number; w?: number; h?: number };
 type PermMsg = { type: "perm"; studentCanDraw: boolean };
-type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | PermMsg;
+type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | UpdateMsg | PermMsg;
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
@@ -67,8 +68,34 @@ interface Props {
   roomId: string;
   userId: string;
   /** When true the user is treated as the room host (tutor/admin) and can
-   *  toggle whether the other participant is allowed to draw. */
+   * toggle whether the other participant is allowed to draw. */
   isHost?: boolean;
+}
+
+// Helper to extract editable text nodes inside an SVG string safely without full DOM libraries
+function parseSvgTexts(svgString: string): { original: string; current: string }[] {
+  const matches: { original: string; current: string }[] = [];
+  const regex = /<text[^>]*>([\s\S]*?)<\/text>/gi;
+  let match;
+  while ((match = regex.exec(svgString)) !== null) {
+    const textContent = match[1].trim();
+    if (textContent && !textContent.startsWith("<")) {
+      matches.push({ original: textContent, current: textContent });
+    }
+  }
+  return matches;
+}
+
+// Helper to replace text nodes inside an SVG string
+function updateSvgTexts(svgString: string, updates: { original: string; current: string }[]): string {
+  let updated = svgString;
+  updates.forEach((up) => {
+    // Escapes match strings safely to replace exact textual targets
+    const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(<text[^>]*>)\\s*${escapeRegExp(up.original)}\\s*(<\/text>)`, "gi");
+    updated = updated.replace(regex, `$1${up.current}$2`);
+  });
+  return updated;
 }
 
 export function Whiteboard({ roomId, userId, isHost = false }: Props) {
@@ -101,6 +128,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   // Tutor controls whether the student can draw. Default: only host draws.
   const [studentCanDraw, setStudentCanDraw] = useState(false);
   const canDraw = isHost || studentCanDraw;
+
   // inline text editor state
   const [textEditor, setTextEditor] = useState<{
     page: number;
@@ -108,7 +136,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     y: number;
     value: string;
     editingId?: string;
+    isSvgMode?: boolean;
+    svgFields?: { original: string; current: string }[];
   } | null>(null);
+
   // Bumped whenever text items change so the HTML overlay re-renders.
   const [textTick, setTextTick] = useState(0);
   const bumpText = useCallback(() => setTextTick((t) => t + 1), []);
@@ -161,8 +192,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   // ── load persisted strokes & RESET when room changes ──────────
   useEffect(() => {
-    // Clear local state so switching between student rooms doesn't bleed
-    // previous content / undo history into the new room.
     historyRef.current = [];
     myUndoStackRef.current = [];
     myRedoStackRef.current = [];
@@ -224,14 +253,17 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const persistStroke = (item: AnyItem) => {
     supabase
       .from("whiteboard_strokes")
-      .insert({
-        room_id: roomId,
-        stroke_id: item.id,
-        user_id: userId,
-        page: item.page,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: item as any,
-      })
+      .upsert(
+        {
+          room_id: roomId,
+          stroke_id: item.id,
+          user_id: userId,
+          page: item.page,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: item as any,
+        },
+        { onConflict: "room_id,stroke_id" },
+      )
       .then(({ error }) => {
         if (error) console.warn("whiteboard persist failed", error.message);
       });
@@ -273,32 +305,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
   };
 
-  const renderText = (_t: TextItem) => {
-    // Text items are rendered as HTML overlays (with KaTeX) on top of the
-    // canvas — see the JSX below. We intentionally do nothing on the canvas
-    // so the same item is not painted twice and stays editable.
-  };
-
-  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
-  const renderImage = (it: ImageItem) => {
-    const ctx = canvasRefs.current[it.page]?.getContext("2d");
-    if (!ctx) return;
-    let img = imageCache.current.get(it.id);
-    if (img && img.complete && img.naturalWidth > 0) {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.drawImage(img, it.x, it.y, it.w, it.h);
-      return;
-    }
-    img = new Image();
-    img.onload = () => {
-      const ctx2 = canvasRefs.current[it.page]?.getContext("2d");
-      if (!ctx2) return;
-      ctx2.globalCompositeOperation = "source-over";
-      ctx2.drawImage(img!, it.x, it.y, it.w, it.h);
-    };
-    img.src = it.src;
-    imageCache.current.set(it.id, img);
-  };
+  const renderText = (_t: TextItem) => {};
+  const renderImage = (_it: ImageItem) => {};
 
   const renderItem = (item: AnyItem) => {
     if (item.type === "stroke") renderStroke(item);
@@ -336,24 +344,38 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (idx >= 0) {
         const [removed] = historyRef.current.splice(idx, 1);
         redrawPage(removed.page);
-        if (removed.type === "text") bumpText();
+        if (removed.type !== "stroke") bumpText();
       }
       return;
     }
     if (m.type === "restore") {
       historyRef.current.push(m.stroke);
       renderItem(m.stroke);
-      if (m.stroke.type === "text") bumpText();
+      if (m.stroke.type !== "stroke") bumpText();
+      return;
+    }
+    if (m.type === "update") {
+      const it = historyRef.current.find((s) => s.id === m.id);
+      if (it && it.type !== "stroke") {
+        it.x = m.x;
+        it.y = m.y;
+        if (it.type === "image" && m.w != null && m.h != null) {
+          it.w = m.w;
+          it.h = m.h;
+        }
+        bumpText();
+      }
       return;
     }
     if (m.type === "perm") {
       setStudentCanDraw(m.studentCanDraw);
       return;
     }
-    // stroke or text
-    historyRef.current.push(m);
+    const existing = historyRef.current.findIndex((s) => s.id === m.id);
+    if (existing >= 0) historyRef.current.splice(existing, 1, m);
+    else historyRef.current.push(m);
     renderItem(m);
-    if (m.type === "text") bumpText();
+    if (m.type !== "stroke") bumpText();
   };
 
   const send = (m: Msg) => {
@@ -376,7 +398,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (pointersRef.current.size >= 2) {
-      // switch to 2-finger scroll mode — abort any in-progress stroke
       cancelActiveStroke();
       const ys = [...pointersRef.current.values()].map((p) => p.y);
       scrollStartRef.current = {
@@ -386,17 +407,15 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
-    if (!canDraw) return; // student without permission can only view + scroll
+    if (!canDraw) return;
 
-    // text mode: open inline editor at click position
     if (mode === "text") {
       const canvas = canvasRefs.current[page]!;
       const p = localPos(canvas, e.clientX, e.clientY);
-      setTextEditor({ page, x: p.x, y: p.y, value: "" });
+      setTextEditor({ page, x: p.x, y: p.y, value: "", isSvgMode: false });
       return;
     }
 
-    // single touch / mouse — start drawing
     if (e.pointerType !== "touch") {
       (e.target as Element).setPointerCapture?.(e.pointerId);
     }
@@ -414,7 +433,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     if (!pointersRef.current.has(e.pointerId)) return;
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // 2-finger scroll
     if (pointersRef.current.size >= 2) {
       e.preventDefault();
       const ys = [...pointersRef.current.values()].map((p) => p.y);
@@ -425,7 +443,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       return;
     }
 
-    // drawing (pen/eraser only)
     if (mode === "text") return;
     if (!drawingRef.current.active || drawingRef.current.page !== page) return;
     e.preventDefault();
@@ -460,25 +477,33 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 
   const commitText = useCallback(() => {
     if (!textEditor) return;
-    const value = textEditor.value;
-    // If editing an existing item, remove it first (and broadcast the undo)
+
+    let finalValue = textEditor.value;
+
+    // If we're operating inside visual SVG fields parsing layer, pack values back together
+    if (textEditor.isSvgMode && textEditor.svgFields) {
+      finalValue = updateSvgTexts(textEditor.value, textEditor.svgFields);
+    }
+
     if (textEditor.editingId) {
       const idx = historyRef.current.findIndex((s) => s.id === textEditor.editingId);
       if (idx >= 0) historyRef.current.splice(idx, 1);
       send({ type: "undo", id: textEditor.editingId });
       deletePersistedStroke(textEditor.editingId);
     }
-    if (!value.trim()) {
+
+    if (!finalValue.trim()) {
       setTextEditor(null);
       bumpText();
       return;
     }
+
     const item: TextItem = {
       type: "text",
       page: textEditor.page,
       x: textEditor.x,
       y: textEditor.y,
-      text: value,
+      text: finalValue,
       color,
       size,
       id: `${userId}-t-${Date.now()}`,
@@ -498,7 +523,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         const canvas = canvasRefs.current[page];
         if (!canvas) return;
         const rect = canvas.getBoundingClientRect();
-        // Scale image so its longer edge is <= 60% of the page
         const max = Math.min(rect.width, rect.height) * 0.6;
         const ratio = Math.min(max / img.naturalWidth, max / img.naturalHeight, 1);
         const w = img.naturalWidth * ratio;
@@ -516,8 +540,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           id: `${userId}-i-${Date.now()}`,
         };
         historyRef.current.push(item);
-        renderImage(item);
         sendItem(item);
+        bumpText();
       };
       img.src = dataUrl;
     },
@@ -556,42 +580,57 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   // ── AI: convert handwriting to LaTeX/text ──────────────────
   const convert = useServerFn(whiteboardConvert);
   const [converting, setConverting] = useState(false);
+  const [convertingAll, setConvertingAll] = useState(false);
+
+  const convertPage = async (page: number): Promise<boolean> => {
+    const canvas = canvasRefs.current[page];
+    if (!canvas) return false;
+    const hasStrokes = historyRef.current.some((it) => it.page === page && it.type === "stroke");
+    if (!hasStrokes) return false;
+    const dataUrl = canvas.toDataURL("image/png");
+    const { text } = await convert({ data: { imageDataUrl: dataUrl } });
+    if (!text) return false;
+
+    const strokeIds = historyRef.current.filter((it) => it.page === page && it.type === "stroke").map((it) => it.id);
+    historyRef.current = historyRef.current.filter((it) => !(it.page === page && it.type === "stroke"));
+    redrawPage(page);
+    strokeIds.forEach((id) => {
+      send({ type: "undo", id });
+      deletePersistedStroke(id);
+    });
+
+    const existing = historyRef.current.filter(
+      (it): it is TextItem | ImageItem => it.page === page && (it.type === "text" || it.type === "image"),
+    );
+    let nextY = 16;
+    for (const it of existing) {
+      const bottom = it.type === "image" ? it.y + it.h : it.y + 80;
+      if (bottom + 8 > nextY) nextY = bottom + 8;
+    }
+
+    const item: TextItem = {
+      type: "text",
+      page,
+      x: 16,
+      y: nextY,
+      text,
+      color: "#0f172a",
+      size: 2,
+      id: `${userId}-ocr-${Date.now()}-${page}`,
+    };
+    historyRef.current.push(item);
+    sendItem(item);
+    bumpText();
+    return true;
+  };
+
   const runOcr = async () => {
     const page = currentPage - 1;
-    const canvas = canvasRefs.current[page];
-    if (!canvas) return;
     setConverting(true);
     try {
-      const dataUrl = canvas.toDataURL("image/png");
-      const { text } = await convert({ data: { imageDataUrl: dataUrl } });
-      if (!text) {
-        toast.message("Nothing recognised on this page.");
-        return;
-      }
-      // Remove handwritten strokes on this page (keep images/text), broadcast
-      const strokeIds = historyRef.current.filter((it) => it.page === page && it.type === "stroke").map((it) => it.id);
-      historyRef.current = historyRef.current.filter((it) => !(it.page === page && it.type === "stroke"));
-      redrawPage(page);
-      strokeIds.forEach((id) => {
-        send({ type: "undo", id });
-        deletePersistedStroke(id);
-      });
-
-      // Save the recognised LaTeX/text as a rendered item (KaTeX overlay)
-      const item: TextItem = {
-        type: "text",
-        page,
-        x: 20,
-        y: 20,
-        text,
-        color: "#0f172a",
-        size: 4,
-        id: `${userId}-ocr-${Date.now()}`,
-      };
-      historyRef.current.push(item);
-      sendItem(item);
-      bumpText();
-      toast.success("Handwriting converted — click the equation to edit");
+      const ok = await convertPage(page);
+      if (!ok) toast.message("Nothing recognised on this page.");
+      else toast.success("Converted — drag to move, click to edit");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
@@ -599,7 +638,34 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     }
   };
 
-  // Track which page is "current" while scrolling
+  const runOcrAll = async () => {
+    const pagesWithInk = Array.from(
+      new Set(historyRef.current.filter((it) => it.type === "stroke").map((it) => it.page)),
+    ).sort((a, b) => a - b);
+    if (pagesWithInk.length === 0) {
+      toast.message("No handwriting to convert.");
+      return;
+    }
+    setConvertingAll(true);
+    let converted = 0;
+    try {
+      for (const p of pagesWithInk) {
+        try {
+          if (await convertPage(p)) converted += 1;
+        } catch (err) {
+          toast.error(`Page ${p + 1}: ${err instanceof Error ? err.message : "conversion failed"}`);
+        }
+      }
+      if (converted > 0) {
+        toast.success(`Converted ${converted} page${converted === 1 ? "" : "s"} — drag anything to reposition`);
+      } else {
+        toast.message("Nothing recognised.");
+      }
+    } finally {
+      setConvertingAll(false);
+    }
+  };
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -630,7 +696,6 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const myRedoStackRef = useRef<AnyItem[]>([]);
   const [undoTick, setUndoTick] = useState(0);
 
-  // patch send to track own items
   const sendItem = (item: AnyItem) => {
     myUndoStackRef.current.push(item);
     myRedoStackRef.current = [];
@@ -662,6 +727,20 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     send({ type: "restore", stroke: item });
     persistStroke(item);
     setUndoTick((t) => t + 1);
+  };
+
+  const updateItem = (id: string, x: number, y: number, w?: number, h?: number) => {
+    const it = historyRef.current.find((s) => s.id === id);
+    if (!it || it.type === "stroke") return;
+    it.x = x;
+    it.y = y;
+    if (it.type === "image" && w != null && h != null) {
+      it.w = w;
+      it.h = h;
+    }
+    send({ type: "update", id, x, y, w, h });
+    persistStroke(it);
+    bumpText();
   };
 
   const clearCurrent = () => {
@@ -797,10 +876,20 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
           size="sm"
           variant="outline"
           onClick={runOcr}
-          disabled={converting || !canDraw}
+          disabled={converting || convertingAll || !canDraw}
           title="Convert handwriting on this page to LaTeX & text (AI)"
         >
           <Wand2 className="mr-1 h-4 w-4" /> {converting ? "Converting…" : "AI convert"}
+        </Button>
+        <Button
+          size="sm"
+          variant="default"
+          onClick={runOcrAll}
+          disabled={converting || convertingAll || !canDraw}
+          title="Convert handwriting on every page in one click"
+        >
+          <Wand2 className="mr-1 h-4 w-4" />
+          {convertingAll ? "Converting all…" : "Convert all"}
         </Button>
         <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs hover:bg-accent">
           <ImageIcon className="h-3.5 w-3.5" /> Image
@@ -826,12 +915,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       </div>
       <MathTools open={mathOpen} onClose={() => setMathOpen(false)} />
 
-      {/* Hint */}
       <div className="border-b bg-muted/20 px-3 py-1 text-[11px] text-muted-foreground">
         Draw with one finger · scroll with two fingers · paste images with Ctrl/Cmd+V · {PAGE_COUNT} pages
       </div>
 
-      {/* Pages — scrollable container */}
       <div
         ref={containerRef}
         className="relative flex-1 overflow-y-auto overscroll-contain bg-muted/30"
@@ -861,61 +948,125 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
                   onPointerUp={onPointerUp(i)}
                   onPointerCancel={onPointerUp(i)}
                 />
-                {/* HTML overlay for text items — KaTeX renders $$...$$ as equations */}
+
                 <TextOverlay
                   page={i}
                   items={historyRef.current.filter(
                     (s): s is TextItem => s.type === "text" && s.page === i && (textEditor?.editingId ?? "") !== s.id,
                   )}
                   tick={textTick}
-                  onEdit={(it) =>
-                    setTextEditor({
-                      page: it.page,
-                      x: it.x,
-                      y: it.y,
-                      value: it.text,
-                      editingId: it.id,
-                    })
-                  }
+                  canEdit={canDraw}
+                  onMove={(id, x, y) => updateItem(id, x, y)}
+                  onEdit={(it) => {
+                    const hasSvg = it.text.toLowerCase().includes("<svg");
+                    if (hasSvg) {
+                      const parsedFields = parseSvgTexts(it.text);
+                      setTextEditor({
+                        page: it.page,
+                        x: it.x,
+                        y: it.y,
+                        value: it.text, // Keep entire SVG intact in value background
+                        editingId: it.id,
+                        isSvgMode: true,
+                        svgFields: parsedFields,
+                      });
+                    } else {
+                      setTextEditor({
+                        page: it.page,
+                        x: it.x,
+                        y: it.y,
+                        value: it.text,
+                        editingId: it.id,
+                        isSvgMode: false,
+                      });
+                    }
+                  }}
+                />
+
+                <ImageOverlay
+                  page={i}
+                  items={historyRef.current.filter((s): s is ImageItem => s.type === "image" && s.page === i)}
+                  tick={textTick}
+                  canEdit={canDraw}
+                  onMove={(id, x, y, w, h) => updateItem(id, x, y, w, h)}
                 />
 
                 {textEditor && textEditor.page === i && (
                   <div
-                    className="absolute z-20 flex flex-col gap-1"
+                    className="absolute z-20 flex flex-col gap-2 rounded-lg border border-border bg-white p-3 shadow-xl ring-1 ring-black/5"
                     style={{ left: textEditor.x, top: textEditor.y }}
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    <textarea
-                      autoFocus
-                      value={textEditor.value}
-                      onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
-                      onKeyDown={(e) => {
-                        // Stop the canvas / page from intercepting keys
-                        e.stopPropagation();
-                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                          e.preventDefault();
-                          commitText();
-                        } else if (e.key === "Escape") {
-                          e.preventDefault();
-                          setTextEditor(null);
-                        }
-                      }}
-                      placeholder="Type… Ctrl/Cmd+Enter to save, Esc to cancel"
-                      rows={3}
-                      className="min-h-[60px] min-w-[220px] resize rounded border border-primary/60 bg-white/95 px-2 py-1 outline-none ring-2 ring-primary/30"
-                      style={{
-                        color,
-                        fontSize: Math.max(14, size * 5),
-                        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
-                        lineHeight: 1.3,
-                        touchAction: "auto",
-                      }}
-                    />
-                    <div className="flex gap-1">
-                      <Button size="sm" className="h-7 px-2" onClick={commitText}>
+                    {textEditor.isSvgMode ? (
+                      // ── NO CODE EDITING CONTAINER FOR SVGS ──
+                      <div className="flex flex-col gap-3 min-w-[240px]">
+                        <div className="text-xs font-semibold text-muted-foreground mb-1">Modify Diagram Values:</div>
+                        {textEditor.svgFields && textEditor.svgFields.length > 0 ? (
+                          textEditor.svgFields.map((field, fIdx) => (
+                            <div key={fIdx} className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                                Value {fIdx + 1}:
+                              </span>
+                              <input
+                                type="text"
+                                value={field.current}
+                                onChange={(e) => {
+                                  const updatedFields = [...(textEditor.svgFields || [])];
+                                  updatedFields[fIdx].current = e.target.value;
+                                  setTextEditor({ ...textEditor, svgFields: updatedFields });
+                                }}
+                                className="flex-1 rounded border border-input bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                              />
+                            </div>
+                          ))
+                        ) : (
+                          // Fallback layout when SVG has shapes but no editable text nodes
+                          <textarea
+                            value={textEditor.value}
+                            onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
+                            className="min-h-[60px] text-xs font-mono border rounded p-1"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      // ── STANDARD PLAIN TEXT AREA EDITOR ──
+                      <textarea
+                        autoFocus
+                        value={textEditor.value}
+                        onChange={(e) => setTextEditor({ ...textEditor, value: e.target.value })}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                            e.preventDefault();
+                            commitText();
+                          } else if (e.key === "Escape") {
+                            e.preventDefault();
+                            setTextEditor(null);
+                          }
+                        }}
+                        placeholder="Type… Ctrl/Cmd+Enter to save, Esc to cancel"
+                        rows={3}
+                        className="min-h-[60px] min-w-[220px] resize rounded border border-primary/60 bg-white/95 px-2 py-1 outline-none ring-2 ring-primary/30"
+                        style={{
+                          color,
+                          fontSize: Math.max(14, size * 5),
+                          fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                          lineHeight: 1.3,
+                          touchAction: "auto",
+                        }}
+                      />
+                    )}
+
+                    <div className="flex gap-1 justify-end pt-1">
+                      <Button size="sm" className="h-7 px-3 text-xs" onClick={commitText}>
                         Save
                       </Button>
-                      <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => setTextEditor(null)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-3 text-xs"
+                        onClick={() => setTextEditor(null)}
+                      >
                         Cancel
                       </Button>
                     </div>
@@ -931,75 +1082,241 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
 }
 
 // ────────────────────────────────────────────────────────────
-// TextOverlay — renders text items as HTML on top of the canvas.
-// Splits on $$...$$ blocks and renders them with KaTeX so OCR output
-// like "$$x^2+2x$$" appears as a typeset equation. Click to edit.
+// TextOverlay
 // ────────────────────────────────────────────────────────────
-
 function TextOverlay({
-  page,
   items,
-  tick,
   onEdit,
+  onMove,
+  canEdit,
 }: {
   page: number;
   items: TextItem[];
   tick: number;
   onEdit: (item: TextItem) => void;
+  onMove: (id: string, x: number, y: number) => void;
+  canEdit: boolean;
 }) {
-  void page;
-  void tick;
   return (
     <>
       {items.map((it) => (
-        <button
+        <DraggableOverlay
           key={it.id}
-          type="button"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(it);
-          }}
-          className="absolute z-10 max-w-[90%] cursor-text rounded px-1 text-left hover:bg-primary/5"
+          x={it.x}
+          y={it.y}
+          canDrag={canEdit}
+          onCommit={(x, y) => onMove(it.id, x, y)}
+          onClick={() => canEdit && onEdit(it)}
+          className="absolute z-10 max-w-[90%] select-none rounded px-1 hover:bg-primary/5"
           style={{
-            left: it.x,
-            top: it.y,
             color: it.color,
             fontSize: Math.max(14, it.size * 5),
             fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
             lineHeight: 1.3,
           }}
-          title="Click to edit"
+          title={canEdit ? "Drag to move · click to edit" : ""}
         >
           <KatexInline text={it.text} />
-        </button>
+        </DraggableOverlay>
       ))}
     </>
   );
 }
 
-function KatexInline({ text }: { text: string }) {
-  // Split on $$...$$ blocks. Even indices = prose, odd = LaTeX.
-  const parts = useMemo(() => text.split(/\$\$([\s\S]+?)\$\$/g), [text]);
+function ImageOverlay({
+  items,
+  onMove,
+  canEdit,
+}: {
+  page: number;
+  items: ImageItem[];
+  tick: number;
+  onMove: (id: string, x: number, y: number, w?: number, h?: number) => void;
+  canEdit: boolean;
+}) {
   return (
     <>
-      {parts.map((part, idx) => {
-        if (idx % 2 === 1) {
+      {items.map((it) => (
+        <ResizableImage key={it.id} item={it} canEdit={canEdit} onCommit={onMove} />
+      ))}
+    </>
+  );
+}
+
+function ResizableImage({
+  item,
+  canEdit,
+  onCommit,
+}: {
+  item: ImageItem;
+  canEdit: boolean;
+  onCommit: (id: string, x: number, y: number, w?: number, h?: number) => void;
+}) {
+  const [pos, setPos] = useState({ x: item.x, y: item.y, w: item.w, h: item.h });
+  useEffect(() => {
+    setPos({ x: item.x, y: item.y, w: item.w, h: item.h });
+  }, [item.x, item.y, item.w, item.h]);
+
+  const dragRef = useRef<{ mode: "move" | "resize"; startX: number; startY: number; orig: typeof pos } | null>(null);
+
+  const onPointerDown = (mode: "move" | "resize") => (e: React.PointerEvent) => {
+    if (!canEdit) return;
+    e.stopPropagation();
+    e.preventDefault();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dragRef.current = { mode, startX: e.clientX, startY: e.clientY, orig: { ...pos } };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    e.stopPropagation();
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    const o = dragRef.current.orig;
+    if (dragRef.current.mode === "move") {
+      setPos({ ...o, x: o.x + dx, y: o.y + dy });
+    } else {
+      setPos({ ...o, w: Math.max(40, o.w + dx), h: Math.max(40, o.h + dy) });
+    }
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    e.stopPropagation();
+    dragRef.current = null;
+    onCommit(item.id, pos.x, pos.y, pos.w, pos.h);
+  };
+
+  return (
+    <div
+      className="absolute z-10 select-none rounded border border-transparent hover:border-primary/40"
+      style={{ left: pos.x, top: pos.y, width: pos.w, height: pos.h, touchAction: "none" }}
+      onPointerDown={onPointerDown("move")}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      title={canEdit ? "Drag to move · drag corner to resize" : ""}
+    >
+      <img src={item.src} alt="" draggable={false} className="pointer-events-none h-full w-full object-contain" />
+      {canEdit && (
+        <span
+          onPointerDown={onPointerDown("resize")}
+          className="absolute -bottom-1 -right-1 h-3 w-3 cursor-nwse-resize rounded-sm border border-primary bg-white"
+        />
+      )}
+    </div>
+  );
+}
+
+function DraggableOverlay({
+  x,
+  y,
+  canDrag,
+  onCommit,
+  onClick,
+  className,
+  style,
+  title,
+  children,
+}: {
+  x: number;
+  y: number;
+  canDrag: boolean;
+  onCommit: (x: number, y: number) => void;
+  onClick: () => void;
+  className?: string;
+  style?: React.CSSProperties;
+  title?: string;
+  children: React.ReactNode;
+}) {
+  const [pos, setPos] = useState({ x, y });
+  useEffect(() => setPos({ x, y }), [x, y]);
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    if (!canDrag) return;
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    if (!dragRef.current.moved && Math.abs(dx) + Math.abs(dy) > 4) dragRef.current.moved = true;
+    if (dragRef.current.moved) {
+      e.stopPropagation();
+      setPos({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
+    }
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d) return;
+    e.stopPropagation();
+    if (d.moved) onCommit(pos.x, pos.y);
+    else onClick();
+  };
+  return (
+    <div
+      className={className}
+      style={{ ...style, left: pos.x, top: pos.y, touchAction: "none", cursor: canDrag ? "grab" : "default" }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      title={title}
+    >
+      {children}
+    </div>
+  );
+}
+
+function KatexInline({ text }: { text: string }) {
+  const segments = useMemo(() => {
+    const out: { kind: "text" | "tex" | "svg"; value: string }[] = [];
+    const re = /(\$\$[\s\S]+?\$\$)|(<svg[\s\S]*?<\/svg>)/gi;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push({ kind: "text", value: text.slice(last, m.index) });
+      if (m[1]) out.push({ kind: "tex", value: m[1].slice(2, -2) });
+      else if (m[2]) out.push({ kind: "svg", value: m[2] });
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push({ kind: "text", value: text.slice(last) });
+    return out;
+  }, [text]);
+
+  return (
+    <>
+      {segments.map((seg, idx) => {
+        if (seg.kind === "tex") {
           let html = "";
           try {
-            html = katex.renderToString(part, {
+            html = katex.renderToString(seg.value, {
               throwOnError: false,
               displayMode: true,
               output: "html",
             });
           } catch {
-            html = `<code>$$${part}$$</code>`;
+            html = `<code>$$${seg.value}$$</code>`;
           }
           return <span key={idx} className="my-1 block" dangerouslySetInnerHTML={{ __html: html }} />;
         }
+        if (seg.kind === "svg") {
+          const safe = seg.value
+            .replace(/<script[\s\S]*?<\/script>/gi, "")
+            .replace(/\son\w+="[^"]*"/gi, "")
+            .replace(/\son\w+='[^']*'/gi, "");
+          return (
+            <span
+              key={idx}
+              className="my-1 block max-w-full [&_svg]:max-w-full [&_svg]:h-auto"
+              dangerouslySetInnerHTML={{ __html: safe }}
+            />
+          );
+        }
         return (
           <span key={idx} style={{ whiteSpace: "pre-wrap" }}>
-            {part}
+            {seg.value}
           </span>
         );
       })}

@@ -51,12 +51,6 @@ import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticate
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
-import { Route as AuthenticatedClassroomRoomIdNotesRouteImport } from './routes/_authenticated/classroom.$roomId.notes'
-import { Route as AuthenticatedClassroomRoomIdLab3dRouteImport } from './routes/_authenticated/classroom.$roomId.lab3d'
-import { Route as AuthenticatedClassroomRoomIdLabRouteImport } from './routes/_authenticated/classroom.$roomId.lab'
-import { Route as AuthenticatedClassroomRoomIdFilesRouteImport } from './routes/_authenticated/classroom.$roomId.files'
-import { Route as AuthenticatedClassroomRoomIdChatRouteImport } from './routes/_authenticated/classroom.$roomId.chat'
-import { Route as AuthenticatedClassroomRoomIdAiRouteImport } from './routes/_authenticated/classroom.$roomId.ai'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
@@ -284,42 +278,6 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AuthenticatedClassroomRoomIdNotesRoute =
-  AuthenticatedClassroomRoomIdNotesRouteImport.update({
-    id: '/notes',
-    path: '/notes',
-    getParentRoute: () => AuthenticatedClassroomRoomIdRoute,
-  } as any)
-const AuthenticatedClassroomRoomIdLab3dRoute =
-  AuthenticatedClassroomRoomIdLab3dRouteImport.update({
-    id: '/lab3d',
-    path: '/lab3d',
-    getParentRoute: () => AuthenticatedClassroomRoomIdRoute,
-  } as any)
-const AuthenticatedClassroomRoomIdLabRoute =
-  AuthenticatedClassroomRoomIdLabRouteImport.update({
-    id: '/lab',
-    path: '/lab',
-    getParentRoute: () => AuthenticatedClassroomRoomIdRoute,
-  } as any)
-const AuthenticatedClassroomRoomIdFilesRoute =
-  AuthenticatedClassroomRoomIdFilesRouteImport.update({
-    id: '/files',
-    path: '/files',
-    getParentRoute: () => AuthenticatedClassroomRoomIdRoute,
-  } as any)
-const AuthenticatedClassroomRoomIdChatRoute =
-  AuthenticatedClassroomRoomIdChatRouteImport.update({
-    id: '/chat',
-    path: '/chat',
-    getParentRoute: () => AuthenticatedClassroomRoomIdRoute,
-  } as any)
-const AuthenticatedClassroomRoomIdAiRoute =
-  AuthenticatedClassroomRoomIdAiRouteImport.update({
-    id: '/ai',
-    path: '/ai',
-    getParentRoute: () => AuthenticatedClassroomRoomIdRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -357,15 +315,9 @@ export interface FileRoutesByFullPath {
   '/admin/students': typeof AuthenticatedAdminStudentsRoute
   '/admin/tutors': typeof AuthenticatedAdminTutorsRoute
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
-  '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRouteWithChildren
+  '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
-  '/classroom/$roomId/ai': typeof AuthenticatedClassroomRoomIdAiRoute
-  '/classroom/$roomId/chat': typeof AuthenticatedClassroomRoomIdChatRoute
-  '/classroom/$roomId/files': typeof AuthenticatedClassroomRoomIdFilesRoute
-  '/classroom/$roomId/lab': typeof AuthenticatedClassroomRoomIdLabRoute
-  '/classroom/$roomId/lab3d': typeof AuthenticatedClassroomRoomIdLab3dRoute
-  '/classroom/$roomId/notes': typeof AuthenticatedClassroomRoomIdNotesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -406,15 +358,9 @@ export interface FileRoutesByTo {
   '/admin/students': typeof AuthenticatedAdminStudentsRoute
   '/admin/tutors': typeof AuthenticatedAdminTutorsRoute
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
-  '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRouteWithChildren
+  '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
-  '/classroom/$roomId/ai': typeof AuthenticatedClassroomRoomIdAiRoute
-  '/classroom/$roomId/chat': typeof AuthenticatedClassroomRoomIdChatRoute
-  '/classroom/$roomId/files': typeof AuthenticatedClassroomRoomIdFilesRoute
-  '/classroom/$roomId/lab': typeof AuthenticatedClassroomRoomIdLabRoute
-  '/classroom/$roomId/lab3d': typeof AuthenticatedClassroomRoomIdLab3dRoute
-  '/classroom/$roomId/notes': typeof AuthenticatedClassroomRoomIdNotesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -457,15 +403,9 @@ export interface FileRoutesById {
   '/_authenticated/admin/students': typeof AuthenticatedAdminStudentsRoute
   '/_authenticated/admin/tutors': typeof AuthenticatedAdminTutorsRoute
   '/_authenticated/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
-  '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRouteWithChildren
+  '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
-  '/_authenticated/classroom/$roomId/ai': typeof AuthenticatedClassroomRoomIdAiRoute
-  '/_authenticated/classroom/$roomId/chat': typeof AuthenticatedClassroomRoomIdChatRoute
-  '/_authenticated/classroom/$roomId/files': typeof AuthenticatedClassroomRoomIdFilesRoute
-  '/_authenticated/classroom/$roomId/lab': typeof AuthenticatedClassroomRoomIdLabRoute
-  '/_authenticated/classroom/$roomId/lab3d': typeof AuthenticatedClassroomRoomIdLab3dRoute
-  '/_authenticated/classroom/$roomId/notes': typeof AuthenticatedClassroomRoomIdNotesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -511,12 +451,6 @@ export interface FileRouteTypes {
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
     | '/admin/'
-    | '/classroom/$roomId/ai'
-    | '/classroom/$roomId/chat'
-    | '/classroom/$roomId/files'
-    | '/classroom/$roomId/lab'
-    | '/classroom/$roomId/lab3d'
-    | '/classroom/$roomId/notes'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -560,12 +494,6 @@ export interface FileRouteTypes {
     | '/classroom/$roomId'
     | '/lovable/email/suppression'
     | '/admin'
-    | '/classroom/$roomId/ai'
-    | '/classroom/$roomId/chat'
-    | '/classroom/$roomId/files'
-    | '/classroom/$roomId/lab'
-    | '/classroom/$roomId/lab3d'
-    | '/classroom/$roomId/notes'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -610,12 +538,6 @@ export interface FileRouteTypes {
     | '/_authenticated/classroom/$roomId'
     | '/lovable/email/suppression'
     | '/_authenticated/admin/'
-    | '/_authenticated/classroom/$roomId/ai'
-    | '/_authenticated/classroom/$roomId/chat'
-    | '/_authenticated/classroom/$roomId/files'
-    | '/_authenticated/classroom/$roomId/lab'
-    | '/_authenticated/classroom/$roomId/lab3d'
-    | '/_authenticated/classroom/$roomId/notes'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -935,78 +857,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/classroom/$roomId/notes': {
-      id: '/_authenticated/classroom/$roomId/notes'
-      path: '/notes'
-      fullPath: '/classroom/$roomId/notes'
-      preLoaderRoute: typeof AuthenticatedClassroomRoomIdNotesRouteImport
-      parentRoute: typeof AuthenticatedClassroomRoomIdRoute
-    }
-    '/_authenticated/classroom/$roomId/lab3d': {
-      id: '/_authenticated/classroom/$roomId/lab3d'
-      path: '/lab3d'
-      fullPath: '/classroom/$roomId/lab3d'
-      preLoaderRoute: typeof AuthenticatedClassroomRoomIdLab3dRouteImport
-      parentRoute: typeof AuthenticatedClassroomRoomIdRoute
-    }
-    '/_authenticated/classroom/$roomId/lab': {
-      id: '/_authenticated/classroom/$roomId/lab'
-      path: '/lab'
-      fullPath: '/classroom/$roomId/lab'
-      preLoaderRoute: typeof AuthenticatedClassroomRoomIdLabRouteImport
-      parentRoute: typeof AuthenticatedClassroomRoomIdRoute
-    }
-    '/_authenticated/classroom/$roomId/files': {
-      id: '/_authenticated/classroom/$roomId/files'
-      path: '/files'
-      fullPath: '/classroom/$roomId/files'
-      preLoaderRoute: typeof AuthenticatedClassroomRoomIdFilesRouteImport
-      parentRoute: typeof AuthenticatedClassroomRoomIdRoute
-    }
-    '/_authenticated/classroom/$roomId/chat': {
-      id: '/_authenticated/classroom/$roomId/chat'
-      path: '/chat'
-      fullPath: '/classroom/$roomId/chat'
-      preLoaderRoute: typeof AuthenticatedClassroomRoomIdChatRouteImport
-      parentRoute: typeof AuthenticatedClassroomRoomIdRoute
-    }
-    '/_authenticated/classroom/$roomId/ai': {
-      id: '/_authenticated/classroom/$roomId/ai'
-      path: '/ai'
-      fullPath: '/classroom/$roomId/ai'
-      preLoaderRoute: typeof AuthenticatedClassroomRoomIdAiRouteImport
-      parentRoute: typeof AuthenticatedClassroomRoomIdRoute
-    }
   }
 }
-
-interface AuthenticatedClassroomRoomIdRouteChildren {
-  AuthenticatedClassroomRoomIdAiRoute: typeof AuthenticatedClassroomRoomIdAiRoute
-  AuthenticatedClassroomRoomIdChatRoute: typeof AuthenticatedClassroomRoomIdChatRoute
-  AuthenticatedClassroomRoomIdFilesRoute: typeof AuthenticatedClassroomRoomIdFilesRoute
-  AuthenticatedClassroomRoomIdLabRoute: typeof AuthenticatedClassroomRoomIdLabRoute
-  AuthenticatedClassroomRoomIdLab3dRoute: typeof AuthenticatedClassroomRoomIdLab3dRoute
-  AuthenticatedClassroomRoomIdNotesRoute: typeof AuthenticatedClassroomRoomIdNotesRoute
-}
-
-const AuthenticatedClassroomRoomIdRouteChildren: AuthenticatedClassroomRoomIdRouteChildren =
-  {
-    AuthenticatedClassroomRoomIdAiRoute: AuthenticatedClassroomRoomIdAiRoute,
-    AuthenticatedClassroomRoomIdChatRoute:
-      AuthenticatedClassroomRoomIdChatRoute,
-    AuthenticatedClassroomRoomIdFilesRoute:
-      AuthenticatedClassroomRoomIdFilesRoute,
-    AuthenticatedClassroomRoomIdLabRoute: AuthenticatedClassroomRoomIdLabRoute,
-    AuthenticatedClassroomRoomIdLab3dRoute:
-      AuthenticatedClassroomRoomIdLab3dRoute,
-    AuthenticatedClassroomRoomIdNotesRoute:
-      AuthenticatedClassroomRoomIdNotesRoute,
-  }
-
-const AuthenticatedClassroomRoomIdRouteWithChildren =
-  AuthenticatedClassroomRoomIdRoute._addFileChildren(
-    AuthenticatedClassroomRoomIdRouteChildren,
-  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAiToolsRoute: typeof AuthenticatedAiToolsRoute
@@ -1034,7 +886,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminStudentsRoute: typeof AuthenticatedAdminStudentsRoute
   AuthenticatedAdminTutorsRoute: typeof AuthenticatedAdminTutorsRoute
   AuthenticatedAdminWhiteboardRoute: typeof AuthenticatedAdminWhiteboardRoute
-  AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRouteWithChildren
+  AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -1064,8 +916,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminStudentsRoute: AuthenticatedAdminStudentsRoute,
   AuthenticatedAdminTutorsRoute: AuthenticatedAdminTutorsRoute,
   AuthenticatedAdminWhiteboardRoute: AuthenticatedAdminWhiteboardRoute,
-  AuthenticatedClassroomRoomIdRoute:
-    AuthenticatedClassroomRoomIdRouteWithChildren,
+  AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
@@ -1093,3 +944,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

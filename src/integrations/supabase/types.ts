@@ -106,33 +106,6 @@ export type Database = {
         }
         Relationships: []
       }
-      classroom_chat: {
-        Row: {
-          body: string
-          created_at: string
-          display_name: string
-          id: string
-          room_id: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          display_name: string
-          id?: string
-          room_id: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          display_name?: string
-          id?: string
-          room_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       email_send_log: {
         Row: {
           created_at: string
@@ -1052,70 +1025,6 @@ export type Database = {
         }
         Relationships: []
       }
-      whiteboard_mutations: {
-        Row: {
-          created_at: string
-          id: string
-          mutation_payload: Json
-          mutation_type: string
-          user_id: string
-          whiteboard_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          mutation_payload?: Json
-          mutation_type: string
-          user_id: string
-          whiteboard_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          mutation_payload?: Json
-          mutation_type?: string
-          user_id?: string
-          whiteboard_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "whiteboard_mutations_whiteboard_id_fkey"
-            columns: ["whiteboard_id"]
-            isOneToOne: false
-            referencedRelation: "whiteboards"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      whiteboard_snapshots: {
-        Row: {
-          created_at: string
-          id: string
-          snapshot_data: Json
-          whiteboard_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          snapshot_data: Json
-          whiteboard_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          snapshot_data?: Json
-          whiteboard_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "whiteboard_snapshots_whiteboard_id_fkey"
-            columns: ["whiteboard_id"]
-            isOneToOne: false
-            referencedRelation: "whiteboards"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       whiteboard_strokes: {
         Row: {
           created_at: string
@@ -1145,35 +1054,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      whiteboards: {
-        Row: {
-          created_at: string
-          id: string
-          session_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          session_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          session_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "whiteboards_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: true
-            referencedRelation: "sessions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {
@@ -1220,7 +1100,6 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
-      ensure_whiteboard: { Args: { _room_id: string }; Returns: string }
       get_session_participant_names: {
         Args: never
         Returns: {
