@@ -582,6 +582,109 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const [converting, setConverting] = useState(false);
   const [convertingAll, setConvertingAll] = useState(false);
 
+  // Helper parsing routine that splits the comprehensive AI response chunk into granular independent entities
+  const unpackOcrResponse = (rawOcrText: string, startY: number, pageNum: number): AnyItem[] => {
+    const parsedElements: AnyItem[] = [];
+    let rollingY = startY;
+
+    // Matches standard high-level markdown math structures or visual SVGs blocks
+    const splittingRegex = /(\$\$[\s\S]+?\$\$)|(<svg[\s\S]*?<\/svg>)/gi;
+    let trackIdx = 0;
+    let matchObj;
+
+    const pushTextOrFormulaNode = (rawString: string, isFormula: boolean) => {
+      const content = rawString.trim();
+      if (!content) return;
+      parsedElements.push({
+        type: "text",
+        page: pageNum,
+        x: 35,
+        y: rollingY,
+        text: content,
+        color: "#0f172a",
+        size: 2,
+        id: `${userId}-ai-item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      });
+      rollingY += isFormula ? 85 : 45;
+    };
+
+    while ((matchObj = splittingRegex.exec(rawOcrText)) !== null) {
+      if (matchObj.index > trackIdx) {
+        pushTextOrFormulaNode(rawOcrText.slice(trackIdx, matchObj.index), false);
+      }
+
+      if (matchObj[1]) {
+        // Encountered independent math formula segment block
+        pushTextOrFormulaNode(matchObj[1], true);
+      } else if (matchObj[2]) {
+        // Encountered visual diagram SVG code block. Strip internal texts nodes out into standalone draggable elements
+        const originalSvgStr = matchObj[2];
+        let finalizedCleanSvg = originalSvgStr;
+        const unlinkedLabelItems: AnyItem[] = [];
+
+        const defaultSvgBaseX = 50;
+        const defaultSvgBaseY = rollingY;
+
+        try {
+          const domParserInstance = new DOMParser();
+          const svgDocument = domParserInstance.parseFromString(originalSvgStr, "image/svg+xml");
+          const nativeTextNodes = svgDocument.querySelectorAll("text");
+
+          nativeTextNodes.forEach((node) => {
+            const innerString = node.textContent?.trim();
+            if (innerString) {
+              const svgLocalX = parseFloat(node.getAttribute("x") || "0");
+              const svgLocalY = parseFloat(node.getAttribute("y") || "0");
+
+              // Generate completely detached independent item structure object
+              unlinkedLabelItems.push({
+                type: "text",
+                page: pageNum,
+                x: defaultSvgBaseX + svgLocalX,
+                // Offset slightly upward from native baseline for easier click manipulation bounds matching standard text layouts
+                y: defaultSvgBaseY + svgLocalY - 10,
+                text: innerString,
+                color: "#0f172a",
+                size: 2,
+                id: `${userId}-ai-lbl-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+              });
+
+              // Purge the structural text tag block from within the SVG graphic so it won't render locked inside
+              node.parentNode?.removeChild(node);
+            }
+          });
+
+          finalizedCleanSvg = new XMLSerializer().serializeToString(svgDocument);
+        } catch (svgParseErr) {
+          console.error("Failed unpacking nested internal text components from AI diagram element:", svgParseErr);
+        }
+
+        // Push clean visual layout geometric drawing box item
+        parsedElements.push({
+          type: "text",
+          page: pageNum,
+          x: defaultSvgBaseX,
+          y: defaultSvgBaseY,
+          text: finalizedCleanSvg,
+          color: "#0f172a",
+          size: 2,
+          id: `${userId}-ai-svg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        });
+
+        // Append the newly isolated, separate draggable labels right after the diagram base layer
+        parsedElements.push(...unlinkedLabelItems);
+        rollingY += 260; // Safe dynamic gap spacing block step down height assignment
+      }
+      trackIdx = splittingRegex.lastIndex;
+    }
+
+    if (trackIdx < rawOcrText.length) {
+      pushTextOrFormulaNode(rawOcrText.slice(trackIdx), false);
+    }
+
+    return parsedElements;
+  };
+
   const convertPage = async (page: number): Promise<boolean> => {
     const canvas = canvasRefs.current[page];
     if (!canvas) return false;
@@ -608,18 +711,13 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       if (bottom + 8 > nextY) nextY = bottom + 8;
     }
 
-    const item: TextItem = {
-      type: "text",
-      page,
-      x: 16,
-      y: nextY,
-      text,
-      color: "#0f172a",
-      size: 2,
-      id: `${userId}-ocr-${Date.now()}-${page}`,
-    };
-    historyRef.current.push(item);
-    sendItem(item);
+    // Unpack composite markup payload string into clear modular unlinked adjustable tokens array list
+    const granularItems = unpackOcrResponse(text, nextY, page);
+    granularItems.forEach((unpackedItem) => {
+      historyRef.current.push(unpackedItem);
+      sendItem(unpackedItem);
+    });
+
     bumpText();
     return true;
   };
@@ -630,7 +728,7 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     try {
       const ok = await convertPage(page);
       if (!ok) toast.message("Nothing recognised on this page.");
-      else toast.success("Converted — drag to move, click to edit");
+      else toast.success("Converted — everything is now separately movable!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Conversion failed");
     } finally {
@@ -919,12 +1017,14 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
         Draw with one finger · scroll with two fingers · paste images with Ctrl/Cmd+V · {PAGE_COUNT} pages
       </div>
 
+      {/* Changed layout overflow properties to ensure landscape-to-portrait orientation shifts do not trim strokes */}
       <div
         ref={containerRef}
-        className="relative flex-1 overflow-y-auto overscroll-contain bg-muted/30"
+        className="relative flex-1 overflow-auto overscroll-contain bg-muted/30"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="mx-auto flex w-full flex-col gap-4 px-2 py-2">
+        {/* Set explicit safe min-width context boundaries preventing responsive frame clipping */}
+        <div className="mx-auto flex w-full min-w-[950px] flex-col gap-4 px-4 py-2">
           {pages.map((i) => (
             <div key={i} className="relative">
               <div
