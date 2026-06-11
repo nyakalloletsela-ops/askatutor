@@ -106,6 +106,38 @@ export type Database = {
         }
         Relationships: []
       }
+      canvas_timeline_deltas: {
+        Row: {
+          created_at: string
+          delta_data: Json
+          id: number
+          session_id: string
+          t_offset_ms: number
+        }
+        Insert: {
+          created_at?: string
+          delta_data: Json
+          id?: number
+          session_id: string
+          t_offset_ms: number
+        }
+        Update: {
+          created_at?: string
+          delta_data?: Json
+          id?: number
+          session_id?: string
+          t_offset_ms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_timeline_deltas_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "whiteboard_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classroom_chat: {
         Row: {
           body: string
@@ -1086,6 +1118,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whiteboard_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          room_id: string
+          started_at: string
+          started_by: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          room_id: string
+          started_at?: string
+          started_by: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          room_id?: string
+          started_at?: string
+          started_by?: string
+          title?: string | null
+        }
+        Relationships: []
       }
       whiteboard_snapshots: {
         Row: {
