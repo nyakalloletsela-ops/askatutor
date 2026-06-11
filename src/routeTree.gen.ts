@@ -36,6 +36,7 @@ import { Route as AuthenticatedAiTutorRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAiToolsRouteImport } from './routes/_authenticated/ai-tools'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as AuthenticatedWhiteboardReviewSessionIdRouteImport } from './routes/_authenticated/whiteboard-review.$sessionId'
 import { Route as AuthenticatedClassroomRoomIdRouteImport } from './routes/_authenticated/classroom.$roomId'
 import { Route as AuthenticatedAdminWhiteboardRouteImport } from './routes/_authenticated/admin.whiteboard'
 import { Route as AuthenticatedAdminTutorsRouteImport } from './routes/_authenticated/admin.tutors'
@@ -190,6 +191,12 @@ const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   path: '/lovable/email/suppression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWhiteboardReviewSessionIdRoute =
+  AuthenticatedWhiteboardReviewSessionIdRouteImport.update({
+    id: '/whiteboard-review/$sessionId',
+    path: '/whiteboard-review/$sessionId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedClassroomRoomIdRoute =
   AuthenticatedClassroomRoomIdRouteImport.update({
     id: '/classroom/$roomId',
@@ -316,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/admin/tutors': typeof AuthenticatedAdminTutorsRoute
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
+  '/whiteboard-review/$sessionId': typeof AuthenticatedWhiteboardReviewSessionIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -359,6 +367,7 @@ export interface FileRoutesByTo {
   '/admin/tutors': typeof AuthenticatedAdminTutorsRoute
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
+  '/whiteboard-review/$sessionId': typeof AuthenticatedWhiteboardReviewSessionIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -404,6 +413,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/tutors': typeof AuthenticatedAdminTutorsRoute
   '/_authenticated/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
+  '/_authenticated/whiteboard-review/$sessionId': typeof AuthenticatedWhiteboardReviewSessionIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -449,6 +459,7 @@ export interface FileRouteTypes {
     | '/admin/tutors'
     | '/admin/whiteboard'
     | '/classroom/$roomId'
+    | '/whiteboard-review/$sessionId'
     | '/lovable/email/suppression'
     | '/admin/'
     | '/lovable/email/queue/process'
@@ -492,6 +503,7 @@ export interface FileRouteTypes {
     | '/admin/tutors'
     | '/admin/whiteboard'
     | '/classroom/$roomId'
+    | '/whiteboard-review/$sessionId'
     | '/lovable/email/suppression'
     | '/admin'
     | '/lovable/email/queue/process'
@@ -536,6 +548,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/tutors'
     | '/_authenticated/admin/whiteboard'
     | '/_authenticated/classroom/$roomId'
+    | '/_authenticated/whiteboard-review/$sessionId'
     | '/lovable/email/suppression'
     | '/_authenticated/admin/'
     | '/lovable/email/queue/process'
@@ -752,6 +765,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/whiteboard-review/$sessionId': {
+      id: '/_authenticated/whiteboard-review/$sessionId'
+      path: '/whiteboard-review/$sessionId'
+      fullPath: '/whiteboard-review/$sessionId'
+      preLoaderRoute: typeof AuthenticatedWhiteboardReviewSessionIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/classroom/$roomId': {
       id: '/_authenticated/classroom/$roomId'
       path: '/classroom/$roomId'
@@ -887,6 +907,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminTutorsRoute: typeof AuthenticatedAdminTutorsRoute
   AuthenticatedAdminWhiteboardRoute: typeof AuthenticatedAdminWhiteboardRoute
   AuthenticatedClassroomRoomIdRoute: typeof AuthenticatedClassroomRoomIdRoute
+  AuthenticatedWhiteboardReviewSessionIdRoute: typeof AuthenticatedWhiteboardReviewSessionIdRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -917,6 +938,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminTutorsRoute: AuthenticatedAdminTutorsRoute,
   AuthenticatedAdminWhiteboardRoute: AuthenticatedAdminWhiteboardRoute,
   AuthenticatedClassroomRoomIdRoute: AuthenticatedClassroomRoomIdRoute,
+  AuthenticatedWhiteboardReviewSessionIdRoute:
+    AuthenticatedWhiteboardReviewSessionIdRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
