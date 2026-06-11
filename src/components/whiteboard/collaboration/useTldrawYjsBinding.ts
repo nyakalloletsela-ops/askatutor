@@ -31,17 +31,15 @@ export function useTldrawYjsBinding(editor: Editor | null, doc: Y.Doc) {
     const unsubStore = editor.store.listen(
       ({ changes }) => {
         doc.transact(() => {
-          for (const id in changes.added) {
-            const rec = changes.added[id] as TLRecord;
-            if (rec.typeName === "shape" || rec.typeName === "asset") yRecords.set(id, rec);
+          for (const rec of Object.values(changes.added) as TLRecord[]) {
+            if (rec.typeName === "shape" || rec.typeName === "asset") yRecords.set(rec.id, rec);
           }
-          for (const id in changes.updated) {
-            const [, rec] = changes.updated[id] as [TLRecord, TLRecord];
-            if (rec.typeName === "shape" || rec.typeName === "asset") yRecords.set(id, rec);
+          for (const entry of Object.values(changes.updated) as [TLRecord, TLRecord][]) {
+            const rec = entry[1];
+            if (rec.typeName === "shape" || rec.typeName === "asset") yRecords.set(rec.id, rec);
           }
-          for (const id in changes.removed) {
-            const rec = changes.removed[id] as TLRecord;
-            if (rec.typeName === "shape" || rec.typeName === "asset") yRecords.delete(id);
+          for (const rec of Object.values(changes.removed) as TLRecord[]) {
+            if (rec.typeName === "shape" || rec.typeName === "asset") yRecords.delete(rec.id);
           }
         }, "local");
       },
