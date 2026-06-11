@@ -1,69 +1,65 @@
-# AskATutorLive Dashboard System — Phased Rebuild
+# Whiteboard Engine Replacement — tldraw + Yjs
 
-Linear/Notion aesthetic. Reuses existing auth, roles, sessions, whiteboard, classroom, messages, AI tools. Adds the missing modules end-to-end with real schemas.
+Replacing the current custom `Whiteboard.tsx` canvas with tldraw as the rendering engine and Yjs (over Supabase Realtime) for multi-user collaboration. Auth, routes, classroom shell, Jitsi video, files, notes, labs all stay untouched.
 
-## Design tokens (applied globally in `src/styles.css`)
-- Background `oklch(0.99 0 0)` / surface `oklch(0.97 0.005 240)` / border `oklch(0.92 0.005 240)`
-- Primary `oklch(0.55 0.18 255)` (blue 500-ish), foreground neutral slate
-- Dark mode mirror with `oklch(0.14 0.02 250)` background
-- Radius `0.625rem`, soft shadows (`0 1px 2px rgb(0 0 0 / 0.04)`), generous spacing, Inter font
+## Step 1 — Dependencies
 
-## Phase 1 — Shared shell (this turn)
-1. **`AppShell` layout** (`src/components/dashboard/AppShell.tsx`)
-   - Collapsible sidebar (shadcn `Sidebar`, `collapsible="icon"`), active-route highlighting, mobile sheet, framer-motion transitions
-   - Topbar: breadcrumbs, command-palette search (⌘K), notifications bell w/ unread badge, theme toggle, profile dropdown
-   - Role-aware nav links (student / tutor / admin sets)
-2. **Mount on `_authenticated.tsx`** wrapping the existing `<Outlet />` so every protected route gets the new chrome. Existing `MobileTabBar` retired.
-3. **Reusable primitives** in `src/components/dashboard/`: `StatCard`, `SectionHeader`, `EmptyState`, `DataTable`, `PageContainer`.
-4. **Restyle existing `/dashboard`** to use the new shell + StatCards. Role-branch into 3 dashboard components:
-   - `StudentDashboard` — Upcoming classes, completed lessons, study hours, free minutes, subject progress (derived from sessions)
-   - `TutorDashboard` — Earnings (sum sessions × rate), students count, sessions completed, avg rating, upcoming schedule, quick-launch classroom
-   - `AdminDashboard` — totals (users/tutors/students/sessions/revenue), live sessions, recent signups, pending tutor apps
+Install:
+- `tldraw` (the package is published as `tldraw`, not `@tldraw/tldraw` — `@tldraw/tldraw` is a deprecated alias and will fail or pull an old version)
+- `yjs`
+- `y-protocols` (needed for awareness/cursors)
+- `@tldraw/sync` is NOT used — we use tldraw's `store.listen` + Yjs sync helper manually so we can sit on Supabase Realtime instead of a websocket server
 
-## Phase 2 — Missing modules (schemas + routes)
-Single migration adds these tables (all with GRANTs + RLS scoped to owner/admin, service_role full):
+Note: `y-supabase` exists but is unmaintained and ships its own channel format; rolling a thin adapter against `supabase.channel(...).on('broadcast')` is more reliable and ~60 lines. I'll do that instead unless you insist on `y-supabase`.
 
-| Table | Purpose |
-|---|---|
-| `assignments` | tutor-created homework: title, description, subject, due_at, tutor_id, student_id, attachment_path, status |
-| `assignment_submissions` | student uploads: assignment_id, student_id, file_path, note, submitted_at, grade, feedback |
-| `notes` | personal notes/bookmarks: user_id, title, body, kind (`note`/`bookmark`/`whiteboard`/`ai`), ref_id |
-| `notifications` | user_id, type, title, body, link, read_at |
-| `tutor_availability` | tutor_id, weekday, start_min, end_min |
-| `tutor_resources` | tutor_id, title, kind, storage_path, subject, visibility |
+`lucide-react` is already installed.
 
-Realtime enabled on `notifications` only (others stay polled — keeps `profiles`/`sessions` out of realtime per security memory).
+## Step 2 — Directory layout
 
-New routes under `_authenticated/`:
-- `assignments.tsx` (split view by role)
-- `notes.tsx`
-- `calendar.tsx` (month + agenda view from `sessions` + `assignments`)
-- `notifications.tsx` (full inbox; bell shows last 8)
-- `resources.tsx` (tutor uploads)
-- `_authenticated/admin/payments.tsx`, `admin/reports.tsx`, `admin/moderation.tsx`, `admin/analytics.tsx` (recharts: users over time, revenue, session volume)
+```text
+src/components/whiteboard/
+  canvas/
+    TldrawCanvas.tsx          // mounts <Tldraw />, wires persistence + sync
+    persistence.ts            // localStorage snapshot per room (viewport + doc)
+  collaboration/
+    useYjsRoom.ts             // creates Y.Doc + awareness, connects to Supabase
+    supabase-yjs-provider.ts  // Yjs <-> Supabase broadcast adapter (update + awareness)
+    useTldrawYjsBinding.ts    // two-way bind tldraw store <-> Y.Map of records
+    cursors.tsx               // <LiveCursors /> overlay using awareness states
+  index.ts
+```
 
-Server fns for each module in `src/lib/{name}.functions.ts` (TanStack `createServerFn` + `requireSupabaseAuth`).
+Each file kept under 300 lines; logic-heavy parts live in hooks.
 
-## Phase 3 — Polish & integrations
-- Notifications: triggers on `sessions` insert (reminder), `assignments` insert, new `messages` insert, `student_subscriptions` status change
-- Real-time bell + toast via Supabase channel
-- Dark mode via existing `use-theme` hook wired into topbar toggle, persisted
-- Framer-motion page transitions, skeleton loaders, recharts for all analytics
-- Mobile: sidebar becomes Sheet, topbar collapses, cards stack
+## Step 3 — Phase 1: Core canvas
 
-## Technical notes
-- Stack stays: TanStack Router/Query/Start, Supabase, Tailwind v4, shadcn, framer-motion (add `bun add framer-motion recharts` — recharts already present, check)
-- All new tables: explicit `GRANT` for `authenticated` + `service_role`, no anon; RLS scoped to `auth.uid()` with admin override via `has_role`
-- No edits to existing whiteboard/classroom/Jitsi code in this rebuild
-- `MobileTabBar` removed in favor of sidebar Sheet
-- Keep `list_public_tutors()` RPC as the only public-tutor surface
+- `TldrawCanvas.tsx` renders `<Tldraw persistenceKey={`atl-${roomId}`} />`. tldraw's built-in persistence handles local snapshot + viewport restore on refresh, plus full default toolbar (select, draw, eraser, highlight, rect, ellipse, arrow, note, text), pan/zoom (wheel + pinch), undo/redo.
+- Mount it in `classroom.$roomId.tsx` Whiteboard tab in place of the old `<Whiteboard />`.
+- The old `src/components/Whiteboard.tsx` stays on disk for now (not imported) so other references don't break; I'll remove it after verifying nothing else imports it.
 
-## Out of scope (will flag separately)
-- Real payment processing (Stripe/Paddle) — admin payments page reads existing `*_subscriptions` tables only
-- Session recording (no infra for it)
-- Group chat (current `messages` is 1:1; would need rooms table)
+## Step 4 — Phase 2: Realtime collaboration
 
-## Delivery order
-Phase 1 ships first (visible improvement immediately). Phase 2 ships as one migration + per-route follow-ups. Phase 3 is polish on top of Phase 2.
+- `useYjsRoom(roomId, user)` returns `{ doc, awareness }`.
+- `supabase-yjs-provider.ts` opens `supabase.channel(`yjs:${roomId}`, { config: { broadcast: { self: false } } })`:
+  - On local `doc.on('update', u)` → `channel.send({ type:'broadcast', event:'y-update', payload:{ u: base64(u) } })`
+  - On remote `y-update` → `Y.applyUpdate(doc, fromBase64(u))`
+  - Awareness: same pattern with `awarenessProtocol.encodeAwarenessUpdate` on event `y-awareness`
+  - On `SUBSCRIBED` → broadcast a `y-sync-request`; peers reply with full `Y.encodeStateAsUpdate(doc)`. Handles refresh / late join / reconnect (Supabase channel auto-reconnects; we re-send sync-request in the resubscribe handler so missed deltas catch up).
+- `useTldrawYjsBinding(editor, doc)`:
+  - Y.Map `records` keyed by tldraw record id.
+  - On editor `store.listen({ source:'user', scope:'document' })` → write added/updated/removed records into the Y.Map inside `doc.transact`.
+  - On Y.Map observe → `editor.store.mergeRemoteChanges(() => store.put/remove)` to avoid echo loops.
+- `cursors.tsx`: subscribe to `awareness` states, project each peer's page-space cursor through `editor.pageToScreen`, render a colored SVG arrow + name tag overlay positioned absolutely over the canvas. Local pointer position pushed via `editor.on('event', e => awareness.setLocalStateField('cursor', editor.inputs.currentPagePoint))` (throttled ~30ms).
+- Color: deterministic hash of `user.id` → HSL.
 
-Approve to start Phase 1.
+## Step 5 — React error #300 on classroom open
+
+#300 = "rendered fewer hooks than expected" — a conditional hook. After installing tldraw, the old `Whiteboard.tsx` is no longer rendered in the classroom tab so its OCR/overlay hook tree (which I suspect is the culprit, especially the `bumpText`/`mergeRefs` paths added recently) is out of the render path. I'll verify by loading `/classroom/demo-…` after the swap; if the crash persists it's in `classroom.$roomId.tsx` itself (likely the `videoRef`/`FloatingVideo` imperative handle) and I'll fix it there.
+
+## Out of scope (will flag if needed)
+
+- Server-side persistence of the tldraw doc in Postgres (Y.js updates can be appended to a `whiteboard_yjs_updates` table later for cold-start hydration beyond peer sync). For now: peer-sync + localStorage snapshot per client.
+- Migrating existing `whiteboard_strokes` rows into tldraw shapes — the old format isn't compatible; old boards start empty under the new engine.
+- AI "Convert all" button — current implementation is tied to the old canvas; can be reattached to tldraw in a follow-up by exporting the current page as PNG via `editor.toImage()` and feeding it to the existing `whiteboardConvert` server fn.
+
+Approve to proceed.
