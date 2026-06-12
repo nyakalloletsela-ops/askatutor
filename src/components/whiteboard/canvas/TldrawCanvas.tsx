@@ -5,6 +5,7 @@ import { useYjsRoom, hashColor, type CollabUser } from "../collaboration/useYjsR
 import { useTldrawYjsBinding } from "../collaboration/useTldrawYjsBinding";
 import { LiveCursors } from "../collaboration/cursors";
 import { RecordingBar } from "../timeline/RecordingBar";
+import { ConvertButton } from "../ai/ConvertButton";
 
 interface Props {
   roomId: string;
@@ -21,7 +22,7 @@ export function TldrawCanvas({ roomId, userId, userName, canRecord = true }: Pro
   useTldrawYjsBinding(editor, doc);
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full min-h-[400px]">
       <Tldraw
         persistenceKey={`atl-${roomId}`}
         onMount={(ed) => {
@@ -30,6 +31,11 @@ export function TldrawCanvas({ roomId, userId, userName, canRecord = true }: Pro
         }}
       />
       <LiveCursors editor={editor} awareness={awareness} />
+
+      <div className="pointer-events-auto absolute left-2 top-12 z-50 flex items-center gap-2 sm:top-2 sm:left-[12rem]">
+        <ConvertButton editor={editor} />
+      </div>
+
       {canRecord && <RecordingBar roomId={roomId} userId={userId} doc={doc} />}
       <div className="pointer-events-none absolute right-2 top-2 z-50 rounded-full bg-background/80 px-2 py-0.5 text-[10px] text-muted-foreground shadow">
         {status === "connected" ? "● Live" : status === "connecting" ? "● Connecting…" : "● Offline"}
