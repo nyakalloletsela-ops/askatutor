@@ -32,7 +32,7 @@ export function TldrawCanvas({ roomId, userId, userName, canRecord = true }: Pro
       />
       <LiveCursors editor={editor} awareness={awareness} />
 
-      <div className="pointer-events-auto absolute left-1/2 top-2 z-50 flex -translate-x-1/2 items-center gap-2">
+      <div className="pointer-events-auto absolute left-2 top-12 z-50 flex items-center gap-2 sm:top-2 sm:left-[12rem]">
         <ConvertButton editor={editor} />
       </div>
 
