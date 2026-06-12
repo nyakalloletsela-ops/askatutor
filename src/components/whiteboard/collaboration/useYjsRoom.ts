@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import { SupabaseYjsProvider, type ProviderStatus } from "./supabase-yjs-provider";
@@ -15,37 +15,48 @@ export function hashColor(id: string): string {
   return `hsl(${Math.abs(h) % 360} 70% 50%)`;
 }
 
+interface Room {
+  doc: Y.Doc;
+  awareness: Awareness;
+  provider: SupabaseYjsProvider | null;
+}
+
 export function useYjsRoom(roomId: string, user: CollabUser) {
   const [status, setStatus] = useState<ProviderStatus>("connecting");
-  const ref = useRef<{ doc: Y.Doc; awareness: Awareness; provider: SupabaseYjsProvider } | null>(null);
 
-  if (ref.current === null) {
+  // Lazy-create the Y.Doc + Awareness so they survive StrictMode double-mount.
+  // The Supabase provider is wired up inside useEffect and recreated on roomId change.
+  const [room] = useState<Room>(() => {
     const doc = new Y.Doc();
     const awareness = new Awareness(doc);
     awareness.setLocalState({ user, cursor: null });
-    ref.current = {
-      doc,
-      awareness,
-      provider: new SupabaseYjsProvider(roomId, doc, awareness, setStatus),
-    };
-  }
+    return { doc, awareness, provider: null };
+  });
 
+  useEffect(() => {
+    setStatus("connecting");
+    const provider = new SupabaseYjsProvider(roomId, room.doc, room.awareness, setStatus);
+    room.provider = provider;
+    return () => {
+      provider.destroy();
+      room.provider = null;
+    };
+  }, [roomId, room]);
+
+  // Tear the doc down only when the component truly unmounts.
   useEffect(() => {
     return () => {
-      ref.current?.provider.destroy();
-      ref.current?.doc.destroy();
-      ref.current = null;
+      room.awareness.destroy();
+      room.doc.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId]);
+  }, []);
 
-  // keep local user info fresh
+  // Keep local user info fresh
   useEffect(() => {
-    const aw = ref.current?.awareness;
-    if (!aw) return;
-    const prev = aw.getLocalState() ?? {};
-    aw.setLocalState({ ...prev, user });
-  }, [user.id, user.name, user.color]);
+    const prev = room.awareness.getLocalState() ?? {};
+    room.awareness.setLocalState({ ...prev, user });
+  }, [user.id, user.name, user.color, room]);
 
-  return { doc: ref.current.doc, awareness: ref.current.awareness, status };
+  return { doc: room.doc, awareness: room.awareness, status };
 }
