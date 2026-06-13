@@ -1,44 +1,99 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tldraw, type Editor } from "tldraw";
 import "tldraw/tldraw.css";
-import { useYjsRoom, hashColor, type CollabUser } from "../collaboration/useYjsRoom";
 import { useTldrawYjsBinding } from "../collaboration/useTldrawYjsBinding";
 import { LiveCursors } from "../collaboration/cursors";
-import { RecordingBar } from "../timeline/RecordingBar";
 import { ConvertButton } from "../ai/ConvertButton";
+import { Button } from "@/components/ui/button";
+import { Grid3x3, CircleDot, Eye } from "lucide-react";
+import * as Y from "yjs";
+import type { Awareness } from "y-protocols/awareness";
+import { hashColor } from "../collaboration/useYjsRoom";
+
+export interface SharedRoom {
+  doc: Y.Doc;
+  awareness: Awareness;
+}
 
 interface Props {
   roomId: string;
   userId: string;
   userName: string;
-  canRecord?: boolean;
+  /** Externally-owned Yjs room. Required so recording and awareness can share state. */
+  room: SharedRoom;
+  /** Show the friendly empty-state hint until the user draws something. */
+  showEmptyHint?: boolean;
 }
 
-export function TldrawCanvas({ roomId, userId, userName, canRecord = true }: Props) {
+export function TldrawCanvas({ roomId, userId, userName, room, showEmptyHint = true }: Props) {
   const [editor, setEditor] = useState<Editor | null>(null);
-  const user: CollabUser = { id: userId, name: userName, color: hashColor(userId) };
-  const { doc, awareness, status } = useYjsRoom(roomId, user);
+  const user = { id: userId, name: userName, color: hashColor(userId) };
+  const { doc, awareness } = room;
 
   useTldrawYjsBinding(editor, doc);
 
+  const [gridMode, setGridMode] = useState<"off" | "grid" | "dots">("off");
+  const [hasContent, setHasContent] = useState(false);
+
+  // Force light colour scheme + grid mode, watch for emptiness.
+  useEffect(() => {
+    if (!editor) return;
+    editor.user.updateUserPreferences({ colorScheme: "light", name: userName, color: user.color });
+    editor.updateInstanceState({ isGridMode: gridMode !== "off" });
+
+    const check = () => setHasContent(editor.getCurrentPageShapeIds().size > 0);
+    check();
+    const unsub = editor.store.listen(check, { scope: "document" });
+    return () => unsub();
+  }, [editor, gridMode, userName, user.color]);
+
+  const cycleGrid = () => setGridMode((m) => (m === "off" ? "grid" : m === "grid" ? "dots" : "off"));
+  const GridIcon = gridMode === "dots" ? CircleDot : gridMode === "grid" ? Grid3x3 : Eye;
+
   return (
-    <div className="relative h-full w-full min-h-[400px]">
+    <div className="relative h-full w-full min-h-[400px] overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div
+        className={
+          gridMode === "dots"
+            ? "absolute inset-0 [background-image:radial-gradient(circle,#cbd5e1_1px,transparent_1px)] [background-size:18px_18px] pointer-events-none"
+            : ""
+        }
+      />
       <Tldraw
         persistenceKey={`atl-${roomId}`}
         onMount={(ed) => {
           setEditor(ed);
-          ed.user.updateUserPreferences({ name: userName, color: user.color });
+          ed.user.updateUserPreferences({ name: userName, color: user.color, colorScheme: "light" });
         }}
       />
       <LiveCursors editor={editor} awareness={awareness} />
 
-      <div className="pointer-events-auto absolute left-2 top-12 z-50 flex items-center gap-2 sm:top-2 sm:left-[12rem]">
-        <ConvertButton editor={editor} />
-      </div>
+      {/* Friendly empty-state hint */}
+      {showEmptyHint && !hasContent && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+          <div className="pointer-events-none max-w-sm rounded-2xl border border-dashed bg-white/60 px-6 py-5 text-center shadow-sm backdrop-blur">
+            <p className="text-sm font-semibold text-foreground">Your whiteboard is ready</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Start teaching by drawing, writing notes, or uploading content.
+            </p>
+          </div>
+        </div>
+      )}
 
-      {canRecord && <RecordingBar roomId={roomId} userId={userId} doc={doc} />}
-      <div className="pointer-events-none absolute right-2 top-2 z-50 rounded-full bg-background/80 px-2 py-0.5 text-[10px] text-muted-foreground shadow">
-        {status === "connected" ? "● Live" : status === "connecting" ? "● Connecting…" : "● Offline"}
+      {/* Floating top-center toolbelt: grid toggle + AI convert */}
+      <div className="pointer-events-auto absolute left-1/2 top-2 z-50 flex -translate-x-1/2 items-center gap-1.5 rounded-full border bg-background/90 px-1.5 py-1 shadow backdrop-blur">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-xs"
+          onClick={cycleGrid}
+          title={`Grid: ${gridMode}`}
+        >
+          <GridIcon className="mr-1 h-3.5 w-3.5" />
+          {gridMode === "off" ? "Plain" : gridMode === "grid" ? "Grid" : "Dots"}
+        </Button>
+        <span className="h-4 w-px bg-border" />
+        <ConvertButton editor={editor} />
       </div>
     </div>
   );
