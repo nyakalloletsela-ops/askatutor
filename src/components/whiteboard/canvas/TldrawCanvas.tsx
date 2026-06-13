@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Tldraw, type Editor } from "tldraw";
 import "tldraw/tldraw.css";
-import { useYjsRoom, hashColor, type CollabUser } from "../collaboration/useYjsRoom";
 import { useTldrawYjsBinding } from "../collaboration/useTldrawYjsBinding";
 import { LiveCursors } from "../collaboration/cursors";
 import { ConvertButton } from "../ai/ConvertButton";
@@ -9,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Grid3x3, CircleDot, Eye } from "lucide-react";
 import * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness";
+import { hashColor } from "../collaboration/useYjsRoom";
 
 export interface SharedRoom {
   doc: Y.Doc;
@@ -19,20 +19,16 @@ interface Props {
   roomId: string;
   userId: string;
   userName: string;
-  /** Optional externally-owned Yjs room. When provided, this canvas does NOT create its own. */
-  room?: SharedRoom;
+  /** Externally-owned Yjs room. Required so recording and awareness can share state. */
+  room: SharedRoom;
   /** Show the friendly empty-state hint until the user draws something. */
   showEmptyHint?: boolean;
 }
 
-export function TldrawCanvas({ roomId, userId, userName, room: externalRoom, showEmptyHint = true }: Props) {
+export function TldrawCanvas({ roomId, userId, userName, room, showEmptyHint = true }: Props) {
   const [editor, setEditor] = useState<Editor | null>(null);
-  const user: CollabUser = { id: userId, name: userName, color: hashColor(userId) };
-
-  // Always call useYjsRoom (hook order must be stable). If caller passes a room, ignore ours.
-  const internal = useYjsRoom(roomId, user);
-  const doc = externalRoom?.doc ?? internal.doc;
-  const awareness = externalRoom?.awareness ?? internal.awareness;
+  const user = { id: userId, name: userName, color: hashColor(userId) };
+  const { doc, awareness } = room;
 
   useTldrawYjsBinding(editor, doc);
 
