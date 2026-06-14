@@ -19,12 +19,17 @@ import type { Participant } from "@/components/JitsiRoom";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
   beforeLoad: async ({ params }) => {
+    // Only redirect on a *confirmed* non-membership. Transient errors
+    // (network blip, auth header not yet attached on hard reload, SSR
+    // prerender without a session) must NOT kick the user out of an
+    // active meeting.
     try {
       const { isMember } = await checkRoomMembership({ data: { roomId: params.roomId } });
       if (!isMember) throw redirect({ to: "/dashboard" });
     } catch (e) {
       if (e && typeof e === "object" && "to" in e) throw e;
-      throw redirect({ to: "/dashboard" });
+      // Swallow — let the page mount; client-side checks still apply.
+      console.warn("[classroom] membership check failed, allowing entry:", e);
     }
   },
   component: ClassroomPage,
