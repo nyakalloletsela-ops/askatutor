@@ -619,6 +619,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     const parsedElements: AnyItem[] = [];
     let rollingY = startY;
     const cleanOcrText = rawOcrText
+      .replace(/\\\[/g, () => "$$")
+      .replace(/\\\]/g, () => "$$")
       .replace(/```(?:latex|tex|math|svg)?/gi, "")
       .replace(/```/g, "")
       .trim();
