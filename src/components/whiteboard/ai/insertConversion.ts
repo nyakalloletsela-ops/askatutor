@@ -21,7 +21,7 @@ export type ConvertedBlock =
 
 const SVG_RE = /<svg[\s\S]*?<\/svg>/gi;
 const MATH_RE = /\$\$([\s\S]+?)\$\$/g;
-const LATEX_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim)(?=_|\b)|[∫∑∏√∞≈≤≥≠±]/i;
+const LATEX_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim|frac|partial)(?=_|\b)|[∫∬∭∮∑∏√∞≈≤≥≠±∂∇πθΔ]/i;
 
 function readSvgDims(svg: string): { w: number; h: number } {
   const vb = svg.match(/viewBox\s*=\s*"([^"]+)"/i);
@@ -37,6 +37,8 @@ function readSvgDims(svg: string): { w: number; h: number } {
 export function parseConversion(raw: string): ConvertedBlock[] {
   const out: ConvertedBlock[] = [];
   const cleanRaw = raw
+    .replace(/\\\[/g, () => "$$")
+    .replace(/\\\]/g, () => "$$")
     .replace(/```(?:latex|tex|math|svg)?/gi, "")
     .replace(/```/g, "")
     .trim();
@@ -94,6 +96,9 @@ function looksLikeMathLine(value: string): boolean {
 function normalizeLatex(input: string): string {
   return input
     .replace(/^\$\$|\$\$$/g, "")
+    .replace(/∭/g, "\\iiint ")
+    .replace(/∬/g, "\\iint ")
+    .replace(/∮/g, "\\oint ")
     .replace(/∫/g, "\\int ")
     .replace(/\biiint(?=_|\b)/g, "\\iiint")
     .replace(/\biint(?=_|\b)/g, "\\iint")
@@ -110,6 +115,11 @@ function normalizeLatex(input: string): string {
     .replace(/≠/g, "\\neq")
     .replace(/≈/g, "\\approx")
     .replace(/±/g, "\\pm")
+    .replace(/∂/g, "\\partial")
+    .replace(/∇/g, "\\nabla")
+    .replace(/π/g, "\\pi")
+    .replace(/θ/g, "\\theta")
+    .replace(/Δ/g, "\\Delta")
     .replace(/\s+d([a-zA-Z])\b/g, "\\,d$1")
     .trim();
 }
