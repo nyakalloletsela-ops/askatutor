@@ -63,6 +63,30 @@ type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | Upd
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
+const MATH_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim)(?=_|\b)|[∫∑∏√∞≈≤≥≠±]/i;
+
+function normalizeRecognizedMath(input: string): string {
+  return input
+    .replace(/^\$\$|\$\$$/g, "")
+    .replace(/∫/g, "\\int ")
+    .replace(/\biiint(?=_|\b)/g, "\\iiint")
+    .replace(/\biint(?=_|\b)/g, "\\iint")
+    .replace(/\bint(?=_|\b)/g, "\\int")
+    .replace(/\blim(?=_|\b)/g, "\\lim")
+    .replace(/\bsum(?=_|\b)/g, "\\sum")
+    .replace(/\bprod(?=_|\b)/g, "\\prod")
+    .replace(/∑/g, "\\sum ")
+    .replace(/∏/g, "\\prod ")
+    .replace(/√\s*\(?([^\n()]+)\)?/g, "\\sqrt{$1}")
+    .replace(/∞/g, "\\infty")
+    .replace(/≤/g, "\\leq")
+    .replace(/≥/g, "\\geq")
+    .replace(/≠/g, "\\neq")
+    .replace(/≈/g, "\\approx")
+    .replace(/±/g, "\\pm")
+    .replace(/\s+d([a-zA-Z])\b/g, "\\,d$1")
+    .trim();
+}
 
 interface Props {
   roomId: string;
