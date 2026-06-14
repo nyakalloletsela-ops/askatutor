@@ -21,7 +21,7 @@ export type ConvertedBlock =
 
 const SVG_RE = /<svg[\s\S]*?<\/svg>/gi;
 const MATH_RE = /\$\$([\s\S]+?)\$\$/g;
-const LATEX_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|[∫∑∏√∞≈≤≥≠±]/;
+const LATEX_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim)_?\b|[∫∑∏√∞≈≤≥≠±]/i;
 
 function readSvgDims(svg: string): { w: number; h: number } {
   const vb = svg.match(/viewBox\s*=\s*"([^"]+)"/i);
@@ -86,6 +86,12 @@ function normalizeLatex(input: string): string {
   return input
     .replace(/^\$\$|\$\$$/g, "")
     .replace(/∫/g, "\\int ")
+    .replace(/\biiint\b/g, "\\iiint")
+    .replace(/\biint\b/g, "\\iint")
+    .replace(/\bint\b/g, "\\int")
+    .replace(/\blim\b/g, "\\lim")
+    .replace(/\bsum\b/g, "\\sum")
+    .replace(/\bprod\b/g, "\\prod")
     .replace(/∑/g, "\\sum ")
     .replace(/∏/g, "\\prod ")
     .replace(/√\s*\(?([^\n()]+)\)?/g, "\\sqrt{$1}")
