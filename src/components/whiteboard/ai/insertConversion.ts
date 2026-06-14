@@ -76,10 +76,19 @@ export function parseConversion(raw: string): ConvertedBlock[] {
 
 function classifyTextualBlock(text: string): ConvertedBlock {
   const cleaned = text.replace(/^\s*(?:LaTeX|Math|Equation|Formula)\s*:\s*/i, "").trim();
+  if (cleaned.includes("\n")) {
+    const lines = cleaned.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (lines.length > 0 && lines.every((line) => looksLikeMathLine(line))) {
+      return { kind: "math", latex: lines.map(normalizeLatex).join("\\\\") };
+    }
+  }
   const singleLine = !cleaned.includes("\n");
-  const looksLikeMath = LATEX_HINT_RE.test(cleaned) || (/=/.test(cleaned) && /[0-9a-zA-Z)][+\-*/^_=]/.test(cleaned));
-  if (singleLine && looksLikeMath) return { kind: "math", latex: normalizeLatex(cleaned) };
+  if (singleLine && looksLikeMathLine(cleaned)) return { kind: "math", latex: normalizeLatex(cleaned) };
   return { kind: "text", text: cleaned };
+}
+
+function looksLikeMathLine(value: string): boolean {
+  return LATEX_HINT_RE.test(value) || (/=/.test(value) && /[0-9a-zA-Z)][+\-*/^_=]/.test(value));
 }
 
 function normalizeLatex(input: string): string {
