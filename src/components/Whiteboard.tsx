@@ -63,6 +63,38 @@ type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | Upd
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
+const MATH_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim|frac|partial)(?=_|\b)|[∫∬∭∮∑∏√∞≈≤≥≠±∂∇πθΔ]/i;
+
+function normalizeRecognizedMath(input: string): string {
+  return input
+    .replace(/^\$\$|\$\$$/g, "")
+    .replace(/∭/g, "\\iiint ")
+    .replace(/∬/g, "\\iint ")
+    .replace(/∮/g, "\\oint ")
+    .replace(/∫/g, "\\int ")
+    .replace(/\biiint(?=_|\b)/g, "\\iiint")
+    .replace(/\biint(?=_|\b)/g, "\\iint")
+    .replace(/\bint(?=_|\b)/g, "\\int")
+    .replace(/\blim(?=_|\b)/g, "\\lim")
+    .replace(/\bsum(?=_|\b)/g, "\\sum")
+    .replace(/\bprod(?=_|\b)/g, "\\prod")
+    .replace(/∑/g, "\\sum ")
+    .replace(/∏/g, "\\prod ")
+    .replace(/√\s*\(?([^\n()]+)\)?/g, "\\sqrt{$1}")
+    .replace(/∞/g, "\\infty")
+    .replace(/≤/g, "\\leq")
+    .replace(/≥/g, "\\geq")
+    .replace(/≠/g, "\\neq")
+    .replace(/≈/g, "\\approx")
+    .replace(/±/g, "\\pm")
+    .replace(/∂/g, "\\partial")
+    .replace(/∇/g, "\\nabla")
+    .replace(/π/g, "\\pi")
+    .replace(/θ/g, "\\theta")
+    .replace(/Δ/g, "\\Delta")
+    .replace(/\s+d([a-zA-Z])\b/g, "\\,d$1")
+    .trim();
+}
 
 interface Props {
   roomId: string;
@@ -586,6 +618,12 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const unpackOcrResponse = (rawOcrText: string, startY: number, pageNum: number): AnyItem[] => {
     const parsedElements: AnyItem[] = [];
     let rollingY = startY;
+    const cleanOcrText = rawOcrText
+      .replace(/\\\[/g, () => "$$")
+      .replace(/\\\]/g, () => "$$")
+      .replace(/```(?:latex|tex|math|svg)?/gi, "")
+      .replace(/```/g, "")
+      .trim();
 
     // Matches standard high-level markdown math structures or visual SVGs blocks
     const splittingRegex = /(\$\$[\s\S]+?\$\$)|(<svg[\s\S]*?<\/svg>)/gi;
@@ -593,24 +631,40 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     let matchObj;
 
     const pushTextOrFormulaNode = (rawString: string, isFormula: boolean) => {
-      const content = rawString.trim();
+      const content = rawString.replace(/^\s*(?:LaTeX|Math|Equation|Formula)\s*:\s*/i, "").trim();
       if (!content) return;
+      const shouldRenderAsFormula =
+        isFormula ||
+        (!content.includes("\n") && (MATH_HINT_RE.test(content) || (/=/.test(content) && /[0-9a-zA-Z)][+\-*/^_=]/.test(content)))) ||
+        (content.includes("\n") &&
+          content
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .every((line) => MATH_HINT_RE.test(line) || (/=/.test(line) && /[0-9a-zA-Z)][+\-*/^_=]/.test(line))));
+      const renderedText = shouldRenderAsFormula
+        ? `$$${content
+            .split("\n")
+            .map((line) => normalizeRecognizedMath(line.trim()))
+            .filter(Boolean)
+            .join("\\\\")}$$`
+        : content;
       parsedElements.push({
         type: "text",
         page: pageNum,
         x: 35,
         y: rollingY,
-        text: content,
+        text: renderedText,
         color: "#0f172a",
         size: 2,
         id: `${userId}-ai-item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       });
-      rollingY += isFormula ? 85 : 45;
+      rollingY += shouldRenderAsFormula ? 85 : 45;
     };
 
-    while ((matchObj = splittingRegex.exec(rawOcrText)) !== null) {
+    while ((matchObj = splittingRegex.exec(cleanOcrText)) !== null) {
       if (matchObj.index > trackIdx) {
-        pushTextOrFormulaNode(rawOcrText.slice(trackIdx, matchObj.index), false);
+        pushTextOrFormulaNode(cleanOcrText.slice(trackIdx, matchObj.index), false);
       }
 
       if (matchObj[1]) {
@@ -678,8 +732,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       trackIdx = splittingRegex.lastIndex;
     }
 
-    if (trackIdx < rawOcrText.length) {
-      pushTextOrFormulaNode(rawOcrText.slice(trackIdx), false);
+    if (trackIdx < cleanOcrText.length) {
+      pushTextOrFormulaNode(cleanOcrText.slice(trackIdx), false);
     }
 
     return parsedElements;

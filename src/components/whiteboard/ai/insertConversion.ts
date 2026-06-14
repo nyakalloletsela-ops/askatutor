@@ -21,6 +21,7 @@ export type ConvertedBlock =
 
 const SVG_RE = /<svg[\s\S]*?<\/svg>/gi;
 const MATH_RE = /\$\$([\s\S]+?)\$\$/g;
+const LATEX_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim|frac|partial)(?=_|\b)|[∫∬∭∮∑∏√∞≈≤≥≠±∂∇πθΔ]/i;
 
 function readSvgDims(svg: string): { w: number; h: number } {
   const vb = svg.match(/viewBox\s*=\s*"([^"]+)"/i);
@@ -35,11 +36,17 @@ function readSvgDims(svg: string): { w: number; h: number } {
 
 export function parseConversion(raw: string): ConvertedBlock[] {
   const out: ConvertedBlock[] = [];
+  const cleanRaw = raw
+    .replace(/\\\[/g, () => "$$")
+    .replace(/\\\]/g, () => "$$")
+    .replace(/```(?:latex|tex|math|svg)?/gi, "")
+    .replace(/```/g, "")
+    .trim();
 
   // First split out <svg> blocks – they must remain intact.
   const svgMatches: { idx: number; len: number; svg: string }[] = [];
   let m: RegExpExecArray | null;
-  while ((m = SVG_RE.exec(raw)) !== null) {
+  while ((m = SVG_RE.exec(cleanRaw)) !== null) {
     svgMatches.push({ idx: m.index, len: m[0].length, svg: m[0] });
   }
 
@@ -50,23 +57,71 @@ export function parseConversion(raw: string): ConvertedBlock[] {
     const re = new RegExp(MATH_RE.source, "g");
     while ((mm = re.exec(chunk)) !== null) {
       const before = chunk.slice(last, mm.index).trim();
-      if (before) splitParagraphs(before).forEach((t) => out.push({ kind: "text", text: t }));
-      out.push({ kind: "math", latex: mm[1].trim() });
+      if (before) splitParagraphs(before).forEach((t) => out.push(classifyTextualBlock(t)));
+      out.push({ kind: "math", latex: normalizeLatex(mm[1].trim()) });
       last = mm.index + mm[0].length;
     }
     const tail = chunk.slice(last).trim();
-    if (tail) splitParagraphs(tail).forEach((t) => out.push({ kind: "text", text: t }));
+    if (tail) splitParagraphs(tail).forEach((t) => out.push(classifyTextualBlock(t)));
   };
 
   for (const s of svgMatches) {
-    if (s.idx > cursor) pushTextual(raw.slice(cursor, s.idx));
+    if (s.idx > cursor) pushTextual(cleanRaw.slice(cursor, s.idx));
     const { w, h } = readSvgDims(s.svg);
     out.push({ kind: "svg", svg: s.svg, w, h });
     cursor = s.idx + s.len;
   }
-  if (cursor < raw.length) pushTextual(raw.slice(cursor));
+  if (cursor < cleanRaw.length) pushTextual(cleanRaw.slice(cursor));
 
   return out;
+}
+
+function classifyTextualBlock(text: string): ConvertedBlock {
+  const cleaned = text.replace(/^\s*(?:LaTeX|Math|Equation|Formula)\s*:\s*/i, "").trim();
+  if (cleaned.includes("\n")) {
+    const lines = cleaned.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (lines.length > 0 && lines.every((line) => looksLikeMathLine(line))) {
+      return { kind: "math", latex: lines.map(normalizeLatex).join("\\\\") };
+    }
+  }
+  const singleLine = !cleaned.includes("\n");
+  if (singleLine && looksLikeMathLine(cleaned)) return { kind: "math", latex: normalizeLatex(cleaned) };
+  return { kind: "text", text: cleaned };
+}
+
+function looksLikeMathLine(value: string): boolean {
+  return LATEX_HINT_RE.test(value) || (/=/.test(value) && /[0-9a-zA-Z)][+\-*/^_=]/.test(value));
+}
+
+function normalizeLatex(input: string): string {
+  return input
+    .replace(/^\$\$|\$\$$/g, "")
+    .replace(/∭/g, "\\iiint ")
+    .replace(/∬/g, "\\iint ")
+    .replace(/∮/g, "\\oint ")
+    .replace(/∫/g, "\\int ")
+    .replace(/\biiint(?=_|\b)/g, "\\iiint")
+    .replace(/\biint(?=_|\b)/g, "\\iint")
+    .replace(/\bint(?=_|\b)/g, "\\int")
+    .replace(/\blim(?=_|\b)/g, "\\lim")
+    .replace(/\bsum(?=_|\b)/g, "\\sum")
+    .replace(/\bprod(?=_|\b)/g, "\\prod")
+    .replace(/∑/g, "\\sum ")
+    .replace(/∏/g, "\\prod ")
+    .replace(/√\s*\(?([^\n()]+)\)?/g, "\\sqrt{$1}")
+    .replace(/∞/g, "\\infty")
+    .replace(/≤/g, "\\leq")
+    .replace(/≥/g, "\\geq")
+    .replace(/≠/g, "\\neq")
+    .replace(/≈/g, "\\approx")
+    .replace(/±/g, "\\pm")
+    .replace(/∂/g, "\\partial")
+    .replace(/∇/g, "\\nabla")
+    .replace(/π/g, "\\pi")
+    .replace(/θ/g, "\\theta")
+    .replace(/Δ/g, "\\Delta")
+    .replace(/\s+d([a-zA-Z])\b/g, "\\,d$1")
+    .trim();
 }
 
 function splitParagraphs(s: string): string[] {
