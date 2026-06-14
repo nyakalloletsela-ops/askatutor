@@ -134,23 +134,38 @@ export function insertBlocksIntoEditor(editor: Editor, blocks: ConvertedBlock[])
       });
       y += h + gap;
     } else if (b.kind === "math") {
-      // Editable text shape preserving LaTeX source so the user can keep editing.
-      const text = `$$${b.latex}$$`;
-      const h = Math.max(40, 28 * Math.ceil(text.length / 60));
+      // Render LaTeX → SVG via CodeCogs so the equation is shown as typeset math,
+      // not source code. The original LaTeX is preserved in meta.latex so it can
+      // be re-edited later.
+      const url = `https://latex.codecogs.com/svg.image?\\dpi{150}\\bg{white}${encodeURIComponent(b.latex)}`;
+      // Rough size estimate from formula length (CodeCogs returns variable dims).
+      const w = Math.min(colWidth, Math.max(140, Math.round(b.latex.length * 12)));
+      const h = Math.max(48, Math.round(w * 0.22));
+      const assetId: TLAssetId = AssetRecordType.createId();
+      assetsToCreate.push({
+        id: assetId,
+        type: "image",
+        typeName: "asset",
+        props: {
+          name: "equation.svg",
+          src: url,
+          w,
+          h,
+          mimeType: "image/svg+xml",
+          isAnimated: false,
+        },
+        meta: { latex: b.latex },
+      });
       shapesToCreate.push({
         id: createShapeId(),
-        type: "text",
+        type: "image",
         x,
         y,
-        props: {
-          richText: toRichText(text),
-          w: colWidth,
-          autoSize: false,
-          color: "blue",
-          size: "m",
-        },
+        props: { assetId, w, h },
+        meta: { latex: b.latex },
       });
       y += h + gap;
+
     } else {
       const lines = b.text.split("\n").length;
       const h = Math.max(32, 22 * lines);

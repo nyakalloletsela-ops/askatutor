@@ -107,10 +107,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
 
-  // Immersive routes: render children only, no shell chrome
-  const immersive = path.startsWith("/classroom/");
-  if (immersive) return <>{children}</>;
-
   const initials = useMemo(() => {
     const name =
       (user?.user_metadata as { full_name?: string } | undefined)?.full_name ??
@@ -126,6 +122,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [user]);
 
   const crumbs = useMemo(() => buildCrumbs(path), [path]);
+
+  // Immersive routes: render children only, no shell chrome. Must come AFTER all hooks
+  // above to keep hook order stable across route changes.
+  const immersive = path.startsWith("/classroom/");
+  if (immersive) return <>{children}</>;
+
 
   const isActive = (to: string) => {
     if (to === "/") return path === "/";
