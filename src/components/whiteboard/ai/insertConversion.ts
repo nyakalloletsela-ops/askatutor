@@ -44,7 +44,7 @@ export function parseConversion(raw: string): ConvertedBlock[] {
   // First split out <svg> blocks – they must remain intact.
   const svgMatches: { idx: number; len: number; svg: string }[] = [];
   let m: RegExpExecArray | null;
-  while ((m = SVG_RE.exec(raw)) !== null) {
+  while ((m = SVG_RE.exec(cleanRaw)) !== null) {
     svgMatches.push({ idx: m.index, len: m[0].length, svg: m[0] });
   }
 
@@ -55,8 +55,8 @@ export function parseConversion(raw: string): ConvertedBlock[] {
     const re = new RegExp(MATH_RE.source, "g");
     while ((mm = re.exec(chunk)) !== null) {
       const before = chunk.slice(last, mm.index).trim();
-      if (before) splitParagraphs(before).forEach((t) => out.push({ kind: "text", text: t }));
-      out.push({ kind: "math", latex: mm[1].trim() });
+      if (before) splitParagraphs(before).forEach((t) => out.push(classifyTextualBlock(t)));
+      out.push({ kind: "math", latex: normalizeLatex(mm[1].trim()) });
       last = mm.index + mm[0].length;
     }
     const tail = chunk.slice(last).trim();
