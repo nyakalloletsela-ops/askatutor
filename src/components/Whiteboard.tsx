@@ -617,19 +617,22 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
     let matchObj;
 
     const pushTextOrFormulaNode = (rawString: string, isFormula: boolean) => {
-      const content = rawString.trim();
+      const content = rawString.replace(/^\s*(?:LaTeX|Math|Equation|Formula)\s*:\s*/i, "").trim();
       if (!content) return;
+      const shouldRenderAsFormula =
+        isFormula || (!content.includes("\n") && (MATH_HINT_RE.test(content) || (/=/.test(content) && /[0-9a-zA-Z)][+\-*/^_=]/.test(content))));
+      const renderedText = shouldRenderAsFormula ? `$$${normalizeRecognizedMath(content)}$$` : content;
       parsedElements.push({
         type: "text",
         page: pageNum,
         x: 35,
         y: rollingY,
-        text: content,
+        text: renderedText,
         color: "#0f172a",
         size: 2,
         id: `${userId}-ai-item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       });
-      rollingY += isFormula ? 85 : 45;
+      rollingY += shouldRenderAsFormula ? 85 : 45;
     };
 
     while ((matchObj = splittingRegex.exec(rawOcrText)) !== null) {
