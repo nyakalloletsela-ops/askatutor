@@ -610,6 +610,10 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
   const unpackOcrResponse = (rawOcrText: string, startY: number, pageNum: number): AnyItem[] => {
     const parsedElements: AnyItem[] = [];
     let rollingY = startY;
+    const cleanOcrText = rawOcrText
+      .replace(/```(?:latex|tex|math|svg)?/gi, "")
+      .replace(/```/g, "")
+      .trim();
 
     // Matches standard high-level markdown math structures or visual SVGs blocks
     const splittingRegex = /(\$\$[\s\S]+?\$\$)|(<svg[\s\S]*?<\/svg>)/gi;
@@ -648,9 +652,9 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       rollingY += shouldRenderAsFormula ? 85 : 45;
     };
 
-    while ((matchObj = splittingRegex.exec(rawOcrText)) !== null) {
+    while ((matchObj = splittingRegex.exec(cleanOcrText)) !== null) {
       if (matchObj.index > trackIdx) {
-        pushTextOrFormulaNode(rawOcrText.slice(trackIdx, matchObj.index), false);
+        pushTextOrFormulaNode(cleanOcrText.slice(trackIdx, matchObj.index), false);
       }
 
       if (matchObj[1]) {
@@ -718,8 +722,8 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       trackIdx = splittingRegex.lastIndex;
     }
 
-    if (trackIdx < rawOcrText.length) {
-      pushTextOrFormulaNode(rawOcrText.slice(trackIdx), false);
+    if (trackIdx < cleanOcrText.length) {
+      pushTextOrFormulaNode(cleanOcrText.slice(trackIdx), false);
     }
 
     return parsedElements;
