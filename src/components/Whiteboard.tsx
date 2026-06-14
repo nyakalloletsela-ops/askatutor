@@ -620,8 +620,21 @@ export function Whiteboard({ roomId, userId, isHost = false }: Props) {
       const content = rawString.replace(/^\s*(?:LaTeX|Math|Equation|Formula)\s*:\s*/i, "").trim();
       if (!content) return;
       const shouldRenderAsFormula =
-        isFormula || (!content.includes("\n") && (MATH_HINT_RE.test(content) || (/=/.test(content) && /[0-9a-zA-Z)][+\-*/^_=]/.test(content))));
-      const renderedText = shouldRenderAsFormula ? `$$${normalizeRecognizedMath(content)}$$` : content;
+        isFormula ||
+        (!content.includes("\n") && (MATH_HINT_RE.test(content) || (/=/.test(content) && /[0-9a-zA-Z)][+\-*/^_=]/.test(content)))) ||
+        (content.includes("\n") &&
+          content
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .every((line) => MATH_HINT_RE.test(line) || (/=/.test(line) && /[0-9a-zA-Z)][+\-*/^_=]/.test(line))));
+      const renderedText = shouldRenderAsFormula
+        ? `$$${content
+            .split("\n")
+            .map((line) => normalizeRecognizedMath(line.trim()))
+            .filter(Boolean)
+            .join("\\\\")}$$`
+        : content;
       parsedElements.push({
         type: "text",
         page: pageNum,
