@@ -63,11 +63,14 @@ type Msg = Stroke | TextItem | ImageItem | ClearMsg | UndoMsg | RestoreMsg | Upd
 
 const COLORS = ["#0f172a", "#dc2626", "#2563eb", "#16a34a"];
 const PAGE_COUNT = 100;
-const MATH_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim)(?=_|\b)|[∫∑∏√∞≈≤≥≠±]/i;
+const MATH_HINT_RE = /\\(?:int|iint|iiint|oint|frac|sqrt|sum|prod|lim|begin|partial|nabla|vec|sin|cos|tan|log|ln|alpha|beta|gamma|theta|pi|infty|leq|geq|neq|rightarrow)|\b(?:int|iint|iiint|sqrt|sum|prod|lim|frac|partial)(?=_|\b)|[∫∬∭∮∑∏√∞≈≤≥≠±∂∇πθΔ]/i;
 
 function normalizeRecognizedMath(input: string): string {
   return input
     .replace(/^\$\$|\$\$$/g, "")
+    .replace(/∭/g, "\\iiint ")
+    .replace(/∬/g, "\\iint ")
+    .replace(/∮/g, "\\oint ")
     .replace(/∫/g, "\\int ")
     .replace(/\biiint(?=_|\b)/g, "\\iiint")
     .replace(/\biint(?=_|\b)/g, "\\iint")
@@ -84,6 +87,11 @@ function normalizeRecognizedMath(input: string): string {
     .replace(/≠/g, "\\neq")
     .replace(/≈/g, "\\approx")
     .replace(/±/g, "\\pm")
+    .replace(/∂/g, "\\partial")
+    .replace(/∇/g, "\\nabla")
+    .replace(/π/g, "\\pi")
+    .replace(/θ/g, "\\theta")
+    .replace(/Δ/g, "\\Delta")
     .replace(/\s+d([a-zA-Z])\b/g, "\\,d$1")
     .trim();
 }
