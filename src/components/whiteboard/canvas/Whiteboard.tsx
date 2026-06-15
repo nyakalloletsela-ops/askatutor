@@ -9,7 +9,7 @@ import {
   Copy, ClipboardPaste, Layers, ChevronUp, ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Awareness } from "y-protocols/awareness";
+
 import {
   type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds,
 } from "./engine";
