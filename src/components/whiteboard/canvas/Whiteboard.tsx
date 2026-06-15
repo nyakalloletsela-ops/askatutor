@@ -34,8 +34,6 @@ interface Props {
   userName: string;
   /** Tutor / admin enables teacher controls. */
   isTeacher?: boolean;
-  /** Optional Yjs Awareness — used only for presence in side panels. */
-  awareness?: Awareness;
 }
 
 const COLORS = ["#0f172a", "#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#ffffff"];
