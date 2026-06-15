@@ -113,33 +113,25 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data: wb } = await supabase
-        .from("whiteboards")
-        .select("id")
-        .eq("session_id" as never, undefined as never) // placeholder, switch to RPC
-        .limit(1)
-        .maybeSingle()
-        .then((r) => r, () => ({ data: null }));
-      // Try snapshot via dedicated table keyed by room.
-      const { data: snap } = await supabase
-        .from("whiteboard_snapshots")
-        .select("snapshot_data, created_at, whiteboard_id")
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (cancelled || !snap) return;
-      // Pick the most-recent snapshot whose data matches our room.
-      for (const row of snap) {
-        const d = row.snapshot_data as { version?: number; room?: string; shapes?: Shape[] } | null;
-        if (d && d.version === 1 && d.room === roomId && Array.isArray(d.shapes)) {
+      try {
+        const { data: wbId } = await supabase.rpc("ensure_whiteboard", { _room_id: roomId });
+        if (!wbId || cancelled) return;
+        const { data: snap } = await supabase
+          .from("whiteboard_snapshots")
+          .select("snapshot_data, created_at")
+          .eq("whiteboard_id", wbId as string)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (cancelled || !snap) return;
+        const d = snap.snapshot_data as { version?: number; shapes?: Shape[] } | null;
+        if (d && d.version === 1 && Array.isArray(d.shapes)) {
           shapesRef.current = d.shapes;
           d.shapes.forEach((s) => observeTs(s.ts));
-          // Preload images
           d.shapes.forEach((s) => { if (s.type === "image") cacheImage(s.src); });
           scheduleRender();
-          break;
         }
-      }
-      void wb;
+      } catch { /* noop */ }
     })();
     return () => { cancelled = true; };
   }, [roomId]);
