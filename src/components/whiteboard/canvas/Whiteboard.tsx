@@ -158,7 +158,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         if (!wbId) return;
         await supabase.from("whiteboard_snapshots").insert({
           whiteboard_id: wbId as string,
-          snapshot_data: { version: 1, room: roomId, shapes: shapesRef.current },
+          snapshot_data: JSON.parse(JSON.stringify({ version: 1, room: roomId, shapes: shapesRef.current })),
         });
       } catch { /* noop */ }
     }, 8000);
