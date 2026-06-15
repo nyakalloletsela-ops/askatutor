@@ -4,16 +4,21 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { Shape } from "./engine";
 
 export type WbOp =
-  | { kind: "upsert"; shape: Shape; senderId: string }
-  | { kind: "delete"; ids: string[]; senderId: string }
+  | { kind: "upsert"; senderId: string; shape: Shape }
+  | { kind: "delete"; senderId: string; ids: string[] }
   | { kind: "clear"; senderId: string }
-  | { kind: "lock"; locked: boolean; senderId: string };
+  | { kind: "lock"; senderId: string; locked: boolean };
+
+export type WbOpInput =
+  | { kind: "upsert"; shape: Shape }
+  | { kind: "delete"; ids: string[] }
+  | { kind: "clear" }
+  | { kind: "lock"; locked: boolean };
 
 export interface CursorMsg {
   senderId: string;
   name: string;
   color: string;
-  /** Page coords */
   x: number; y: number;
 }
 
@@ -53,9 +58,9 @@ export function useWhiteboardRealtime({ roomId, selfId, onOp, onCursor, onPeerLe
     };
   }, [roomId, selfId]);
 
-  const sendOp = (op: Omit<WbOp, "senderId">) => {
+  const sendOp = (op: WbOpInput) => {
     const chan = chanRef.current; if (!chan) return;
-    chan.send({ type: "broadcast", event: "op", payload: { ...op, senderId: selfId } as WbOp });
+    chan.send({ type: "broadcast", event: "op", payload: { ...op, senderId: selfId } });
   };
   const sendCursor = (msg: Omit<CursorMsg, "senderId">) => {
     const chan = chanRef.current; if (!chan) return;
