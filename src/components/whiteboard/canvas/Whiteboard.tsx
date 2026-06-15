@@ -55,10 +55,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const sizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const imageCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
   const drawingRef = useRef<Shape | null>(null);
-  const dragRef = useRef<null | { kind: "pan"; sx: number; sy: number; camX: number; camY: number }
+  type Drag =
+    | { kind: "pan"; sx: number; sy: number; camX: number; camY: number }
     | { kind: "translate"; lastPage: { x: number; y: number } }
     | { kind: "draw" }
-    | { kind: "marquee"; sx: number; sy: number }>();
+    | { kind: "marquee"; sx: number; sy: number };
+  const dragRef = useRef<Drag | null>(null);
   const marqueeRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const peersRef = useRef<Map<string, CursorMsg & { lastSeen: number }>>(new Map());
   const historyRef = useRef<{ past: Shape[][]; future: Shape[][] }>({ past: [], future: [] });
