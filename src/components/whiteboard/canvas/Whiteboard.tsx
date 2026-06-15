@@ -40,7 +40,7 @@ const COLORS = ["#0f172a", "#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6"
 const SIZES = [2, 4, 6, 10, 16];
 
 export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboard(
-  { roomId, userId, userName, isTeacher = false, awareness }, ref,
+  { roomId, userId, userName, isTeacher = false }, ref,
 ) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
