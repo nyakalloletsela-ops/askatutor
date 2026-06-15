@@ -52,13 +52,12 @@ export function TldrawCanvas({ roomId, userId, userName, room, showEmptyHint = t
 
   return (
     <div className="relative h-full w-full min-h-[400px] overflow-hidden rounded-xl border bg-white shadow-sm">
-      <div
-        className={
-          gridMode === "dots"
-            ? "absolute inset-0 [background-image:radial-gradient(circle,#cbd5e1_1px,transparent_1px)] [background-size:18px_18px] pointer-events-none"
-            : ""
-        }
-      />
+      {gridMode === "dots" && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle,#cbd5e1_1px,transparent_1px)] [background-size:18px_18px]"
+        />
+      )}
       <Tldraw
         persistenceKey={`atl-${roomId}`}
         onMount={(ed) => {
@@ -68,20 +67,20 @@ export function TldrawCanvas({ roomId, userId, userName, room, showEmptyHint = t
       />
       <LiveCursors editor={editor} awareness={awareness} />
 
-      {/* Friendly empty-state hint */}
+      {/* Friendly empty-state hint — anchored to the bottom so it never overlaps tldraw UI */}
       {showEmptyHint && !hasContent && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-          <div className="pointer-events-none max-w-sm rounded-2xl border border-dashed bg-white/60 px-6 py-5 text-center shadow-sm backdrop-blur">
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex justify-center">
+          <div className="pointer-events-none max-w-sm rounded-2xl border border-dashed bg-white/70 px-5 py-3 text-center shadow-sm backdrop-blur">
             <p className="text-sm font-semibold text-foreground">Your whiteboard is ready</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Start teaching by drawing, writing notes, or uploading content.
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Draw, write notes, or paste content to begin.
             </p>
           </div>
         </div>
       )}
 
-      {/* Floating top-center toolbelt: grid toggle + AI convert */}
-      <div className="pointer-events-auto absolute left-1/2 top-2 z-50 flex -translate-x-1/2 items-center gap-1.5 rounded-full border bg-background/90 px-1.5 py-1 shadow backdrop-blur">
+      {/* Floating top-RIGHT toolbelt — kept off tldraw's centred page menu */}
+      <div className="pointer-events-auto absolute right-2 top-2 z-[60] flex items-center gap-1.5 rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur">
         <Button
           size="sm"
           variant="ghost"
