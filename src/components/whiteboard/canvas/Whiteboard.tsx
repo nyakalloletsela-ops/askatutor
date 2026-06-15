@@ -6,7 +6,7 @@ import {
   MousePointer2, Pencil, Highlighter, Eraser, Minus, ArrowUpRight,
   Square, Circle, Triangle, Type, StickyNote, ImagePlus, Hand,
   Undo2, Redo2, Trash2, Download, Lock, Unlock, Maximize2, Grid3x3, CircleDot, Eye,
-  Copy, ClipboardPaste, Layers, ChevronUp, ChevronDown,
+  Copy, ChevronUp, ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
