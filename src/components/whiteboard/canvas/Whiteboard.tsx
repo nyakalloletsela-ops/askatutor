@@ -915,3 +915,15 @@ export function hashColor(id: string): string {
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return `hsl(${Math.abs(h) % 360} 70% 50%)`;
 }
+
+function handleStyle(x: number, y: number, cursor: string): React.CSSProperties {
+  return {
+    position: "absolute", left: x - 6, top: y - 6, width: 12, height: 12,
+    background: "#ffffff", border: "1.5px solid #3b82f6", borderRadius: 3,
+    cursor, zIndex: 35, touchAction: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
+  };
+}
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return `hsl(${Math.abs(h) % 360} 70% 50%)`;
+}
