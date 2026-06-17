@@ -45,13 +45,13 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
     <Button
       size="sm"
       variant="secondary"
-      className="h-7 px-2"
+      className="h-7 px-2 shrink-0"
       onClick={run}
       disabled={busy}
       title="Convert handwriting → clean digital text, equations and diagrams"
     >
       {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
-      {busy ? "Converting…" : "Convert"}
+      <span className="hidden xs:inline">{busy ? "Converting…" : "Convert"}</span>
     </Button>
   );
 }
