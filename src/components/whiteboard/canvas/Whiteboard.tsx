@@ -452,11 +452,19 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           (cur as any).w = Math.abs(cur.w); (cur as any).h = Math.abs(cur.h);
           (cur as any).x = x; (cur as any).y = y;
         }
+        // Smooth freehand strokes by removing redundant points (RDP).
+        if (cur.type === "pencil" || cur.type === "highlighter") {
+          cur.points = simplifyPoints(cur.points, Math.max(0.5, cur.size * 0.25));
+        }
         shapesRef.current.push(cur);
         sendOp({ kind: "upsert", shape: cur });
         drawingRef.current = null;
         scheduleRender();
       }
+    }
+    if (d.kind === "resize" || d.kind === "endpoint") {
+      const s = shapesRef.current.find((x) => x.id === d.shapeId);
+      if (s) sendOp({ kind: "upsert", shape: s });
     }
   };
 
