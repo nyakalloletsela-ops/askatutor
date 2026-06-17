@@ -756,26 +756,24 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       <LiveCursors peers={peers} project={pageToScreen} />
 
       {/* Top-right utility bar */}
-      <div className="absolute right-2 top-2 z-30 flex items-center gap-1.5 rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur">
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
-          {grid === "dots" ? <CircleDot className="mr-1 h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="mr-1 h-3.5 w-3.5" /> : <Eye className="mr-1 h-3.5 w-3.5" />}
-          {grid === "off" ? "Plain" : grid === "grid" ? "Grid" : "Dots"}
+      <div className="absolute right-2 top-2 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 overflow-x-auto rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
+          {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </Button>
-        <span className="h-4 w-px bg-border" />
+        <span className="h-4 w-px shrink-0 bg-border" />
         <ConvertButton whiteboardRef={ref as React.RefObject<WhiteboardHandle>} />
-        <span className="h-4 w-px bg-border" />
+        <span className="h-4 w-px shrink-0 bg-border" />
         <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
-        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={toggleFullscreen} title="Fullscreen">
+        <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
           <Maximize2 className="h-3.5 w-3.5" />
         </Button>
         {isTeacher && (
           <>
-            <span className="h-4 w-px bg-border" />
-            <Button size="sm" variant={locked ? "destructive" : "ghost"} className="h-7 px-2 text-xs" onClick={() => setLockBroadcast(!locked)} title="Lock board for students">
-              {locked ? <Lock className="mr-1 h-3.5 w-3.5" /> : <Unlock className="mr-1 h-3.5 w-3.5" />}
-              {locked ? "Locked" : "Open"}
+            <span className="h-4 w-px shrink-0 bg-border" />
+            <Button size="sm" variant={locked ? "destructive" : "ghost"} className="h-7 w-7 shrink-0 p-0" onClick={() => setLockBroadcast(!locked)} title="Lock board for students">
+              {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={clearBoard} title="Clear board">
+            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={clearBoard} title="Clear board">
               <Trash2 className="h-3.5 w-3.5 text-destructive" />
             </Button>
           </>
