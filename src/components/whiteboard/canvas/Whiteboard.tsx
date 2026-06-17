@@ -780,8 +780,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         )}
       </div>
 
-      {/* Floating bottom toolbar */}
-      <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur">
+      {/* Floating bottom toolbar — horizontally scrolls on small screens */}
+      <div className="pointer-events-auto absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <ToolBtn id="select" icon={MousePointer2} label="Select" shortcut="V" />
         <ToolBtn id="hand" icon={Hand} label="Pan" />
         <span className="mx-1 h-6 w-px bg-border" />
