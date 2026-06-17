@@ -1,4 +1,5 @@
 import { type Shape, nextId, tick } from "../canvas/engine";
+import { renderLatexToSvgDataUrl } from "../canvas/latex";
 
 export type ConvertedBlock =
   | { kind: "svg"; svg: string; w: number; h: number }
@@ -101,10 +102,11 @@ function svgToDataUrl(svg: string): string {
   return `data:image/svg+xml;base64,${b64}`;
 }
 
-/** Convert AI-parsed blocks into laid-out Shape objects to be inserted into the whiteboard. */
-export function blocksToShapes(blocks: ConvertedBlock[]): Shape[] {
+/** Convert AI-parsed blocks into laid-out Shape objects to be inserted into the whiteboard.
+ *  LaTeX math is rendered locally with KaTeX to a self-contained SVG data URL — no network. */
+export function blocksToShapes(blocks: ConvertedBlock[], origin?: { x: number; y: number }): Shape[] {
   const shapes: Shape[] = [];
-  let x = 80, y = 80; const colWidth = 560; const gap = 24;
+  let x = origin?.x ?? 80, y = origin?.y ?? 80; const colWidth = 560; const gap = 18;
   let z = 1000;
   for (const b of blocks) {
     if (b.kind === "svg") {
@@ -113,10 +115,11 @@ export function blocksToShapes(blocks: ConvertedBlock[]): Shape[] {
       shapes.push({ id: nextId(), type: "image", x, y, w, h, src: svgToDataUrl(b.svg), z: z++, page: 1, ts: tick() });
       y += h + gap;
     } else if (b.kind === "math") {
-      const url = `https://latex.codecogs.com/svg.image?\\dpi{150}\\bg{white}${encodeURIComponent(b.latex)}`;
-      const w = Math.min(colWidth, Math.max(140, Math.round(b.latex.length * 12)));
-      const h = Math.max(48, Math.round(w * 0.22));
-      shapes.push({ id: nextId(), type: "image", x, y, w, h, src: url, z: z++, page: 1, ts: tick() });
+      const rendered = renderLatexToSvgDataUrl(b.latex, { displayMode: true });
+      const scale = Math.min(1, colWidth / rendered.width);
+      const w = Math.round(rendered.width * scale);
+      const h = Math.round(rendered.height * scale);
+      shapes.push({ id: nextId(), type: "image", x, y, w, h, src: rendered.dataUrl, z: z++, page: 1, ts: tick() });
       y += h + gap;
     } else {
       const lines = Math.max(1, Math.ceil(b.text.length / 60));
