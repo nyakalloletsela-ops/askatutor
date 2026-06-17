@@ -923,7 +923,3 @@ function handleStyle(x: number, y: number, cursor: string): React.CSSProperties 
     cursor, zIndex: 35, touchAction: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
   };
 }
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
-  return `hsl(${Math.abs(h) % 360} 70% 50%)`;
-}
