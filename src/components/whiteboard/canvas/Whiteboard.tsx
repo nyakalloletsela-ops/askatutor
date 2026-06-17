@@ -14,6 +14,7 @@ import {
   type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds,
 } from "./engine";
 import { render } from "./renderer";
+import { simplifyPoints } from "./smooth";
 import { useWhiteboardRealtime, type CursorMsg } from "./realtime";
 import { exportPNG, exportJPG, exportPDF, exportJSON } from "./exporter";
 import { ConvertButton } from "../ai/ConvertButton";
@@ -57,7 +58,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     | { kind: "pan"; sx: number; sy: number; camX: number; camY: number }
     | { kind: "translate"; lastPage: { x: number; y: number } }
     | { kind: "draw" }
-    | { kind: "marquee"; sx: number; sy: number };
+    | { kind: "marquee"; sx: number; sy: number }
+    | { kind: "resize"; corner: "nw" | "ne" | "sw" | "se"; shapeId: string; start: { x: number; y: number; w: number; h: number } }
+    | { kind: "endpoint"; which: 1 | 2; shapeId: string };
   const dragRef = useRef<Drag | null>(null);
   const marqueeRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const peersRef = useRef<Map<string, CursorMsg & { lastSeen: number }>>(new Map());
