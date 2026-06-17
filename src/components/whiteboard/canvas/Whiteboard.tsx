@@ -661,7 +661,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const ToolBtn = ({ id, icon: Icon, label, shortcut }: { id: ToolId; icon: typeof Pencil; label: string; shortcut?: string }) => (
     <Button
       size="icon" variant={tool === id ? "default" : "ghost"}
-      className="h-9 w-9"
+      className="h-9 w-9 shrink-0"
       onClick={() => setTool(id)}
       title={shortcut ? `${label} (${shortcut})` : label}
       aria-label={label}
