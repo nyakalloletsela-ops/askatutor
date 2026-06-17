@@ -688,7 +688,69 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onDoubleClick={(e) => {
+          if (isReadOnly) return;
+          const rect = wrapperRef.current!.getBoundingClientRect();
+          const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+          const pg = screenToPage(sx, sy);
+          const sorted = [...shapesRef.current].sort((a, b) => b.z - a.z);
+          const hit = sorted.find((s) => hitTest(s, pg.x, pg.y));
+          if (hit && (hit.type === "text" || hit.type === "sticky")) {
+            const sc = pageToScreen(hit.x, hit.y);
+            setSelection(new Set([hit.id]));
+            setTextEdit({ shapeId: hit.id, screenX: sc.x, screenY: sc.y, w: hit.w * cameraRef.current.z, h: hit.h * cameraRef.current.z, value: hit.text });
+            setTimeout(() => textareaRef.current?.focus(), 0);
+          }
+        }}
       />
+
+      {/* Resize / endpoint handles for single selection */}
+      {(() => {
+        if (selection.size !== 1 || textEdit) return null;
+        const s = shapesRef.current.find((x) => selection.has(x.id));
+        if (!s) return null;
+        const startResize = (corner: "nw" | "ne" | "sw" | "se", e: React.PointerEvent) => {
+          e.stopPropagation();
+          (e.target as Element).setPointerCapture?.(e.pointerId);
+          pushHistory();
+          const b = shapeBounds(s);
+          dragRef.current = { kind: "resize", corner, shapeId: s.id, start: { x: b.x, y: b.y, w: b.w, h: b.h } };
+        };
+        const startEndpoint = (which: 1 | 2, e: React.PointerEvent) => {
+          e.stopPropagation();
+          (e.target as Element).setPointerCapture?.(e.pointerId);
+          pushHistory();
+          dragRef.current = { kind: "endpoint", which, shapeId: s.id };
+        };
+        const handleProps = {
+          onPointerMove: onPointerMove as unknown as React.PointerEventHandler,
+          onPointerUp: onPointerUp as unknown as React.PointerEventHandler,
+        };
+        if (s.type === "line" || s.type === "arrow") {
+          const a = pageToScreen(s.x1, s.y1), b = pageToScreen(s.x2, s.y2);
+          return (
+            <>
+              <div {...handleProps} onPointerDown={(e) => startEndpoint(1, e)} style={handleStyle(a.x, a.y, "move")} />
+              <div {...handleProps} onPointerDown={(e) => startEndpoint(2, e)} style={handleStyle(b.x, b.y, "move")} />
+            </>
+          );
+        }
+        if (["rect", "ellipse", "triangle", "text", "sticky", "image"].includes(s.type)) {
+          const b = shapeBounds(s);
+          const tl = pageToScreen(b.x, b.y), br = pageToScreen(b.x + b.w, b.y + b.h);
+          const tr = { x: br.x, y: tl.y }, bl = { x: tl.x, y: br.y };
+          return (
+            <>
+              <div {...handleProps} onPointerDown={(e) => startResize("nw", e)} style={handleStyle(tl.x, tl.y, "nwse-resize")} />
+              <div {...handleProps} onPointerDown={(e) => startResize("ne", e)} style={handleStyle(tr.x, tr.y, "nesw-resize")} />
+              <div {...handleProps} onPointerDown={(e) => startResize("sw", e)} style={handleStyle(bl.x, bl.y, "nesw-resize")} />
+              <div {...handleProps} onPointerDown={(e) => startResize("se", e)} style={handleStyle(br.x, br.y, "nwse-resize")} />
+            </>
+          );
+        }
+        return null;
+      })()}
+
 
       {/* Live cursors */}
       <LiveCursors peers={peers} project={pageToScreen} />
