@@ -648,7 +648,11 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     deleteShapes,
     addShapes: (shapes) => {
       pushHistory();
-      for (const s of shapes) { shapesRef.current.push(s); sendOp({ kind: "upsert", shape: s }); }
+      for (const s of shapes) {
+        if (s.type === "image") cacheImage(s.src);
+        shapesRef.current.push(s);
+        sendOp({ kind: "upsert", shape: s });
+      }
       scheduleRender();
     },
   }), []);
