@@ -399,6 +399,29 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       scheduleRender();
       return;
     }
+    if (d.kind === "resize") {
+      const arr = shapesRef.current; const idx = arr.findIndex((s) => s.id === d.shapeId);
+      if (idx < 0) return;
+      const s = arr[idx] as any;
+      const st = d.start;
+      let nx = st.x, ny = st.y, nw = st.w, nh = st.h;
+      if (d.corner.includes("e")) nw = Math.max(8, pg.x - st.x);
+      if (d.corner.includes("s")) nh = Math.max(8, pg.y - st.y);
+      if (d.corner.includes("w")) { nw = Math.max(8, st.x + st.w - pg.x); nx = st.x + st.w - nw; }
+      if (d.corner.includes("n")) { nh = Math.max(8, st.y + st.h - pg.y); ny = st.y + st.h - nh; }
+      arr[idx] = { ...s, x: nx, y: ny, w: nw, h: nh, ts: tick() };
+      scheduleRender();
+      return;
+    }
+    if (d.kind === "endpoint") {
+      const arr = shapesRef.current; const idx = arr.findIndex((s) => s.id === d.shapeId);
+      if (idx < 0) return;
+      const s = arr[idx] as any;
+      if (d.which === 1) { s.x1 = pg.x; s.y1 = pg.y; } else { s.x2 = pg.x; s.y2 = pg.y; }
+      s.ts = tick();
+      scheduleRender();
+      return;
+    }
     if (d.kind === "draw") {
       if (tool === "eraser") {
         const sorted = [...shapesRef.current].sort((a, b) => b.z - a.z);
