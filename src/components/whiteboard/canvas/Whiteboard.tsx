@@ -784,23 +784,23 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       <div className="pointer-events-auto absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <ToolBtn id="select" icon={MousePointer2} label="Select" shortcut="V" />
         <ToolBtn id="hand" icon={Hand} label="Pan" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         <ToolBtn id="pencil" icon={Pencil} label="Pencil" shortcut="P" />
         <ToolBtn id="highlighter" icon={Highlighter} label="Highlighter" shortcut="H" />
         <ToolBtn id="eraser" icon={Eraser} label="Eraser" shortcut="E" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         <ToolBtn id="line" icon={Minus} label="Line" shortcut="L" />
         <ToolBtn id="arrow" icon={ArrowUpRight} label="Arrow" shortcut="A" />
         <ToolBtn id="rect" icon={Square} label="Rectangle" shortcut="R" />
         <ToolBtn id="ellipse" icon={Circle} label="Ellipse" shortcut="O" />
         <ToolBtn id="triangle" icon={Triangle} label="Triangle" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         <ToolBtn id="text" icon={Type} label="Text" shortcut="T" />
         <ToolBtn id="sticky" icon={StickyNote} label="Sticky" shortcut="S" />
         <ToolBtn id="image" icon={ImagePlus} label="Image" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         {/* Colour swatches */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {COLORS.map((c) => (
             <button
               key={c}
@@ -811,9 +811,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             />
           ))}
         </div>
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         {/* Size */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {SIZES.map((s) => (
             <button
               key={s}
@@ -832,16 +832,16 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         >
           <span className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`} style={{ borderColor: "currentColor" }} />
         </button>
-        <span className="mx-1 h-6 w-px bg-border" />
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={undo} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={redo} title="Redo (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={undo} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={redo} title="Redo (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
         {selection.size > 0 && (
           <>
-            <span className="mx-1 h-6 w-px bg-border" />
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={duplicateSel} title="Duplicate"><Copy className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={bringForward} title="Bring forward"><ChevronUp className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={sendBackward} title="Send backward"><ChevronDown className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteShapes([...selection])} title="Delete"><Trash2 className="h-4 w-4" /></Button>
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={duplicateSel} title="Duplicate"><Copy className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={bringForward} title="Bring forward"><ChevronUp className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={sendBackward} title="Send backward"><ChevronDown className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-destructive" onClick={() => deleteShapes([...selection])} title="Delete"><Trash2 className="h-4 w-4" /></Button>
           </>
         )}
       </div>
