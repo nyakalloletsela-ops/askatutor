@@ -671,7 +671,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       repaint();
       scheduleRender();
     },
-  }), [deleteShapes, scheduleRender, sendOp]);
+  }), [deleteShapes, scheduleRender, selection, sendOp]);
   localHandleRef.current = whiteboardHandle;
   useImperativeHandle(ref, () => whiteboardHandle, [whiteboardHandle]);
 
