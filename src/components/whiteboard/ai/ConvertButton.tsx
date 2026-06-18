@@ -36,7 +36,8 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
         return;
       }
       if (onlyHandwriting) {
-        const selected = wb.getShapes().filter((s: Shape & { selected?: boolean }) => s.selected && (s.type === "pencil" || s.type === "highlighter"));
+        const selectedIds = new Set(wb.getSelectionIds());
+        const selected = wb.getShapes().filter((s: Shape) => selectedIds.has(s.id) && (s.type === "pencil" || s.type === "highlighter"));
         const ids = (selected.length ? selected : wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter")).map((s) => s.id);
         wb.deleteShapes(ids);
       }
