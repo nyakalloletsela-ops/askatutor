@@ -36,10 +36,13 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
         return;
       }
       if (onlyHandwriting) {
-        const ids = wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter").map((s) => s.id);
+        const selectedIds = new Set(wb.getSelectionIds());
+        const selected = wb.getShapes().filter((s: Shape) => selectedIds.has(s.id) && (s.type === "pencil" || s.type === "highlighter"));
+        const ids = (selected.length ? selected : wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter")).map((s) => s.id);
         wb.deleteShapes(ids);
       }
-      const shapes = blocksToShapes(blocks);
+      const center = wb.getViewportCenter();
+      const shapes = blocksToShapes(blocks, { x: center.x - 280, y: center.y - 160 });
       wb.addShapes(shapes);
       toast.success(`Converted ${blocks.length} block${blocks.length === 1 ? "" : "s"}.`);
     } catch (e) {

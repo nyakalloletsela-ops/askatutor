@@ -11,7 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds,
+  type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds, resizeShapeToBounds,
 } from "./engine";
 import { render } from "./renderer";
 import { simplifyPoints } from "./smooth";
@@ -24,9 +24,11 @@ export interface WhiteboardHandle {
   /** Export only the given shapes (or all if undefined) as a PNG data URL. */
   exportPng(opts?: { onlyHandwriting?: boolean; padding?: number }): Promise<string>;
   getShapes(): Shape[];
+  getSelectionIds(): string[];
   setShapes(next: Shape[]): void;
   deleteShapes(ids: string[]): void;
   addShapes(shapes: Shape[]): void;
+  getViewportCenter(): { x: number; y: number };
 }
 
 interface Props {
@@ -46,6 +48,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const localHandleRef = useRef<WhiteboardHandle | null>(null);
 
   // ----- state refs (mutable, no re-render) -----
   const shapesRef = useRef<Shape[]>([]);
@@ -56,7 +59,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const drawingRef = useRef<Shape | null>(null);
   type Drag =
     | { kind: "pan"; sx: number; sy: number; camX: number; camY: number }
-    | { kind: "translate"; lastPage: { x: number; y: number } }
+    | { kind: "translate"; ids: Set<string>; lastPage: { x: number; y: number } }
     | { kind: "draw" }
     | { kind: "marquee"; sx: number; sy: number }
     | { kind: "resize"; corner: "nw" | "ne" | "sw" | "se"; shapeId: string; start: { x: number; y: number; w: number; h: number } }
@@ -94,12 +97,15 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           if (arr[idx].ts > op.shape.ts) return; // older
           arr[idx] = op.shape;
         } else arr.push(op.shape);
+        repaint();
         scheduleRender();
       } else if (op.kind === "delete") {
         shapesRef.current = shapesRef.current.filter((s) => !op.ids.includes(s.id));
+        repaint();
         scheduleRender();
       } else if (op.kind === "clear") {
         shapesRef.current = [];
+        repaint();
         scheduleRender();
       } else if (op.kind === "lock") {
         setLocked(op.locked);
@@ -132,6 +138,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           shapesRef.current = d.shapes;
           d.shapes.forEach((s) => observeTs(s.ts));
           d.shapes.forEach((s) => { if (s.type === "image") cacheImage(s.src); });
+          repaint();
           scheduleRender();
         }
       } catch { /* noop */ }
@@ -230,6 +237,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     const arr = shapesRef.current; const idx = arr.findIndex((x) => x.id === s.id);
     if (idx >= 0) arr[idx] = s; else arr.push(s);
     if (broadcast) sendOp({ kind: "upsert", shape: s });
+    repaint();
     scheduleRender();
   };
   const deleteShapes = (ids: string[]) => {
@@ -238,6 +246,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     shapesRef.current = shapesRef.current.filter((s) => !ids.includes(s.id));
     setSelection(new Set());
     sendOp({ kind: "delete", ids });
+    repaint();
     scheduleRender();
   };
   const clearBoard = () => {
@@ -246,6 +255,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     shapesRef.current = [];
     setSelection(new Set());
     sendOp({ kind: "clear" });
+    repaint();
     scheduleRender();
   };
   const setLockBroadcast = (next: boolean) => {
@@ -284,12 +294,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       const sorted = [...shapesRef.current].sort((a, b) => b.z - a.z);
       const hit = sorted.find((s) => hitTest(s, pg.x, pg.y));
       if (hit) {
+        let nextSelection = selection;
         if (!selection.has(hit.id)) {
-          if (!(e.shiftKey || e.metaKey)) setSelection(new Set([hit.id]));
-          else setSelection(new Set([...selection, hit.id]));
+          nextSelection = e.shiftKey || e.metaKey ? new Set([...selection, hit.id]) : new Set([hit.id]);
+          setSelection(nextSelection);
         }
         pushHistory();
-        dragRef.current = { kind: "translate", lastPage: pg };
+        dragRef.current = { kind: "translate", ids: new Set(nextSelection), lastPage: pg };
       } else {
         if (!(e.shiftKey || e.metaKey)) setSelection(new Set());
         marqueeRef.current = { x: sx, y: sy, w: 0, h: 0 };
@@ -384,10 +395,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     if (d.kind === "translate") {
       const dx = pg.x - d.lastPage.x, dy = pg.y - d.lastPage.y;
       d.lastPage = pg;
-      const sel = selection;
       const arr = shapesRef.current;
       for (let i = 0; i < arr.length; i++) {
-        if (sel.has(arr[i].id)) {
+        if (d.ids.has(arr[i].id)) {
           arr[i] = { ...translateShape(arr[i], dx, dy), ts: tick() };
         }
       }
@@ -409,7 +419,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       if (d.corner.includes("s")) nh = Math.max(8, pg.y - st.y);
       if (d.corner.includes("w")) { nw = Math.max(8, st.x + st.w - pg.x); nx = st.x + st.w - nw; }
       if (d.corner.includes("n")) { nh = Math.max(8, st.y + st.h - pg.y); ny = st.y + st.h - nh; }
-      arr[idx] = { ...s, x: nx, y: ny, w: nw, h: nh, ts: tick() };
+      arr[idx] = { ...resizeShapeToBounds(s, { x: nx, y: ny, w: nw, h: nh }), ts: tick() };
       scheduleRender();
       return;
     }
@@ -462,7 +472,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     }
     if (d.kind === "translate") {
       for (const s of shapesRef.current) {
-        if (selection.has(s.id)) sendOp({ kind: "upsert", shape: s });
+        if (d.ids.has(s.id)) sendOp({ kind: "upsert", shape: s });
       }
       return;
     }
@@ -482,6 +492,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         shapesRef.current.push(cur);
         sendOp({ kind: "upsert", shape: cur });
         drawingRef.current = null;
+        repaint();
         scheduleRender();
       }
     }
@@ -565,6 +576,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       sendOp({ kind: "upsert", shape: ns });
     }
     setSelection(ids);
+    repaint();
     scheduleRender();
   };
   const duplicateSel = () => { copySel(); pasteSel(); };
@@ -595,6 +607,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       }
     }
     setTextEdit(null);
+    repaint();
     scheduleRender();
   };
 
@@ -616,10 +629,11 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   };
 
   // ----- imperative handle -----
-  useImperativeHandle(ref, () => ({
+  const whiteboardHandle = useMemo<WhiteboardHandle>(() => ({
     async exportPng(opts) {
+      const selectedHandwriting = shapesRef.current.filter((s) => selection.has(s.id) && (s.type === "pencil" || s.type === "highlighter"));
       const list = opts?.onlyHandwriting
-        ? shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter")
+        ? (selectedHandwriting.length ? selectedHandwriting : shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter"))
         : shapesRef.current;
       if (!list.length) return "";
       // Render to offscreen canvas at 1.5x scale.
@@ -644,7 +658,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       return c.toDataURL("image/png");
     },
     getShapes: () => shapesRef.current.slice(),
-    setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); scheduleRender(); },
+    getSelectionIds: () => [...selection],
+    getViewportCenter: () => screenToPage(sizeRef.current.w / 2, sizeRef.current.h / 2),
+    setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); repaint(); scheduleRender(); },
     deleteShapes,
     addShapes: (shapes) => {
       pushHistory();
@@ -653,9 +669,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         shapesRef.current.push(s);
         sendOp({ kind: "upsert", shape: s });
       }
+      repaint();
       scheduleRender();
     },
-  }), []);
+  }), [deleteShapes, scheduleRender, selection, sendOp]);
+  localHandleRef.current = whiteboardHandle;
+  useImperativeHandle(ref, () => whiteboardHandle, [whiteboardHandle]);
 
   // ----- toolbar -----
   const ToolBtn = ({ id, icon: Icon, label, shortcut }: { id: ToolId; icon: typeof Pencil; label: string; shortcut?: string }) => (
@@ -735,7 +754,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             </>
           );
         }
-        if (["rect", "ellipse", "triangle", "text", "sticky", "image"].includes(s.type)) {
+        if (["pencil", "highlighter", "rect", "ellipse", "triangle", "text", "sticky", "image"].includes(s.type)) {
           const b = shapeBounds(s);
           const tl = pageToScreen(b.x, b.y), br = pageToScreen(b.x + b.w, b.y + b.h);
           const tr = { x: br.x, y: tl.y }, bl = { x: tl.x, y: br.y };
@@ -761,7 +780,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </Button>
         <span className="h-4 w-px shrink-0 bg-border" />
-        <ConvertButton whiteboardRef={ref as React.RefObject<WhiteboardHandle>} />
+        <ConvertButton whiteboardRef={localHandleRef} />
         <span className="h-4 w-px shrink-0 bg-border" />
         <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
         <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
