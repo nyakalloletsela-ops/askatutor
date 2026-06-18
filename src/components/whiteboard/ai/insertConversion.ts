@@ -58,6 +58,9 @@ export function parseConversion(raw: string): ConvertedBlock[] {
     cursor = s.idx + s.len;
   }
   if (cursor < cleanRaw.length) pushTextual(cleanRaw.slice(cursor));
+  if (out.length === 0 && cleanRaw.length > 0) {
+    out.push({ kind: "text", text: cleanRaw });
+  }
   return out;
 }
 
