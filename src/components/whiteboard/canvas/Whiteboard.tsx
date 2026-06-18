@@ -11,7 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds,
+  type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds, resizeShapeToBounds,
 } from "./engine";
 import { render } from "./renderer";
 import { simplifyPoints } from "./smooth";
@@ -46,6 +46,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const localHandleRef = useRef<WhiteboardHandle | null>(null);
 
   // ----- state refs (mutable, no re-render) -----
   const shapesRef = useRef<Shape[]>([]);
