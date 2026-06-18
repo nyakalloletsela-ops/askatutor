@@ -6,8 +6,8 @@ const Input = z.object({
   imageDataUrl: z
     .string()
     .min(40)
-    .max(8_000_000)
-    .regex(/^data:image\/(png|jpeg|webp);base64,/, "Must be a base64 data URL"),
+    .max(12_000_000)
+    .regex(/^data:image\/(png|jpe?g|webp);base64,/i, "Must be a base64 image data URL"),
 });
 
 export const whiteboardConvert = createServerFn({ method: "POST" })
