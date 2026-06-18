@@ -138,6 +138,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           shapesRef.current = d.shapes;
           d.shapes.forEach((s) => observeTs(s.ts));
           d.shapes.forEach((s) => { if (s.type === "image") cacheImage(s.src); });
+          repaint();
           scheduleRender();
         }
       } catch { /* noop */ }
@@ -659,7 +660,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     getShapes: () => shapesRef.current.slice(),
     getSelectionIds: () => [...selection],
     getViewportCenter: () => screenToPage(sizeRef.current.w / 2, sizeRef.current.h / 2),
-    setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); scheduleRender(); },
+    setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); repaint(); scheduleRender(); },
     deleteShapes,
     addShapes: (shapes) => {
       pushHistory();
