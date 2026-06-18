@@ -1,1 +1,1 @@
-export { TldrawCanvas } from "./canvas/TldrawCanvas";
+export { Whiteboard, hashColor, type WhiteboardHandle } from "./canvas/Whiteboard";
