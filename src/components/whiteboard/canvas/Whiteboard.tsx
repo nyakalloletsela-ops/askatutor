@@ -629,8 +629,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   // ----- imperative handle -----
   const whiteboardHandle = useMemo<WhiteboardHandle>(() => ({
     async exportPng(opts) {
+      const selectedHandwriting = shapesRef.current.filter((s) => selection.has(s.id) && (s.type === "pencil" || s.type === "highlighter"));
       const list = opts?.onlyHandwriting
-        ? shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter")
+        ? (selectedHandwriting.length ? selectedHandwriting : shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter"))
         : shapesRef.current;
       if (!list.length) return "";
       // Render to offscreen canvas at 1.5x scale.
