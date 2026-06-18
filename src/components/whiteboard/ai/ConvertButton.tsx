@@ -39,7 +39,8 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
         const ids = wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter").map((s) => s.id);
         wb.deleteShapes(ids);
       }
-      const shapes = blocksToShapes(blocks);
+      const center = wb.getViewportCenter();
+      const shapes = blocksToShapes(blocks, { x: center.x - 280, y: center.y - 160 });
       wb.addShapes(shapes);
       toast.success(`Converted ${blocks.length} block${blocks.length === 1 ? "" : "s"}.`);
     } catch (e) {
