@@ -1,12 +1,17 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Users, MessageSquare, Sparkles, PanelLeft, Copy, Check } from "lucide-react";
+import { ArrowLeft, Users, Circle, Square, MessageSquare, Sparkles, PanelLeft, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { fmtTimer, useSessionTimer } from "./useSessionTimer";
+import { useRecorder } from "../whiteboard/timeline/useRecorder";
+import * as Y from "yjs";
 
 interface Props {
   roomId: string;
   participantsCount: number;
+  doc: Y.Doc;
+  userId: string;
+  canRecord: boolean;
   onToggleLeft: () => void;
   onToggleRight: (panel: "chat" | "ai") => void;
   rightOpen: "chat" | "ai" | null;
@@ -15,11 +20,15 @@ interface Props {
 export function ClassroomTopBar({
   roomId,
   participantsCount,
+  doc,
+  userId,
+  canRecord,
   onToggleLeft,
   onToggleRight,
   rightOpen,
 }: Props) {
   const elapsed = useSessionTimer();
+  const rec = useRecorder(roomId, doc, userId);
   const [copied, setCopied] = useState(false);
 
   const copyCode = async () => {
@@ -27,7 +36,9 @@ export function ClassroomTopBar({
       await navigator.clipboard.writeText(roomId);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
   };
 
   return (
@@ -64,6 +75,20 @@ export function ClassroomTopBar({
         <span className="hidden items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 font-mono text-xs text-muted-foreground sm:inline-flex">
           {fmtTimer(elapsed)}
         </span>
+
+        {canRecord &&
+          (rec.isRecording ? (
+            <Button size="sm" variant="destructive" className="h-8 gap-1.5" onClick={() => void rec.stop()}>
+              <Square className="h-3.5 w-3.5 fill-current" />
+              <span className="hidden sm:inline">Stop</span>
+              <span className="font-mono text-xs">{fmtTimer(rec.elapsedMs)}</span>
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => void rec.start()}>
+              <Circle className="h-3.5 w-3.5 fill-red-500 text-red-500" />
+              <span className="hidden sm:inline">Record</span>
+            </Button>
+          ))}
 
         <Button
           size="sm"

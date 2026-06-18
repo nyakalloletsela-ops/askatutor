@@ -6,8 +6,8 @@ const Input = z.object({
   imageDataUrl: z
     .string()
     .min(40)
-    .max(12_000_000)
-    .regex(/^data:image\/(png|jpe?g|webp);base64,/i, "Must be a base64 image data URL"),
+    .max(8_000_000)
+    .regex(/^data:image\/(png|jpeg|webp);base64,/, "Must be a base64 data URL"),
 });
 
 export const whiteboardConvert = createServerFn({ method: "POST" })
@@ -34,11 +34,11 @@ Strict output rules:
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "Lovable-API-Key": apiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: system },
           {
@@ -57,14 +57,11 @@ Strict output rules:
     });
 
     if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error("whiteboardConvert AI error", res.status, detail.slice(0, 500));
       if (res.status === 429) throw new Error("Too many requests — please slow down.");
       if (res.status === 402) throw new Error("AI credits exhausted. Please notify the admin.");
-      throw new Error(`AI service error (${res.status})`);
+      throw new Error("AI service error");
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const text = json.choices?.[0]?.message?.content?.trim() ?? "";
-    if (!text) throw new Error("AI returned an empty response. Try again.");
     return { text };
   });

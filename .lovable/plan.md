@@ -1,64 +1,65 @@
-# Custom Whiteboard — Replace tldraw
+# Whiteboard Engine Replacement — tldraw + Yjs
 
-This is a large rewrite. I'll do it in one pass but want to confirm scope before deleting the existing tldraw integration, because some current features (Yjs binding, AI handwriting → LaTeX conversion, playback timeline, snapshot review pages) are tightly coupled to tldraw's shape model and will need to be re-implemented or re-wired against the new model.
+Replacing the current custom `Whiteboard.tsx` canvas with tldraw as the rendering engine and Yjs (over Supabase Realtime) for multi-user collaboration. Auth, routes, classroom shell, Jitsi video, files, notes, labs all stay untouched.
 
-## What gets built
+## Step 1 — Dependencies
 
-### 1. Custom canvas engine (`src/components/whiteboard/engine/`)
-- `Scene.ts` — document model: ordered array of `Shape` objects (id, type, props, z, page).
-- `Camera.ts` — pan/zoom with wheel + pinch + space-drag.
-- `Renderer.ts` — HiDPI HTML5 Canvas renderer with dirty-rect redraw.
-- `History.ts` — undo/redo stack of patches.
-- `Pointer.ts` — unified mouse/touch/pen input.
-- Shape types: `pencil`, `highlighter`, `line`, `arrow`, `rect`, `ellipse`, `triangle`, `text`, `sticky`, `image`.
+Install:
+- `tldraw` (the package is published as `tldraw`, not `@tldraw/tldraw` — `@tldraw/tldraw` is a deprecated alias and will fail or pull an old version)
+- `yjs`
+- `y-protocols` (needed for awareness/cursors)
+- `@tldraw/sync` is NOT used — we use tldraw's `store.listen` + Yjs sync helper manually so we can sit on Supabase Realtime instead of a websocket server
 
-### 2. Tools
-Pencil, highlighter (alpha + screen blend), eraser (object + pixel), line, arrow, rect, ellipse, triangle, text (inline contenteditable overlay), sticky note, image upload, select (single + marquee multi-select with transform handles).
+Note: `y-supabase` exists but is unmaintained and ships its own channel format; rolling a thin adapter against `supabase.channel(...).on('broadcast')` is more reliable and ~60 lines. I'll do that instead unless you insist on `y-supabase`.
 
-### 3. UI (`src/components/whiteboard/ui/`)
-- `Whiteboard.tsx` — top-level component, replaces `TldrawCanvas`.
-- `Toolbar.tsx` — floating bottom-center toolbar, dark theme.
-- `ColorPicker.tsx`, `SizeSlider.tsx`, `PropertiesPanel.tsx`.
-- `PageBar.tsx` (numeric page indicator only — per earlier preference).
-- Keyboard shortcuts: V/P/H/E/L/A/R/O/T/S, Ctrl+Z/Y, Ctrl+C/V/D, Del, Ctrl+], Ctrl+[, Space+drag, +/-.
-- Export menu: PNG, JPG, PDF (via `jspdf`), JSON import/export.
+`lucide-react` is already installed.
 
-### 4. Realtime collaboration
-- Drop `Yjs` + tldraw binding. Use Supabase Realtime broadcast channel `whiteboard:{roomId}` for:
-  - `op` events (shape add/update/delete patches) — last-writer-wins per shape id, monotonic lamport clock to resolve conflicts.
-  - `cursor` events (throttled 30 Hz) for presence + name labels.
-- Periodic snapshot (every ~3s of idle) persisted to `whiteboard_snapshots` (existing table) as JSON document.
-- On join: load latest snapshot, then replay ops since snapshot timestamp from `whiteboard_mutations` (existing table, repurposed: `{ kind: 'op', data: patch }`).
+## Step 2 — Directory layout
 
-### 5. Classroom integration
-- Teacher controls (visible when `userId === session.tutor_id` or admin):
-  - Lock board (broadcasts lock state; students get read-only renderer).
-  - Clear board (with confirm).
-  - Save to lesson history (writes snapshot + marks `whiteboard_snapshots.is_milestone`).
-- Student view: tools hidden when locked; cursor presence still shown.
+```text
+src/components/whiteboard/
+  canvas/
+    TldrawCanvas.tsx          // mounts <Tldraw />, wires persistence + sync
+    persistence.ts            // localStorage snapshot per room (viewport + doc)
+  collaboration/
+    useYjsRoom.ts             // creates Y.Doc + awareness, connects to Supabase
+    supabase-yjs-provider.ts  // Yjs <-> Supabase broadcast adapter (update + awareness)
+    useTldrawYjsBinding.ts    // two-way bind tldraw store <-> Y.Map of records
+    cursors.tsx               // <LiveCursors /> overlay using awareness states
+  index.ts
+```
 
-### 6. AI handwriting conversion
-- Keep `ConvertButton` + `insertConversion.ts`, but rewrite the bridge:
-  - Rasterize selected pencil strokes from the new canvas to a data URL.
-  - Send to existing `whiteboard-ai.functions.ts` (no change).
-  - Insert returned text/LaTeX as a `text` shape (LaTeX rendered via existing KaTeX path → SVG image shape).
+Each file kept under 300 lines; logic-heavy parts live in hooks.
 
-### 7. Cleanup
-- Delete: `src/components/whiteboard/canvas/TldrawCanvas.tsx`, `collaboration/useTldrawYjsBinding.ts`, `collaboration/supabase-yjs-provider.ts`, `collaboration/useYjsRoom.ts`, `src/components/Whiteboard.tsx` (legacy).
-- Remove from `package.json`: `tldraw`, `yjs`, `y-protocols` (if present).
-- Update imports in `classroom.$roomId.tsx`, `admin.whiteboard.tsx`, `whiteboard-review.$sessionId.tsx`, `PlaybackPlayer.tsx`.
-- Keep `whiteboards`, `whiteboard_snapshots`, `whiteboard_mutations`, `whiteboard_strokes`, `canvas_timeline_deltas` tables. No migration needed — snapshots become opaque JSON for the new format.
+## Step 3 — Phase 1: Core canvas
 
-## Things I'm intentionally NOT doing unless you say so
-- **Playback / timeline scrubber** (`PlaybackPlayer.tsx`, `RecordingBar.tsx`, `useRecorder.ts`): the existing recorder records tldraw deltas. I'll stub these to no-op so the build passes, and we can rebuild recording in a follow-up. Replaying the new op stream is straightforward but adds another ~day of work.
-- **`whiteboard-review.$sessionId.tsx`** snapshot viewer: I'll make it render the new JSON snapshot read-only. Old tldraw snapshots in the DB will show an "archived format" notice — they won't be migrated.
-- **Admin whiteboard test page** (`admin.whiteboard.tsx`): updated to use new component, no extra admin tooling added.
+- `TldrawCanvas.tsx` renders `<Tldraw persistenceKey={`atl-${roomId}`} />`. tldraw's built-in persistence handles local snapshot + viewport restore on refresh, plus full default toolbar (select, draw, eraser, highlight, rect, ellipse, arrow, note, text), pan/zoom (wheel + pinch), undo/redo.
+- Mount it in `classroom.$roomId.tsx` Whiteboard tab in place of the old `<Whiteboard />`.
+- The old `src/components/Whiteboard.tsx` stays on disk for now (not imported) so other references don't break; I'll remove it after verifying nothing else imports it.
 
-## Risks
-- Old saved tldraw snapshots become unreadable in the new viewer (notice shown instead).
-- Recording/playback temporarily unavailable.
-- First version of multi-select transform handles will be functional but less polished than tldraw's.
+## Step 4 — Phase 2: Realtime collaboration
 
-## Confirm before I start
-1. OK to stub playback/recording and lose old snapshot rendering? (Yes = proceed as planned. No = I'll keep tldraw installed only for the review/playback routes and replace it everywhere else.)
-2. Realtime via Supabase broadcast (simpler, no Yjs) is fine? (Alternative: keep Yjs as the CRDT but with a custom renderer — more robust for offline edits, more code.)
+- `useYjsRoom(roomId, user)` returns `{ doc, awareness }`.
+- `supabase-yjs-provider.ts` opens `supabase.channel(`yjs:${roomId}`, { config: { broadcast: { self: false } } })`:
+  - On local `doc.on('update', u)` → `channel.send({ type:'broadcast', event:'y-update', payload:{ u: base64(u) } })`
+  - On remote `y-update` → `Y.applyUpdate(doc, fromBase64(u))`
+  - Awareness: same pattern with `awarenessProtocol.encodeAwarenessUpdate` on event `y-awareness`
+  - On `SUBSCRIBED` → broadcast a `y-sync-request`; peers reply with full `Y.encodeStateAsUpdate(doc)`. Handles refresh / late join / reconnect (Supabase channel auto-reconnects; we re-send sync-request in the resubscribe handler so missed deltas catch up).
+- `useTldrawYjsBinding(editor, doc)`:
+  - Y.Map `records` keyed by tldraw record id.
+  - On editor `store.listen({ source:'user', scope:'document' })` → write added/updated/removed records into the Y.Map inside `doc.transact`.
+  - On Y.Map observe → `editor.store.mergeRemoteChanges(() => store.put/remove)` to avoid echo loops.
+- `cursors.tsx`: subscribe to `awareness` states, project each peer's page-space cursor through `editor.pageToScreen`, render a colored SVG arrow + name tag overlay positioned absolutely over the canvas. Local pointer position pushed via `editor.on('event', e => awareness.setLocalStateField('cursor', editor.inputs.currentPagePoint))` (throttled ~30ms).
+- Color: deterministic hash of `user.id` → HSL.
+
+## Step 5 — React error #300 on classroom open
+
+#300 = "rendered fewer hooks than expected" — a conditional hook. After installing tldraw, the old `Whiteboard.tsx` is no longer rendered in the classroom tab so its OCR/overlay hook tree (which I suspect is the culprit, especially the `bumpText`/`mergeRefs` paths added recently) is out of the render path. I'll verify by loading `/classroom/demo-…` after the swap; if the crash persists it's in `classroom.$roomId.tsx` itself (likely the `videoRef`/`FloatingVideo` imperative handle) and I'll fix it there.
+
+## Out of scope (will flag if needed)
+
+- Server-side persistence of the tldraw doc in Postgres (Y.js updates can be appended to a `whiteboard_yjs_updates` table later for cold-start hydration beyond peer sync). For now: peer-sync + localStorage snapshot per client.
+- Migrating existing `whiteboard_strokes` rows into tldraw shapes — the old format isn't compatible; old boards start empty under the new engine.
+- AI "Convert all" button — current implementation is tied to the old canvas; can be reattached to tldraw in a follow-up by exporting the current page as PNG via `editor.toImage()` and feeding it to the existing `whiteboardConvert` server fn.
+
+Approve to proceed.

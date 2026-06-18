@@ -1,52 +1,52 @@
 import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import type { Editor } from "tldraw";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
-import { parseConversion, blocksToShapes } from "./insertConversion";
-import type { WhiteboardHandle } from "../canvas/Whiteboard";
-import type { Shape } from "../canvas/engine";
+import { parseConversion, insertBlocksIntoEditor } from "./insertConversion";
 
-export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObject<WhiteboardHandle | null> }) {
+export function ConvertButton({ editor }: { editor: Editor | null }) {
   const convert = useServerFn(whiteboardConvert);
   const [busy, setBusy] = useState(false);
 
   const run = async () => {
-    const wb = whiteboardRef.current;
-    if (!wb || busy) return;
+    if (!editor || busy) return;
     setBusy(true);
     try {
-      let onlyHandwriting = true;
-      let dataUrl = await wb.exportPng({ onlyHandwriting: true });
-      if (!dataUrl) {
-        // Fall back to full canvas so users can still digitise typed/imported content
-        onlyHandwriting = false;
-        dataUrl = await wb.exportPng({ onlyHandwriting: false });
-      }
-      if (!dataUrl) {
-        toast.info("Draw or add something first, then tap Convert.");
+      // Export only the user's drawn shapes (handwriting/sketches) as PNG.
+      const shapeIds = editor.getCurrentPageShapeIds();
+      if (shapeIds.size === 0) {
+        toast.info("Draw something first, then tap Convert.");
         return;
       }
+      const { blob } = await editor.toImage([...shapeIds], {
+        format: "png",
+        background: true,
+        padding: 24,
+        scale: 1.5,
+      });
+
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(blob);
+      });
+
       const { text } = await convert({ data: { imageDataUrl: dataUrl } });
       const blocks = parseConversion(text);
       if (blocks.length === 0) {
-        console.warn("AI converter raw output:", text);
-        toast.error("Couldn't parse the AI output. Try again.");
+        toast.error("Couldn't parse the AI output.");
         return;
       }
-      if (onlyHandwriting) {
-        const selectedIds = new Set(wb.getSelectionIds());
-        const selected = wb.getShapes().filter((s: Shape) => selectedIds.has(s.id) && (s.type === "pencil" || s.type === "highlighter"));
-        const ids = (selected.length ? selected : wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter")).map((s) => s.id);
-        wb.deleteShapes(ids);
-      }
-      const center = wb.getViewportCenter();
-      const shapes = blocksToShapes(blocks, { x: center.x - 280, y: center.y - 160 });
-      wb.addShapes(shapes);
+
+      // Delete original handwritten strokes – clean digital version replaces them.
+      editor.deleteShapes([...shapeIds]);
+      insertBlocksIntoEditor(editor, blocks);
       toast.success(`Converted ${blocks.length} block${blocks.length === 1 ? "" : "s"}.`);
     } catch (e) {
-      console.error("Convert failed", e);
       toast.error(e instanceof Error ? e.message : "Conversion failed");
     } finally {
       setBusy(false);
@@ -57,13 +57,13 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
     <Button
       size="sm"
       variant="secondary"
-      className="h-7 px-2 shrink-0"
+      className="h-7 px-2"
       onClick={run}
-      disabled={busy}
+      disabled={busy || !editor}
       title="Convert handwriting → clean digital text, equations and diagrams"
     >
       {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
-      <span className="hidden xs:inline">{busy ? "Converting…" : "Convert"}</span>
+      {busy ? "Converting…" : "Convert to digital"}
     </Button>
   );
 }

@@ -1,43 +1,45 @@
 import { Hand, Users, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import type { RealtimeChannel } from "@supabase/supabase-js";
+import type { Awareness } from "y-protocols/awareness";
 import type { Participant } from "@/components/JitsiRoom";
 
 interface Props {
   participants: Participant[];
-  roomId: string;
+  awareness: Awareness;
   selfId: string;
   selfName: string;
   isTutor: boolean;
 }
 
-export function ParticipantsPanel({ participants, roomId, selfId, selfName, isTutor }: Props) {
+interface AwarenessUser {
+  user?: { id: string; name: string; color: string };
+  raisedHand?: boolean;
+}
+
+export function ParticipantsPanel({ participants, awareness, selfId, selfName, isTutor }: Props) {
   const [raised, setRaised] = useState(false);
   const [hands, setHands] = useState<Set<string>>(new Set());
-  const [chanRef, setChanRef] = useState<RealtimeChannel | null>(null);
 
-  // Lightweight Supabase Realtime broadcast for raised hands.
   useEffect(() => {
-    const channel = supabase.channel(`hands:${roomId}`, { config: { broadcast: { self: false } } });
-    channel.on("broadcast", { event: "hand" }, (payload) => {
-      const { senderId, raised: r } = payload.payload as { senderId: string; raised: boolean };
-      setHands((prev) => {
-        const next = new Set(prev);
-        if (r) next.add(senderId); else next.delete(senderId);
-        return next;
+    const onChange = () => {
+      const next = new Set<string>();
+      awareness.getStates().forEach((s) => {
+        const a = s as AwarenessUser;
+        if (a.raisedHand && a.user?.id) next.add(a.user.id);
       });
-    });
-    channel.subscribe();
-    setChanRef(channel);
-    return () => { supabase.removeChannel(channel); setChanRef(null); };
-  }, [roomId]);
+      setHands(next);
+    };
+    awareness.on("change", onChange);
+    onChange();
+    return () => awareness.off("change", onChange);
+  }, [awareness]);
 
   const toggleHand = () => {
     const next = !raised;
     setRaised(next);
-    chanRef?.send({ type: "broadcast", event: "hand", payload: { senderId: selfId, raised: next } });
+    const prev = (awareness.getLocalState() ?? {}) as AwarenessUser;
+    awareness.setLocalState({ ...prev, raisedHand: next });
   };
 
   return (
@@ -46,7 +48,7 @@ export function ParticipantsPanel({ participants, roomId, selfId, selfName, isTu
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Users className="h-4 w-4" /> Participants
           <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-            {participants.length + 1}
+            {participants.length}
           </span>
         </div>
       </div>
@@ -62,6 +64,7 @@ export function ParticipantsPanel({ participants, roomId, selfId, selfName, isTu
       </Button>
 
       <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-3">
+        {/* Self */}
         <ParticipantRow
           name={`${selfName}${isTutor ? " (Tutor)" : ""} · You`}
           status="joined"

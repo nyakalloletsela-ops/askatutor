@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { FloatingVideo, type FloatingVideoHandle } from "@/components/FloatingVideo";
-import { Whiteboard } from "@/components/whiteboard";
+import { TldrawCanvas } from "@/components/whiteboard";
+import { useYjsRoom, hashColor, type CollabUser } from "@/components/whiteboard/collaboration/useYjsRoom";
 import { LorddaLab } from "@/components/LorddaLab";
 import { WebGLLab } from "@/components/WebGLLab";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
@@ -98,9 +99,15 @@ function ClassroomPage() {
       });
   }, [roomId, user]);
 
+  // Single shared Yjs room — used by whiteboard, recorder, awareness, cursors.
   const displayName = user?.email ?? "Guest";
+  const collabUser: CollabUser = user
+    ? { id: user.id, name: displayName, color: hashColor(user.id) }
+    : { id: "anon", name: "Guest", color: "#888" };
+  const room = useYjsRoom(roomId, collabUser);
 
   if (!user) return null;
+  const canRecord = isTutor || isAdmin;
   const totalParticipants = participants.length + 1; // include self
 
   const toggleSidePanel = (panel: "chat" | "ai") => {
@@ -110,7 +117,7 @@ function ClassroomPage() {
   const participantsPanel = (
     <ParticipantsPanel
       participants={participants}
-      roomId={roomId}
+      awareness={room.awareness}
       selfId={user.id}
       selfName={displayName}
       isTutor={isTutor}
@@ -122,11 +129,13 @@ function ClassroomPage() {
       <ClassroomTopBar
         roomId={roomId}
         participantsCount={totalParticipants}
+        doc={room.doc}
+        userId={user.id}
+        canRecord={canRecord}
         onToggleLeft={() => setLeftOpen(true)}
         onToggleRight={toggleSidePanel}
         rightOpen={sidePanel}
       />
-
 
       <main className="flex min-h-0 flex-1 gap-2 p-2">
         {/* Left sidebar — desktop only */}
@@ -164,11 +173,11 @@ function ClassroomPage() {
               </TabsList>
             </div>
             <TabsContent value="whiteboard" className="m-0 min-h-0 flex-1 p-2">
-              <Whiteboard
+              <TldrawCanvas
                 roomId={roomId}
                 userId={user.id}
                 userName={displayName}
-                isTeacher={isTutor || isAdmin}
+                room={{ doc: room.doc, awareness: room.awareness }}
               />
             </TabsContent>
             <TabsContent value="notes" className="m-0 min-h-0 flex-1">
