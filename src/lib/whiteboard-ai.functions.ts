@@ -57,11 +57,14 @@ Strict output rules:
     });
 
     if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.error("whiteboardConvert AI error", res.status, detail.slice(0, 500));
       if (res.status === 429) throw new Error("Too many requests — please slow down.");
       if (res.status === 402) throw new Error("AI credits exhausted. Please notify the admin.");
-      throw new Error("AI service error");
+      throw new Error(`AI service error (${res.status})`);
     }
     const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const text = json.choices?.[0]?.message?.content?.trim() ?? "";
+    if (!text) throw new Error("AI returned an empty response. Try again.");
     return { text };
   });
