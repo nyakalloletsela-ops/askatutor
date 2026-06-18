@@ -11,9 +11,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 import {
-  type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds,
+  type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds, resizeShapeToBounds,
 } from "./engine";
 import { render } from "./renderer";
+import { simplifyPoints } from "./smooth";
 import { useWhiteboardRealtime, type CursorMsg } from "./realtime";
 import { exportPNG, exportJPG, exportPDF, exportJSON } from "./exporter";
 import { ConvertButton } from "../ai/ConvertButton";
@@ -23,9 +24,11 @@ export interface WhiteboardHandle {
   /** Export only the given shapes (or all if undefined) as a PNG data URL. */
   exportPng(opts?: { onlyHandwriting?: boolean; padding?: number }): Promise<string>;
   getShapes(): Shape[];
+  getSelectionIds(): string[];
   setShapes(next: Shape[]): void;
   deleteShapes(ids: string[]): void;
   addShapes(shapes: Shape[]): void;
+  getViewportCenter(): { x: number; y: number };
 }
 
 interface Props {
@@ -45,6 +48,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const localHandleRef = useRef<WhiteboardHandle | null>(null);
 
   // ----- state refs (mutable, no re-render) -----
   const shapesRef = useRef<Shape[]>([]);
@@ -55,9 +59,11 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const drawingRef = useRef<Shape | null>(null);
   type Drag =
     | { kind: "pan"; sx: number; sy: number; camX: number; camY: number }
-    | { kind: "translate"; lastPage: { x: number; y: number } }
+    | { kind: "translate"; ids: Set<string>; lastPage: { x: number; y: number } }
     | { kind: "draw" }
-    | { kind: "marquee"; sx: number; sy: number };
+    | { kind: "marquee"; sx: number; sy: number }
+    | { kind: "resize"; corner: "nw" | "ne" | "sw" | "se"; shapeId: string; start: { x: number; y: number; w: number; h: number } }
+    | { kind: "endpoint"; which: 1 | 2; shapeId: string };
   const dragRef = useRef<Drag | null>(null);
   const marqueeRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
   const peersRef = useRef<Map<string, CursorMsg & { lastSeen: number }>>(new Map());
@@ -91,12 +97,15 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           if (arr[idx].ts > op.shape.ts) return; // older
           arr[idx] = op.shape;
         } else arr.push(op.shape);
+        repaint();
         scheduleRender();
       } else if (op.kind === "delete") {
         shapesRef.current = shapesRef.current.filter((s) => !op.ids.includes(s.id));
+        repaint();
         scheduleRender();
       } else if (op.kind === "clear") {
         shapesRef.current = [];
+        repaint();
         scheduleRender();
       } else if (op.kind === "lock") {
         setLocked(op.locked);
@@ -129,6 +138,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           shapesRef.current = d.shapes;
           d.shapes.forEach((s) => observeTs(s.ts));
           d.shapes.forEach((s) => { if (s.type === "image") cacheImage(s.src); });
+          repaint();
           scheduleRender();
         }
       } catch { /* noop */ }
@@ -227,6 +237,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     const arr = shapesRef.current; const idx = arr.findIndex((x) => x.id === s.id);
     if (idx >= 0) arr[idx] = s; else arr.push(s);
     if (broadcast) sendOp({ kind: "upsert", shape: s });
+    repaint();
     scheduleRender();
   };
   const deleteShapes = (ids: string[]) => {
@@ -235,6 +246,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     shapesRef.current = shapesRef.current.filter((s) => !ids.includes(s.id));
     setSelection(new Set());
     sendOp({ kind: "delete", ids });
+    repaint();
     scheduleRender();
   };
   const clearBoard = () => {
@@ -243,6 +255,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     shapesRef.current = [];
     setSelection(new Set());
     sendOp({ kind: "clear" });
+    repaint();
     scheduleRender();
   };
   const setLockBroadcast = (next: boolean) => {
@@ -281,12 +294,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       const sorted = [...shapesRef.current].sort((a, b) => b.z - a.z);
       const hit = sorted.find((s) => hitTest(s, pg.x, pg.y));
       if (hit) {
+        let nextSelection = selection;
         if (!selection.has(hit.id)) {
-          if (!(e.shiftKey || e.metaKey)) setSelection(new Set([hit.id]));
-          else setSelection(new Set([...selection, hit.id]));
+          nextSelection = e.shiftKey || e.metaKey ? new Set([...selection, hit.id]) : new Set([hit.id]);
+          setSelection(nextSelection);
         }
         pushHistory();
-        dragRef.current = { kind: "translate", lastPage: pg };
+        dragRef.current = { kind: "translate", ids: new Set(nextSelection), lastPage: pg };
       } else {
         if (!(e.shiftKey || e.metaKey)) setSelection(new Set());
         marqueeRef.current = { x: sx, y: sy, w: 0, h: 0 };
@@ -381,10 +395,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     if (d.kind === "translate") {
       const dx = pg.x - d.lastPage.x, dy = pg.y - d.lastPage.y;
       d.lastPage = pg;
-      const sel = selection;
       const arr = shapesRef.current;
       for (let i = 0; i < arr.length; i++) {
-        if (sel.has(arr[i].id)) {
+        if (d.ids.has(arr[i].id)) {
           arr[i] = { ...translateShape(arr[i], dx, dy), ts: tick() };
         }
       }
@@ -393,6 +406,29 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     }
     if (d.kind === "marquee") {
       marqueeRef.current = { x: Math.min(d.sx, sx), y: Math.min(d.sy, sy), w: Math.abs(sx - d.sx), h: Math.abs(sy - d.sy) };
+      scheduleRender();
+      return;
+    }
+    if (d.kind === "resize") {
+      const arr = shapesRef.current; const idx = arr.findIndex((s) => s.id === d.shapeId);
+      if (idx < 0) return;
+      const s = arr[idx] as any;
+      const st = d.start;
+      let nx = st.x, ny = st.y, nw = st.w, nh = st.h;
+      if (d.corner.includes("e")) nw = Math.max(8, pg.x - st.x);
+      if (d.corner.includes("s")) nh = Math.max(8, pg.y - st.y);
+      if (d.corner.includes("w")) { nw = Math.max(8, st.x + st.w - pg.x); nx = st.x + st.w - nw; }
+      if (d.corner.includes("n")) { nh = Math.max(8, st.y + st.h - pg.y); ny = st.y + st.h - nh; }
+      arr[idx] = { ...resizeShapeToBounds(s, { x: nx, y: ny, w: nw, h: nh }), ts: tick() };
+      scheduleRender();
+      return;
+    }
+    if (d.kind === "endpoint") {
+      const arr = shapesRef.current; const idx = arr.findIndex((s) => s.id === d.shapeId);
+      if (idx < 0) return;
+      const s = arr[idx] as any;
+      if (d.which === 1) { s.x1 = pg.x; s.y1 = pg.y; } else { s.x2 = pg.x; s.y2 = pg.y; }
+      s.ts = tick();
       scheduleRender();
       return;
     }
@@ -436,7 +472,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     }
     if (d.kind === "translate") {
       for (const s of shapesRef.current) {
-        if (selection.has(s.id)) sendOp({ kind: "upsert", shape: s });
+        if (d.ids.has(s.id)) sendOp({ kind: "upsert", shape: s });
       }
       return;
     }
@@ -449,11 +485,20 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           (cur as any).w = Math.abs(cur.w); (cur as any).h = Math.abs(cur.h);
           (cur as any).x = x; (cur as any).y = y;
         }
+        // Smooth freehand strokes by removing redundant points (RDP).
+        if (cur.type === "pencil" || cur.type === "highlighter") {
+          cur.points = simplifyPoints(cur.points, Math.max(0.5, cur.size * 0.25));
+        }
         shapesRef.current.push(cur);
         sendOp({ kind: "upsert", shape: cur });
         drawingRef.current = null;
+        repaint();
         scheduleRender();
       }
+    }
+    if (d.kind === "resize" || d.kind === "endpoint") {
+      const s = shapesRef.current.find((x) => x.id === d.shapeId);
+      if (s) sendOp({ kind: "upsert", shape: s });
     }
   };
 
@@ -531,6 +576,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       sendOp({ kind: "upsert", shape: ns });
     }
     setSelection(ids);
+    repaint();
     scheduleRender();
   };
   const duplicateSel = () => { copySel(); pasteSel(); };
@@ -561,6 +607,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       }
     }
     setTextEdit(null);
+    repaint();
     scheduleRender();
   };
 
@@ -582,10 +629,11 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   };
 
   // ----- imperative handle -----
-  useImperativeHandle(ref, () => ({
+  const whiteboardHandle = useMemo<WhiteboardHandle>(() => ({
     async exportPng(opts) {
+      const selectedHandwriting = shapesRef.current.filter((s) => selection.has(s.id) && (s.type === "pencil" || s.type === "highlighter"));
       const list = opts?.onlyHandwriting
-        ? shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter")
+        ? (selectedHandwriting.length ? selectedHandwriting : shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter"))
         : shapesRef.current;
       if (!list.length) return "";
       // Render to offscreen canvas at 1.5x scale.
@@ -610,20 +658,29 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       return c.toDataURL("image/png");
     },
     getShapes: () => shapesRef.current.slice(),
-    setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); scheduleRender(); },
+    getSelectionIds: () => [...selection],
+    getViewportCenter: () => screenToPage(sizeRef.current.w / 2, sizeRef.current.h / 2),
+    setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); repaint(); scheduleRender(); },
     deleteShapes,
     addShapes: (shapes) => {
       pushHistory();
-      for (const s of shapes) { shapesRef.current.push(s); sendOp({ kind: "upsert", shape: s }); }
+      for (const s of shapes) {
+        if (s.type === "image") cacheImage(s.src);
+        shapesRef.current.push(s);
+        sendOp({ kind: "upsert", shape: s });
+      }
+      repaint();
       scheduleRender();
     },
-  }), []);
+  }), [deleteShapes, scheduleRender, selection, sendOp]);
+  localHandleRef.current = whiteboardHandle;
+  useImperativeHandle(ref, () => whiteboardHandle, [whiteboardHandle]);
 
   // ----- toolbar -----
   const ToolBtn = ({ id, icon: Icon, label, shortcut }: { id: ToolId; icon: typeof Pencil; label: string; shortcut?: string }) => (
     <Button
       size="icon" variant={tool === id ? "default" : "ghost"}
-      className="h-9 w-9"
+      className="h-9 w-9 shrink-0"
       onClick={() => setTool(id)}
       title={shortcut ? `${label} (${shortcut})` : label}
       aria-label={label}
@@ -650,59 +707,119 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
+        onDoubleClick={(e) => {
+          if (isReadOnly) return;
+          const rect = wrapperRef.current!.getBoundingClientRect();
+          const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+          const pg = screenToPage(sx, sy);
+          const sorted = [...shapesRef.current].sort((a, b) => b.z - a.z);
+          const hit = sorted.find((s) => hitTest(s, pg.x, pg.y));
+          if (hit && (hit.type === "text" || hit.type === "sticky")) {
+            const sc = pageToScreen(hit.x, hit.y);
+            setSelection(new Set([hit.id]));
+            setTextEdit({ shapeId: hit.id, screenX: sc.x, screenY: sc.y, w: hit.w * cameraRef.current.z, h: hit.h * cameraRef.current.z, value: hit.text });
+            setTimeout(() => textareaRef.current?.focus(), 0);
+          }
+        }}
       />
+
+      {/* Resize / endpoint handles for single selection */}
+      {(() => {
+        if (selection.size !== 1 || textEdit) return null;
+        const s = shapesRef.current.find((x) => selection.has(x.id));
+        if (!s) return null;
+        const startResize = (corner: "nw" | "ne" | "sw" | "se", e: React.PointerEvent) => {
+          e.stopPropagation();
+          (e.target as Element).setPointerCapture?.(e.pointerId);
+          pushHistory();
+          const b = shapeBounds(s);
+          dragRef.current = { kind: "resize", corner, shapeId: s.id, start: { x: b.x, y: b.y, w: b.w, h: b.h } };
+        };
+        const startEndpoint = (which: 1 | 2, e: React.PointerEvent) => {
+          e.stopPropagation();
+          (e.target as Element).setPointerCapture?.(e.pointerId);
+          pushHistory();
+          dragRef.current = { kind: "endpoint", which, shapeId: s.id };
+        };
+        const handleProps = {
+          onPointerMove: onPointerMove as unknown as React.PointerEventHandler,
+          onPointerUp: onPointerUp as unknown as React.PointerEventHandler,
+        };
+        if (s.type === "line" || s.type === "arrow") {
+          const a = pageToScreen(s.x1, s.y1), b = pageToScreen(s.x2, s.y2);
+          return (
+            <>
+              <div {...handleProps} onPointerDown={(e) => startEndpoint(1, e)} style={handleStyle(a.x, a.y, "move")} />
+              <div {...handleProps} onPointerDown={(e) => startEndpoint(2, e)} style={handleStyle(b.x, b.y, "move")} />
+            </>
+          );
+        }
+        if (["pencil", "highlighter", "rect", "ellipse", "triangle", "text", "sticky", "image"].includes(s.type)) {
+          const b = shapeBounds(s);
+          const tl = pageToScreen(b.x, b.y), br = pageToScreen(b.x + b.w, b.y + b.h);
+          const tr = { x: br.x, y: tl.y }, bl = { x: tl.x, y: br.y };
+          return (
+            <>
+              <div {...handleProps} onPointerDown={(e) => startResize("nw", e)} style={handleStyle(tl.x, tl.y, "nwse-resize")} />
+              <div {...handleProps} onPointerDown={(e) => startResize("ne", e)} style={handleStyle(tr.x, tr.y, "nesw-resize")} />
+              <div {...handleProps} onPointerDown={(e) => startResize("sw", e)} style={handleStyle(bl.x, bl.y, "nesw-resize")} />
+              <div {...handleProps} onPointerDown={(e) => startResize("se", e)} style={handleStyle(br.x, br.y, "nwse-resize")} />
+            </>
+          );
+        }
+        return null;
+      })()}
+
 
       {/* Live cursors */}
       <LiveCursors peers={peers} project={pageToScreen} />
 
       {/* Top-right utility bar */}
-      <div className="absolute right-2 top-2 z-30 flex items-center gap-1.5 rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur">
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
-          {grid === "dots" ? <CircleDot className="mr-1 h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="mr-1 h-3.5 w-3.5" /> : <Eye className="mr-1 h-3.5 w-3.5" />}
-          {grid === "off" ? "Plain" : grid === "grid" ? "Grid" : "Dots"}
+      <div className="absolute right-2 top-2 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 overflow-x-auto rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
+          {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </Button>
-        <span className="h-4 w-px bg-border" />
-        <ConvertButton whiteboardRef={ref as React.RefObject<WhiteboardHandle>} />
-        <span className="h-4 w-px bg-border" />
+        <span className="h-4 w-px shrink-0 bg-border" />
+        <ConvertButton whiteboardRef={localHandleRef} />
+        <span className="h-4 w-px shrink-0 bg-border" />
         <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
-        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={toggleFullscreen} title="Fullscreen">
+        <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
           <Maximize2 className="h-3.5 w-3.5" />
         </Button>
         {isTeacher && (
           <>
-            <span className="h-4 w-px bg-border" />
-            <Button size="sm" variant={locked ? "destructive" : "ghost"} className="h-7 px-2 text-xs" onClick={() => setLockBroadcast(!locked)} title="Lock board for students">
-              {locked ? <Lock className="mr-1 h-3.5 w-3.5" /> : <Unlock className="mr-1 h-3.5 w-3.5" />}
-              {locked ? "Locked" : "Open"}
+            <span className="h-4 w-px shrink-0 bg-border" />
+            <Button size="sm" variant={locked ? "destructive" : "ghost"} className="h-7 w-7 shrink-0 p-0" onClick={() => setLockBroadcast(!locked)} title="Lock board for students">
+              {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={clearBoard} title="Clear board">
+            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={clearBoard} title="Clear board">
               <Trash2 className="h-3.5 w-3.5 text-destructive" />
             </Button>
           </>
         )}
       </div>
 
-      {/* Floating bottom toolbar */}
-      <div className="pointer-events-auto absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur">
+      {/* Floating bottom toolbar — horizontally scrolls on small screens */}
+      <div className="pointer-events-auto absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <ToolBtn id="select" icon={MousePointer2} label="Select" shortcut="V" />
         <ToolBtn id="hand" icon={Hand} label="Pan" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         <ToolBtn id="pencil" icon={Pencil} label="Pencil" shortcut="P" />
         <ToolBtn id="highlighter" icon={Highlighter} label="Highlighter" shortcut="H" />
         <ToolBtn id="eraser" icon={Eraser} label="Eraser" shortcut="E" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         <ToolBtn id="line" icon={Minus} label="Line" shortcut="L" />
         <ToolBtn id="arrow" icon={ArrowUpRight} label="Arrow" shortcut="A" />
         <ToolBtn id="rect" icon={Square} label="Rectangle" shortcut="R" />
         <ToolBtn id="ellipse" icon={Circle} label="Ellipse" shortcut="O" />
         <ToolBtn id="triangle" icon={Triangle} label="Triangle" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         <ToolBtn id="text" icon={Type} label="Text" shortcut="T" />
         <ToolBtn id="sticky" icon={StickyNote} label="Sticky" shortcut="S" />
         <ToolBtn id="image" icon={ImagePlus} label="Image" />
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         {/* Colour swatches */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {COLORS.map((c) => (
             <button
               key={c}
@@ -713,9 +830,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             />
           ))}
         </div>
-        <span className="mx-1 h-6 w-px bg-border" />
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
         {/* Size */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {SIZES.map((s) => (
             <button
               key={s}
@@ -734,16 +851,16 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         >
           <span className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`} style={{ borderColor: "currentColor" }} />
         </button>
-        <span className="mx-1 h-6 w-px bg-border" />
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={undo} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={redo} title="Redo (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
+        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={undo} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
+        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={redo} title="Redo (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
         {selection.size > 0 && (
           <>
-            <span className="mx-1 h-6 w-px bg-border" />
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={duplicateSel} title="Duplicate"><Copy className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={bringForward} title="Bring forward"><ChevronUp className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={sendBackward} title="Send backward"><ChevronDown className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteShapes([...selection])} title="Delete"><Trash2 className="h-4 w-4" /></Button>
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={duplicateSel} title="Duplicate"><Copy className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={bringForward} title="Bring forward"><ChevronUp className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={sendBackward} title="Send backward"><ChevronDown className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-destructive" onClick={() => deleteShapes([...selection])} title="Delete"><Trash2 className="h-4 w-4" /></Button>
           </>
         )}
       </div>
@@ -814,4 +931,12 @@ export function hashColor(id: string): string {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
   return `hsl(${Math.abs(h) % 360} 70% 50%)`;
+}
+
+function handleStyle(x: number, y: number, cursor: string): React.CSSProperties {
+  return {
+    position: "absolute", left: x - 6, top: y - 6, width: 12, height: 12,
+    background: "#ffffff", border: "1.5px solid #3b82f6", borderRadius: 3,
+    cursor, zIndex: 35, touchAction: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
+  };
 }
