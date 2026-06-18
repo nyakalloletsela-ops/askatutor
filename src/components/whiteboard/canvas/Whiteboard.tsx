@@ -490,6 +490,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         shapesRef.current.push(cur);
         sendOp({ kind: "upsert", shape: cur });
         drawingRef.current = null;
+        repaint();
         scheduleRender();
       }
     }
@@ -662,6 +663,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         shapesRef.current.push(s);
         sendOp({ kind: "upsert", shape: s });
       }
+      repaint();
       scheduleRender();
     },
   }), [deleteShapes, scheduleRender, sendOp]);
