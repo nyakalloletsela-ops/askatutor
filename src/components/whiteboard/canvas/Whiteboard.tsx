@@ -96,12 +96,15 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           if (arr[idx].ts > op.shape.ts) return; // older
           arr[idx] = op.shape;
         } else arr.push(op.shape);
+        repaint();
         scheduleRender();
       } else if (op.kind === "delete") {
         shapesRef.current = shapesRef.current.filter((s) => !op.ids.includes(s.id));
+        repaint();
         scheduleRender();
       } else if (op.kind === "clear") {
         shapesRef.current = [];
+        repaint();
         scheduleRender();
       } else if (op.kind === "lock") {
         setLocked(op.locked);
@@ -232,6 +235,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     const arr = shapesRef.current; const idx = arr.findIndex((x) => x.id === s.id);
     if (idx >= 0) arr[idx] = s; else arr.push(s);
     if (broadcast) sendOp({ kind: "upsert", shape: s });
+    repaint();
     scheduleRender();
   };
   const deleteShapes = (ids: string[]) => {
@@ -240,6 +244,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     shapesRef.current = shapesRef.current.filter((s) => !ids.includes(s.id));
     setSelection(new Set());
     sendOp({ kind: "delete", ids });
+    repaint();
     scheduleRender();
   };
   const clearBoard = () => {
@@ -248,6 +253,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     shapesRef.current = [];
     setSelection(new Set());
     sendOp({ kind: "clear" });
+    repaint();
     scheduleRender();
   };
   const setLockBroadcast = (next: boolean) => {
