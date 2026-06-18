@@ -17,24 +17,33 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
     if (!wb || busy) return;
     setBusy(true);
     try {
-      const dataUrl = await wb.exportPng({ onlyHandwriting: true });
+      let onlyHandwriting = true;
+      let dataUrl = await wb.exportPng({ onlyHandwriting: true });
       if (!dataUrl) {
-        toast.info("Draw something first, then tap Convert.");
+        // Fall back to full canvas so users can still digitise typed/imported content
+        onlyHandwriting = false;
+        dataUrl = await wb.exportPng({ onlyHandwriting: false });
+      }
+      if (!dataUrl) {
+        toast.info("Draw or add something first, then tap Convert.");
         return;
       }
       const { text } = await convert({ data: { imageDataUrl: dataUrl } });
       const blocks = parseConversion(text);
       if (blocks.length === 0) {
-        toast.error("Couldn't parse the AI output.");
+        console.warn("AI converter raw output:", text);
+        toast.error("Couldn't parse the AI output. Try again.");
         return;
       }
-      // Delete original handwritten strokes
-      const ids = wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter").map((s) => s.id);
-      wb.deleteShapes(ids);
+      if (onlyHandwriting) {
+        const ids = wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter").map((s) => s.id);
+        wb.deleteShapes(ids);
+      }
       const shapes = blocksToShapes(blocks);
       wb.addShapes(shapes);
       toast.success(`Converted ${blocks.length} block${blocks.length === 1 ? "" : "s"}.`);
     } catch (e) {
+      console.error("Convert failed", e);
       toast.error(e instanceof Error ? e.message : "Conversion failed");
     } finally {
       setBusy(false);
