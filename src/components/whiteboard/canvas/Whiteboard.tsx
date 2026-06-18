@@ -24,6 +24,7 @@ export interface WhiteboardHandle {
   /** Export only the given shapes (or all if undefined) as a PNG data URL. */
   exportPng(opts?: { onlyHandwriting?: boolean; padding?: number }): Promise<string>;
   getShapes(): Shape[];
+  getSelectionIds(): string[];
   setShapes(next: Shape[]): void;
   deleteShapes(ids: string[]): void;
   addShapes(shapes: Shape[]): void;
@@ -656,6 +657,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       return c.toDataURL("image/png");
     },
     getShapes: () => shapesRef.current.slice(),
+    getSelectionIds: () => [...selection],
     getViewportCenter: () => screenToPage(sizeRef.current.w / 2, sizeRef.current.h / 2),
     setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); scheduleRender(); },
     deleteShapes,
