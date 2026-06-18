@@ -574,6 +574,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       sendOp({ kind: "upsert", shape: ns });
     }
     setSelection(ids);
+    repaint();
     scheduleRender();
   };
   const duplicateSel = () => { copySel(); pasteSel(); };
@@ -604,6 +605,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       }
     }
     setTextEdit(null);
+    repaint();
     scheduleRender();
   };
 
