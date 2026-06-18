@@ -57,7 +57,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const drawingRef = useRef<Shape | null>(null);
   type Drag =
     | { kind: "pan"; sx: number; sy: number; camX: number; camY: number }
-    | { kind: "translate"; lastPage: { x: number; y: number } }
+    | { kind: "translate"; ids: Set<string>; lastPage: { x: number; y: number } }
     | { kind: "draw" }
     | { kind: "marquee"; sx: number; sy: number }
     | { kind: "resize"; corner: "nw" | "ne" | "sw" | "se"; shapeId: string; start: { x: number; y: number; w: number; h: number } }
@@ -285,12 +285,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       const sorted = [...shapesRef.current].sort((a, b) => b.z - a.z);
       const hit = sorted.find((s) => hitTest(s, pg.x, pg.y));
       if (hit) {
+        let nextSelection = selection;
         if (!selection.has(hit.id)) {
-          if (!(e.shiftKey || e.metaKey)) setSelection(new Set([hit.id]));
-          else setSelection(new Set([...selection, hit.id]));
+          nextSelection = e.shiftKey || e.metaKey ? new Set([...selection, hit.id]) : new Set([hit.id]);
+          setSelection(nextSelection);
         }
         pushHistory();
-        dragRef.current = { kind: "translate", lastPage: pg };
+        dragRef.current = { kind: "translate", ids: new Set(nextSelection), lastPage: pg };
       } else {
         if (!(e.shiftKey || e.metaKey)) setSelection(new Set());
         marqueeRef.current = { x: sx, y: sy, w: 0, h: 0 };
@@ -385,10 +386,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     if (d.kind === "translate") {
       const dx = pg.x - d.lastPage.x, dy = pg.y - d.lastPage.y;
       d.lastPage = pg;
-      const sel = selection;
       const arr = shapesRef.current;
       for (let i = 0; i < arr.length; i++) {
-        if (sel.has(arr[i].id)) {
+        if (d.ids.has(arr[i].id)) {
           arr[i] = { ...translateShape(arr[i], dx, dy), ts: tick() };
         }
       }
