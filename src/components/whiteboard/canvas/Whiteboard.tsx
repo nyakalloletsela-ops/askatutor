@@ -410,7 +410,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       if (d.corner.includes("s")) nh = Math.max(8, pg.y - st.y);
       if (d.corner.includes("w")) { nw = Math.max(8, st.x + st.w - pg.x); nx = st.x + st.w - nw; }
       if (d.corner.includes("n")) { nh = Math.max(8, st.y + st.h - pg.y); ny = st.y + st.h - nh; }
-      arr[idx] = { ...s, x: nx, y: ny, w: nw, h: nh, ts: tick() };
+      arr[idx] = { ...resizeShapeToBounds(s, { x: nx, y: ny, w: nw, h: nh }), ts: tick() };
       scheduleRender();
       return;
     }
@@ -463,7 +463,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     }
     if (d.kind === "translate") {
       for (const s of shapesRef.current) {
-        if (selection.has(s.id)) sendOp({ kind: "upsert", shape: s });
+        if (d.ids.has(s.id)) sendOp({ kind: "upsert", shape: s });
       }
       return;
     }
