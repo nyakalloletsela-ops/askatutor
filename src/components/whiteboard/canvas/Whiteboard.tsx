@@ -738,7 +738,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             </>
           );
         }
-        if (["rect", "ellipse", "triangle", "text", "sticky", "image"].includes(s.type)) {
+        if (["pencil", "highlighter", "rect", "ellipse", "triangle", "text", "sticky", "image"].includes(s.type)) {
           const b = shapeBounds(s);
           const tl = pageToScreen(b.x, b.y), br = pageToScreen(b.x + b.w, b.y + b.h);
           const tr = { x: br.x, y: tl.y }, bl = { x: tl.x, y: br.y };
