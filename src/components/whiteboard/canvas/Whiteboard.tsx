@@ -27,6 +27,7 @@ export interface WhiteboardHandle {
   setShapes(next: Shape[]): void;
   deleteShapes(ids: string[]): void;
   addShapes(shapes: Shape[]): void;
+  getViewportCenter(): { x: number; y: number };
 }
 
 interface Props {
@@ -645,6 +646,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       return c.toDataURL("image/png");
     },
     getShapes: () => shapesRef.current.slice(),
+    getViewportCenter: () => screenToPage(sizeRef.current.w / 2, sizeRef.current.h / 2),
     setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); scheduleRender(); },
     deleteShapes,
     addShapes: (shapes) => {
