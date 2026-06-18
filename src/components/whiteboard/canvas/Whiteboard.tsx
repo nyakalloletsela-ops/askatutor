@@ -617,7 +617,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   };
 
   // ----- imperative handle -----
-  useImperativeHandle(ref, () => ({
+  const whiteboardHandle = useMemo<WhiteboardHandle>(() => ({
     async exportPng(opts) {
       const list = opts?.onlyHandwriting
         ? shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter")
@@ -656,7 +656,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       }
       scheduleRender();
     },
-  }), []);
+  }), [deleteShapes, scheduleRender, sendOp]);
+  localHandleRef.current = whiteboardHandle;
+  useImperativeHandle(ref, () => whiteboardHandle, [whiteboardHandle]);
 
   // ----- toolbar -----
   const ToolBtn = ({ id, icon: Icon, label, shortcut }: { id: ToolId; icon: typeof Pencil; label: string; shortcut?: string }) => (
@@ -762,7 +764,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </Button>
         <span className="h-4 w-px shrink-0 bg-border" />
-        <ConvertButton whiteboardRef={ref as React.RefObject<WhiteboardHandle>} />
+        <ConvertButton whiteboardRef={localHandleRef} />
         <span className="h-4 w-px shrink-0 bg-border" />
         <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
         <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
