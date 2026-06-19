@@ -755,8 +755,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       {/* Live cursors */}
       <LiveCursors peers={peers} project={pageToScreen} />
 
-      {/* Top-right utility bar */}
-      <div className="absolute right-2 top-2 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 overflow-x-auto rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Top-right utility bar (sits beside the main toolbar on wide screens, drops below on mobile) */}
+      <div className="absolute right-2 top-14 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 overflow-x-auto rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur sm:top-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
           {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </Button>
@@ -780,8 +780,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         )}
       </div>
 
-      {/* Floating bottom toolbar — horizontally scrolls on small screens */}
-      <div className="pointer-events-auto absolute bottom-3 left-1/2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Floating main toolbar — pinned to the top, horizontally scrolls on small screens */}
+      <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <ToolBtn id="select" icon={MousePointer2} label="Select" shortcut="V" />
         <ToolBtn id="hand" icon={Hand} label="Pan" />
         <span className="mx-1 h-6 w-px shrink-0 bg-border" />
