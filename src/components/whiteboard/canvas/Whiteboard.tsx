@@ -547,7 +547,6 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       if (e.key === "-") { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); return; }
       // Block all mutating shortcuts when the board is locked for this user
       if (isReadOnly) {
-        const map: Record<string, ToolId> = { v: "select", h: "highlighter" };
         if (e.key.toLowerCase() === "v") setTool("select");
         return;
       }
