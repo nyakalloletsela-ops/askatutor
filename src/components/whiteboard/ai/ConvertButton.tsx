@@ -1,3 +1,7 @@
+"use client";
+import { useState } from "react";
+// ... rest of imports
+
 import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
@@ -36,7 +40,10 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
         return;
       }
       if (onlyHandwriting) {
-        const ids = wb.getShapes().filter((s: Shape) => s.type === "pencil" || s.type === "highlighter").map((s) => s.id);
+        const ids = wb
+          .getShapes()
+          .filter((s: Shape) => s.type === "pencil" || s.type === "highlighter")
+          .map((s) => s.id);
         wb.deleteShapes(ids);
       }
       const shapes = blocksToShapes(blocks);
