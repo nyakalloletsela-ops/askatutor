@@ -252,6 +252,17 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const setLockBroadcast = (next: boolean) => {
     setLocked(next);
     sendOp({ kind: "lock", locked: next });
+    // Persist immediately so late-joining students see the lock state.
+    (async () => {
+      try {
+        const { data: wbId } = await supabase.rpc("ensure_whiteboard", { _room_id: roomId });
+        if (!wbId) return;
+        await supabase.from("whiteboard_snapshots").insert({
+          whiteboard_id: wbId as string,
+          snapshot_data: JSON.parse(JSON.stringify({ version: 1, room: roomId, shapes: shapesRef.current, locked: next })),
+        });
+      } catch { /* noop */ }
+    })();
   };
 
   // ----- image cache -----
