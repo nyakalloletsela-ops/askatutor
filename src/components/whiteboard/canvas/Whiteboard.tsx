@@ -127,11 +127,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           .limit(1)
           .maybeSingle();
         if (cancelled || !snap) return;
-        const d = snap.snapshot_data as { version?: number; shapes?: Shape[] } | null;
+        const d = snap.snapshot_data as { version?: number; shapes?: Shape[]; locked?: boolean } | null;
         if (d && d.version === 1 && Array.isArray(d.shapes)) {
           shapesRef.current = d.shapes;
           d.shapes.forEach((s) => observeTs(s.ts));
           d.shapes.forEach((s) => { if (s.type === "image") cacheImage(s.src); });
+          if (typeof d.locked === "boolean") setLocked(d.locked);
           scheduleRender();
         }
       } catch { /* noop */ }
@@ -151,12 +152,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         if (!wbId) return;
         await supabase.from("whiteboard_snapshots").insert({
           whiteboard_id: wbId as string,
-          snapshot_data: JSON.parse(JSON.stringify({ version: 1, room: roomId, shapes: shapesRef.current })),
+          snapshot_data: JSON.parse(JSON.stringify({ version: 1, room: roomId, shapes: shapesRef.current, locked })),
         });
       } catch { /* noop */ }
     }, 8000);
     return () => clearInterval(id);
-  }, [roomId]);
+  }, [roomId, locked]);
 
   // ----- HiDPI + resize -----
   const scheduleRenderRef = useRef<number | null>(null);
@@ -251,6 +252,17 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const setLockBroadcast = (next: boolean) => {
     setLocked(next);
     sendOp({ kind: "lock", locked: next });
+    // Persist immediately so late-joining students see the lock state.
+    (async () => {
+      try {
+        const { data: wbId } = await supabase.rpc("ensure_whiteboard", { _room_id: roomId });
+        if (!wbId) return;
+        await supabase.from("whiteboard_snapshots").insert({
+          whiteboard_id: wbId as string,
+          snapshot_data: JSON.parse(JSON.stringify({ version: 1, room: roomId, shapes: shapesRef.current, locked: next })),
+        });
+      } catch { /* noop */ }
+    })();
   };
 
   // ----- image cache -----
@@ -528,28 +540,34 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     const onKey = (e: KeyboardEvent) => {
       if (textEdit || (e.target as Element)?.tagName === "TEXTAREA" || (e.target as Element)?.tagName === "INPUT") return;
       const meta = e.ctrlKey || e.metaKey;
+      // Non-mutating shortcuts always available
+      if (meta && e.key.toLowerCase() === "c") { e.preventDefault(); copySel(); return; }
+      if (e.key === " " && !spaceDownRef.current) { spaceDownRef.current = true; e.preventDefault(); return; }
+      if (e.key === "+") { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.2); return; }
+      if (e.key === "-") { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); return; }
+      // Block all mutating shortcuts when the board is locked for this user
+      if (isReadOnly) {
+        if (e.key.toLowerCase() === "v") setTool("select");
+        return;
+      }
       if (meta && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); undo(); return; }
       if (meta && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); redo(); return; }
-      if (meta && e.key.toLowerCase() === "c") { e.preventDefault(); copySel(); return; }
       if (meta && e.key.toLowerCase() === "v") { e.preventDefault(); pasteSel(); return; }
       if (meta && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateSel(); return; }
       if (meta && e.key === "]") { e.preventDefault(); bringForward(); return; }
       if (meta && e.key === "[") { e.preventDefault(); sendBackward(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { if (selection.size) { e.preventDefault(); deleteShapes([...selection]); } return; }
-      if (e.key === " " && !spaceDownRef.current) { spaceDownRef.current = true; e.preventDefault(); return; }
       const map: Record<string, ToolId> = {
         v: "select", p: "pencil", h: "highlighter", e: "eraser", l: "line", a: "arrow",
         r: "rect", o: "ellipse", t: "text", s: "sticky",
       };
       if (map[e.key.toLowerCase()]) setTool(map[e.key.toLowerCase()]);
-      if (e.key === "+") zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.2);
-      if (e.key === "-") zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8);
     };
     const onUp = (e: KeyboardEvent) => { if (e.key === " ") spaceDownRef.current = false; };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onUp);
     return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onUp); };
-  }, [selection, textEdit]);
+  }, [selection, textEdit, isReadOnly]);
 
   // ----- clipboard ops -----
   const clipRef = useRef<Shape[]>([]);
