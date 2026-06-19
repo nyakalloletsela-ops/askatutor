@@ -1,7 +1,3 @@
-"use client";
-import { useState } from "react";
-// ... rest of imports
-
 import { useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
