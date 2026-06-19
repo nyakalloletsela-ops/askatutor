@@ -146,28 +146,3 @@ export function translateShape(s: Shape, dx: number, dy: number): Shape {
       return { ...s, x: s.x + dx, y: s.y + dy };
   }
 }
-
-export function resizeShapeToBounds(s: Shape, next: { x: number; y: number; w: number; h: number }): Shape {
-  const prev = shapeBounds(s);
-  const sx = Math.abs(prev.w) < 0.001 ? 1 : next.w / prev.w;
-  const sy = Math.abs(prev.h) < 0.001 ? 1 : next.h / prev.h;
-  const mapX = (x: number) => next.x + (x - prev.x) * sx;
-  const mapY = (y: number) => next.y + (y - prev.y) * sy;
-
-  switch (s.type) {
-    case "pencil":
-    case "highlighter": {
-      const points = s.points.slice();
-      for (let i = 0; i < points.length; i += 2) {
-        points[i] = mapX(points[i]);
-        points[i + 1] = mapY(points[i + 1]);
-      }
-      return { ...s, points };
-    }
-    case "line":
-    case "arrow":
-      return { ...s, x1: mapX(s.x1), y1: mapY(s.y1), x2: mapX(s.x2), y2: mapY(s.y2) };
-    default:
-      return { ...s, x: next.x, y: next.y, w: next.w, h: next.h };
-  }
-}
