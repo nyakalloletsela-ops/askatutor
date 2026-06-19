@@ -127,11 +127,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           .limit(1)
           .maybeSingle();
         if (cancelled || !snap) return;
-        const d = snap.snapshot_data as { version?: number; shapes?: Shape[] } | null;
+        const d = snap.snapshot_data as { version?: number; shapes?: Shape[]; locked?: boolean } | null;
         if (d && d.version === 1 && Array.isArray(d.shapes)) {
           shapesRef.current = d.shapes;
           d.shapes.forEach((s) => observeTs(s.ts));
           d.shapes.forEach((s) => { if (s.type === "image") cacheImage(s.src); });
+          if (typeof d.locked === "boolean") setLocked(d.locked);
           scheduleRender();
         }
       } catch { /* noop */ }
