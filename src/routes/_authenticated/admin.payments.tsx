@@ -79,10 +79,15 @@ function PaymentsPage() {
         supabase.from("student_subscriptions").select("*").order("submitted_at", { ascending: false }).limit(200),
         supabase.from("tutor_subscriptions").select("*").order("submitted_at", { ascending: false }).limit(200),
       ]);
-      const all: Row[] = [
-        ...((students.data ?? []) as never[]).map((s: never) => ({ ...(s as object), kind: "student" as const })),
-        ...((tutors.data ?? []) as never[]).map((s: never) => ({ ...(s as object), kind: "tutor" as const })),
-      ].sort((a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()) as Row[];
+      const sRows = ((students.data ?? []) as Record<string, unknown>[]).map(
+        (s) => ({ ...s, kind: "student" }) as unknown as Row,
+      );
+      const tRows = ((tutors.data ?? []) as Record<string, unknown>[]).map(
+        (s) => ({ ...s, kind: "tutor" }) as unknown as Row,
+      );
+      const all: Row[] = [...sRows, ...tRows].sort(
+        (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime(),
+      );
       const totalApproved = all.filter((x) => x.status === "approved").reduce((s, x) => s + Number(x.amount), 0);
       return {
         all,
