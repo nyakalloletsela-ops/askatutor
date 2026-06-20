@@ -693,6 +693,18 @@ function Dashboard() {
               <SectionHeader title="Quick actions" />
               <div className="grid gap-2">
                 <QuickAction
+                  to="/courses"
+                  icon={BookOpen}
+                  title="My Courses (Tutor)"
+                  desc="Upload videos and pick which students can view them."
+                />
+                <QuickAction
+                  to="/my-courses"
+                  icon={BookOpen}
+                  title="My Courses (Student)"
+                  desc="Watch the videos your tutors shared with you."
+                />
+                <QuickAction
                   to="/ai-tutor"
                   icon={MessageSquare}
                   title="AI Study Coach"
