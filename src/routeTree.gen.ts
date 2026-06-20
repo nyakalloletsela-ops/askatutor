@@ -27,6 +27,7 @@ import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedLabsRouteImport } from './routes/_authenticated/labs'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCoursesRouteImport } from './routes/_authenticated/courses'
 import { Route as AuthenticatedCodeRouteImport } from './routes/_authenticated/code'
 import { Route as AuthenticatedCertificateRouteImport } from './routes/_authenticated/certificate'
 import { Route as AuthenticatedCalendarRouteImport } from './routes/_authenticated/calendar'
@@ -141,6 +142,11 @@ const AuthenticatedLabsRoute = AuthenticatedLabsRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCoursesRoute = AuthenticatedCoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCodeRoute = AuthenticatedCodeRouteImport.update({
@@ -302,6 +308,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
+  '/courses': typeof AuthenticatedCoursesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/labs': typeof AuthenticatedLabsRoute
   '/messages': typeof AuthenticatedMessagesRoute
@@ -346,6 +353,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof AuthenticatedCalendarRoute
   '/certificate': typeof AuthenticatedCertificateRoute
   '/code': typeof AuthenticatedCodeRoute
+  '/courses': typeof AuthenticatedCoursesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/labs': typeof AuthenticatedLabsRoute
   '/messages': typeof AuthenticatedMessagesRoute
@@ -392,6 +400,7 @@ export interface FileRoutesById {
   '/_authenticated/calendar': typeof AuthenticatedCalendarRoute
   '/_authenticated/certificate': typeof AuthenticatedCertificateRoute
   '/_authenticated/code': typeof AuthenticatedCodeRoute
+  '/_authenticated/courses': typeof AuthenticatedCoursesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/labs': typeof AuthenticatedLabsRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
@@ -438,6 +447,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/certificate'
     | '/code'
+    | '/courses'
     | '/dashboard'
     | '/labs'
     | '/messages'
@@ -482,6 +492,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/certificate'
     | '/code'
+    | '/courses'
     | '/dashboard'
     | '/labs'
     | '/messages'
@@ -527,6 +538,7 @@ export interface FileRouteTypes {
     | '/_authenticated/calendar'
     | '/_authenticated/certificate'
     | '/_authenticated/code'
+    | '/_authenticated/courses'
     | '/_authenticated/dashboard'
     | '/_authenticated/labs'
     | '/_authenticated/messages'
@@ -700,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/courses': {
+      id: '/_authenticated/courses'
+      path: '/courses'
+      fullPath: '/courses'
+      preLoaderRoute: typeof AuthenticatedCoursesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/code': {
@@ -888,6 +907,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCalendarRoute: typeof AuthenticatedCalendarRoute
   AuthenticatedCertificateRoute: typeof AuthenticatedCertificateRoute
   AuthenticatedCodeRoute: typeof AuthenticatedCodeRoute
+  AuthenticatedCoursesRoute: typeof AuthenticatedCoursesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLabsRoute: typeof AuthenticatedLabsRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
@@ -919,6 +939,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCalendarRoute: AuthenticatedCalendarRoute,
   AuthenticatedCertificateRoute: AuthenticatedCertificateRoute,
   AuthenticatedCodeRoute: AuthenticatedCodeRoute,
+  AuthenticatedCoursesRoute: AuthenticatedCoursesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLabsRoute: AuthenticatedLabsRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
