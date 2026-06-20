@@ -287,16 +287,18 @@ function GrantDialog() {
     mutationFn: async () => {
       if (!userId) throw new Error("User ID required");
       const ref = `ADMIN-${Date.now()}`;
-      const payload = {
+      const base = {
         transaction_ref: ref,
         payment_method: "mpesa" as const,
         amount: Number(amount),
         status: "approved" as const,
         notes: notes || null,
         approved_at: new Date().toISOString(),
-        ...(kind === "student" ? { student_id: userId } : { tutor_id: userId }),
       };
-      const { error } = await supabase.from(tableFor(kind)).insert(payload);
+      const { error } =
+        kind === "student"
+          ? await supabase.from("student_subscriptions").insert({ ...base, student_id: userId })
+          : await supabase.from("tutor_subscriptions").insert({ ...base, tutor_id: userId });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
