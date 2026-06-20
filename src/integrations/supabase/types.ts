@@ -165,6 +165,88 @@ export type Database = {
         }
         Relationships: []
       }
+      course_material_access: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          id: string
+          material_id: string
+          student_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          material_id: string
+          student_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          material_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_material_access_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "course_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_materials: {
+        Row: {
+          course_id: string
+          created_at: string
+          description: string | null
+          duration_sec: number | null
+          external_url: string | null
+          id: string
+          kind: string
+          storage_path: string | null
+          title: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          description?: string | null
+          duration_sec?: number | null
+          external_url?: string | null
+          id?: string
+          kind?: string
+          storage_path?: string | null
+          title: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          description?: string | null
+          duration_sec?: number | null
+          external_url?: string | null
+          id?: string
+          kind?: string
+          storage_path?: string | null
+          title?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_materials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
