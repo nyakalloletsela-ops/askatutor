@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import type { Participant } from "@/components/JitsiRoom";
+import type { Participant } from "@/lib/classroom-rtc/types";
 
 interface Props {
   participants: Participant[];
