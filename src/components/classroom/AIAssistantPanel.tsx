@@ -1,112 +1,96 @@
 import { useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { Sparkles, Loader2, FileText, BookOpen, ListChecks, Layers, HelpCircle, Highlighter } from "lucide-react";
+import { Sparkles, Loader2, Calculator, GitBranch, GraduationCap, FileText, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { aiTutorChat } from "@/lib/ai-tutor.functions";
-import { toast } from "sonner";
+import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
+import { useAgent, type AgentRole } from "@/hooks/use-agent";
+import { cn } from "@/lib/utils";
 
-interface QuickAction {
-  key: string;
-  label: string;
-  icon: typeof Sparkles;
-  prompt: string;
-}
-
-const ACTIONS: QuickAction[] = [
-  {
-    key: "explain",
-    label: "Explain selection",
-    icon: Highlighter,
-    prompt: "Explain the following classroom content in clear, student-friendly language:\n\n",
-  },
-  {
-    key: "quiz",
-    label: "Generate quiz",
-    icon: HelpCircle,
-    prompt: "Create a 5-question multiple-choice quiz (with answer key at the end) based on:\n\n",
-  },
-  {
-    key: "homework",
-    label: "Generate homework",
-    icon: ListChecks,
-    prompt: "Design a short homework assignment (4–6 questions, mix of practice and one challenge) about:\n\n",
-  },
-  {
-    key: "summary",
-    label: "Lesson summary",
-    icon: FileText,
-    prompt: "Write a concise lesson summary with key concepts, formulas, and one example for:\n\n",
-  },
-  {
-    key: "flashcards",
-    label: "Create flashcards",
-    icon: Layers,
-    prompt:
-      "Produce 8 flashcards (front: question, back: short answer) on the following topic. Format as `Q: ...` / `A: ...` pairs.\n\nTopic:\n",
-  },
-  {
-    key: "answer",
-    label: "Answer question",
-    icon: BookOpen,
-    prompt: "Answer this student question thoroughly and clearly, with worked steps if relevant:\n\n",
-  },
+const ROLES: { id: AgentRole; label: string; icon: typeof Sparkles; hint: string }[] = [
+  { id: "tutor", label: "Tutor", icon: GraduationCap, hint: "Explain & teach" },
+  { id: "math", label: "Math", icon: Calculator, hint: "LaTeX solver" },
+  { id: "diagram", label: "Diagram", icon: GitBranch, hint: "Mermaid charts" },
+  { id: "notes", label: "Notes", icon: FileText, hint: "Study notes" },
 ];
 
 export function AIAssistantPanel() {
-  const ai = useServerFn(aiTutorChat);
+  const { messages, pending, role, setRole, send, reset } = useAgent("tutor");
   const [prompt, setPrompt] = useState("");
-  const [response, setResponse] = useState<string>("");
-  const [busy, setBusy] = useState(false);
-
-  const runAction = (a: QuickAction) => {
-    setPrompt((p) => a.prompt + (p ? p : ""));
-  };
 
   const run = async () => {
     const text = prompt.trim();
-    if (!text || busy) return;
-    setBusy(true);
-    setResponse("");
+    if (!text || pending) return;
+    setPrompt("");
     try {
-      const result = await ai({ data: { messages: [{ role: "user", content: text }] } });
-      const reply = (result as { reply?: string; content?: string }).reply ?? (result as { content?: string }).content ?? "";
-      setResponse(typeof reply === "string" ? reply : JSON.stringify(reply, null, 2));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "AI request failed");
-    } finally {
-      setBusy(false);
+      await send(text);
+    } catch {
+      setPrompt(text);
     }
   };
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-card">
       <div className="flex items-center gap-2 border-b px-3 py-2.5 text-sm font-semibold">
-        <Sparkles className="h-4 w-4 text-primary" /> AI Teaching Assistant
-      </div>
-
-      <div className="grid grid-cols-2 gap-1.5 border-b bg-muted/30 p-2">
-        {ACTIONS.map((a) => (
+        <Sparkles className="h-4 w-4 text-primary" />
+        AI Agents
+        {messages.length > 0 && (
           <button
-            key={a.key}
-            onClick={() => runAction(a)}
-            className="group flex items-center gap-1.5 rounded-lg border bg-background px-2 py-1.5 text-left text-[11px] font-medium shadow-sm transition hover:border-primary/50 hover:bg-primary/5"
+            onClick={reset}
+            className="ml-auto inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted"
           >
-            <a.icon className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="truncate">{a.label}</span>
+            <RotateCcw className="h-3 w-3" /> Reset
           </button>
-        ))}
+        )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {response ? (
-          <pre className="whitespace-pre-wrap break-words rounded-xl border bg-background p-3 text-xs leading-relaxed">
-            {response}
-          </pre>
-        ) : (
+      <div className="grid grid-cols-4 gap-1 border-b bg-muted/30 p-1.5">
+        {ROLES.map((r) => {
+          const active = role === r.id;
+          return (
+            <button
+              key={r.id}
+              onClick={() => setRole(r.id)}
+              title={r.hint}
+              className={cn(
+                "flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[10px] font-medium transition",
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-background",
+              )}
+            >
+              <r.icon className="h-3.5 w-3.5" />
+              {r.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
+        {messages.length === 0 ? (
           <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-            Pick a quick action above or type your own request below.
+            Pick an agent above and ask anything. Math renders as equations, diagrams render as charts.
           </p>
+        ) : (
+          messages.map((m, i) => (
+            <div
+              key={i}
+              className={cn(
+                "rounded-xl border p-3 text-xs",
+                m.role === "user" ? "ml-6 bg-primary/5 border-primary/20" : "mr-6 bg-background",
+              )}
+            >
+              {m.role === "user" ? (
+                <p className="whitespace-pre-wrap">{m.content}</p>
+              ) : (
+                <SmartMarkdown>{m.content}</SmartMarkdown>
+              )}
+            </div>
+          ))
+        )}
+        {pending && (
+          <div className="mr-6 flex items-center gap-2 rounded-xl border bg-background p-3 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {role} agent is thinking…
+          </div>
         )}
       </div>
 
@@ -114,14 +98,20 @@ export function AIAssistantPanel() {
         <Textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ask the AI assistant…"
-          rows={3}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              run();
+            }
+          }}
+          placeholder={`Ask the ${role} agent… (⌘+Enter)`}
+          rows={2}
           className="resize-none text-sm"
-          disabled={busy}
+          disabled={pending}
         />
-        <Button onClick={run} disabled={busy || !prompt.trim()} className="mt-2 w-full" size="sm">
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-          {busy ? "Thinking…" : "Generate"}
+        <Button onClick={run} disabled={pending || !prompt.trim()} className="mt-2 w-full" size="sm">
+          {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+          {pending ? "Thinking…" : "Send"}
         </Button>
       </div>
     </div>

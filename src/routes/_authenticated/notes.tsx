@@ -1,3 +1,4 @@
+import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -109,7 +110,7 @@ function NotesPage() {
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                {n.body && <p className="whitespace-pre-wrap text-xs text-muted-foreground">{n.body}</p>}
+                {n.body && <div className="text-xs text-muted-foreground"><SmartMarkdown>{n.body}</SmartMarkdown></div>}
                 <p className="text-[10px] text-muted-foreground">
                   {new Date(n.created_at).toLocaleDateString()}
                 </p>

@@ -1,3 +1,4 @@
+import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, useEffect } from "react";
@@ -88,13 +89,13 @@ function AiTutorPage() {
               className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
+                className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
                   m.role === "user"
-                    ? "bg-primary text-primary-foreground"
+                    ? "whitespace-pre-wrap bg-primary text-primary-foreground"
                     : "bg-muted"
                 }`}
               >
-                {m.content}
+                {m.role === "user" ? m.content : <SmartMarkdown>{m.content}</SmartMarkdown>}
               </div>
             </div>
           ))}
