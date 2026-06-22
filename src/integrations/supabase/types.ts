@@ -1002,10 +1002,15 @@ export type Database = {
       }
       sessions: {
         Row: {
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           duration_min: number
           id: string
           is_free: boolean
+          parent_session_id: string | null
+          rescheduled_from: string | null
           room_id: string
           scheduled_at: string
           status: Database["public"]["Enums"]["session_status"]
@@ -1014,10 +1019,15 @@ export type Database = {
           tutor_id: string
         }
         Insert: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           duration_min?: number
           id?: string
           is_free?: boolean
+          parent_session_id?: string | null
+          rescheduled_from?: string | null
           room_id?: string
           scheduled_at: string
           status?: Database["public"]["Enums"]["session_status"]
@@ -1026,10 +1036,15 @@ export type Database = {
           tutor_id: string
         }
         Update: {
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           duration_min?: number
           id?: string
           is_free?: boolean
+          parent_session_id?: string | null
+          rescheduled_from?: string | null
           room_id?: string
           scheduled_at?: string
           status?: Database["public"]["Enums"]["session_status"]
@@ -1037,7 +1052,22 @@ export type Database = {
           subject?: string | null
           tutor_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sessions_parent_session_id_fkey"
+            columns: ["parent_session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_content: {
         Row: {
@@ -1761,7 +1791,26 @@ export type Database = {
         Args: { _application_id: string; _notes?: string }
         Returns: undefined
       }
+      book_session: {
+        Args: {
+          _duration_min: number
+          _is_free?: boolean
+          _recurrence_weeks?: number
+          _start: string
+          _subject: string
+          _tutor: string
+        }
+        Returns: string[]
+      }
+      booking_conflicts_check: {
+        Args: { _duration_min: number; _start: string; _tutor: string }
+        Returns: boolean
+      }
       can_access_classroom_room: { Args: { _room: string }; Returns: boolean }
+      cancel_session: {
+        Args: { _reason?: string; _session: string }
+        Returns: undefined
+      }
       compute_commission_cents: {
         Args: { _amount_cents: number; _subject?: string; _tutor: string }
         Returns: number
@@ -1780,6 +1829,30 @@ export type Database = {
         Returns: {
           full_name: string
           user_id: string
+        }[]
+      }
+      get_tutor_availability_public: {
+        Args: { _tutor: string }
+        Returns: {
+          buffer_minutes: number
+          end_min: number
+          start_min: number
+          timezone: string
+          weekday: number
+        }[]
+      }
+      get_tutor_busy_slots: {
+        Args: { _from: string; _to: string; _tutor: string }
+        Returns: {
+          duration_min: number
+          scheduled_at: string
+        }[]
+      }
+      get_tutor_holidays_public: {
+        Args: { _tutor: string }
+        Returns: {
+          end_date: string
+          start_date: string
         }[]
       }
       has_role: {
@@ -1841,6 +1914,10 @@ export type Database = {
       }
       reject_tutor_application: {
         Args: { _application_id: string; _notes?: string }
+        Returns: undefined
+      }
+      reschedule_session: {
+        Args: { _new_start: string; _session: string }
         Returns: undefined
       }
     }
