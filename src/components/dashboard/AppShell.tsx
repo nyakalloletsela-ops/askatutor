@@ -191,6 +191,32 @@ export function AppShell({ children }: { children: ReactNode }) {
             </SidebarGroupContent>
           </SidebarGroup>
 
+          {isParent && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Parent</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {parentNav.map((item) => (
+                    <NavLink key={item.label} item={item} active={isActive(item.to)} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
+          {isTutor && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Tutor tools</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {tutorNav.map((item) => (
+                    <NavLink key={item.label} item={item} active={isActive(item.to)} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
           {isAdmin && (
             <SidebarGroup>
               <SidebarGroupLabel>Administration</SidebarGroupLabel>
