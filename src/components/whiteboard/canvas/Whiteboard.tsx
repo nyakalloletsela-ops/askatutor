@@ -633,14 +633,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     } catch { /* noop */ }
   };
 
-  // ----- imperative handle -----
-  useImperativeHandle(ref, () => ({
+  // ----- imperative handle (also exposed locally for in-component children like ConvertButton) -----
+  const handle = useMemo<WhiteboardHandle>(() => ({
     async exportPng(opts) {
       const list = opts?.onlyHandwriting
         ? shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter")
         : shapesRef.current;
       if (!list.length) return "";
-      // Render to offscreen canvas at 1.5x scale.
       let xmn = Infinity, ymn = Infinity, xmx = -Infinity, ymx = -Infinity;
       for (const s of list) {
         const b = shapeBounds(s);
@@ -674,6 +673,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       scheduleRender();
     },
   }), []);
+  useImperativeHandle(ref, () => handle, [handle]);
 
   // ----- toolbar -----
   const ToolBtn = ({ id, icon: Icon, label, shortcut }: { id: ToolId; icon: typeof Pencil; label: string; shortcut?: string }) => (
