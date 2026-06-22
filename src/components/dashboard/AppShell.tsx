@@ -120,7 +120,7 @@ const adminNav: NavItem[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (r) => r.location.pathname });
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isTutor, isParent, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
 
