@@ -75,7 +75,7 @@ function AdminPlans() {
       typeof editing.features === "string"
         ? (editing.features as string).split("\n").map((s) => s.trim()).filter(Boolean)
         : editing.features ?? [];
-    const payload = { ...editing, features: featuresArr };
+    const payload: any = { ...editing, features: featuresArr };
     const { error } = editing.id
       ? await supabase.from("subscription_plans").update(payload).eq("id", editing.id)
       : await supabase.from("subscription_plans").insert(payload);
