@@ -79,6 +79,7 @@ const baseNav: NavItem[] = [
   { label: "Assignments", to: "/assignments", icon: FileText },
   { label: "Records", to: "/records", icon: FolderOpen },
   { label: "Notes", to: "/notes", icon: StickyNote },
+  { label: "My Lessons", to: "/lessons", icon: Calendar },
   { label: "Calendar", to: "/calendar", icon: Calendar },
   { label: "Resources", to: "/resources", icon: FolderOpen },
   { label: "Courses", to: "/courses", icon: FolderOpen },
