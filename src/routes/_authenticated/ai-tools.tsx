@@ -143,7 +143,7 @@ function AiToolsPage() {
               <p className="text-sm text-muted-foreground">Your result will appear here.</p>
             )}
             {output && (
-              <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">{output}</pre>
+              <SmartMarkdown>{output}</SmartMarkdown>
             )}
           </CardContent>
         </Card>
