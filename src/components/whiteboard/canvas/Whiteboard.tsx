@@ -776,96 +776,222 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       {/* Live cursors */}
       <LiveCursors peers={peers} project={pageToScreen} />
 
-      {/* Top-right utility bar (sits beside the main toolbar on wide screens, drops below on mobile) */}
-      <div className="absolute right-2 top-14 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 overflow-x-auto rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur sm:top-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
-          {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-        </Button>
-        <span className="h-4 w-px shrink-0 bg-border" />
+      {/* Top-right utility bar — compact on mobile */}
+      <div className="absolute right-2 top-14 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur sm:top-2">
         <ConvertButton handle={handle} />
-        <span className="h-4 w-px shrink-0 bg-border" />
-        <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
-        <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
-          <Maximize2 className="h-3.5 w-3.5" />
-        </Button>
-        {isTeacher && (
+        {!isMobile && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" />
-            <Button size="sm" variant={locked ? "destructive" : "ghost"} className="h-7 w-7 shrink-0 p-0" onClick={() => setLockBroadcast(!locked)} title="Lock board for students">
-              {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+            <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
+              {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={clearBoard} title="Clear board">
-              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            <span className="h-4 w-px shrink-0 bg-border" />
+            <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
+            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
+              <Maximize2 className="h-3.5 w-3.5" />
             </Button>
+            {isTeacher && (
+              <>
+                <span className="h-4 w-px shrink-0 bg-border" />
+                <Button size="sm" variant={locked ? "destructive" : "ghost"} className="h-7 w-7 shrink-0 p-0" onClick={() => setLockBroadcast(!locked)} title="Lock board for students">
+                  {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={clearBoard} title="Clear board">
+                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                </Button>
+              </>
+            )}
+          </>
+        )}
+        {isMobile && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" title="More" aria-label="More board options">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" align="end" className="w-56 p-2">
+              <div className="grid grid-cols-3 gap-1">
+                <IconTile onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} label={`Grid`}>
+                  {grid === "dots" ? <CircleDot className="h-4 w-4" /> : grid === "grid" ? <Grid3x3 className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </IconTile>
+                <IconTile onClick={toggleFullscreen} label="Full"><Maximize2 className="h-4 w-4" /></IconTile>
+                {isTeacher && (
+                  <IconTile onClick={() => setLockBroadcast(!locked)} label={locked ? "Locked" : "Lock"}>
+                    {locked ? <Lock className="h-4 w-4 text-destructive" /> : <Unlock className="h-4 w-4" />}
+                  </IconTile>
+                )}
+                {isTeacher && (
+                  <IconTile onClick={clearBoard} label="Clear"><Trash2 className="h-4 w-4 text-destructive" /></IconTile>
+                )}
+              </div>
+              <div className="mt-2 border-t pt-2">
+                <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+
+      {/* Main toolbar — essentials inline, rest grouped behind "More" on mobile */}
+      <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur">
+        {isMobile ? (
+          <>
+            <ToolBtn id="select" icon={MousePointer2} label="Select" shortcut="V" />
+            <ToolBtn id="pencil" icon={Pencil} label="Pencil" shortcut="P" />
+            <ToolBtn id="eraser" icon={Eraser} label="Eraser" shortcut="E" />
+            <span className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+            {/* Current color swatch — opens picker */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className="h-7 w-7 shrink-0 rounded-full border-2 border-border"
+                  style={{ backgroundColor: color }}
+                  aria-label="Color"
+                  title="Color"
+                />
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="center" className="w-auto p-2">
+                <div className="flex items-center gap-1.5">
+                  {COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setColor(c)}
+                      className={`h-6 w-6 rounded-full border ${color === c ? "ring-2 ring-primary ring-offset-1" : ""}`}
+                      style={{ backgroundColor: c }}
+                      aria-label={`Colour ${c}`}
+                    />
+                  ))}
+                </div>
+                <div className="mt-2 flex items-center gap-1 border-t pt-2">
+                  {SIZES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSize(s)}
+                      className={`grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${size === s ? "bg-muted" : ""}`}
+                      title={`Size ${s}`}
+                    >
+                      <span className="rounded-full bg-foreground" style={{ width: Math.max(3, s / 1.5), height: Math.max(3, s / 1.5) }} />
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setFilled((f) => !f)}
+                    className={`ml-1 grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${filled ? "bg-muted" : ""}`}
+                    title="Toggle fill"
+                  >
+                    <span className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`} style={{ borderColor: "currentColor" }} />
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <span className="mx-0.5 h-6 w-px shrink-0 bg-border" />
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={undo} title="Undo"><Undo2 className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={redo} title="Redo"><Redo2 className="h-4 w-4" /></Button>
+
+            {/* Overflow: shapes, text, sticky, image, pan, highlighter */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" title="More tools" aria-label="More tools">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="center" className="w-60 p-2">
+                <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Draw</div>
+                <div className="grid grid-cols-5 gap-1">
+                  <ToolBtn id="hand" icon={Hand} label="Pan" />
+                  <ToolBtn id="highlighter" icon={Highlighter} label="Highlighter" />
+                  <ToolBtn id="text" icon={Type} label="Text" />
+                  <ToolBtn id="sticky" icon={StickyNote} label="Sticky" />
+                  <ToolBtn id="image" icon={ImagePlus} label="Image" />
+                </div>
+                <div className="mb-1 mt-2 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Shapes</div>
+                <div className="grid grid-cols-5 gap-1">
+                  <ToolBtn id="line" icon={Minus} label="Line" />
+                  <ToolBtn id="arrow" icon={ArrowUpRight} label="Arrow" />
+                  <ToolBtn id="rect" icon={Square} label="Rect" />
+                  <ToolBtn id="ellipse" icon={Circle} label="Ellipse" />
+                  <ToolBtn id="triangle" icon={Triangle} label="Triangle" />
+                </div>
+                {selection.size > 0 && (
+                  <>
+                    <div className="mb-1 mt-2 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Selection</div>
+                    <div className="grid grid-cols-4 gap-1">
+                      <IconTile onClick={duplicateSel} label="Copy"><Copy className="h-4 w-4" /></IconTile>
+                      <IconTile onClick={bringForward} label="Up"><ChevronUp className="h-4 w-4" /></IconTile>
+                      <IconTile onClick={sendBackward} label="Down"><ChevronDown className="h-4 w-4" /></IconTile>
+                      <IconTile onClick={() => deleteShapes([...selection])} label="Delete"><Trash2 className="h-4 w-4 text-destructive" /></IconTile>
+                    </div>
+                  </>
+                )}
+              </PopoverContent>
+            </Popover>
+          </>
+        ) : (
+          <>
+            <ToolBtn id="select" icon={MousePointer2} label="Select" shortcut="V" />
+            <ToolBtn id="hand" icon={Hand} label="Pan" />
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <ToolBtn id="pencil" icon={Pencil} label="Pencil" shortcut="P" />
+            <ToolBtn id="highlighter" icon={Highlighter} label="Highlighter" shortcut="H" />
+            <ToolBtn id="eraser" icon={Eraser} label="Eraser" shortcut="E" />
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <ToolBtn id="line" icon={Minus} label="Line" shortcut="L" />
+            <ToolBtn id="arrow" icon={ArrowUpRight} label="Arrow" shortcut="A" />
+            <ToolBtn id="rect" icon={Square} label="Rectangle" shortcut="R" />
+            <ToolBtn id="ellipse" icon={Circle} label="Ellipse" shortcut="O" />
+            <ToolBtn id="triangle" icon={Triangle} label="Triangle" />
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <ToolBtn id="text" icon={Type} label="Text" shortcut="T" />
+            <ToolBtn id="sticky" icon={StickyNote} label="Sticky" shortcut="S" />
+            <ToolBtn id="image" icon={ImagePlus} label="Image" />
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <div className="flex shrink-0 items-center gap-1">
+              {COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  className={`h-5 w-5 rounded-full border ${color === c ? "ring-2 ring-primary ring-offset-1" : ""}`}
+                  style={{ backgroundColor: c }}
+                  aria-label={`Colour ${c}`}
+                />
+              ))}
+            </div>
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <div className="flex shrink-0 items-center gap-1">
+              {SIZES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSize(s)}
+                  className={`grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${size === s ? "bg-muted" : ""}`}
+                  title={`Size ${s}`}
+                >
+                  <span className="rounded-full bg-foreground" style={{ width: Math.max(3, s / 1.5), height: Math.max(3, s / 1.5) }} />
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setFilled((f) => !f)}
+              className={`ml-1 grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${filled ? "bg-muted" : ""}`}
+              title="Toggle fill for shapes"
+            >
+              <span className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`} style={{ borderColor: "currentColor" }} />
+            </button>
+            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={undo} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
+            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={redo} title="Redo (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
+            {selection.size > 0 && (
+              <>
+                <span className="mx-1 h-6 w-px shrink-0 bg-border" />
+                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={duplicateSel} title="Duplicate"><Copy className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={bringForward} title="Bring forward"><ChevronUp className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={sendBackward} title="Send backward"><ChevronDown className="h-4 w-4" /></Button>
+                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-destructive" onClick={() => deleteShapes([...selection])} title="Delete"><Trash2 className="h-4 w-4" /></Button>
+              </>
+            )}
           </>
         )}
       </div>
 
-      {/* Floating main toolbar — pinned to the top, horizontally scrolls on small screens */}
-      <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 overflow-x-auto rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <ToolBtn id="select" icon={MousePointer2} label="Select" shortcut="V" />
-        <ToolBtn id="hand" icon={Hand} label="Pan" />
-        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-        <ToolBtn id="pencil" icon={Pencil} label="Pencil" shortcut="P" />
-        <ToolBtn id="highlighter" icon={Highlighter} label="Highlighter" shortcut="H" />
-        <ToolBtn id="eraser" icon={Eraser} label="Eraser" shortcut="E" />
-        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-        <ToolBtn id="line" icon={Minus} label="Line" shortcut="L" />
-        <ToolBtn id="arrow" icon={ArrowUpRight} label="Arrow" shortcut="A" />
-        <ToolBtn id="rect" icon={Square} label="Rectangle" shortcut="R" />
-        <ToolBtn id="ellipse" icon={Circle} label="Ellipse" shortcut="O" />
-        <ToolBtn id="triangle" icon={Triangle} label="Triangle" />
-        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-        <ToolBtn id="text" icon={Type} label="Text" shortcut="T" />
-        <ToolBtn id="sticky" icon={StickyNote} label="Sticky" shortcut="S" />
-        <ToolBtn id="image" icon={ImagePlus} label="Image" />
-        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-        {/* Colour swatches */}
-        <div className="flex shrink-0 items-center gap-1">
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              className={`h-5 w-5 rounded-full border ${color === c ? "ring-2 ring-primary ring-offset-1" : ""}`}
-              style={{ backgroundColor: c }}
-              aria-label={`Colour ${c}`}
-            />
-          ))}
-        </div>
-        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-        {/* Size */}
-        <div className="flex shrink-0 items-center gap-1">
-          {SIZES.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSize(s)}
-              className={`grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${size === s ? "bg-muted" : ""}`}
-              title={`Size ${s}`}
-            >
-              <span className="rounded-full bg-foreground" style={{ width: Math.max(3, s / 1.5), height: Math.max(3, s / 1.5) }} />
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => setFilled((f) => !f)}
-          className={`ml-1 grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${filled ? "bg-muted" : ""}`}
-          title="Toggle fill for shapes"
-        >
-          <span className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`} style={{ borderColor: "currentColor" }} />
-        </button>
-        <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={undo} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
-        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={redo} title="Redo (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
-        {selection.size > 0 && (
-          <>
-            <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={duplicateSel} title="Duplicate"><Copy className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={bringForward} title="Bring forward"><ChevronUp className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={sendBackward} title="Send backward"><ChevronDown className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-destructive" onClick={() => deleteShapes([...selection])} title="Delete"><Trash2 className="h-4 w-4" /></Button>
-          </>
-        )}
-      </div>
 
       {/* Inline text edit overlay */}
       {textEdit && (
