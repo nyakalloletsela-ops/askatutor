@@ -92,8 +92,19 @@ const learningNav: NavItem[] = [
   { label: "Code", to: "/code", icon: Code2 },
 ];
 
+const parentNav: NavItem[] = [
+  { label: "Parent Home", to: "/parent", icon: Baby },
+  { label: "My Children", to: "/parent/children", icon: Users },
+];
+
+const tutorNav: NavItem[] = [
+  { label: "Holidays", to: "/tutor/holidays", icon: CalendarOff },
+];
+
 const adminNav: NavItem[] = [
   { label: "Admin Console", to: "/admin", icon: ShieldCheck },
+  { label: "Subscription Plans", to: "/admin/plans", icon: CreditCard },
+  { label: "Commissions", to: "/admin/commissions", icon: Percent },
   { label: "Platform Audit", to: "/admin/audit", icon: ShieldCheck },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
   { label: "Payments", to: "/admin/payments", icon: Wallet },
