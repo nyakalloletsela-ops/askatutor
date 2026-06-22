@@ -20,8 +20,8 @@ interface Props {
 }
 
 export function ActionBar({
-  micOn, cameraOn, screenSharing, panel,
-  onToggleMic, onToggleCamera, onToggleScreen, onTogglePanel, onOpenSettings, onLeave,
+  micOn, cameraOn, screenSharing, panel, layoutMode,
+  onSetLayout, onToggleMic, onToggleCamera, onToggleScreen, onTogglePanel, onOpenSettings, onLeave,
 }: Props) {
   return (
     <div className="pointer-events-auto mx-auto flex w-full max-w-3xl items-center justify-center gap-1.5 rounded-2xl border border-white/10 bg-zinc-900/85 px-2 py-2 shadow-2xl backdrop-blur sm:gap-2">
@@ -33,6 +33,19 @@ export function ActionBar({
       </CircleButton>
       <CircleButton active={screenSharing} onClick={onToggleScreen} title={screenSharing ? "Stop sharing" : "Share screen"} accent={screenSharing}>
         {screenSharing ? <MonitorOff className="h-4 w-4" /> : <MonitorUp className="h-4 w-4" />}
+      </CircleButton>
+
+      <span className="mx-1 h-6 w-px bg-white/15" />
+
+      {/* Layout mode switcher */}
+      <CircleButton active={layoutMode === "FLOATING"} onClick={() => onSetLayout("FLOATING")} title="Floating video (PiP)">
+        <PictureInPicture2 className="h-4 w-4" />
+      </CircleButton>
+      <CircleButton active={layoutMode === "DOCKED"} onClick={() => onSetLayout("DOCKED")} title="Dock video to sidebar">
+        <PanelLeft className="h-4 w-4" />
+      </CircleButton>
+      <CircleButton active={layoutMode === "FOCUS"} onClick={() => onSetLayout("FOCUS")} title="Focus whiteboard">
+        <Focus className="h-4 w-4" />
       </CircleButton>
 
       <span className="mx-1 h-6 w-px bg-white/15" />
