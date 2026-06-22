@@ -1,3 +1,4 @@
+import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, useEffect } from "react";
