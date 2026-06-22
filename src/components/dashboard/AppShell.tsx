@@ -27,6 +27,10 @@ import {
   Menu,
   Code2,
   FolderOpen,
+  Baby,
+  CalendarOff,
+  CreditCard,
+  Percent,
 } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
