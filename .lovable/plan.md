@@ -1,76 +1,111 @@
-# Phase 2 Build Plan
+## Goal
 
-Three sequential phases. Each phase is its own approval cycle: ship 2A, verify, then 2B, then 2C. This keeps PRs reviewable and avoids a 30-file mega-migration.
+Stand up a **multi-agent AI layer** on Lovable AI Gateway (free for you — billed from workspace credits, no key needed) so every AI surface in the app renders **KaTeX equations** and **Mermaid/SVG diagrams** cleanly. Each role gets its own dedicated agent (system prompt + model + output contract), invoked from one shared client hook.
 
-## Phase 2A — Scheduling & Bookings
+Note on Ollama: you confirmed Lovable AI Gateway instead. Ollama still requires a GPU host (RunPod/your VPS) — not free in practice. The gateway gives us Gemini 3 Flash + GPT-5 family without per-key setup, and we can swap to Ollama later behind the same agent interface.
 
-Goal: replace the current ad-hoc booking with a Preply-style engine.
+---
 
-### Data (one migration)
-- `tutor_availability`: add `timezone text not null default 'UTC'`, `buffer_before_min int default 0`, `buffer_after_min int default 0`. (`tutor_holidays`, `session_recurrence`, `session_waitlist` already exist from Phase 1.)
-- `sessions`: add `parent_session_id uuid` (recurrence link), `cancelled_at`, `cancelled_by`, `cancel_reason`, `rescheduled_from uuid`.
-- New `booking_conflicts_check(tutor uuid, start timestamptz, duration int)` SECURITY DEFINER RPC returning bool — checks holidays, existing sessions + buffers, weekly availability window in tutor TZ.
-- New `book_session(...)` RPC: transactional insert that calls the conflict check, expands recurrence rows, returns session id(s).
-- New `reschedule_session(id, new_start)` and `cancel_session(id, reason)` RPCs respecting the existing immutability trigger (we extend the trigger to allow these RPC paths via a session GUC).
-- GRANT + RLS on all new objects.
+## Architecture
 
-### Server functions (`src/lib/booking.functions.ts`)
-- `getTutorAvailability(tutorId)` — public.
-- `getBookableSlots(tutorId, weekStart, studentTz)` — computes free slots in student TZ from availability − holidays − sessions − buffers.
-- `bookSession({ tutorId, startAt, durationMin, subject, recurrence?, isFree })` — auth, calls RPC.
-- `rescheduleSession`, `cancelSession`, `joinWaitlist`, `leaveWaitlist`.
-- `listMyUpcomingSessions(role)` — used by dashboards.
+```text
+              ┌──────────────────────────────────────────┐
+              │  src/lib/agents/  (server-only registry) │
+              │  ─ math.agent.ts        (LaTeX solver)   │
+              │  ─ diagram.agent.ts     (Mermaid/SVG)    │
+              │  ─ tutor.agent.ts       (explainer)      │
+              │  ─ whiteboard.agent.ts  (ink → shapes)   │
+              │     each: { model, system, schema }      │
+              └──────────────────────────────────────────┘
+                              ▲
+                              │ createServerFn / streaming route
+              ┌──────────────────────────────────────────┐
+              │  src/routes/api/agent.ts  (stream)       │
+              │  src/lib/ai/run-agent.functions.ts (RPC) │
+              └──────────────────────────────────────────┘
+                              ▲
+                              │ useAgent(role) hook
+              ┌──────────────────────────────────────────┐
+              │  Renderers (client)                      │
+              │  ─ <SmartMarkdown/>  KaTeX + Mermaid +   │
+              │                       code + tables      │
+              │  ─ <DiagramBlock/>   mermaid → SVG       │
+              │  ─ <EquationBlock/>  KaTeX               │
+              └──────────────────────────────────────────┘
+                              ▲
+                              │ used by:
+              Classroom chat • Assistant • Whiteboard convert
+              • Lesson notes • Content library
+```
 
-### UI
-- `/_authenticated/book/$tutorId` — Preply-style week grid, TZ selector, duration picker, recurrence toggle (weekly N weeks), confirm modal, waitlist CTA when no slots.
-- `/_authenticated/tutor/availability` — weekly grid editor with TZ, buffers, copy-week button. Links to existing `/tutor/holidays`.
-- `/_authenticated/calendar` — day/week/month tabs (reuse `react-day-picker` for month; custom CSS grid for day/week). Role-aware: tutor sees students, student sees tutors.
-- `/_authenticated/lessons` — list view with filters (upcoming / past / cancelled), reschedule + cancel actions, join-classroom button when within 10 min.
-- Dashboard widget: "Next 3 lessons" card on student + tutor home.
-- Email notification on book / reschedule / cancel via existing email queue (`enqueue_email`).
+### Agent contract (uniform output)
 
-### Conflict prevention
-Single source of truth = `booking_conflicts_check` RPC, called both client-side (UX) and server-side (authority) inside `book_session`. Unique partial index on `(tutor_id, scheduled_at)` where `status = 'scheduled'` as final safety net.
+Every agent returns markdown with two extensions the renderer always knows how to parse:
 
-## Phase 2B — Tutor Marketplace
+- **Math** — `$inline$` and `$$block$$` (KaTeX)
+- **Diagrams** — fenced ```` ```mermaid ```` blocks
 
-### Data
-- `profiles`: add `intro_video_url text`, `languages text[]`, `years_experience int`, `is_verified bool default false`, `verification_type text`, `headline text`.
-- New `tutor_favorites(student_id, tutor_id)` table + GRANT/RLS.
-- Extend `list_public_tutors()` RPC to return the new fields + `is_favorited` (for current user).
+This means *one renderer* covers chat bubbles, lesson notes, and whiteboard text shapes. The diagram agent additionally emits a `<DiagramSpec>` JSON block when the caller needs a raw spec (e.g. to drop onto the whiteboard canvas as an editable shape).
 
-### UI
-- Redesign `/tutors` — left filter rail (subject, language, price range, rating ≥ N, availability today/this week, verified only), card grid with avatar, headline, rating, price, intro-video play overlay, favorite heart.
-- Redesign `/tutors/$id` — hero with intro video player, verification badge, languages chips, subjects, experience, reviews list, sticky "Book a lesson" CTA opening Phase 2A flow.
-- `/tutors/compare?ids=a,b,c` — side-by-side comparison table (up to 3).
-- `/favorites` — saved tutors.
-- Featured tutors carousel on home (uses existing `is_featured` flag).
+---
 
-### Storage
-- New public bucket `tutor-intros` for intro videos (≤100MB MP4). Existing avatar bucket reused.
+## Steps
 
-## Phase 2C — Content Library
+1. **Install renderers** (client-only):
+   `katex`, `react-katex`, `mermaid`, `remark-math`, `rehype-katex`, plus existing `react-markdown`.
 
-### Data
-- `course_materials`: add `folder_id uuid references course_folders`, `file_type text` (video|pdf|docx|pptx|image|other), `size_bytes bigint`.
-- `assignments`: add `attachment_material_id uuid references course_materials` (or array — pick array for multi-file).
-- Per-student access already modeled in `course_material_access`; ensure RLS uses it consistently.
+2. **Create `<SmartMarkdown/>`** at `src/components/ai/SmartMarkdown.tsx`
+   - `react-markdown` + `remark-math` + `rehype-katex` for equations
+   - custom `code` renderer: when `lang === "mermaid"` → `<DiagramBlock spec={children}/>`, else syntax-highlighted code
+   - safe-mode: sanitise, no raw HTML
 
-### UI
-- `/_authenticated/tutor/library` — folder tree on left, file grid on right, drag-to-folder, upload dropzone (multi-file, progress, file-type detection), version history drawer (uses `course_material_versions`), per-file student-access modal.
-- `/_authenticated/student/library` — read-only view filtered by `course_material_access`, grouped by tutor / folder, inline PDF + video preview.
-- Assignment editor: attach materials from the library or upload new.
+3. **Create `<DiagramBlock/>`** at `src/components/ai/DiagramBlock.tsx`
+   - lazy-loads `mermaid`, renders to SVG into a ref
+   - error fallback: shows the raw spec + "retry" so a broken diagram never breaks the page
+   - "Open in whiteboard" action emits the SVG to the active whiteboard handle
 
-### Storage
-Reuse existing `course-materials` bucket. RLS via storage policies tied to `course_material_access`.
+4. **Agent registry** at `src/lib/agents/registry.server.ts`
+   - Each role: `{ id, label, model, system, temperature, postProcess? }`
+   - Math → `google/gemini-2.5-pro` (strong reasoning, LaTeX-aware)
+   - Diagram → `google/gemini-3-flash-preview` (fast, structured)
+   - Tutor → `google/gemini-3-flash-preview` (conversational)
+   - Whiteboard → existing `whiteboardConvert` re-pointed at this registry
+   - Shared system-prompt preamble enforces the markdown/KaTeX/Mermaid contract
 
-## Out of scope (deferred per user)
-3D AI viz, mind maps, i18n, mobile apps, new payment gateways, SFU rebuild, classroom/whiteboard/AI upgrades.
+5. **Server endpoints**
+   - `src/routes/api/agent.ts` — streaming `useChat` transport, takes `{ role, messages }`, picks agent from registry, calls `streamText` via the Lovable gateway helper
+   - `src/lib/ai/run-agent.functions.ts` — `createServerFn` for one-shot calls (whiteboard convert, lesson-note generation) returning `{ markdown, diagrams[] }`
 
-## Verification per phase
-- 2A: book a recurring weekly slot → 4 sessions appear; second student booking same slot blocked; cancel sends email; calendar week view renders in student TZ ≠ tutor TZ.
-- 2B: filter by language + rating → list narrows; favorite persists across reload; compare 3 tutors renders.
-- 2C: tutor uploads PDF v1 then v2 → student sees v2, v1 in history; un-granted student gets 403 on download URL.
+6. **Client hook** `src/hooks/use-agent.ts`
+   - `useAgent("math" | "diagram" | "tutor")` → wraps AI SDK `useChat` pointed at `/api/agent` with the role baked in
+   - `runAgentOnce(role, prompt)` → wraps the server-fn for non-chat callers
 
-## Approval
-Reply **go 2A** to start. I'll ship 2A end-to-end (migration → server fns → UI → email), then pause for review before 2B.
+7. **Wire renderers everywhere**
+   - **Classroom chat** (`ClassroomShell` chat panel) — replace plaintext bubbles with `<SmartMarkdown/>`, add a role switcher (Tutor / Math / Diagram)
+   - **Assistant route** (if present, else add `src/routes/_authenticated/assistant.tsx`)
+   - **Whiteboard convert** — pipe converter output through the diagram agent so handwriting like "x²+y²=r²" returns a KaTeX-rendered shape, and "flowchart of photosynthesis" returns a Mermaid diagram dropped on canvas
+   - **Lesson notes / content library** — render note bodies with `<SmartMarkdown/>`; add "Ask AI" action that calls the tutor agent and inserts the response
+
+8. **Error + cost handling**
+   - 429 → toast "AI is busy, retrying" + exponential backoff
+   - 402 → toast "Workspace AI credits exhausted" + link to billing
+   - Mermaid parse error → inline retry, never throws
+
+---
+
+## Technical details
+
+- All agents share the gateway helper from `src/lib/ai-gateway.server.ts` (per `connecting-to-ai-models-tanstack`). `LOVABLE_API_KEY` stays server-side.
+- Streaming route returns `result.toUIMessageStreamResponse()` wrapped with `withLovableAiGatewayRunIdHeader` so run-ids propagate.
+- `SmartMarkdown` is the single render path — no surface renders raw model text directly. This is the rule that guarantees LaTeX + diagrams "everywhere".
+- KaTeX CSS imported once in `src/styles.css` via the @fontsource pattern? No — KaTeX ships its own CSS; import from `katex/dist/katex.min.css` in `src/main.tsx` (one-time).
+- Mermaid initialised with `{ startOnLoad: false, theme: 'dark' | 'default' }` matching app theme.
+- Adding Ollama later = add one entry to the registry with a custom `fetch` baseURL — no caller changes.
+
+---
+
+## Out of scope (this turn)
+
+- Persisting agent chat history per user (will follow `chat-agent-ui-contract` later if you want threads)
+- Voice/TTS agent
+- Self-hosted Ollama wiring (kept as a future registry entry)
