@@ -779,7 +779,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
         </Button>
         <span className="h-4 w-px shrink-0 bg-border" />
-        <ConvertButton whiteboardRef={ref as React.RefObject<WhiteboardHandle>} />
+        <ConvertButton handle={handle} />
         <span className="h-4 w-px shrink-0 bg-border" />
         <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
         <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
