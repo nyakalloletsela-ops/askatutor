@@ -104,7 +104,7 @@ function AdminPlans() {
       .from("profiles")
       .select("id, full_name");
     // We don't have profiles.email; use the admin function to find by email
-    const { data: users } = await (await import("@/lib/admin.functions")).adminListUsers();
+    const users = await (await import("@/lib/admin.functions")).adminListUsers();
     const u = (users as any[])?.find((x) => x.email?.toLowerCase() === assignEmail.trim().toLowerCase());
     if (!u) return toast.error("User not found");
     const { error } = await supabase.from("subscription_assignments").insert({
@@ -112,7 +112,7 @@ function AdminPlans() {
       plan_id: assignOpen.id,
       source: "admin",
       expires_at: assignExpires || null,
-    });
+    } as any);
     if (error) return toast.error(error.message);
     toast.success(`Plan assigned to ${assignEmail}`);
     setAssignOpen(null);
