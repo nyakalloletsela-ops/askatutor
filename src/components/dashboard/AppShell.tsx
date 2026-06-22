@@ -27,6 +27,10 @@ import {
   Menu,
   Code2,
   FolderOpen,
+  Baby,
+  CalendarOff,
+  CreditCard,
+  Percent,
 } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
@@ -88,8 +92,19 @@ const learningNav: NavItem[] = [
   { label: "Code", to: "/code", icon: Code2 },
 ];
 
+const parentNav: NavItem[] = [
+  { label: "Parent Home", to: "/parent", icon: Baby },
+  { label: "My Children", to: "/parent/children", icon: Users },
+];
+
+const tutorNav: NavItem[] = [
+  { label: "Holidays", to: "/tutor/holidays", icon: CalendarOff },
+];
+
 const adminNav: NavItem[] = [
   { label: "Admin Console", to: "/admin", icon: ShieldCheck },
+  { label: "Subscription Plans", to: "/admin/plans", icon: CreditCard },
+  { label: "Commissions", to: "/admin/commissions", icon: Percent },
   { label: "Platform Audit", to: "/admin/audit", icon: ShieldCheck },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
   { label: "Payments", to: "/admin/payments", icon: Wallet },
@@ -105,7 +120,7 @@ const adminNav: NavItem[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (r) => r.location.pathname });
-  const { user, isAdmin, signOut } = useAuth();
+  const { user, isAdmin, isTutor, isParent, signOut } = useAuth();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
 
@@ -175,6 +190,32 @@ export function AppShell({ children }: { children: ReactNode }) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {isParent && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Parent</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {parentNav.map((item) => (
+                    <NavLink key={item.label} item={item} active={isActive(item.to)} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
+          {isTutor && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Tutor tools</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {tutorNav.map((item) => (
+                    <NavLink key={item.label} item={item} active={isActive(item.to)} />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
 
           {isAdmin && (
             <SidebarGroup>

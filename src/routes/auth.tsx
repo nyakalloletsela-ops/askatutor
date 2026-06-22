@@ -27,7 +27,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [accountType, setAccountType] = useState<"student" | "tutor">("student");
+  const [accountType, setAccountType] = useState<"student" | "tutor" | "parent">("student");
 
   const handleSignIn = async () => {
     setLoading(true);
@@ -126,31 +126,26 @@ function AuthPage() {
             <TabsContent value="signup" className="space-y-3 pt-4">
               <div className="space-y-1.5">
                 <Label>I am a…</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setAccountType("student")}
-                    className={`rounded-md border p-3 text-left text-sm transition ${
-                      accountType === "student"
-                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <div className="font-semibold">Student</div>
-                    <div className="text-xs text-muted-foreground">Find and book tutors</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAccountType("tutor")}
-                    className={`rounded-md border p-3 text-left text-sm transition ${
-                      accountType === "tutor"
-                        ? "border-primary bg-primary/5 ring-1 ring-primary"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <div className="font-semibold">Tutor</div>
-                    <div className="text-xs text-muted-foreground">Teach &amp; earn</div>
-                  </button>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { v: "student", t: "Student", d: "Find & book tutors" },
+                    { v: "tutor", t: "Tutor", d: "Teach & earn" },
+                    { v: "parent", t: "Parent", d: "Manage children" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.v}
+                      type="button"
+                      onClick={() => setAccountType(o.v)}
+                      className={`rounded-md border p-3 text-left text-sm transition ${
+                        accountType === o.v
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <div className="font-semibold">{o.t}</div>
+                      <div className="text-xs text-muted-foreground">{o.d}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
               <Field label="Full name" value={fullName} onChange={setFullName} />
