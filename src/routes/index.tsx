@@ -138,6 +138,28 @@ function Home() {
         </div>
       </section>
 
+      {/* ===== INSTANT-MATCH SUBJECT TRIAGE (AskATutorLive premium) ===== */}
+      <section className="border-b border-border/60 bg-gradient-to-b from-background to-muted/30">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-electric bg-primary/5 px-3 py-1 text-xs font-medium text-electric shadow-glow-electric">
+                <Zap className="h-3.5 w-3.5" /> On-demand STEM matching
+              </div>
+              <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">
+                Master STEM in seconds. <span className="text-muted-foreground">No bookings. No waiting.</span>
+              </h2>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <InstantMatchCard icon={Sigma} title="Mathematics" tag="Algebra · Calculus · Stats" subject="Mathematics" />
+            <InstantMatchCard icon={Atom} title="Physics" tag="Mechanics · E&M · Waves" subject="Physics" />
+            <InstantMatchCard icon={FlaskConical} title="Chemistry" tag="Organic · Reactions · Stoich" subject="Chemistry" />
+          </div>
+        </div>
+      </section>
+
+
       {/* ===== SHORTCUT CATEGORIES (3 audiences) ===== */}
       <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
         <h2 className="mb-6 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
