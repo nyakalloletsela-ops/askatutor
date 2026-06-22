@@ -275,7 +275,7 @@ function InstantMatchCard({
       return;
     }
     // Funnel into existing tutor list filtered by subject
-    navigate({ to: "/tutors", search: { subject } as never });
+    navigate({ to: "/tutors" });
   };
   return (
     <button
