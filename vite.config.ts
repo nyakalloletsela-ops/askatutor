@@ -16,6 +16,8 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
+        // parse5 v7 imports "entities/decode" — only the nested entities@6 inside parse5 has that subpath
+        "entities/decode": path.resolve(__dirname, "node_modules/parse5/node_modules/entities/dist/esm/decode.js"),
         "entities/lib/decode.js": path.resolve(__dirname, "node_modules/entities/lib/decode.js"),
         "entities/lib/encode.js": path.resolve(__dirname, "node_modules/entities/lib/encode.js"),
         "entities": path.resolve(__dirname, "node_modules/entities"),
