@@ -1,12 +1,14 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import {
   MousePointer2, Pencil, Highlighter, Eraser, Minus, ArrowUpRight,
   Square, Circle, Triangle, Type, StickyNote, ImagePlus, Hand,
   Undo2, Redo2, Trash2, Download, Lock, Unlock, Maximize2, Grid3x3, CircleDot, Eye,
-  Copy, ChevronUp, ChevronDown,
+  Copy, ChevronUp, ChevronDown, MoreHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
