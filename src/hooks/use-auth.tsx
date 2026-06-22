@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type Role = "admin" | "tutor" | "student";
+type Role = "admin" | "tutor" | "student" | "parent";
 
 interface AuthCtx {
   user: User | null;
@@ -11,6 +11,7 @@ interface AuthCtx {
   loading: boolean;
   isAdmin: boolean;
   isTutor: boolean;
+  isParent: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
