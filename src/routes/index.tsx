@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import {
   Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
-  Users, GraduationCap, Briefcase,
+  Users, GraduationCap, Briefcase, Sigma, Atom, FlaskConical, Zap, Timer, Globe,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
