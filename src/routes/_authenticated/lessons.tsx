@@ -65,7 +65,7 @@ function LessonsPage() {
 
   const doCancel = async () => {
     if (!cancel) return;
-    const { error } = await supabase.rpc("cancel_session", { _session: cancel.id, _reason: cancelReason || null });
+    const { error } = await supabase.rpc("cancel_session", { _session: cancel.id, _reason: cancelReason || undefined });
     if (error) return toast.error(error.message);
     toast.success("Lesson cancelled");
     setCancel(null); setCancelReason("");
