@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Video, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Video, Loader2, Eye } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useClassroomRTC } from "@/hooks/useClassroomRTC";
 import { Whiteboard } from "@/components/whiteboard";
 import { ClassroomHeader } from "./ClassroomHeader";
-import { AnimatedVideoLayout, type LayoutMode, type VideoSlot } from "./VideoLayout";
+import { AnimatedVideoLayout, VideoLayout, type LayoutMode, type VideoSlot } from "./VideoLayout";
 import { ActionBar, type PanelKey } from "./ActionBar";
 import { ClassroomSidePanel } from "./SidePanel";
 import { DeviceSettingsDialog } from "./DeviceSettingsDialog";
@@ -28,7 +28,9 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const isMobile = useIsMobile();
   const [panel, setPanel] = useState<PanelKey>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("FLOATING");
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(isMobile ? "TOP_STRIP" : "FLOATING");
+  const [stripCollapsed, setStripCollapsed] = useState(false);
+  const [stripHidden, setStripHidden] = useState(false);
   const rtc = useClassroomRTC({ roomId, userId, displayName });
 
   useEffect(() => {
@@ -68,8 +70,9 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const tutorSlot = isTutor ? localSlot : remoteSlot;
   const studentSlot = isTutor ? remoteSlot : localSlot;
 
-  // Docked mode pushes the whiteboard right; on mobile we collapse the dock to floating.
-  const effectiveMode: LayoutMode = isMobile && layoutMode === "DOCKED" ? "FLOATING" : layoutMode;
+  // Mobile collapses DOCKED to TOP_STRIP (no room for a 280px sidebar).
+  const effectiveMode: LayoutMode = isMobile && layoutMode === "DOCKED" ? "TOP_STRIP" : layoutMode;
+  const isTopStrip = effectiveMode === "TOP_STRIP";
 
   return (
     <div className="flex h-screen flex-col bg-muted/30 text-foreground">
@@ -97,8 +100,34 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
           </motion.aside>
         )}
 
-        {/* Center column: whiteboard + action bar (whiteboard layer = z-0 base) */}
+        {/* Center column: [optional top-strip video] + whiteboard + action bar */}
         <section className="flex min-w-0 flex-1 flex-col gap-2">
+          {/* In-flow top strip video — does NOT overlap the whiteboard */}
+          <AnimatePresence initial={false}>
+            {rtc.joined && isTopStrip && !stripHidden && (
+              <VideoLayout
+                key="top-strip"
+                tutor={tutorSlot}
+                student={studentSlot}
+                mode="TOP_STRIP"
+                collapsed={stripCollapsed}
+                onCollapseToggle={() => setStripCollapsed((v) => !v)}
+                onHide={() => setStripHidden(true)}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Floating "show video" pill — only visible when user hid the strip */}
+          {rtc.joined && isTopStrip && stripHidden && (
+            <button
+              onClick={() => { setStripHidden(false); setStripCollapsed(false); }}
+              className="absolute right-3 top-16 z-40 flex items-center gap-1 rounded-full bg-zinc-900/90 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-zinc-900"
+              title="Show video"
+            >
+              <Eye className="h-3.5 w-3.5" /> Show video
+            </button>
+          )}
+
           <motion.div
             layout
             transition={{ duration: 0.25 }}
