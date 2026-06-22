@@ -70,6 +70,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const lastSaveRef = useRef<number>(0);
 
   // ----- reactive UI state -----
+  const isMobile = useIsMobile();
   const [tool, setTool] = useState<ToolId>("pencil");
   const [color, setColor] = useState<string>(COLORS[0]);
   const [size, setSize] = useState<number>(4);
