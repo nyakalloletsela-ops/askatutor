@@ -1,70 +1,76 @@
+# Phase 2 Build Plan
 
-# Phased plan — extend, don't replace
+Three sequential phases. Each phase is its own approval cycle: ship 2A, verify, then 2B, then 2C. This keeps PRs reviewable and avoids a 30-file mega-migration.
 
-You're on TanStack Start + Lovable Cloud (Supabase). I'll keep every existing component and add the missing pieces. The spec's full surface (Next.js rewrite, SFU media server, M-Pesa, 6 languages, PWA, mind-map AI, 3D simulations, etc.) is multi-month work — I'll deliver it in phases, starting with the four areas you marked. This plan is **Phase 1 only**. After it ships we pick the next phase.
+## Phase 2A — Scheduling & Bookings
 
-## Phase 1 scope (this pass)
+Goal: replace the current ad-hoc booking with a Preply-style engine.
 
-### 1. Parent role + child management
-- Add `parent` to the `app_role` enum.
-- New table `parent_child_links` (parent_id, child_id, relationship, status) with invite flow.
-- New table `child_invites` (token, parent_id, child_email, expires_at).
-- Server fns: `inviteChild`, `acceptChildInvite`, `listMyChildren`, `unlinkChild`.
-- New routes:
-  - `/_authenticated/parent` — parent dashboard (children list, upcoming lessons per child, recent recordings, attendance summary)
-  - `/_authenticated/parent/children` — manage links + invites
-  - `/_authenticated/parent/child/$childId` — drill-down: lessons, tutors, recordings, messages-with-tutor
-- Sidebar (`AppShell.tsx`) gets a Parent section when user has `parent` role.
-- Signup: add "I'm a parent" option in account-type picker; `handle_new_user` trigger updated to grant `parent` role.
-- RLS: parents can SELECT their linked child's `sessions`, `session_records`, `assignments` rows via a `is_parent_of(child_id)` security-definer function. No write access to child data.
+### Data (one migration)
+- `tutor_availability`: add `timezone text not null default 'UTC'`, `buffer_before_min int default 0`, `buffer_after_min int default 0`. (`tutor_holidays`, `session_recurrence`, `session_waitlist` already exist from Phase 1.)
+- `sessions`: add `parent_session_id uuid` (recurrence link), `cancelled_at`, `cancelled_by`, `cancel_reason`, `rescheduled_from uuid`.
+- New `booking_conflicts_check(tutor uuid, start timestamptz, duration int)` SECURITY DEFINER RPC returning bool — checks holidays, existing sessions + buffers, weekly availability window in tutor TZ.
+- New `book_session(...)` RPC: transactional insert that calls the conflict check, expands recurrence rows, returns session id(s).
+- New `reschedule_session(id, new_start)` and `cancel_session(id, reason)` RPCs respecting the existing immutability trigger (we extend the trigger to allow these RPC paths via a session GUC).
+- GRANT + RLS on all new objects.
 
-### 2. Admin subscription & commission control
-- Extend `platform_config` (or new `subscription_plans` table) so admins can CRUD plans for students and tutors:
-  - name, audience (student|tutor), price, duration (day|week|month|quarter|year|custom days), features (jsonb), is_active, sort_order.
-- New table `commission_rules` (scope: global|tutor|subject, target_id nullable, method: percent|fixed|hybrid, percent, fixed_amount, active_from/to).
-- Server fns: `adminListPlans`, `adminUpsertPlan`, `adminDeletePlan`, `adminAssignPlanToUser`, `adminGrantPromoAccess`, `adminListCommissionRules`, `adminUpsertCommissionRule`, `computeCommissionForSession(session_id)`.
-- Admin UI: extend `/_authenticated/admin` with two new tabs — **Plans** and **Commissions** — full CRUD tables, manual assignment dialog, promo grant dialog.
-- All gated by `has_role(auth.uid(), 'admin')`.
+### Server functions (`src/lib/booking.functions.ts`)
+- `getTutorAvailability(tutorId)` — public.
+- `getBookableSlots(tutorId, weekStart, studentTz)` — computes free slots in student TZ from availability − holidays − sessions − buffers.
+- `bookSession({ tutorId, startAt, durationMin, subject, recurrence?, isFree })` — auth, calls RPC.
+- `rescheduleSession`, `cancelSession`, `joinWaitlist`, `leaveWaitlist`.
+- `listMyUpcomingSessions(role)` — used by dashboards.
 
-### 3. Tutor content library hardening
-- Already have `course_materials` + `course_material_access` + `course-materials` bucket. Add:
-  - Folders: `course_folders` table (tutor_id, name, parent_id).
-  - Versioning: `course_material_versions` (material_id, version, storage_path, uploaded_at).
-  - Per-student access UI improvements on tutor side (multi-select students, bulk grant/revoke).
-  - Student view: `/_authenticated/my-courses` already exists — add folder navigation + version history viewer.
+### UI
+- `/_authenticated/book/$tutorId` — Preply-style week grid, TZ selector, duration picker, recurrence toggle (weekly N weeks), confirm modal, waitlist CTA when no slots.
+- `/_authenticated/tutor/availability` — weekly grid editor with TZ, buffers, copy-week button. Links to existing `/tutor/holidays`.
+- `/_authenticated/calendar` — day/week/month tabs (reuse `react-day-picker` for month; custom CSS grid for day/week). Role-aware: tutor sees students, student sees tutors.
+- `/_authenticated/lessons` — list view with filters (upcoming / past / cancelled), reschedule + cancel actions, join-classroom button when within 10 min.
+- Dashboard widget: "Next 3 lessons" card on student + tutor home.
+- Email notification on book / reschedule / cancel via existing email queue (`enqueue_email`).
 
-### 4. Scheduling upgrades
-- Extend `tutor_availability` with `buffer_minutes`, `timezone`.
-- New `tutor_holidays` table (tutor_id, start_date, end_date, reason).
-- New `session_recurrence` table (parent_session_id, rule: rrule string, until).
-- Booking server fn respects: tutor weekly availability minus holidays minus existing bookings, applies buffer, converts to student's TZ.
-- Student reschedule flow: cancel + rebook with one click within tutor rules.
-- Waitlist: new `session_waitlist` table; offer slot when a cancellation opens.
+### Conflict prevention
+Single source of truth = `booking_conflicts_check` RPC, called both client-side (UX) and server-side (authority) inside `book_session`. Unique partial index on `(tutor_id, scheduled_at)` where `status = 'scheduled'` as final safety net.
 
-## Out of scope for Phase 1 (call out for later phases)
-- Stack migration to Next.js/Prisma/Redis — **rejected**, would erase current work as you asked.
-- Self-hosted SFU media server (current WebRTC is 1:1 P2P via Supabase Realtime signaling).
-- M-Pesa / EcoCash / Flutterwave / Paystack integrations.
-- Additional languages beyond what's wired (i18n scaffolding only if you ask).
-- PWA + offline support.
-- AI visualization engine (equation→graph, physics animations, 3D).
-- Breakout rooms, live polls, hand-raise reactions in classroom.
-- Moderator / Support Agent / Super Admin roles (only Parent added now).
-- SMS + push notifications (email already wired).
+## Phase 2B — Tutor Marketplace
 
-## Technical notes
-- All new tables: `GRANT` block + RLS policies in the same migration.
-- Parent access uses a `SECURITY DEFINER` `is_parent_of(_child uuid)` helper to avoid recursive RLS.
-- Commission compute runs as a server fn, not a trigger, so admin overrides stay auditable.
-- No changes to `src/integrations/supabase/*` auto-gen files.
-- No changes to existing classroom/whiteboard code.
+### Data
+- `profiles`: add `intro_video_url text`, `languages text[]`, `years_experience int`, `is_verified bool default false`, `verification_type text`, `headline text`.
+- New `tutor_favorites(student_id, tutor_id)` table + GRANT/RLS.
+- Extend `list_public_tutors()` RPC to return the new fields + `is_favorited` (for current user).
 
-## Verification
-- Build passes.
-- Sign up as parent → invite child → child accepts → parent dashboard lists child's upcoming session.
-- Admin creates a plan, assigns it to a student, student sees new plan in subscription page.
-- Admin sets a 30% global commission, books a $20 session, `computeCommissionForSession` returns $6.
-- Tutor uploads a v2 of a PDF, student sees v2 by default with v1 in history.
-- Booking blocks a slot during a tutor holiday.
+### UI
+- Redesign `/tutors` — left filter rail (subject, language, price range, rating ≥ N, availability today/this week, verified only), card grid with avatar, headline, rating, price, intro-video play overlay, favorite heart.
+- Redesign `/tutors/$id` — hero with intro video player, verification badge, languages chips, subjects, experience, reviews list, sticky "Book a lesson" CTA opening Phase 2A flow.
+- `/tutors/compare?ids=a,b,c` — side-by-side comparison table (up to 3).
+- `/favorites` — saved tutors.
+- Featured tutors carousel on home (uses existing `is_featured` flag).
 
-Reply **approve** to start, or tell me what to cut/add.
+### Storage
+- New public bucket `tutor-intros` for intro videos (≤100MB MP4). Existing avatar bucket reused.
+
+## Phase 2C — Content Library
+
+### Data
+- `course_materials`: add `folder_id uuid references course_folders`, `file_type text` (video|pdf|docx|pptx|image|other), `size_bytes bigint`.
+- `assignments`: add `attachment_material_id uuid references course_materials` (or array — pick array for multi-file).
+- Per-student access already modeled in `course_material_access`; ensure RLS uses it consistently.
+
+### UI
+- `/_authenticated/tutor/library` — folder tree on left, file grid on right, drag-to-folder, upload dropzone (multi-file, progress, file-type detection), version history drawer (uses `course_material_versions`), per-file student-access modal.
+- `/_authenticated/student/library` — read-only view filtered by `course_material_access`, grouped by tutor / folder, inline PDF + video preview.
+- Assignment editor: attach materials from the library or upload new.
+
+### Storage
+Reuse existing `course-materials` bucket. RLS via storage policies tied to `course_material_access`.
+
+## Out of scope (deferred per user)
+3D AI viz, mind maps, i18n, mobile apps, new payment gateways, SFU rebuild, classroom/whiteboard/AI upgrades.
+
+## Verification per phase
+- 2A: book a recurring weekly slot → 4 sessions appear; second student booking same slot blocked; cancel sends email; calendar week view renders in student TZ ≠ tutor TZ.
+- 2B: filter by language + rating → list narrows; favorite persists across reload; compare 3 tutors renders.
+- 2C: tutor uploads PDF v1 then v2 → student sees v2, v1 in history; un-granted student gets 403 on download URL.
+
+## Approval
+Reply **go 2A** to start. I'll ship 2A end-to-end (migration → server fns → UI → email), then pause for review before 2B.
