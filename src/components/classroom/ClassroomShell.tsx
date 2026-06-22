@@ -28,7 +28,9 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const isMobile = useIsMobile();
   const [panel, setPanel] = useState<PanelKey>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>("FLOATING");
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(isMobile ? "TOP_STRIP" : "FLOATING");
+  const [stripCollapsed, setStripCollapsed] = useState(false);
+  const [stripHidden, setStripHidden] = useState(false);
   const rtc = useClassroomRTC({ roomId, userId, displayName });
 
   useEffect(() => {
