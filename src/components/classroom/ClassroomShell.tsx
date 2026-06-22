@@ -70,8 +70,9 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const tutorSlot = isTutor ? localSlot : remoteSlot;
   const studentSlot = isTutor ? remoteSlot : localSlot;
 
-  // Docked mode pushes the whiteboard right; on mobile we collapse the dock to floating.
-  const effectiveMode: LayoutMode = isMobile && layoutMode === "DOCKED" ? "FLOATING" : layoutMode;
+  // Mobile collapses DOCKED to TOP_STRIP (no room for a 280px sidebar).
+  const effectiveMode: LayoutMode = isMobile && layoutMode === "DOCKED" ? "TOP_STRIP" : layoutMode;
+  const isTopStrip = effectiveMode === "TOP_STRIP";
 
   return (
     <div className="flex h-screen flex-col bg-muted/30 text-foreground">
