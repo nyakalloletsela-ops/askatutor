@@ -1,5 +1,6 @@
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PictureInPicture2, PanelLeft, Focus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { LayoutMode } from "./VideoLayout";
 
 export type PanelKey = "chat" | "files" | "notes" | "ai" | null;
 
@@ -8,6 +9,8 @@ interface Props {
   cameraOn: boolean;
   screenSharing: boolean;
   panel: PanelKey;
+  layoutMode: LayoutMode;
+  onSetLayout: (mode: LayoutMode) => void;
   onToggleMic: () => void;
   onToggleCamera: () => void;
   onToggleScreen: () => void;
