@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { GripVertical, Maximize2, Minimize2 } from "lucide-react";
+import { GripVertical, Maximize2, Minimize2, ChevronUp, ChevronDown, EyeOff } from "lucide-react";
 import { VideoCard } from "./VideoCard";
 import type { ConnectionQuality } from "@/lib/classroom-rtc";
 
-export type LayoutMode = "FLOATING" | "DOCKED" | "FOCUS";
+export type LayoutMode = "FLOATING" | "DOCKED" | "FOCUS" | "TOP_STRIP";
 
 export interface VideoSlot {
   stream: MediaStream | null;
@@ -21,15 +21,23 @@ interface Props {
   tutor: VideoSlot;
   student: VideoSlot;
   mode: LayoutMode;
+  /** TOP_STRIP only: collapsed = thin status bar, false = full strip */
+  collapsed?: boolean;
+  onCollapseToggle?: () => void;
+  onHide?: () => void;
 }
 
 /**
  * Single layout engine for the classroom video panel.
- * - FLOATING: draggable PiP tiles that snap to nearest corner, hover above the whiteboard.
- * - DOCKED:   left sidebar stack (Teams-style split view). Sized by ClassroomShell via grid.
- * - FOCUS:    collapsed bubble in the bottom-right; click to expand back to a tile.
+ * - FLOATING:  draggable PiP tiles that snap to nearest corner, hover above the whiteboard.
+ * - DOCKED:    left sidebar stack (Teams-style split view). Sized by ClassroomShell via grid.
+ * - FOCUS:     collapsed bubble in the bottom-right; click to expand back to a tile.
+ * - TOP_STRIP: in-flow horizontal strip at the top (mobile-first). Never overlaps the whiteboard.
  */
-export function VideoLayout({ tutor, student, mode }: Props) {
+export function VideoLayout({ tutor, student, mode, collapsed, onCollapseToggle, onHide }: Props) {
+  if (mode === "TOP_STRIP") {
+    return <TopStrip tutor={tutor} student={student} collapsed={!!collapsed} onCollapseToggle={onCollapseToggle} onHide={onHide} />;
+  }
   if (mode === "DOCKED") {
     return (
       <div className="flex h-full w-full flex-col gap-2 p-2">
@@ -48,6 +56,53 @@ export function VideoLayout({ tutor, student, mode }: Props) {
       <FloatingTile slot={tutor} initial={{ corner: "tl", x: 16, y: 80 }} label="tutor" />
       <FloatingTile slot={student} initial={{ corner: "tl", x: 16, y: 240 }} label="student" />
     </>
+  );
+}
+
+/* ---------- Mobile/top horizontal strip (in-flow, never covers whiteboard) ---------- */
+function TopStrip({
+  tutor, student, collapsed, onCollapseToggle, onHide,
+}: { tutor: VideoSlot; student: VideoSlot; collapsed: boolean; onCollapseToggle?: () => void; onHide?: () => void }) {
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: collapsed ? 32 : 112 }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.22 }}
+      className="relative w-full shrink-0 overflow-hidden rounded-2xl border bg-zinc-900/90 text-white shadow-sm"
+    >
+      {collapsed ? (
+        <div className="flex h-full w-full items-center justify-between gap-2 px-3 text-xs">
+          <span className="truncate opacity-80">📹 {tutor.name} · {student.name}</span>
+          <div className="flex shrink-0 items-center gap-1">
+            <button onClick={onCollapseToggle} className="grid h-6 w-6 place-items-center rounded-full bg-white/10 hover:bg-white/20" aria-label="Expand video">
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+            {onHide && (
+              <button onClick={onHide} className="grid h-6 w-6 place-items-center rounded-full bg-white/10 hover:bg-white/20" aria-label="Hide video">
+                <EyeOff className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex h-full w-full gap-1.5 p-1.5">
+          <VideoCard {...tutor} compact className="min-w-0 flex-1" />
+          <VideoCard {...student} compact className="min-w-0 flex-1" />
+          <div className="absolute right-1.5 top-1.5 z-10 flex gap-1">
+            <button onClick={onCollapseToggle} className="grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white hover:bg-black" aria-label="Collapse video">
+              <ChevronUp className="h-3.5 w-3.5" />
+            </button>
+            {onHide && (
+              <button onClick={onHide} className="grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white hover:bg-black" aria-label="Hide video">
+                <EyeOff className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </motion.div>
   );
 }
 
@@ -79,7 +134,6 @@ function FloatingTile({
     const onUp = () => {
       if (!dragRef.current) return;
       dragRef.current = null;
-      // Snap to nearest corner
       setPos((p) => {
         const W = window.innerWidth, H = window.innerHeight;
         const nearLeft = p.x + TILE_W / 2 < W / 2;
