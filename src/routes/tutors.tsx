@@ -159,7 +159,11 @@ function TutorCard({ t }: { t: TutorRow }) {
               </p>
             )}
             <div className="mt-4 flex flex-wrap gap-2">
-              <BookSessionDialog tutor={t} />
+              <Button asChild size="sm" className="bg-aurora text-white">
+                <Link to="/book/$tutorId" params={{ tutorId: t.id }}>
+                  <CalendarPlus className="mr-1 h-4 w-4" /> Book lesson
+                </Link>
+              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link to="/tutor/$id" params={{ id: t.id }}>View profile</Link>
               </Button>
