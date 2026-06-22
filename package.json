@@ -107,11 +107,5 @@
     "overrides": {
       "entities": "4.5.0"
     }
-  },
-  "overrides": {
-    "entities": "^6.0.0"
-  },
-  "resolutions": {
-    "entities": "^6.0.0"
   }
 }
