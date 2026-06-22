@@ -691,6 +691,18 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       <Icon className="h-4 w-4" />
     </Button>
   );
+  const IconTile = ({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className="flex flex-col items-center gap-0.5 rounded-md px-1.5 py-1.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground"
+    >
+      {children}
+      <span>{label}</span>
+    </button>
+  );
 
   const peers = Array.from(peersRef.current.values()).filter((p) => Date.now() - p.lastSeen < 8000);
 
