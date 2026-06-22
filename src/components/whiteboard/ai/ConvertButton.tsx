@@ -8,19 +8,22 @@ import { parseConversion, blocksToShapes } from "./insertConversion";
 import type { WhiteboardHandle } from "../canvas/Whiteboard";
 import type { Shape } from "../canvas/engine";
 
-export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObject<WhiteboardHandle | null> }) {
+export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
   const convert = useServerFn(whiteboardConvert);
   const [busy, setBusy] = useState(false);
 
   const run = async () => {
-    const wb = whiteboardRef.current;
-    if (!wb || busy) return;
+    const wb = handle;
+    if (!wb) {
+      toast.error("Whiteboard not ready yet.");
+      return;
+    }
+    if (busy) return;
     setBusy(true);
     try {
       let onlyHandwriting = true;
       let dataUrl = await wb.exportPng({ onlyHandwriting: true });
       if (!dataUrl) {
-        // Fall back to full canvas so users can still digitise typed/imported content
         onlyHandwriting = false;
         dataUrl = await wb.exportPng({ onlyHandwriting: false });
       }
@@ -63,7 +66,7 @@ export function ConvertButton({ whiteboardRef }: { whiteboardRef: React.RefObjec
       title="Convert handwriting → clean digital text, equations and diagrams"
     >
       {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
-      <span className="hidden xs:inline">{busy ? "Converting…" : "Convert"}</span>
+      <span className="hidden xs:inline">{busy ? "Converting…" : "AI Convert"}</span>
     </Button>
   );
 }
