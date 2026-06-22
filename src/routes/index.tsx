@@ -18,7 +18,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import {
   Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
-  Users, GraduationCap, Briefcase,
+  Users, GraduationCap, Briefcase, Sigma, Atom, FlaskConical, Zap, Timer, Globe,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -138,6 +138,28 @@ function Home() {
         </div>
       </section>
 
+      {/* ===== INSTANT-MATCH SUBJECT TRIAGE (AskATutorLive premium) ===== */}
+      <section className="border-b border-border/60 bg-gradient-to-b from-background to-muted/30">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-electric bg-primary/5 px-3 py-1 text-xs font-medium text-electric shadow-glow-electric">
+                <Zap className="h-3.5 w-3.5" /> On-demand STEM matching
+              </div>
+              <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">
+                Master STEM in seconds. <span className="text-muted-foreground">No bookings. No waiting.</span>
+              </h2>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <InstantMatchCard icon={Sigma} title="Mathematics" tag="Algebra · Calculus · Stats" subject="Mathematics" />
+            <InstantMatchCard icon={Atom} title="Physics" tag="Mechanics · E&M · Waves" subject="Physics" />
+            <InstantMatchCard icon={FlaskConical} title="Chemistry" tag="Organic · Reactions · Stoich" subject="Chemistry" />
+          </div>
+        </div>
+      </section>
+
+
       {/* ===== SHORTCUT CATEGORIES (3 audiences) ===== */}
       <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
         <h2 className="mb-6 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -229,6 +251,89 @@ function Home() {
       </section>
 
       <Footer tagline={t("footer.tagline")} />
+      <LiveNetworkBar />
+    </div>
+  );
+}
+
+/* ===================== INSTANT-MATCH SUBJECT CARD ===================== */
+
+function InstantMatchCard({
+  icon: Icon, title, tag, subject,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  tag: string;
+  subject: string;
+}) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const trigger = () => {
+    if (!user) {
+      toast.info(`Sign in to start an instant ${title} session`);
+      navigate({ to: "/auth" });
+      return;
+    }
+    // Funnel into existing tutor list filtered by subject
+    navigate({ to: "/tutors" });
+  };
+  return (
+    <button
+      onClick={trigger}
+      className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-left transition hover:border-electric hover:shadow-glow-electric"
+    >
+      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl transition group-hover:bg-primary/20" />
+      <div className="flex items-center justify-between">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-aurora text-white shadow-glow-electric">
+          <Icon className="h-5 w-5" />
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+          <span className="neon-dot" /> Live tutors
+        </span>
+      </div>
+      <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
+      <p className="mt-1 text-xs text-muted-foreground">{tag}</p>
+      <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-electric">
+        Match in ~11s <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+      </div>
+    </button>
+  );
+}
+
+/* ===================== LIVE NETWORK STATUS (sticky) ===================== */
+
+function LiveNetworkBar() {
+  const [active, setActive] = useState(142);
+  const [match, setMatch] = useState(11);
+  const [latency, setLatency] = useState(24);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActive((n) => Math.max(80, Math.min(220, n + Math.round((Math.random() - 0.5) * 6))));
+      setMatch((n) => Math.max(7, Math.min(18, n + Math.round((Math.random() - 0.5) * 2))));
+      setLatency((n) => Math.max(14, Math.min(60, n + Math.round((Math.random() - 0.5) * 6))));
+    }, 2500);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="pointer-events-none sticky bottom-3 z-40 mx-auto w-full max-w-3xl px-3">
+      <div className="pointer-events-auto grid grid-cols-3 gap-px overflow-hidden rounded-full border border-border/70 bg-background/85 text-xs shadow-glow-electric backdrop-blur">
+        <Stat icon={Globe} label="Tutors active" value={active.toString()} accent="text-neon" />
+        <Stat icon={Timer} label="Avg match" value={`${match}s`} accent="text-electric" />
+        <Stat icon={Zap} label="Your latency" value={`${latency}ms`} accent="text-neon" />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ icon: Icon, label, value, accent }: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; value: string; accent: string;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2 bg-background/60 px-3 py-2">
+      <Icon className={`h-3.5 w-3.5 ${accent}`} />
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-semibold tabular-nums ${accent}`}>{value}</span>
     </div>
   );
 }
