@@ -63,7 +63,7 @@ function AdminCommissions() {
 
   const save = async () => {
     if (!editing) return;
-    const payload = { ...editing };
+    const payload: any = { ...editing };
     if (payload.scope === "global") {
       payload.target_id = null;
       payload.target_text = null;
