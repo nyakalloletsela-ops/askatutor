@@ -1189,6 +1189,56 @@ export type Database = {
         }
         Relationships: []
       }
+      prepaid_lessons: {
+        Row: {
+          created_at: string
+          currency: string
+          hourly_rate_cents: number
+          id: string
+          lesson_minutes: number
+          lessons_remaining: number
+          lessons_total: number
+          payment_intent_id: string | null
+          student_id: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          hourly_rate_cents: number
+          id?: string
+          lesson_minutes: number
+          lessons_remaining: number
+          lessons_total: number
+          payment_intent_id?: string | null
+          student_id: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          hourly_rate_cents?: number
+          id?: string
+          lesson_minutes?: number
+          lessons_remaining?: number
+          lessons_total?: number
+          payment_intent_id?: string | null
+          student_id?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prepaid_lessons_payment_intent_id_fkey"
+            columns: ["payment_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           availability: Json | null
@@ -1667,6 +1717,7 @@ export type Database = {
           description: string | null
           duration_count: number
           duration_unit: string
+          feature_scope: string[]
           features: Json
           id: string
           is_active: boolean
@@ -1682,6 +1733,7 @@ export type Database = {
           description?: string | null
           duration_count?: number
           duration_unit?: string
+          feature_scope?: string[]
           features?: Json
           id?: string
           is_active?: boolean
@@ -1697,6 +1749,7 @@ export type Database = {
           description?: string | null
           duration_count?: number
           duration_unit?: string
+          feature_scope?: string[]
           features?: Json
           id?: string
           is_active?: boolean
@@ -2323,6 +2376,19 @@ export type Database = {
         Args: { _amount_cents: number; _subject?: string; _tutor: string }
         Returns: number
       }
+      confirm_bulk_lesson_intent: {
+        Args: { _intent: string; _provider?: string; _provider_ref?: string }
+        Returns: string
+      }
+      create_bulk_lesson_intent: {
+        Args: {
+          _lesson_minutes: number
+          _lessons: number
+          _method?: string
+          _tutor: string
+        }
+        Returns: string
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2336,6 +2402,7 @@ export type Database = {
         Args: { _intent: string; _provider: string; _provider_ref: string }
         Returns: undefined
       }
+      get_my_scopes: { Args: never; Returns: string[] }
       get_session_participant_names: {
         Args: never
         Returns: {
@@ -2365,6 +2432,15 @@ export type Database = {
         Returns: {
           end_date: string
           start_date: string
+        }[]
+      }
+      get_tutor_pricing: {
+        Args: { _tutor: string }
+        Returns: {
+          currency: string
+          full_name: string
+          hourly_rate: number
+          id: string
         }[]
       }
       has_role: {
@@ -2462,6 +2538,7 @@ export type Database = {
         Args: { _new_start: string; _session: string }
         Returns: undefined
       }
+      student_has_scope: { Args: { _scope: string }; Returns: boolean }
       tutor_balance: {
         Args: { _tutor: string }
         Returns: {

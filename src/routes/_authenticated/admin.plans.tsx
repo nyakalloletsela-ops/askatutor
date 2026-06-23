@@ -34,9 +34,12 @@ type Plan = {
   duration_unit: string;
   duration_count: number;
   features: any;
+  feature_scope: string[] | null;
   is_active: boolean;
   sort_order: number;
 };
+
+const ALL_SCOPES = ["ai", "find_tutors", "labs"] as const;
 
 const emptyPlan = (audience: "student" | "tutor"): Partial<Plan> => ({
   name: "",
@@ -47,6 +50,7 @@ const emptyPlan = (audience: "student" | "tutor"): Partial<Plan> => ({
   duration_unit: "month",
   duration_count: 1,
   features: [],
+  feature_scope: [],
   is_active: true,
   sort_order: 0,
 });
@@ -179,7 +183,10 @@ function AdminPlans() {
       </div>
 
       {renderGroup("student")}
-      {renderGroup("tutor")}
+      <p className="text-xs text-muted-foreground">
+        Tutors don't pay a fixed subscription — the platform earns a 5% commission on each lesson
+        instead. Configure that in Admin → Commissions.
+      </p>
 
       {/* Edit dialog */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
@@ -274,6 +281,30 @@ function AdminPlans() {
                   onChange={(e) => setEditing({ ...editing, features: e.target.value as any })}
                   placeholder="HD video&#10;Recording&#10;Whiteboard"
                 />
+              </div>
+              <div>
+                <Label>Unlocks (feature scopes)</Label>
+                <div className="mt-1 flex flex-wrap gap-3 rounded-md border p-3">
+                  {ALL_SCOPES.map((s) => {
+                    const scopes = (editing.feature_scope as string[] | undefined) ?? [];
+                    const checked = scopes.includes(s);
+                    return (
+                      <label key={s} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? Array.from(new Set([...scopes, s]))
+                              : scopes.filter((x) => x !== s);
+                            setEditing({ ...editing, feature_scope: next });
+                          }}
+                        />
+                        {s}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Switch

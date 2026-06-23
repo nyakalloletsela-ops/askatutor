@@ -51,7 +51,7 @@ export function WhyUs() {
     { icon: ShieldCheck, title: "Verified tutors", desc: "Every tutor passes ID, qualifications and interview checks." },
     { icon: Sparkles, title: "AI in every lesson", desc: "Auto notes, translator and step-by-step problem solver built-in." },
     { icon: Globe2, title: "Africa-first payments", desc: "Card, M-Pesa, EcoCash, Airtel Money, Orange Money and bank transfer." },
-    { icon: Wallet, title: "Pay as you learn", desc: "No subscriptions required. Top up minutes and use them anytime." },
+    { icon: Wallet, title: "Pay tutors in bulk", desc: "Subscribe to find tutors, then prepay lessons by tutor ID at their hourly rate." },
     { icon: Video, title: "Built-in classroom", desc: "HD video, whiteboard, screen share, file sharing — no extra app." },
     { icon: Headphones, title: "Human support", desc: "Real people, fast replies, 7 days a week." },
   ];

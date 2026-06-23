@@ -16,9 +16,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { aiToolRun } from "@/lib/ai-tools.functions";
+import { ScopeGate } from "@/components/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/ai-tools")({
-  component: AiToolsPage,
+  component: () => (<ScopeGate scope="ai"><AiToolsPage /></ScopeGate>),
   head: () => ({
     meta: [
       { title: "AI Toolkit — Ask A Tutor Live" },

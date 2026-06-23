@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Repeat, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScopeGate } from "@/components/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/book/$tutorId")({
-  component: BookTutorPage,
+  component: () => (<ScopeGate scope="find_tutors"><BookTutorPage /></ScopeGate>),
 });
 
 type Avail = { weekday: number; start_min: number; end_min: number; timezone: string; buffer_minutes: number };
