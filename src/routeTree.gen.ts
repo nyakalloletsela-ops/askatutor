@@ -27,6 +27,7 @@ import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedResourcesRouteImport } from './routes/_authenticated/resources'
 import { Route as AuthenticatedRecordsRouteImport } from './routes/_authenticated/records'
+import { Route as AuthenticatedPayTutorRouteImport } from './routes/_authenticated/pay-tutor'
 import { Route as AuthenticatedParentRouteImport } from './routes/_authenticated/parent'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedNotesRouteImport } from './routes/_authenticated/notes'
@@ -158,6 +159,11 @@ const AuthenticatedResourcesRoute = AuthenticatedResourcesRouteImport.update({
 const AuthenticatedRecordsRoute = AuthenticatedRecordsRouteImport.update({
   id: '/records',
   path: '/records',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedPayTutorRoute = AuthenticatedPayTutorRouteImport.update({
+  id: '/pay-tutor',
+  path: '/pay-tutor',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedParentRoute = AuthenticatedParentRouteImport.update({
@@ -425,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/notes': typeof AuthenticatedNotesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/parent': typeof AuthenticatedParentRouteWithChildren
+  '/pay-tutor': typeof AuthenticatedPayTutorRoute
   '/records': typeof AuthenticatedRecordsRoute
   '/resources': typeof AuthenticatedResourcesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -487,6 +494,7 @@ export interface FileRoutesByTo {
   '/notes': typeof AuthenticatedNotesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/parent': typeof AuthenticatedParentRouteWithChildren
+  '/pay-tutor': typeof AuthenticatedPayTutorRoute
   '/records': typeof AuthenticatedRecordsRoute
   '/resources': typeof AuthenticatedResourcesRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -551,6 +559,7 @@ export interface FileRoutesById {
   '/_authenticated/notes': typeof AuthenticatedNotesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/parent': typeof AuthenticatedParentRouteWithChildren
+  '/_authenticated/pay-tutor': typeof AuthenticatedPayTutorRoute
   '/_authenticated/records': typeof AuthenticatedRecordsRoute
   '/_authenticated/resources': typeof AuthenticatedResourcesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -615,6 +624,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/notifications'
     | '/parent'
+    | '/pay-tutor'
     | '/records'
     | '/resources'
     | '/settings'
@@ -677,6 +687,7 @@ export interface FileRouteTypes {
     | '/notes'
     | '/notifications'
     | '/parent'
+    | '/pay-tutor'
     | '/records'
     | '/resources'
     | '/settings'
@@ -740,6 +751,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notes'
     | '/_authenticated/notifications'
     | '/_authenticated/parent'
+    | '/_authenticated/pay-tutor'
     | '/_authenticated/records'
     | '/_authenticated/resources'
     | '/_authenticated/settings'
@@ -927,6 +939,13 @@ declare module '@tanstack/react-router' {
       path: '/records'
       fullPath: '/records'
       preLoaderRoute: typeof AuthenticatedRecordsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/pay-tutor': {
+      id: '/_authenticated/pay-tutor'
+      path: '/pay-tutor'
+      fullPath: '/pay-tutor'
+      preLoaderRoute: typeof AuthenticatedPayTutorRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/parent': {
@@ -1261,6 +1280,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedNotesRoute: typeof AuthenticatedNotesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedParentRoute: typeof AuthenticatedParentRouteWithChildren
+  AuthenticatedPayTutorRoute: typeof AuthenticatedPayTutorRoute
   AuthenticatedRecordsRoute: typeof AuthenticatedRecordsRoute
   AuthenticatedResourcesRoute: typeof AuthenticatedResourcesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1304,6 +1324,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedNotesRoute: AuthenticatedNotesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedParentRoute: AuthenticatedParentRouteWithChildren,
+  AuthenticatedPayTutorRoute: AuthenticatedPayTutorRoute,
   AuthenticatedRecordsRoute: AuthenticatedRecordsRoute,
   AuthenticatedResourcesRoute: AuthenticatedResourcesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
