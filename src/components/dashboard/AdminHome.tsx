@@ -199,6 +199,11 @@ export function AdminHome({ firstName }: { firstName: string }) {
     });
     setBusy(null);
     if (error) return toast.error(error.message);
+    await supabase.rpc("log_tutor_decision", {
+      _action: approve ? "approve" : "reject",
+      _application_ids: [row.id],
+      _notes: notes[row.id] ?? null,
+    });
     toast.success(approve ? "Approved — tutor role granted" : "Rejected");
     load();
   };
