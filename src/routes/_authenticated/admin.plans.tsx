@@ -282,6 +282,30 @@ function AdminPlans() {
                   placeholder="HD video&#10;Recording&#10;Whiteboard"
                 />
               </div>
+              <div>
+                <Label>Unlocks (feature scopes)</Label>
+                <div className="mt-1 flex flex-wrap gap-3 rounded-md border p-3">
+                  {ALL_SCOPES.map((s) => {
+                    const scopes = (editing.feature_scope as string[] | undefined) ?? [];
+                    const checked = scopes.includes(s);
+                    return (
+                      <label key={s} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? Array.from(new Set([...scopes, s]))
+                              : scopes.filter((x) => x !== s);
+                            setEditing({ ...editing, feature_scope: next });
+                          }}
+                        />
+                        {s}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <Switch
                   checked={editing.is_active ?? true}
