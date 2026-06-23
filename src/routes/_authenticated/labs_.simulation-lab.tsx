@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Play, Pause, RotateCcw, Sparkles, Trash2, Maximize2, Loader2, Search, X, BookOpen, GraduationCap, MessageSquare,
+  Play, Pause, RotateCcw, Sparkles, Trash2, Maximize2, Loader2, Search, X, BookOpen, GraduationCap,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
