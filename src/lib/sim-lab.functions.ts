@@ -2,6 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const ExplainSchema = z.object({
+  definition: z.string().optional(),
+  purpose: z.string().optional(),
+  keyFacts: z.array(z.string()).max(8).optional(),
+  misconceptions: z.array(z.string()).max(5).optional(),
+}).optional();
+
 const ObjectSchema = z.object({
   type: z.string(),
   position: z.array(z.number()).length(3).optional(),
@@ -12,6 +19,7 @@ const ObjectSchema = z.object({
   color: z.string().optional(),
   label: z.string().optional(),
   fixed: z.boolean().optional(),
+  explain: ExplainSchema,
 });
 
 const ConnectionSchema = z.object({
@@ -21,37 +29,128 @@ const ConnectionSchema = z.object({
   label: z.string().optional(),
 });
 
+const ProcessStepSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  duration: z.number().min(0.5).max(20).optional(),
+  highlight: z.array(z.number().int().nonnegative()).max(20).optional(),
+});
+
+const TimelineEventSchema = z.object({
+  date: z.string(),
+  title: z.string(),
+  description: z.string(),
+  location: z.object({ lat: z.number(), lng: z.number(), label: z.string().optional() }).optional(),
+});
+
+const GeoRegionSchema = z.object({
+  name: z.string(),
+  color: z.string().optional(),
+  value: z.number().optional(),
+  label: z.string().optional(),
+  coords: z.array(z.tuple([z.number(), z.number()])).max(80).optional(),
+  pin: z.object({ lat: z.number(), lng: z.number() }).optional(),
+});
+
+const DialogueLineSchema = z.object({
+  speaker: z.number().int().nonnegative(),
+  original: z.string(),
+  translation: z.string().optional(),
+  lang: z.string().optional(),
+});
+
+const LanguageSceneSchema = z.object({
+  setting: z.string(),
+  characters: z.array(z.object({ name: z.string(), emoji: z.string().optional(), color: z.string().optional() })).max(6),
+  dialogue: z.array(DialogueLineSchema).max(30),
+  vocabulary: z.array(z.object({ term: z.string(), meaning: z.string() })).max(20).optional(),
+});
+
+const QuizQuestionSchema = z.object({
+  type: z.enum(["mcq", "tf", "short"]),
+  question: z.string(),
+  options: z.array(z.string()).max(6).optional(),
+  answer: z.string(),
+  explanation: z.string().optional(),
+  difficulty: z.enum(["beginner", "intermediate", "advanced"]).default("beginner"),
+});
+
 export const SimulationSchema = z.object({
   subject: z.string(),
   title: z.string(),
   summary: z.string().optional(),
   tags: z.array(z.string()).max(12).default([]),
-  objects: z.array(ObjectSchema).max(60),
+  visualization: z.enum(["scene3d", "scene2d", "process", "timeline", "geo", "language"]).default("scene3d"),
+  objects: z.array(ObjectSchema).max(60).default([]),
   connections: z.array(ConnectionSchema).max(80).default([]),
   rules: z.array(z.string()).default([]),
   timeline: z.number().positive().max(120).default(10),
+  steps: z.array(ProcessStepSchema).max(20).optional(),
+  events: z.array(TimelineEventSchema).max(40).optional(),
+  geo: z.object({
+    center: z.tuple([z.number(), z.number()]).optional(),
+    zoom: z.number().min(0).max(20).optional(),
+    regions: z.array(GeoRegionSchema).max(40).default([]),
+  }).optional(),
+  language: LanguageSceneSchema.optional(),
+  graph2d: z.object({
+    xLabel: z.string().optional(),
+    yLabel: z.string().optional(),
+    xMin: z.number().default(-10),
+    xMax: z.number().default(10),
+    yMin: z.number().default(-10),
+    yMax: z.number().default(10),
+    curves: z.array(z.object({
+      label: z.string().optional(),
+      color: z.string().optional(),
+      expr: z.string(), // JS expression of x and t, e.g. "Math.sin(x + t)"
+    })).max(6).default([]),
+    points: z.array(z.object({ x: z.number(), y: z.number(), label: z.string().optional(), color: z.string().optional() })).max(20).default([]),
+  }).optional(),
+  quiz: z.array(QuizQuestionSchema).max(15).optional(),
 });
 
 export type SimulationSchemaT = z.infer<typeof SimulationSchema>;
 
-const SYSTEM_PROMPT = `You are the AskATutorLive Simulation Lab schema generator.
-Convert ANY educational prompt into a strict JSON simulation schema for a reusable 3D learning lab.
+const SYSTEM_PROMPT = `You are the AskATutorLive Universal Simulation Lab schema generator.
+Convert ANY educational prompt (any subject, any level) into a strict JSON learning experience.
 
-RULES:
-- Output ONLY a single valid JSON object. No prose, no markdown fences.
-- Auto-detect "subject" (physics, biology, chemistry, math, economics, language, history, geography, abstract, ...).
-- Provide a short human "title".
-- Add "summary" explaining the concept in one sentence and "tags" as reusable knowledge labels.
-- "objects" is an array (max 30) of primitives the renderer understands:
-  type ∈ {"car","sphere","wall","particle","cube","plane","arrow","cell","nucleus","molecule","atom","bond","graph","curve","node","flow","organ","dna","axis"}.
-  Each object MAY include: position [x,y,z], velocity (number along x OR [vx,vy,vz]),
-  mass, radius, size (scalar or [w,h,d]), color (hex), label, fixed (bool).
-- "connections" links object indexes: {"from":0,"to":1,"type":"bond|force|flow|relationship","label":"..."}.
-- "rules" subset of: ["newton_second_law","collision_response","gravity","flow_dynamics","orbital_motion","growth_cycle","chemical_bonding","graph_transform","market_flow","semantic_flow"].
-- "timeline" seconds (1-60).
-- Physics: moving masses, vectors, forces, collisions. Biology: cells, organs, cycles, flows. Chemistry: atoms/molecules/bonds. Math: axes, curves, transformations. Economics: nodes, flows, supply/demand curves. Language/history: semantic or cause-effect flow maps.
-- For unknown / abstract subjects, return a metaphor-based simulation with labelled nodes, arrows, and flow_dynamics.
-- Keep coordinates in -20..20 range.`;
+OUTPUT: a single valid JSON object only. No prose, no markdown.
+
+CHOOSE the right "visualization" automatically:
+- "scene3d": physics, biology structures, anatomy, astronomy, mechanical/engineering, chemistry molecules.
+- "scene2d": math (graphs, functions, derivatives), statistics, economics curves (supply/demand), data viz.
+- "process": step-by-step processes (photosynthesis, mitosis, CPU execution, water cycle, network packets, algorithms).
+- "timeline": historical events, wars, revolutions, discoveries, biographies.
+- "geo": geography, plate tectonics, climate, population, ocean currents, world systems.
+- "language": vocabulary, conversations, role-play (restaurant, airport, job interview, greetings).
+
+ALWAYS include: subject, title, short summary, tags (3-6).
+ALWAYS include 3-6 auto-generated "quiz" questions mixing mcq/tf/short, scaled across difficulties, with answers + explanations.
+
+PER VISUALIZATION:
+
+scene3d / scene2d:
+  Fill "objects" (≤30). type ∈ {sphere,particle,cube,wall,plane,arrow,car,cell,nucleus,organ,atom,molecule,dna,axis,curve,node,flow}.
+  Each object: position[x,y,z]∈[-15,15], optional velocity (number for x-axis or [vx,vy,vz]), radius, size, color (hex), label, fixed.
+  Add object "explain": {definition, purpose, keyFacts[], misconceptions[]} for the IMPORTANT objects so students can click them.
+  "connections": [{from,to,type:"bond|force|flow|relationship",label}].
+  "rules" subset of {newton_second_law,collision_response,gravity,flow_dynamics,orbital_motion,growth_cycle,chemical_bonding,graph_transform,market_flow,semantic_flow}.
+  For scene2d math/economics also fill "graph2d": {xLabel,yLabel,xMin,xMax,yMin,yMax,curves:[{label,color,expr}],points:[{x,y,label,color}]} where expr is a JS expression in variables x and t (time seconds), e.g. "Math.sin(x+t)" or "Math.exp(-x)".
+
+process:
+  Fill "steps": [{title, description, duration_seconds, highlight:[objectIndexes]}]. Also fill "objects" so highlighted indexes refer to something visible.
+
+timeline:
+  Fill "events": [{date, title, description, location:{lat,lng,label}}] in chronological order.
+
+geo:
+  Fill "geo": {center:[lat,lng], zoom, regions:[{name, color, value, label, pin:{lat,lng}, coords:[[lng,lat],...]}]}. Use real coordinates.
+
+language:
+  Fill "language": {setting, characters:[{name,emoji,color}], dialogue:[{speaker:characterIndex, original, translation, lang:"fr|es|de|.."}], vocabulary:[{term,meaning}]}.
+
+NEVER leave the visualization empty for its mode. If motion or change over time is meaningful, include it (velocities, curve expressions with t, step durations).`;
 
 function fallbackSchema(prompt: string): SimulationSchemaT {
   const text = prompt.toLowerCase();
