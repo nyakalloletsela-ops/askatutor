@@ -223,20 +223,31 @@ function Home() {
         </div>
 
         {allSubjects.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            {allSubjects.slice(0, 16).map((s) => (
+          <div className="mb-6 -mx-4 px-4 overflow-x-auto">
+            <div className="flex gap-2 w-max">
               <Button
-                key={s}
                 size="sm"
-                variant={subject === s ? "default" : "outline"}
-                onClick={() => setSubject(subject === s ? null : s)}
-                className="rounded-full"
+                variant={subject === null ? "default" : "outline"}
+                onClick={() => setSubject(null)}
+                className="rounded-full shrink-0"
               >
-                {s}
+                All
               </Button>
-            ))}
+              {allSubjects.slice(0, 12).map((s) => (
+                <Button
+                  key={s}
+                  size="sm"
+                  variant={subject === s ? "default" : "outline"}
+                  onClick={() => setSubject(subject === s ? null : s)}
+                  className="rounded-full shrink-0"
+                >
+                  {s}
+                </Button>
+              ))}
+            </div>
           </div>
         )}
+
 
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Tutors
