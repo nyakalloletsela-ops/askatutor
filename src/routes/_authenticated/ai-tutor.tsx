@@ -9,10 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Send, Loader2, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { aiTutorChat } from "@/lib/ai-tutor.functions";
+import { ScopeGate } from "@/components/ScopeGate";
 
 
 export const Route = createFileRoute("/_authenticated/ai-tutor")({
-  component: AiTutorPage,
+  component: () => (<ScopeGate scope="ai"><AiTutorPage /></ScopeGate>),
   head: () => ({
     meta: [
       { title: "AI Study Coach — Ask A Tutor" },
