@@ -2219,7 +2219,7 @@ export type Database = {
           _currency?: string
           _gross_cents: number
           _method?: string
-          _session: string
+          _session?: string
           _student: string
           _subject?: string
           _tutor: string
