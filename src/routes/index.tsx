@@ -20,6 +20,9 @@ import {
   Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
   Users, GraduationCap, Briefcase, Sigma, Atom, FlaskConical, Zap, Timer, Globe,
 } from "lucide-react";
+import {
+  TrustStrip, HowItWorks, WhyUs, SuccessStories, PricingSnapshot, FAQ, FinalCTA,
+} from "@/components/home/HomeSections";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -138,6 +141,9 @@ function Home() {
           <p className="mt-4 text-xs text-muted-foreground">
             <span className="neon-dot mr-1.5" /> Live tutor in under 10 seconds — no booking, no waiting.
           </p>
+          <div className="mt-10">
+            <TrustStrip />
+          </div>
         </div>
       </section>
 
@@ -253,6 +259,13 @@ function Home() {
           </div>
         )}
       </section>
+
+      <HowItWorks />
+      <WhyUs />
+      <SuccessStories />
+      <PricingSnapshot />
+      <FAQ />
+      <FinalCTA />
 
       <Footer tagline={t("footer.tagline")} />
       <LiveNetworkBar />
