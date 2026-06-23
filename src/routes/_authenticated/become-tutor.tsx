@@ -25,7 +25,17 @@ type Existing = {
 
 type DocRow = { id: string; label: string; storage_path: string };
 
-const DOC_LABELS = ["CV / Resume", "Government ID", "Highest Qualification", "Teaching Certificate (optional)"];
+type DocSpec = { label: string; required: boolean; accept: string; hint: string };
+const DOC_SPECS: DocSpec[] = [
+  { label: "Government ID", required: true, accept: "application/pdf,image/*", hint: "Passport or national ID — clear photo or PDF." },
+  { label: "Highest Qualification", required: true, accept: "application/pdf,image/*", hint: "Degree certificate, diploma or transcript." },
+  { label: "Additional Education Documents", required: false, accept: "application/pdf,image/*", hint: "Extra transcripts, certifications, or training records." },
+  { label: "Teaching Certificate", required: false, accept: "application/pdf,image/*", hint: "PGCE, TEFL, or equivalent if available." },
+  { label: "CV / Resume", required: true, accept: "application/pdf,image/*", hint: "Up-to-date CV listing teaching experience." },
+  { label: "Motivational Letter", required: true, accept: "application/pdf,.doc,.docx,image/*", hint: "Why do you want to tutor on AskATutorLive?" },
+  { label: "Introduction Video", required: true, accept: "video/*", hint: "60–120s self-intro. MP4/MOV/WebM, max ~100MB." },
+];
+const DOC_LABELS = DOC_SPECS.map((d) => d.label);
 
 function BecomeTutorPage() {
   const { user, isTutor } = useAuth();
