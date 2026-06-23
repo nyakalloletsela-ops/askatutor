@@ -54,7 +54,7 @@ export function ActionBar(props: Props) {
             </Group>
             <Group title="Video layout">
               <PillButton active={layoutMode === "TOP_STRIP"} onClick={() => onSetLayout("TOP_STRIP")} icon={<LayoutPanelTop className="h-3.5 w-3.5" />} label="Top strip" />
-              <PillButton active={layoutMode === "FLOATING"} onClick={() => onSetLayout("FLOATING")} icon={<PictureInPicture2 className="h-3.5 w-3.5" />} label="Floating" />
+              <PillButton active={layoutMode === "DOCKED"} onClick={() => onSetLayout("DOCKED")} icon={<PanelLeft className="h-3.5 w-3.5" />} label="Docked" />
               <PillButton active={layoutMode === "FOCUS"} onClick={() => onSetLayout("FOCUS")} icon={<Focus className="h-3.5 w-3.5" />} label="Focus" />
             </Group>
             <Group title="Panels">
