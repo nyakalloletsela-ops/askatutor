@@ -101,7 +101,17 @@ function ResetPasswordPage() {
           <CardTitle>Set a new password</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {!ready ? (
+          {linkError ? (
+            <div className="space-y-2 text-center">
+              <p className="text-sm text-destructive">{linkError}</p>
+              <p className="text-xs text-muted-foreground">
+                The link may be expired or already used. Request a new one from the sign-in page.
+              </p>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/auth">Back to sign in</Link>
+              </Button>
+            </div>
+          ) : !ready ? (
             <p className="text-center text-sm text-muted-foreground">
               Open this page from the password-reset link in your email.
             </p>
