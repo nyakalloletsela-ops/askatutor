@@ -1,4 +1,5 @@
 import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
+import { SaveToNotes } from "@/components/ai/SaveToNotes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, useEffect } from "react";
@@ -8,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { aiTutorChat } from "@/lib/ai-tutor.functions";
+
 
 export const Route = createFileRoute("/_authenticated/ai-tutor")({
   component: AiTutorPage,
@@ -83,22 +85,35 @@ function AiTutorPage() {
 
       <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-            >
+          {messages.map((m, i) => {
+            // Find the user prompt that produced this assistant reply (for a good note title).
+            const promptForTitle =
+              m.role === "assistant" && i > 0 && messages[i - 1].role === "user"
+                ? messages[i - 1].content
+                : "AI Coach response";
+            return (
               <div
-                className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                  m.role === "user"
-                    ? "whitespace-pre-wrap bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
+                key={i}
+                className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {m.role === "user" ? m.content : <SmartMarkdown>{m.content}</SmartMarkdown>}
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
+                    m.role === "user"
+                      ? "whitespace-pre-wrap bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  {m.role === "user" ? m.content : <SmartMarkdown>{m.content}</SmartMarkdown>}
+                  {m.role === "assistant" && i > 0 && (
+                    <div className="mt-1 flex justify-end">
+                      <SaveToNotes content={m.content} title={promptForTitle} kind="ai-coach" />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+
           {loading && (
             <div className="flex justify-start">
               <div className="rounded-2xl bg-muted px-3 py-2 text-sm text-muted-foreground">

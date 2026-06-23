@@ -1,4 +1,6 @@
 import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
+import { SaveToNotes } from "@/components/ai/SaveToNotes";
+
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -134,7 +136,16 @@ function AiToolsPage() {
 
         <Card>
           <CardContent className="min-h-[300px] space-y-2 p-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Output</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Output</h2>
+              {output && !loading && (
+                <SaveToNotes
+                  content={output}
+                  title={`${active.label}: ${(subject || prompt).slice(0, 80)}`}
+                  kind={`ai-tool:${tool}`}
+                />
+              )}
+            </div>
             {loading && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" /> Generating…
@@ -148,6 +159,7 @@ function AiToolsPage() {
             )}
           </CardContent>
         </Card>
+
       </div>
     </div>
   );
