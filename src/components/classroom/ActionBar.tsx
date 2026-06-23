@@ -184,3 +184,17 @@ function PillButton({ active, onClick, icon, label }: { active?: boolean; onClic
     </button>
   );
 }
+
+function LinkPill({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link
+      to={to}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white transition hover:bg-white/20"
+    >
+      {icon}
+      {label}
+    </Link>
+  );
+}
