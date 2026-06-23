@@ -35,7 +35,7 @@ const DOC_SPECS: DocSpec[] = [
   { label: "Motivational Letter", required: true, accept: "application/pdf,.doc,.docx,image/*", hint: "Why do you want to tutor on AskATutorLive?" },
   { label: "Introduction Video", required: true, accept: "video/*", hint: "60–120s self-intro. MP4/MOV/WebM, max ~100MB." },
 ];
-const DOC_LABELS = DOC_SPECS.map((d) => d.label);
+
 
 function BecomeTutorPage() {
   const { user, isTutor } = useAuth();
