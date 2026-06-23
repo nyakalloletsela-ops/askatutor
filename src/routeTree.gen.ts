@@ -51,7 +51,7 @@ import { Route as AuthenticatedWhiteboardReviewSessionIdRouteImport } from './ro
 import { Route as AuthenticatedTutorHolidaysRouteImport } from './routes/_authenticated/tutor.holidays'
 import { Route as AuthenticatedTutorAvailabilityRouteImport } from './routes/_authenticated/tutor.availability'
 import { Route as AuthenticatedParentChildrenRouteImport } from './routes/_authenticated/parent.children'
-import { Route as AuthenticatedLabs3dAiLabRouteImport } from './routes/_authenticated/labs.3d-ai-lab'
+import { Route as AuthenticatedLabsSimulationLabRouteImport } from './routes/_authenticated/labs.simulation-lab'
 import { Route as AuthenticatedClassroomRoomIdRouteImport } from './routes/_authenticated/classroom.$roomId'
 import { Route as AuthenticatedBookTutorIdRouteImport } from './routes/_authenticated/book.$tutorId'
 import { Route as AuthenticatedAdminWhiteboardRouteImport } from './routes/_authenticated/admin.whiteboard'
@@ -290,10 +290,10 @@ const AuthenticatedParentChildrenRoute =
     path: '/children',
     getParentRoute: () => AuthenticatedParentRoute,
   } as any)
-const AuthenticatedLabs3dAiLabRoute =
-  AuthenticatedLabs3dAiLabRouteImport.update({
-    id: '/3d-ai-lab',
-    path: '/3d-ai-lab',
+const AuthenticatedLabsSimulationLabRoute =
+  AuthenticatedLabsSimulationLabRouteImport.update({
+    id: '/simulation-lab',
+    path: '/simulation-lab',
     getParentRoute: () => AuthenticatedLabsRoute,
   } as any)
 const AuthenticatedClassroomRoomIdRoute =
@@ -464,7 +464,7 @@ export interface FileRoutesByFullPath {
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/book/$tutorId': typeof AuthenticatedBookTutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
-  '/labs/3d-ai-lab': typeof AuthenticatedLabs3dAiLabRoute
+  '/labs/simulation-lab': typeof AuthenticatedLabsSimulationLabRoute
   '/parent/children': typeof AuthenticatedParentChildrenRoute
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
@@ -528,7 +528,7 @@ export interface FileRoutesByTo {
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/book/$tutorId': typeof AuthenticatedBookTutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
-  '/labs/3d-ai-lab': typeof AuthenticatedLabs3dAiLabRoute
+  '/labs/simulation-lab': typeof AuthenticatedLabsSimulationLabRoute
   '/parent/children': typeof AuthenticatedParentChildrenRoute
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
@@ -594,7 +594,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/_authenticated/book/$tutorId': typeof AuthenticatedBookTutorIdRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
-  '/_authenticated/labs/3d-ai-lab': typeof AuthenticatedLabs3dAiLabRoute
+  '/_authenticated/labs/simulation-lab': typeof AuthenticatedLabsSimulationLabRoute
   '/_authenticated/parent/children': typeof AuthenticatedParentChildrenRoute
   '/_authenticated/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/_authenticated/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
@@ -660,7 +660,7 @@ export interface FileRouteTypes {
     | '/admin/whiteboard'
     | '/book/$tutorId'
     | '/classroom/$roomId'
-    | '/labs/3d-ai-lab'
+    | '/labs/simulation-lab'
     | '/parent/children'
     | '/tutor/availability'
     | '/tutor/holidays'
@@ -724,7 +724,7 @@ export interface FileRouteTypes {
     | '/admin/whiteboard'
     | '/book/$tutorId'
     | '/classroom/$roomId'
-    | '/labs/3d-ai-lab'
+    | '/labs/simulation-lab'
     | '/parent/children'
     | '/tutor/availability'
     | '/tutor/holidays'
@@ -789,7 +789,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/whiteboard'
     | '/_authenticated/book/$tutorId'
     | '/_authenticated/classroom/$roomId'
-    | '/_authenticated/labs/3d-ai-lab'
+    | '/_authenticated/labs/simulation-lab'
     | '/_authenticated/parent/children'
     | '/_authenticated/tutor/availability'
     | '/_authenticated/tutor/holidays'
@@ -1122,11 +1122,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedParentChildrenRouteImport
       parentRoute: typeof AuthenticatedParentRoute
     }
-    '/_authenticated/labs/3d-ai-lab': {
-      id: '/_authenticated/labs/3d-ai-lab'
-      path: '/3d-ai-lab'
-      fullPath: '/labs/3d-ai-lab'
-      preLoaderRoute: typeof AuthenticatedLabs3dAiLabRouteImport
+    '/_authenticated/labs/simulation-lab': {
+      id: '/_authenticated/labs/simulation-lab'
+      path: '/simulation-lab'
+      fullPath: '/labs/simulation-lab'
+      preLoaderRoute: typeof AuthenticatedLabsSimulationLabRouteImport
       parentRoute: typeof AuthenticatedLabsRoute
     }
     '/_authenticated/classroom/$roomId': {
@@ -1273,11 +1273,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedLabsRouteChildren {
-  AuthenticatedLabs3dAiLabRoute: typeof AuthenticatedLabs3dAiLabRoute
+  AuthenticatedLabsSimulationLabRoute: typeof AuthenticatedLabsSimulationLabRoute
 }
 
 const AuthenticatedLabsRouteChildren: AuthenticatedLabsRouteChildren = {
-  AuthenticatedLabs3dAiLabRoute: AuthenticatedLabs3dAiLabRoute,
+  AuthenticatedLabsSimulationLabRoute: AuthenticatedLabsSimulationLabRoute,
 }
 
 const AuthenticatedLabsRouteWithChildren =
