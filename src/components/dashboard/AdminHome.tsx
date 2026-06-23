@@ -170,6 +170,44 @@ export function AdminHome({ firstName }: { firstName: string }) {
     load();
   };
 
+  // Bulk selection / confirmation
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirm, setConfirm] = useState<null | "approve" | "reject">(null);
+  const toggleSel = (id: string, on: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+  const selectAllVisible = (rows: AppRow[], on: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      rows.forEach((r) => (on ? next.add(r.id) : next.delete(r.id)));
+      return next;
+    });
+  };
+  const runBulk = async () => {
+    if (!confirm) return;
+    const ids = Array.from(selected);
+    if (ids.length === 0) {
+      setConfirm(null);
+      return;
+    }
+    const fn = confirm === "approve" ? "approve_tutor_application" : "reject_tutor_application";
+    setBusy("bulk");
+    const results = await Promise.allSettled(
+      ids.map((id) => supabase.rpc(fn, { _application_id: id, _notes: notes[id] ?? null })),
+    );
+    setBusy(null);
+    setConfirm(null);
+    setSelected(new Set());
+    const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.error)).length;
+    if (failed > 0) toast.error(`${failed} of ${ids.length} failed`);
+    else toast.success(`${ids.length} application(s) ${confirm === "approve" ? "approved" : "rejected"}`);
+    load();
+
   const toggleFeatured = async (p: TutorProfile, v: boolean) => {
     const { error } = await supabase
       .from("profiles")
