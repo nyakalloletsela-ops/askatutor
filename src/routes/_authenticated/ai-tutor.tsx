@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Send, Loader2 } from "lucide-react";
+import { Sparkles, Send, Loader2, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
 import { aiTutorChat } from "@/lib/ai-tutor.functions";
 
