@@ -90,8 +90,8 @@ export function ActionBar(props: Props) {
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
-      <CircleButton active={layoutMode === "FLOATING"} onClick={() => onSetLayout("FLOATING")} title="Floating video (PiP)">
-        <PictureInPicture2 className="h-4 w-4" />
+      <CircleButton active={layoutMode === "TOP_STRIP"} onClick={() => onSetLayout("TOP_STRIP")} title="Top strip video">
+        <LayoutPanelTop className="h-4 w-4" />
       </CircleButton>
       <CircleButton active={layoutMode === "DOCKED"} onClick={() => onSetLayout("DOCKED")} title="Dock video to sidebar">
         <PanelLeft className="h-4 w-4" />
