@@ -105,12 +105,16 @@ function statusBadge(status: string) {
 /* ====================================================================== */
 
 function AdminPayoutsPage() {
+  const initial = typeof window !== "undefined" && window.location.hash
+    ? window.location.hash.replace("#", "")
+    : "overview";
+  const [tab, setTab] = useState(initial);
   return (
     <PageContainer
       title="Payments & Payouts"
       description="Ledger-backed view of every cent — intakes, holds, commissions and weekly tutor payouts."
     >
-      <Tabs defaultValue="overview" className="space-y-5">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-5">
         <TabsList className="flex w-full flex-wrap gap-1 sm:w-auto">
           <TabsTrigger value="overview"><TrendingUp className="mr-1.5 h-3.5 w-3.5" />Overview</TabsTrigger>
           <TabsTrigger value="intents"><Wallet className="mr-1.5 h-3.5 w-3.5" />Payment Intents</TabsTrigger>
