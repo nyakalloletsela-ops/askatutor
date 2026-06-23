@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, Circle, Copy, Check, Signal, SignalLow, SignalMedium, SignalZero, Users, Settings } from "lucide-react";
+import { ArrowLeft, Circle, Signal, SignalLow, SignalMedium, SignalZero, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fmtTimer, useSessionTimer } from "./useSessionTimer";
 import type { ConnectionQuality } from "@/lib/classroom-rtc";
