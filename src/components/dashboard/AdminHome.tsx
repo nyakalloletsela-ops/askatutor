@@ -250,7 +250,7 @@ export function AdminHome({ firstName }: { firstName: string }) {
       await supabase.rpc("log_tutor_decision", {
         _action: confirm,
         _application_ids: succeededIds,
-        _notes: null,
+        _notes: undefined,
       });
     }
     if (failed > 0) toast.error(`${failed} of ${ids.length} failed`);
