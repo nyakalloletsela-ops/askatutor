@@ -31,6 +31,7 @@ import {
   CalendarOff,
   CreditCard,
   Percent,
+  Banknote,
 } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
@@ -100,6 +101,7 @@ const parentNav: NavItem[] = [
 ];
 
 const tutorNav: NavItem[] = [
+  { label: "Wallet", to: "/wallet", icon: Wallet },
   { label: "Availability", to: "/tutor/availability", icon: Calendar },
   { label: "Holidays", to: "/tutor/holidays", icon: CalendarOff },
 ];
@@ -110,7 +112,8 @@ const adminNav: NavItem[] = [
   { label: "Commissions", to: "/admin/commissions", icon: Percent },
   { label: "Platform Audit", to: "/admin/audit", icon: ShieldCheck },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
-  { label: "Payments", to: "/admin/payments", icon: Wallet },
+  { label: "Payouts & Ledger", to: "/admin/payouts", icon: Banknote },
+  { label: "Subscriptions", to: "/admin/payments", icon: Wallet },
   { label: "Promotions", to: "/admin/promotions", icon: Wallet },
   { label: "AI Controls", to: "/admin/ai", icon: Sparkles },
   { label: "Classrooms", to: "/admin/classrooms", icon: Users },
