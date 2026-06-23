@@ -63,10 +63,10 @@ function LabsPage() {
           </button>
         </div>
         <Link
-          to="/labs/3d-ai-lab"
+          to="/labs/simulation-lab"
           className="ml-2 inline-flex items-center gap-1 rounded-md border border-violet-400/40 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-200 hover:bg-violet-500/20"
         >
-          <Sparkles className="h-3 w-3" /> 3D AI Lab
+          <Sparkles className="h-3 w-3" /> Simulation Lab
         </Link>
         <span className="ml-auto hidden text-[11px] text-muted-foreground sm:inline">
           {enforceLimit

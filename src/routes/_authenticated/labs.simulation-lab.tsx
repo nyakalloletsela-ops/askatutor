@@ -21,11 +21,11 @@ import {
 } from "@/lib/sim-lab.functions";
 import * as THREE from "three";
 
-export const Route = createFileRoute("/_authenticated/labs/3d-ai-lab")({
+export const Route = createFileRoute("/_authenticated/labs/simulation-lab")({
   component: () => <ScopeGate scope="labs"><Lab3DPage /></ScopeGate>,
   head: () => ({
     meta: [
-      { title: "3D AI Lab — Ask A Tutor Live" },
+      { title: "Simulation Lab — Ask A Tutor Live" },
       { name: "description", content: "Turn any learning prompt into a live 3D simulation. Save and remix your reusable knowledge universe." },
     ],
   }),
@@ -192,7 +192,7 @@ function Lab3DPage() {
         {/* LEFT — prompt */}
         <aside className="hidden flex-col gap-3 border-r border-white/5 bg-black/30 p-4 md:flex">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="h-4 w-4 text-violet-400" /> 3D AI Lab
+            <Sparkles className="h-4 w-4 text-violet-400" /> Simulation Lab
           </div>
           <p className="text-xs text-white/60">Describe a scenario or question and the AI will build a live 3D simulation.</p>
           <Textarea
