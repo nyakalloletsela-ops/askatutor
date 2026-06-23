@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/integrations/supabase/client.server'
+import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
 
 async function sendOne(payload: {
   templateName: string
@@ -46,10 +47,11 @@ function formatWhen(iso: string): string {
 }
 
 export const notifyBookingEmails = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z.object({ sessionId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     // Look up the session
     const { data: session, error } = await supabaseAdmin
       .from('sessions')
@@ -59,6 +61,24 @@ export const notifyBookingEmails = createServerFn({ method: 'POST' })
     if (error || !session) {
       console.error('notifyBookingEmails: session not found', error)
       return { ok: false }
+    }
+
+    // Authorize: only the session's tutor, student, or an admin may trigger
+    // booking emails for this session. Prevents unrelated authenticated users
+    // from spamming arbitrary participants by guessing session UUIDs.
+    const callerId = context.userId
+    const isParticipant =
+      callerId === session.tutor_id || callerId === session.student_id
+    if (!isParticipant) {
+      const { data: adminRows } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', callerId)
+        .eq('role', 'admin')
+        .limit(1)
+      if (!adminRows || adminRows.length === 0) {
+        return { ok: false, error: 'Forbidden' }
+      }
     }
 
     // Look up names from profiles
