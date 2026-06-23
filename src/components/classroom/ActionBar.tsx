@@ -63,6 +63,10 @@ export function ActionBar(props: Props) {
               <PillButton active={panel === "notes"} onClick={() => onTogglePanel("notes")} icon={<StickyNote className="h-3.5 w-3.5" />} label="Notes" />
               <PillButton active={panel === "ai"} onClick={() => onTogglePanel("ai")} icon={<Sparkles className="h-3.5 w-3.5" />} label="AI Tutor" />
             </Group>
+            <Group title="Labs">
+              <LinkPill to="/labs" icon={<FlaskConical className="h-3.5 w-3.5" />} label="PhET Lab" />
+              <LinkPill to="/labs/simulation-lab" icon={<Atom className="h-3.5 w-3.5" />} label="Simulation Lab" />
+            </Group>
             <Group title="System">
               <PillButton onClick={onOpenSettings} icon={<Settings className="h-3.5 w-3.5" />} label="Devices" />
             </Group>
