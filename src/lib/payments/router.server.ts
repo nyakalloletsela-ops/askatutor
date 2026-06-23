@@ -79,9 +79,9 @@ async function recordAttempt(
     _intent: intentId,
     _provider: slug,
     _status: status,
-    _failure_reason: reason,
+    _failure_reason: reason ?? undefined,
     _latency_ms: latency,
-    _provider_ref: providerRef,
+    _provider_ref: providerRef ?? undefined,
   });
 }
 

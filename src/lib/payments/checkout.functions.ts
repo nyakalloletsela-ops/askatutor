@@ -27,7 +27,7 @@ export const startCheckout = createServerFn({ method: "POST" })
     // commission via existing RPC
     const { data: commission, error: cErr } = await supabase.rpc(
       "compute_commission_cents",
-      { _amount_cents: data.amountCents, _tutor: data.tutorId, _subject: data.subject ?? null },
+      { _amount_cents: data.amountCents, _tutor: data.tutorId, _subject: data.subject ?? undefined },
     );
     if (cErr) throw new Error(cErr.message);
     const commissionCents = Number(commission ?? 0);
