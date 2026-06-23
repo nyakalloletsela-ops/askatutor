@@ -40,6 +40,7 @@ import {
   Copy,
   Link2,
 } from "lucide-react";
+import { StudentHome } from "@/components/dashboard/StudentHome";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -301,6 +302,20 @@ function Dashboard() {
   }
 
   const firstName = profile.full_name?.split(" ")[0] ?? "";
+
+  // Phase 2 — students get the redesigned home
+  if (!isTutor) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <StudentHome
+          firstName={firstName}
+          freeMinutes={profile.free_minutes_remaining ?? 0}
+          sessions={sessions}
+          participantNames={participantNames}
+        />
+      </main>
+    );
+  }
 
   return (
     <div>
