@@ -630,6 +630,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ledger_entries: {
+        Row: {
+          amount_cents: number
+          balance_type: string
+          created_at: string
+          currency: string
+          description: string | null
+          entry_type: string
+          id: string
+          metadata: Json
+          payment_intent_id: string | null
+          payout_item_id: string | null
+          tutor_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          balance_type: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          entry_type: string
+          id?: string
+          metadata?: Json
+          payment_intent_id?: string | null
+          payout_item_id?: string | null
+          tutor_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          balance_type?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          entry_type?: string
+          id?: string
+          metadata?: Json
+          payment_intent_id?: string | null
+          payout_item_id?: string | null
+          tutor_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_entries_payment_intent_id_fkey"
+            columns: ["payment_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_entries_payout_item_id_fkey"
+            columns: ["payout_item_id"]
+            isOneToOne: false
+            referencedRelation: "payout_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           body: string
@@ -750,6 +810,275 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_intents: {
+        Row: {
+          commission_cents: number
+          created_at: string
+          currency: string
+          failure_reason: string | null
+          gross_cents: number
+          hold_until: string | null
+          id: string
+          metadata: Json
+          method: string | null
+          provider: string
+          provider_ref: string | null
+          refunded_at: string | null
+          session_id: string | null
+          status: string
+          student_id: string
+          succeeded_at: string | null
+          tutor_id: string
+          tutor_net_cents: number
+          updated_at: string
+        }
+        Insert: {
+          commission_cents?: number
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          gross_cents: number
+          hold_until?: string | null
+          id?: string
+          metadata?: Json
+          method?: string | null
+          provider: string
+          provider_ref?: string | null
+          refunded_at?: string | null
+          session_id?: string | null
+          status?: string
+          student_id: string
+          succeeded_at?: string | null
+          tutor_id: string
+          tutor_net_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          commission_cents?: number
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          gross_cents?: number
+          hold_until?: string | null
+          id?: string
+          metadata?: Json
+          method?: string | null
+          provider?: string
+          provider_ref?: string | null
+          refunded_at?: string | null
+          session_id?: string | null
+          status?: string
+          student_id?: string
+          succeeded_at?: string | null
+          tutor_id?: string
+          tutor_net_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_intents_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          created_at: string
+          details: Json
+          display_label: string | null
+          id: string
+          is_default: boolean
+          is_verified: boolean
+          provider: string
+          tutor_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          display_label?: string | null
+          id?: string
+          is_default?: boolean
+          is_verified?: boolean
+          provider: string
+          tutor_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          display_label?: string | null
+          id?: string
+          is_default?: boolean
+          is_verified?: boolean
+          provider?: string
+          tutor_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_providers: {
+        Row: {
+          config: Json
+          created_at: string
+          display_name: string
+          id: string
+          is_enabled: boolean
+          priority: number
+          slug: string
+          supported_countries: string[]
+          supported_currencies: string[]
+          supported_methods: string[]
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          display_name: string
+          id?: string
+          is_enabled?: boolean
+          priority?: number
+          slug: string
+          supported_countries?: string[]
+          supported_currencies?: string[]
+          supported_methods?: string[]
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_enabled?: boolean
+          priority?: number
+          slug?: string
+          supported_countries?: string[]
+          supported_currencies?: string[]
+          supported_methods?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payout_items: {
+        Row: {
+          commission_cents: number
+          created_at: string
+          currency: string
+          failure_reason: string | null
+          gross_cents: number
+          id: string
+          net_cents: number
+          paid_at: string | null
+          payment_method_id: string | null
+          payout_run_id: string
+          provider: string | null
+          provider_transfer_ref: string | null
+          status: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          commission_cents?: number
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          gross_cents?: number
+          id?: string
+          net_cents?: number
+          paid_at?: string | null
+          payment_method_id?: string | null
+          payout_run_id: string
+          provider?: string | null
+          provider_transfer_ref?: string | null
+          status?: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          commission_cents?: number
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          gross_cents?: number
+          id?: string
+          net_cents?: number
+          paid_at?: string | null
+          payment_method_id?: string | null
+          payout_run_id?: string
+          provider?: string | null
+          provider_transfer_ref?: string | null
+          status?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_items_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_items_payout_run_id_fkey"
+            columns: ["payout_run_id"]
+            isOneToOne: false
+            referencedRelation: "payout_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          status: string
+          total_commission_cents: number
+          total_gross_cents: number
+          total_net_cents: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          total_commission_cents?: number
+          total_gross_cents?: number
+          total_net_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_commission_cents?: number
+          total_gross_cents?: number
+          total_net_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_config: {
         Row: {
           ai_enabled: boolean
@@ -757,6 +1086,7 @@ export type Database = {
           classrooms_enabled: boolean
           id: number
           is_subscriptions_enabled: boolean
+          payout_hold_hours: number
           updated_at: string
           updated_by: string | null
           whiteboard_export_enabled: boolean
@@ -770,6 +1100,7 @@ export type Database = {
           classrooms_enabled?: boolean
           id?: number
           is_subscriptions_enabled?: boolean
+          payout_hold_hours?: number
           updated_at?: string
           updated_by?: string | null
           whiteboard_export_enabled?: boolean
@@ -783,6 +1114,7 @@ export type Database = {
           classrooms_enabled?: boolean
           id?: number
           is_subscriptions_enabled?: boolean
+          payout_hold_hours?: number
           updated_at?: string
           updated_by?: string | null
           whiteboard_export_enabled?: boolean
@@ -806,6 +1138,7 @@ export type Database = {
           is_featured: boolean
           phone: string | null
           subjects: string[] | null
+          tutor_level: string
           updated_at: string
         }
         Insert: {
@@ -821,6 +1154,7 @@ export type Database = {
           is_featured?: boolean
           phone?: string | null
           subjects?: string[] | null
+          tutor_level?: string
           updated_at?: string
         }
         Update: {
@@ -836,9 +1170,18 @@ export type Database = {
           is_featured?: boolean
           phone?: string | null
           subjects?: string[] | null
+          tutor_level?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_tutor_level_fkey"
+            columns: ["tutor_level"]
+            isOneToOne: false
+            referencedRelation: "tutor_levels"
+            referencedColumns: ["slug"]
+          },
+        ]
       }
       promotions: {
         Row: {
@@ -1511,6 +1854,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_levels: {
+        Row: {
+          commission_percent: number
+          created_at: string
+          display_name: string
+          id: string
+          min_completed_sessions: number
+          perks: Json
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          commission_percent?: number
+          created_at?: string
+          display_name: string
+          id?: string
+          min_completed_sessions?: number
+          perks?: Json
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          commission_percent?: number
+          created_at?: string
+          display_name?: string
+          id?: string
+          min_completed_sessions?: number
+          perks?: Json
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tutor_resources: {
         Row: {
           created_at: string
@@ -1823,6 +2202,34 @@ export type Database = {
     }
     Functions: {
       accept_child_invite: { Args: { _token: string }; Returns: string }
+      admin_create_payout_run: {
+        Args: { _period_end?: string; _period_start?: string }
+        Returns: string
+      }
+      admin_mark_payout_item_failed: {
+        Args: { _item: string; _reason: string }
+        Returns: undefined
+      }
+      admin_mark_payout_item_paid: {
+        Args: { _item: string; _provider_ref?: string }
+        Returns: undefined
+      }
+      admin_record_manual_intent: {
+        Args: {
+          _currency?: string
+          _gross_cents: number
+          _method?: string
+          _session: string
+          _student: string
+          _subject?: string
+          _tutor: string
+        }
+        Returns: string
+      }
+      admin_refund_intent: {
+        Args: { _intent: string; _reason?: string }
+        Returns: undefined
+      }
       approve_tutor_application: {
         Args: { _application_id: string; _notes?: string }
         Returns: undefined
@@ -1944,6 +2351,17 @@ export type Database = {
         }
         Returns: number
       }
+      payments_admin_overview: {
+        Args: never
+        Returns: {
+          failed_transfers: number
+          pending_payout_cents: number
+          refunded_cents: number
+          succeeded_count: number
+          total_revenue_cents: number
+          total_volume_cents: number
+        }[]
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -1959,6 +2377,15 @@ export type Database = {
       reschedule_session: {
         Args: { _new_start: string; _session: string }
         Returns: undefined
+      }
+      tutor_balance: {
+        Args: { _tutor: string }
+        Returns: {
+          earned_cents: number
+          paid_out_cents: number
+          payable_cents: number
+          pending_cents: number
+        }[]
       }
     }
     Enums: {
