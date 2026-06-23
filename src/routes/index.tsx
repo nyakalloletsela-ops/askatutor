@@ -20,6 +20,9 @@ import {
   Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
   Users, GraduationCap, Briefcase, Sigma, Atom, FlaskConical, Zap, Timer, Globe,
 } from "lucide-react";
+import {
+  TrustStrip, HowItWorks, WhyUs, SuccessStories, PricingSnapshot, FAQ, FinalCTA,
+} from "@/components/home/HomeSections";
 
 export const Route = createFileRoute("/")({
   head: () => ({
