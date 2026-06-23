@@ -41,6 +41,7 @@ import {
   Link2,
 } from "lucide-react";
 import { StudentHome } from "@/components/dashboard/StudentHome";
+import { TutorHome } from "@/components/dashboard/TutorHome";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
@@ -310,6 +311,20 @@ function Dashboard() {
         <StudentHome
           firstName={firstName}
           freeMinutes={profile.free_minutes_remaining ?? 0}
+          sessions={sessions}
+          participantNames={participantNames}
+        />
+      </main>
+    );
+  }
+
+  // Phase 3 — tutors get the redesigned home
+  if (isTutor && !roles.includes("admin")) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <TutorHome
+          firstName={firstName}
+          profile={profile}
           sessions={sessions}
           participantNames={participantNames}
         />
