@@ -35,10 +35,7 @@ export function ClassroomHeader({
   quality, recording, onOpenSettings,
 }: Props) {
   const elapsed = useSessionTimer();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(roomId); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch { /* */ }
-  };
+  void roomId;
   const subtitle = [tutorName && `Tutor: ${tutorName}`, studentName && `Student: ${studentName}`].filter(Boolean).join(" · ");
 
   return (
