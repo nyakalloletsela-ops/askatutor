@@ -101,6 +101,7 @@ const parentNav: NavItem[] = [
 ];
 
 const tutorNav: NavItem[] = [
+  { label: "Wallet", to: "/wallet", icon: Wallet },
   { label: "Availability", to: "/tutor/availability", icon: Calendar },
   { label: "Holidays", to: "/tutor/holidays", icon: CalendarOff },
 ];
