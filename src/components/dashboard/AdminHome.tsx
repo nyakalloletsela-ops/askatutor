@@ -202,7 +202,7 @@ export function AdminHome({ firstName }: { firstName: string }) {
     await supabase.rpc("log_tutor_decision", {
       _action: approve ? "approve" : "reject",
       _application_ids: [row.id],
-      _notes: notes[row.id] ?? null,
+      _notes: notes[row.id] || undefined,
     });
     toast.success(approve ? "Approved — tutor role granted" : "Rejected");
     load();
