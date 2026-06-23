@@ -208,11 +208,11 @@ function Lab3DPage() {
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles className="h-4 w-4 text-violet-400" /> Simulation Lab
           </div>
-          <p className="text-xs text-white/60">Describe a scenario or question and the AI will build a live 3D simulation.</p>
+          <p className="text-xs text-white/60">Type any question, scenario, or statement from <span className="text-white">any subject</span> — physics, biology, chemistry, math, economics, history, language — and the AI builds a live 2D/3D simulation showing motion, structure, and labelled detail.</p>
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="e.g. A 1200kg car hits a wall at 20 m/s — show Newton's 2nd law"
+            placeholder="e.g. How does photosynthesis work? • Plot y = sin(x) and its derivative • A 1200kg car hits a wall at 20 m/s • Supply & demand for coffee"
             className="min-h-[140px] resize-none bg-black/40 text-white placeholder:text-white/40"
           />
           <Button onClick={() => handleGenerate(false)} disabled={busy || !prompt.trim()} className="w-full">
@@ -278,7 +278,8 @@ function Lab3DPage() {
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-center">
               <div className="rounded-2xl border border-white/10 bg-black/40 px-6 py-4 text-white/70 backdrop-blur">
                 <Sparkles className="mx-auto mb-2 h-6 w-6 text-violet-400" />
-                <div className="text-sm">Describe a scenario to build a live 3D simulation.</div>
+                <div className="text-sm">Type any question or scenario — from any subject — to build a live simulation.</div>
+                <div className="mt-1 text-[11px] text-white/50">Motion, structure, flows and labels are generated automatically.</div>
               </div>
             </div>
           )}

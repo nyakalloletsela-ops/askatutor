@@ -1,4 +1,5 @@
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop, FlaskConical, Atom } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -62,6 +63,10 @@ export function ActionBar(props: Props) {
               <PillButton active={panel === "notes"} onClick={() => onTogglePanel("notes")} icon={<StickyNote className="h-3.5 w-3.5" />} label="Notes" />
               <PillButton active={panel === "ai"} onClick={() => onTogglePanel("ai")} icon={<Sparkles className="h-3.5 w-3.5" />} label="AI Tutor" />
             </Group>
+            <Group title="Labs">
+              <LinkPill to="/labs" icon={<FlaskConical className="h-3.5 w-3.5" />} label="PhET Lab" />
+              <LinkPill to="/labs/simulation-lab" icon={<Atom className="h-3.5 w-3.5" />} label="Simulation Lab" />
+            </Group>
             <Group title="System">
               <PillButton onClick={onOpenSettings} icon={<Settings className="h-3.5 w-3.5" />} label="Devices" />
             </Group>
@@ -117,6 +122,15 @@ export function ActionBar(props: Props) {
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
+      <Link to="/labs" target="_blank" rel="noreferrer" title="PhET Lab" aria-label="PhET Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+        <FlaskConical className="h-4 w-4" />
+      </Link>
+      <Link to="/labs/simulation-lab" target="_blank" rel="noreferrer" title="Simulation Lab" aria-label="Simulation Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+        <Atom className="h-4 w-4" />
+      </Link>
+
+      <span className="mx-1 h-6 w-px bg-white/15" />
+
       <CircleButton onClick={onOpenSettings} title="Devices">
         <Settings className="h-4 w-4" />
       </CircleButton>
@@ -168,5 +182,19 @@ function PillButton({ active, onClick, icon, label }: { active?: boolean; onClic
       {icon}
       {label}
     </button>
+  );
+}
+
+function LinkPill({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
+  return (
+    <Link
+      to={to}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white transition hover:bg-white/20"
+    >
+      {icon}
+      {label}
+    </Link>
   );
 }
