@@ -319,8 +319,17 @@ function Dashboard() {
     );
   }
 
+  // Phase 4 — admins get the redesigned admin overview
+  if (roles.includes("admin")) {
+    return (
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <AdminHome firstName={firstName} />
+      </main>
+    );
+  }
+
   // Phase 3 — tutors get the redesigned home
-  if (isTutor && !roles.includes("admin")) {
+  if (isTutor) {
     return (
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <TutorHome
