@@ -817,15 +817,23 @@ function ManualIntentDialog() {
       if (!studentId || !tutorId || !amount) throw new Error("Student, tutor and amount are required");
       const cents = Math.round(Number(amount) * 100);
       if (!Number.isFinite(cents) || cents <= 0) throw new Error("Invalid amount");
-      const { error } = await supabase.rpc("admin_record_manual_intent", {
+      const args: {
+        _student: string;
+        _tutor: string;
+        _gross_cents: number;
+        _currency?: string;
+        _method?: string;
+        _session?: string;
+        _subject?: string;
+      } = {
         _student: studentId,
         _tutor: tutorId,
-        _session: sessionId || undefined,
         _gross_cents: cents,
         _currency: currency || "USD",
         _method: method || "manual",
-        _subject: undefined,
-      });
+      };
+      if (sessionId) args._session = sessionId;
+      const { error } = await supabase.rpc("admin_record_manual_intent", args);
       if (error) throw error;
     },
     onSuccess: () => {
