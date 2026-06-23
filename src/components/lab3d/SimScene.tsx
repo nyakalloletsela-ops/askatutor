@@ -112,13 +112,57 @@ function ObjectMesh({ s }: { s: SimObjectState }) {
   );
 }
 
+function ConnectionLine({ from, to, label, color = "#67e8f9" }: { from?: SimObjectState; to?: SimObjectState; label?: string; color?: string }) {
+  const ref = useRef<THREE.Line>(null);
+  useFrame(() => {
+    if (!ref.current || !from || !to) return;
+    ref.current.geometry.setFromPoints([
+      new THREE.Vector3(from.position[0], from.position[1], from.position[2]),
+      new THREE.Vector3(to.position[0], to.position[1], to.position[2]),
+    ]);
+    ref.current.geometry.attributes.position.needsUpdate = true;
+  });
+  if (!from || !to) return null;
+  const mid: [number, number, number] = [
+    (from.position[0] + to.position[0]) / 2,
+    (from.position[1] + to.position[1]) / 2 + 0.25,
+    (from.position[2] + to.position[2]) / 2,
+  ];
+  return (
+    <>
+      <line ref={ref}>
+        <bufferGeometry />
+        <lineBasicMaterial color={color} transparent opacity={0.75} />
+      </line>
+      {label && (
+        <Html distanceFactor={14} position={mid} center>
+          <div className="rounded bg-black/70 px-1.5 py-0.5 text-[9px] text-cyan-100">{label}</div>
+        </Html>
+      )}
+    </>
+  );
+}
+
 function SimRunner({ schema, playing, resetKey, timeScale }: Omit<Props, "onCanvasReady">) {
   const state = useMemo<SimObjectState[]>(() => (schema ? buildInitialState(schema) : []), [schema, resetKey]);
   useFrame((_, dt) => {
     if (!schema || !playing) return;
     stepSim(state, schema.rules, Math.min(dt, 0.05) * timeScale);
   });
-  return <>{state.map((s) => <ObjectMesh key={s.index} s={s} />)}</>;
+  return (
+    <>
+      {(schema.connections ?? []).map((c, i) => (
+        <ConnectionLine
+          key={`${c.from}-${c.to}-${i}`}
+          from={state[c.from]}
+          to={state[c.to]}
+          label={c.label}
+          color={c.type === "bond" ? "#fef08a" : c.type === "force" ? "#fb7185" : "#67e8f9"}
+        />
+      ))}
+      {state.map((s) => <ObjectMesh key={s.index} s={s} />)}
+    </>
+  );
 }
 
 function CanvasReadyBridge({ onReady }: { onReady?: (gl: THREE.WebGLRenderer) => void }) {
