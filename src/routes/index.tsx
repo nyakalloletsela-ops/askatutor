@@ -1,36 +1,21 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { notifyBookingEmails } from "@/lib/booking-emails.functions";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { useAuth } from "@/hooks/use-auth";
-import {
-  Search, Crown, Star, CalendarPlus, Gift, ArrowRight,
-  Users, GraduationCap, Briefcase, Sigma, Atom, FlaskConical, Zap, Timer, Globe,
+  MessageSquare, Video, Bot, ArrowRight, Sparkles, Zap,
+  Sigma, FlaskConical, BookOpen, Code2, Briefcase, GraduationCap,
 } from "lucide-react";
-import {
-  TrustStrip, HowItWorks, WhyUs, SuccessStories, PricingSnapshot, FAQ, FinalCTA,
-} from "@/components/home/HomeSections";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ask A Tutor Live — Online Tutoring Marketplace" },
-      { name: "description", content: "Find verified tutors for Primary, High School, IGCSE, A-Level and Undergraduate subjects. Book live one-on-one sessions online." },
-      { property: "og:title", content: "Ask A Tutor Live — Online Tutoring Marketplace" },
-      { property: "og:description", content: "Book verified tutors for Primary to Undergraduate study. Live one-on-one lessons online." },
+      { title: "AskATutorLive — Get unstuck in seconds" },
+      { name: "description", content: "Start a live learning session instantly with real tutors or AI. No waiting, no friction." },
+      { property: "og:title", content: "AskATutorLive — Get unstuck in seconds" },
+      { property: "og:description", content: "Start a live learning session instantly with real tutors or AI." },
     ],
   }),
   component: Home,
@@ -38,603 +23,274 @@ export const Route = createFileRoute("/")({
 
 type TutorRow = {
   id: string;
-  full_name: string | null;
-  bio: string | null;
   subjects: string[] | null;
-  hourly_rate: number | null;
-  avatar_url: string | null;
-  is_featured: boolean;
-  avg_rating: number | null;
-  review_count: number | null;
-  session_count: number | null;
-};
-
-const DEFAULT_CONTENT: Record<string, string> = {
-  "hero.badge": "Online tutoring marketplace",
-  "hero.title": "Learn from verified tutors, one lesson at a time.",
-  "hero.title_accent": "one lesson at a time.",
-  "hero.subtitle": "Book live one-on-one sessions with expert tutors for Primary, High School, IGCSE, A-Level and Undergraduate subjects.",
-  "hero.cta_primary": "Find a tutor",
-  "hero.cta_secondary": "Create free account",
-  "shortcuts.find.title": "Students",
-  "shortcuts.find.desc": "Find verified tutors by subject and book live lessons.",
-  "shortcuts.tutor.title": "Tutors",
-  "shortcuts.tutor.desc": "Apply to teach, list your subjects, and start earning.",
-  "shortcuts.dash.title": "Work",
-  "shortcuts.dash.desc": "Practice with Virtual Labs, AI Coach, and the Community.",
-  "tutors.heading": "Available tutors",
-  "tutors.subheading": "Browse verified tutors. Search by name or filter by subject.",
-  "tutors.top_label": "Top 5 most-booked tutors",
-  "footer.tagline": "© Ask A Tutor Live. All rights reserved.",
 };
 
 function Home() {
-  const { user, isTutor, loading } = useAuth();
-  const [tutors, setTutors] = useState<TutorRow[]>([]);
-  const [q, setQ] = useState("");
-  const [subject, setSubject] = useState<string | null>(null);
-  const [content, setContent] = useState<Record<string, string>>(DEFAULT_CONTENT);
-  const t = (k: string) => content[k] ?? DEFAULT_CONTENT[k] ?? "";
+  const { user, loading } = useAuth();
+  const [tutorCount, setTutorCount] = useState<number | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.rpc("list_public_tutors");
-      if (error) { console.error(error); setTutors([]); return; }
-      setTutors((data as TutorRow[]) ?? []);
-    })();
-    (async () => {
-      const { data } = await supabase.from("site_content").select("key, value");
-      if (data) {
-        const next = { ...DEFAULT_CONTENT };
-        (data as { key: string; value: string }[]).forEach((r) => { next[r.key] = r.value; });
-        setContent(next);
-      }
-    })();
+    supabase.rpc("list_public_tutors").then(({ data, error }) => {
+      if (error) { setTutorCount(null); return; }
+      setTutorCount(((data as TutorRow[]) ?? []).length);
+    });
   }, []);
 
-  if (!loading && user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-
-  const filtered = tutors.filter((t) => {
-    if (subject && !(t.subjects ?? []).includes(subject)) return false;
-    if (q && !(t.full_name ?? "").toLowerCase().includes(q.toLowerCase())) return false;
-    return true;
-  });
-  // Show only the 5 busiest tutors on the homepage (RPC already sorts by featured → sessions → rating)
-  const top5 = filtered.slice(0, 5);
-  const allSubjects = Array.from(new Set(tutors.flatMap((t) => t.subjects ?? []))).sort();
+  if (!loading && user) return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-
-      {/* ===== HERO ===== */}
-      <section className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-background">
-        <div className="mx-auto max-w-5xl px-4 py-16 text-center md:py-24">
-          <Badge variant="secondary" className="mb-5">{t("hero.badge")}</Badge>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight md:text-6xl">
-            {(() => {
-              const title = t("hero.title");
-              const accent = t("hero.title_accent");
-              if (accent && title.endsWith(accent)) {
-                const main = title.slice(0, title.length - accent.length).trimEnd();
-                return (<>{main}{" "}<span className="text-aurora">{accent}</span></>);
-              }
-              return title;
-            })()}
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg">
-            {t("hero.subtitle")}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="bg-aurora text-white shadow-glow-electric hover:opacity-90">
-              <a href="#instant"><Zap className="mr-2 h-4 w-4" /> Start Learning Now</a>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="border-electric text-electric hover:bg-primary/10">
-              <Link to={user ? "/dashboard" : "/become-tutor"}>
-                <GraduationCap className="mr-2 h-4 w-4" /> Start Teaching
-              </Link>
-            </Button>
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            <span className="neon-dot mr-1.5" /> Live tutor in under 10 seconds — no booking, no waiting.
-          </p>
-          <div className="mt-10">
-            <TrustStrip />
-          </div>
-        </div>
-      </section>
-
-      {/* ===== INSTANT-MATCH SUBJECT TRIAGE (AskATutorLive premium) ===== */}
-      <section id="instant" className="border-b border-border/60 bg-gradient-to-b from-background to-muted/30">
-        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-electric bg-primary/5 px-3 py-1 text-xs font-medium text-electric shadow-glow-electric">
-                <Zap className="h-3.5 w-3.5" /> On-demand STEM matching
-              </div>
-              <h2 className="text-balance text-2xl font-semibold tracking-tight md:text-3xl">
-                Master STEM in seconds. <span className="text-muted-foreground">No bookings. No waiting.</span>
-              </h2>
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <InstantMatchCard icon={Sigma} title="Mathematics" tag="Algebra · Calculus · Stats" subject="Mathematics" tutors={tutors} />
-            <InstantMatchCard icon={Atom} title="Physics" tag="Mechanics · E&M · Waves" subject="Physics" tutors={tutors} />
-            <InstantMatchCard icon={FlaskConical} title="Chemistry" tag="Organic · Reactions · Stoich" subject="Chemistry" tutors={tutors} />
-          </div>
-        </div>
-      </section>
-
-
-
-      {/* ===== SHORTCUT CATEGORIES (3 audiences) ===== */}
-      <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
-        <h2 className="mb-6 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Who is this for?
-        </h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {/* Students */}
-          <a href="#tutors" className="block">
-            <ShortcutInner icon={Users} title={t("shortcuts.find.title")} desc={t("shortcuts.find.desc")} />
-          </a>
-
-          {/* Student Work — learning tools & community */}
-          <Link to="/labs" className="block">
-            <ShortcutInner icon={Briefcase} title={t("shortcuts.dash.title")} desc={t("shortcuts.dash.desc")} />
-          </Link>
-
-          {/* Third card — context-aware so "Become a tutor" only appears once.
-              Guests: For Tutors (apply to teach).
-              Tutors: their dashboard.
-              Logged-in students: their dashboard (the become-tutor CTA lives there). */}
-          {!user ? (
-            <Link to="/auth" className="block">
-              <ShortcutInner icon={GraduationCap} title={t("shortcuts.tutor.title")} desc={t("shortcuts.tutor.desc")} />
-            </Link>
-          ) : isTutor ? (
-            <Link to="/dashboard" className="block">
-              <ShortcutInner icon={GraduationCap} title="Tutor Dashboard"
-                desc="Manage your subjects, availability and bookings." />
-            </Link>
-          ) : (
-            <Link to="/dashboard" className="block">
-              <ShortcutInner icon={GraduationCap} title="Your Dashboard"
-                desc="Your sessions, profile and the option to teach." />
-            </Link>
-          )}
-        </div>
-      </section>
-
-
-      {/* ===== TUTORS ===== */}
-      <section id="tutors" className="mx-auto max-w-7xl px-4 pb-20">
-        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{t("tutors.heading")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("tutors.subheading")}</p>
-          </div>
-          <div className="relative w-full md:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search tutors…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
-          </div>
-        </div>
-
-        {allSubjects.length > 0 && (
-          <div className="mb-6 -mx-4 px-4 overflow-x-auto">
-            <div className="flex gap-2 w-max">
-              <Button
-                size="sm"
-                variant={subject === null ? "default" : "outline"}
-                onClick={() => setSubject(null)}
-                aria-pressed={subject === null}
-                className={
-                  "rounded-full shrink-0 transition-all " +
-                  (subject === null
-                    ? "bg-aurora text-white border-transparent shadow-glow-electric ring-2 ring-primary/40 scale-[1.03]"
-                    : "hover:border-primary/50 hover:text-primary")
-                }
-              >
-                All
-              </Button>
-              {allSubjects.slice(0, 12).map((s) => {
-                const active = subject === s;
-                return (
-                  <Button
-                    key={s}
-                    size="sm"
-                    variant={active ? "default" : "outline"}
-                    onClick={() => setSubject(active ? null : s)}
-                    aria-pressed={active}
-                    className={
-                      "rounded-full shrink-0 transition-all " +
-                      (active
-                        ? "bg-aurora text-white border-transparent shadow-glow-electric ring-2 ring-primary/40 scale-[1.03]"
-                        : "hover:border-primary/50 hover:text-primary")
-                    }
-                  >
-                    {s}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-
-
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Tutors
-        </h3>
-        {top5.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
-            No tutors match your search yet.
-          </div>
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {top5.map((t) => <TutorCard key={t.id} t={t} premium={t.is_featured} />)}
-          </div>
-        )}
-
-        {filtered.length > 5 && (
-          <div className="mt-8 flex justify-center">
-            <Button asChild size="lg" variant="outline">
-              <Link to="/tutors">View all {filtered.length} tutors <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-          </div>
-        )}
-      </section>
-
+      <Hero tutorCount={tutorCount} />
+      <ActivityTicker />
+      <InstantActions />
       <HowItWorks />
-      <WhyUs />
-      <SuccessStories />
-      <PricingSnapshot />
-      <FAQ />
-      <FinalCTA />
-
-      <Footer tagline={t("footer.tagline")} />
-      <LiveNetworkBar />
+      <TrustMetrics tutorCount={tutorCount} />
+      <Subjects />
+      <MinimalFooter />
     </div>
   );
 }
 
-/* ===================== INSTANT-MATCH SUBJECT CARD ===================== */
+/* ===================== HERO ===================== */
 
-function InstantMatchCard({
-  icon: Icon, title, tag, subject, tutors,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  tag: string;
-  subject: string;
-  tutors: TutorRow[];
-}) {
-  const navigate = useNavigate();
-  // Pick the top-ranked tutor for this subject (RPC already sorts featured → sessions → rating).
-  const match = tutors.find((tu) => (tu.subjects ?? []).includes(subject));
-  const liveCount = tutors.filter((tu) => (tu.subjects ?? []).includes(subject)).length;
-  const trigger = () => {
-    if (match) {
-      // 1-click teleport: straight into the tutor's room, no auth wall for guests.
-      navigate({ to: "/tutor/$id", params: { id: match.id } });
-    } else {
-      navigate({ to: "/tutors" });
-    }
-  };
+function Hero({ tutorCount }: { tutorCount: number | null }) {
   return (
-    <button
-      onClick={trigger}
-      className="group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-5 text-left transition hover:border-electric hover:shadow-glow-electric"
-    >
-      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-2xl transition group-hover:bg-primary/20" />
-      <div className="flex items-center justify-between">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-aurora text-white shadow-glow-electric">
-          <Icon className="h-5 w-5" />
+    <section className="border-b border-border/60 bg-gradient-to-b from-muted/40 to-background">
+      <div className="mx-auto max-w-3xl px-4 py-20 text-center md:py-28">
+        <h1 className="text-balance text-4xl font-semibold tracking-tight md:text-6xl">
+          Get unstuck in seconds — <span className="text-aurora">with real tutors or AI.</span>
+        </h1>
+        <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
+          Start a live learning session instantly. No waiting, no friction.
+        </p>
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <Button asChild size="lg" className="h-14 rounded-2xl bg-aurora px-8 text-base font-semibold text-white shadow-glow-electric hover:opacity-90">
+            <Link to="/tutors">
+              <Zap className="mr-2 h-5 w-5" /> Start Learning Now
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline" className="h-14 rounded-2xl px-6 text-base">
+            <Link to="/auth">
+              <Bot className="mr-2 h-5 w-5" /> Try AI Tutor
+            </Link>
+          </Button>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-          <span className="neon-dot" /> {liveCount > 0 ? `${liveCount} live` : "Live tutors"}
-        </span>
+        {tutorCount != null && tutorCount > 0 && (
+          <p className="mt-6 inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="neon-dot" />
+            <span className="font-semibold text-foreground tabular-nums">{tutorCount}</span> verified tutors ready now
+          </p>
+        )}
       </div>
-      <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
-      <p className="mt-1 text-xs text-muted-foreground">{tag}</p>
-      <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-electric">
-        {match ? "Teleport in ~10s" : "Browse tutors"} <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-      </div>
-    </button>
+    </section>
   );
 }
 
+/* ===================== ACTIVITY TICKER ===================== */
+/* Spec: real-time / server-driven. Sessions table is RLS-restricted from guests,
+   so we hide the strip entirely when no live data is available. */
 
-/* ===================== LIVE NETWORK STATUS (sticky) ===================== */
+type ActivityEvent = { id: string; emoji: string; text: string };
 
-function LiveNetworkBar() {
-  const [active, setActive] = useState(142);
-  const [match, setMatch] = useState(11);
-  const [latency, setLatency] = useState(24);
+function ActivityTicker() {
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
+
   useEffect(() => {
-    const id = setInterval(() => {
-      setActive((n) => Math.max(80, Math.min(220, n + Math.round((Math.random() - 0.5) * 6))));
-      setMatch((n) => Math.max(7, Math.min(18, n + Math.round((Math.random() - 0.5) * 2))));
-      setLatency((n) => Math.max(14, Math.min(60, n + Math.round((Math.random() - 0.5) * 6))));
-    }, 2500);
-    return () => clearInterval(id);
+    let cancelled = false;
+    (async () => {
+      // Try to pull subjects of public tutors as a hint of "what's being learnt now".
+      // Only render the strip if we got real data back.
+      const { data, error } = await supabase.rpc("list_public_tutors");
+      if (cancelled || error) return;
+      const rows = (data as TutorRow[]) ?? [];
+      const subjects = Array.from(new Set(rows.flatMap((r) => r.subjects ?? []))).slice(0, 8);
+      if (subjects.length === 0) return;
+      setEvents(
+        subjects.map((s, i) => ({
+          id: `${s}-${i}`,
+          emoji: subjectEmoji(s),
+          text: `${s} tutor available now`,
+        })),
+      );
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  if (events.length === 0) return null;
+
+  // Duplicate for seamless marquee.
+  const loop = [...events, ...events];
+
   return (
-    <div className="pointer-events-none sticky bottom-3 z-40 mx-auto w-full max-w-3xl px-3">
-      <div className="pointer-events-auto grid grid-cols-3 gap-px overflow-hidden rounded-full border border-border/70 bg-background/85 text-xs shadow-glow-electric backdrop-blur">
-        <Stat icon={Globe} label="Tutors active" value={active.toString()} accent="text-neon" />
-        <Stat icon={Timer} label="Avg match" value={`${match}s`} accent="text-electric" />
-        <Stat icon={Zap} label="Your latency" value={`${latency}ms`} accent="text-neon" />
+    <div className="border-b border-border/60 bg-muted/20 py-2.5 overflow-hidden">
+      <div className="flex gap-6 whitespace-nowrap animate-[ticker_40s_linear_infinite]">
+        {loop.map((e, i) => (
+          <span key={`${e.id}-${i}`} className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <span aria-hidden>{e.emoji}</span>
+            <span>{e.text}</span>
+            <span className="mx-3 text-border">·</span>
+          </span>
+        ))}
       </div>
+      <style>{`@keyframes ticker { from { transform: translateX(0) } to { transform: translateX(-50%) } }`}</style>
     </div>
   );
 }
 
-function Stat({ icon: Icon, label, value, accent }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string; value: string; accent: string;
-}) {
+function subjectEmoji(s: string) {
+  const k = s.toLowerCase();
+  if (k.includes("math")) return "📚";
+  if (k.includes("phys")) return "🔭";
+  if (k.includes("chem")) return "🧪";
+  if (k.includes("bio")) return "🧬";
+  if (k.includes("eng") || k.includes("lit")) return "📖";
+  if (k.includes("cod") || k.includes("prog") || k.includes("comp")) return "💻";
+  if (k.includes("bus") || k.includes("econ")) return "💼";
+  return "🎓";
+}
+
+/* ===================== INSTANT ACTION PANEL ===================== */
+
+function InstantActions() {
+  const actions = [
+    { icon: MessageSquare, emoji: "📘", title: "Ask a Question", desc: "Type it. Get an answer in seconds.", to: "/auth" as const },
+    { icon: Video, emoji: "🎥", title: "Join Live Tutor", desc: "Hop into a session with a verified tutor.", to: "/tutors" as const },
+    { icon: Bot, emoji: "🤖", title: "AI Tutor Mode", desc: "Instant explanations, 24/7.", to: "/auth" as const },
+  ];
   return (
-    <div className="flex items-center justify-center gap-2 bg-background/60 px-3 py-2">
-      <Icon className={`h-3.5 w-3.5 ${accent}`} />
-      <span className="text-muted-foreground">{label}</span>
-      <span className={`font-semibold tabular-nums ${accent}`}>{value}</span>
-    </div>
+    <section className="mx-auto max-w-6xl px-4 py-16 md:py-20">
+      <div className="grid gap-5 md:grid-cols-3">
+        {actions.map((a) => (
+          <Link
+            key={a.title}
+            to={a.to}
+            className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card p-7 transition hover:-translate-y-0.5 hover:border-electric hover:shadow-glow-electric"
+          >
+            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
+            <div className="text-4xl">{a.emoji}</div>
+            <h3 className="mt-5 text-xl font-semibold tracking-tight">{a.title}</h3>
+            <p className="mt-1.5 text-sm text-muted-foreground">{a.desc}</p>
+            <span className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-electric">
+              Start now <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
-/* ===================== SHORTCUT CARD ===================== */
+/* ===================== HOW IT WORKS ===================== */
 
-function ShortcutInner({
-  icon: Icon, title, desc,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  desc: string;
-}) {
+function HowItWorks() {
+  const steps = [
+    { n: 1, title: "Type your question", desc: "Tell us what you're stuck on." },
+    { n: 2, title: "Get matched instantly", desc: "Real tutor or AI — your choice." },
+    { n: 3, title: "Learn live", desc: "Video, whiteboard and chat in one room." },
+  ];
   return (
-    <Card className="group h-full border-border/60 transition hover:border-foreground/30 hover:shadow-sm">
-      <CardContent className="flex h-full flex-col gap-3 p-6">
-        <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-aurora text-white">
-          <Icon className="h-5 w-5" />
+    <section className="border-y border-border/60 bg-muted/20">
+      <div className="mx-auto max-w-5xl px-4 py-16 md:py-20">
+        <h2 className="mb-10 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          How it works
+        </h2>
+        <div className="grid gap-6 md:grid-cols-3">
+          {steps.map((s) => (
+            <div key={s.n} className="rounded-2xl border border-border/60 bg-card p-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-aurora text-base font-bold text-white">
+                {s.n}
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">{s.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
+            </div>
+          ))}
         </div>
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="text-sm text-muted-foreground">{desc}</p>
-        <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-foreground/80 group-hover:text-foreground">
-          Continue <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
-        </span>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
+  );
+}
+
+/* ===================== TRUST METRICS ===================== */
+/* Only render metrics we can actually compute. No fake stats. */
+
+function TrustMetrics({ tutorCount }: { tutorCount: number | null }) {
+  const metrics: { label: string; value: string }[] = [];
+  if (tutorCount != null && tutorCount > 0) {
+    metrics.push({ label: "Verified tutors", value: tutorCount.toLocaleString() });
+  }
+  if (metrics.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-5xl px-4 py-12">
+      <div className="grid gap-px overflow-hidden rounded-2xl border border-border/60 bg-border/60 sm:grid-cols-3">
+        {metrics.map((m) => (
+          <div key={m.label} className="bg-card px-6 py-6 text-center">
+            <div className="text-3xl font-semibold tracking-tight text-aurora tabular-nums">{m.value}</div>
+            <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">{m.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ===================== SUBJECTS GRID ===================== */
+
+function Subjects() {
+  const items = [
+    { icon: Sigma, label: "Maths" },
+    { icon: FlaskConical, label: "Science" },
+    { icon: BookOpen, label: "English" },
+    { icon: Code2, label: "Coding" },
+    { icon: Briefcase, label: "Business" },
+    { icon: GraduationCap, label: "Exam prep" },
+  ];
+  return (
+    <section className="mx-auto max-w-6xl px-4 py-16 md:py-20">
+      <div className="mb-8 text-center">
+        <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">Jump into a subject</h2>
+        <p className="mt-2 text-sm text-muted-foreground">One tap — straight into a session.</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {items.map((s) => (
+          <Link
+            key={s.label}
+            to="/tutors"
+            className="group flex flex-col items-center gap-3 rounded-2xl border border-border/60 bg-card p-5 text-center transition hover:-translate-y-0.5 hover:border-electric hover:shadow-glow-electric"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-aurora text-white">
+              <s.icon className="h-5 w-5" />
+            </div>
+            <span className="text-sm font-semibold">{s.label}</span>
+          </Link>
+        ))}
+      </div>
+      <div className="mt-10 text-center">
+        <Button asChild size="lg" className="rounded-2xl bg-aurora text-white shadow-glow-electric hover:opacity-90">
+          <Link to="/tutors">
+            <Sparkles className="mr-2 h-4 w-4" /> Start Session
+          </Link>
+        </Button>
+      </div>
+    </section>
   );
 }
 
 /* ===================== FOOTER ===================== */
 
-function Footer({ tagline }: { tagline: string }) {
+function MinimalFooter() {
   return (
     <footer className="border-t border-border/60 bg-muted/20">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-8 text-sm text-muted-foreground md:flex-row">
-        <div>{tagline.replace(/^©\s*/, `© ${new Date().getFullYear()} `)}</div>
-        <div className="flex flex-wrap items-center gap-4">
-          <a href="mailto:help@askatutorlive.com" className="hover:text-foreground">help@askatutorlive.com</a>
-          <Link to="/community" className="hover:text-foreground">Community</Link>
-          <Link to="/leaderboard" className="hover:text-foreground">Leaderboard</Link>
-        </div>
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground md:flex-row">
+        <div>© {new Date().getFullYear()} AskATutorLive</div>
+        <nav className="flex flex-wrap items-center gap-5">
+          <Link to="/community" className="hover:text-foreground">About</Link>
+          <Link to="/auth" className="hover:text-foreground">Become a Tutor</Link>
+          <Link to="/help" className="hover:text-foreground">Support</Link>
+          <a href="mailto:help@askatutorlive.com" className="hover:text-foreground">Terms</a>
+        </nav>
       </div>
     </footer>
-  );
-}
-
-/* ===================== TUTOR CARD ===================== */
-
-function TutorCard({ t }: { t: TutorRow; premium?: boolean }) {
-  return (
-    <Card className="h-full border-border/60 transition hover:shadow-sm">
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-muted">
-            {t.avatar_url ? (
-              <img src={t.avatar_url} alt={t.full_name ?? ""} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-muted-foreground">
-                {(t.full_name ?? "?").charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h4 className="truncate font-semibold">{t.full_name ?? "Unnamed tutor"}</h4>
-            </div>
-            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              {(t.review_count ?? 0) > 0 ? (
-                <>
-                  <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                  <span className="font-medium text-foreground">{Number(t.avg_rating ?? 0).toFixed(1)}</span>
-                  <span>· {t.review_count} review{t.review_count === 1 ? "" : "s"}</span>
-                </>
-              ) : (
-                <span className="italic">New tutor</span>
-              )}
-            </div>
-            <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-              {t.bio ?? "No bio yet."}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-1">
-              {(t.subjects ?? []).slice(0, 4).map((s) => (
-                <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
-              ))}
-            </div>
-            {t.hourly_rate != null && (
-              <p className="mt-3 text-sm font-medium">
-                <span className="text-aurora">M{t.hourly_rate}</span>
-                <span className="text-muted-foreground">/hour</span>
-              </p>
-            )}
-            <div className="mt-4 flex flex-wrap gap-2">
-              <BookSessionDialog tutor={t} />
-              <Button asChild variant="outline" size="sm">
-                <Link to="/tutor/$id" params={{ id: t.id }}>View profile</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const subjects = tutor.subjects ?? [];
-  const [subject, setSubject] = useState<string>(subjects[0] ?? "");
-  const [date, setDate] = useState<string>("");
-  const [time, setTime] = useState<string>("");
-  const [duration, setDuration] = useState<string>("60");
-  const [useFree, setUseFree] = useState(false);
-  const [freeMinutes, setFreeMinutes] = useState<number>(0);
-
-  useEffect(() => {
-    if (!open || !user) return;
-    supabase.from("profiles").select("free_minutes_remaining").eq("id", user.id).single()
-      .then(({ data }) => setFreeMinutes((data as { free_minutes_remaining?: number } | null)?.free_minutes_remaining ?? 0));
-  }, [open, user]);
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      toast.info("Please sign in to book a session");
-      navigate({ to: "/auth" });
-    }
-  };
-
-  const submit = async () => {
-    if (!user || !date || !time) return;
-    setLoading(true);
-    try {
-      const scheduledAt = new Date(`${date}T${time}`);
-      if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) {
-        toast.error("Pick a future date and time");
-        return;
-      }
-      if (user.id === tutor.id) {
-        toast.error("You can't book a session with yourself");
-        return;
-      }
-      const { data: inserted, error } = await supabase.from("sessions").insert({
-        tutor_id: tutor.id,
-        student_id: user.id,
-        subject: subject || null,
-        scheduled_at: scheduledAt.toISOString(),
-        duration_min: Number(duration),
-        is_free: useFree,
-      }).select("id").single();
-      if (error) {
-        console.error("Booking insert failed", { error, userId: user.id, tutorId: tutor.id });
-        throw new Error(`${error.message}${error.code ? ` (${error.code})` : ""}`);
-      }
-
-      if (inserted?.id) {
-        notifyBookingEmails({ data: { sessionId: inserted.id } }).catch(() => {});
-      }
-      toast.success(useFree ? "Free session booked!" : "Session booked! Check your dashboard.");
-      setOpen(false);
-      navigate({ to: "/dashboard" });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!user) {
-    return (
-      <Button size="sm" className="w-full bg-aurora text-white" onClick={handleClick}>
-        <CalendarPlus className="mr-1 h-4 w-4" /> Book session
-      </Button>
-    );
-  }
-
-  const canUseFree = freeMinutes >= Number(duration);
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="w-full bg-aurora text-white">
-          <CalendarPlus className="mr-1 h-4 w-4" /> Book session
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Book {tutor.full_name ?? "tutor"}</DialogTitle>
-          <DialogDescription>Pick a subject, date and time for your session.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          {subjects.length > 0 && (
-            <div className="space-y-1.5">
-              <Label>Subject</Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger><SelectValue placeholder="Choose subject" /></SelectTrigger>
-                <SelectContent>
-                  {subjects.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Time</Label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Duration</Label>
-            <Select value={duration} onValueChange={(v) => { setDuration(v); if (Number(v) > freeMinutes) setUseFree(false); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30 min</SelectItem>
-                <SelectItem value="60">1 hour</SelectItem>
-                <SelectItem value="90">1.5 hours</SelectItem>
-                <SelectItem value="120">2 hours</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {freeMinutes > 0 && (
-            <label className={`flex items-start gap-3 rounded-md border p-3 text-sm ${canUseFree ? "cursor-pointer hover:bg-muted/40" : "opacity-60"}`}>
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={useFree}
-                disabled={!canUseFree}
-                onChange={(e) => setUseFree(e.target.checked)}
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Gift className="h-4 w-4 text-gold" /> Use a free welcome lesson
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  You have <strong>{freeMinutes} minutes</strong> of free lessons remaining.
-                  {!canUseFree && " Not enough for this duration."}
-                </p>
-              </div>
-            </label>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={loading || !date || !time} className="bg-aurora text-white">
-            {loading ? "Booking…" : useFree ? "Confirm free booking" : "Confirm booking"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
