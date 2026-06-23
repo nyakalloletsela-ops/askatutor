@@ -166,6 +166,7 @@ export function AdminHome({ firstName }: { firstName: string }) {
       .channel("admin-home")
       .on("postgres_changes", { event: "*", schema: "public", table: "tutor_applications" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "sessions" }, load)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_audit_log" }, load)
       .subscribe();
     const t = setInterval(load, 30000);
     return () => {
