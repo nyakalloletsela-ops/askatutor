@@ -154,28 +154,122 @@ NEVER leave the visualization empty for its mode. If motion or change over time 
 
 function fallbackSchema(prompt: string): SimulationSchemaT {
   const text = prompt.toLowerCase();
-  if (/cell|biology|blood|heart|organ|plant|photosynthesis|dna|mitosis|respiration/.test(text)) {
+  if (/history|war|battle|revolution|empire|treaty|king|queen|century|world war|civil war/.test(text)) {
     return {
-      subject: "biology",
-      title: prompt.slice(0, 60) || "Biology system simulation",
+      subject: "history",
+      title: prompt.slice(0, 60) || "Historical timeline",
+      summary: "A chronological visualization of key historical events.",
+      tags: ["history", "timeline"],
+      visualization: "timeline",
+      objects: [], connections: [], rules: [], timeline: 10,
+      events: [
+        { date: "Start", title: "Background", description: "Set the historical context." },
+        { date: "Event", title: "Main event", description: "The pivotal moment of the period." },
+        { date: "Aftermath", title: "Consequences", description: "Long-term impact and outcomes." },
+      ],
+    };
+  }
+  if (/french|spanish|german|italian|japanese|chinese|vocab|restaurant|airport|hotel|interview|conversation|greeting|dialogue/.test(text)) {
+    return {
+      subject: "language",
+      title: prompt.slice(0, 60) || "Language scene",
+      summary: "An interactive dialogue scene for language practice.",
+      tags: ["language", "dialogue"],
+      visualization: "language",
+      objects: [], connections: [], rules: [], timeline: 10,
+      language: {
+        setting: "A typical scenario",
+        characters: [
+          { name: "You", emoji: "🧑", color: "#22d3ee" },
+          { name: "Other", emoji: "🧑‍🍳", color: "#f472b6" },
+        ],
+        dialogue: [
+          { speaker: 1, original: "Bonjour !", translation: "Hello!", lang: "fr" },
+          { speaker: 0, original: "Bonjour, ça va ?", translation: "Hello, how are you?", lang: "fr" },
+          { speaker: 1, original: "Très bien, merci.", translation: "Very well, thank you.", lang: "fr" },
+        ],
+        vocabulary: [
+          { term: "Bonjour", meaning: "Hello" },
+          { term: "Merci", meaning: "Thank you" },
+        ],
+      },
+    };
+  }
+  if (/tecton|continent|climate|ocean|geograph|country|population|region|map/.test(text)) {
+    return {
+      subject: "geography",
+      title: prompt.slice(0, 60) || "Geographic overview",
+      summary: "A geographic visualization with labelled regions.",
+      tags: ["geography", "map"],
+      visualization: "geo",
+      objects: [], connections: [], rules: [], timeline: 10,
+      geo: {
+        center: [20, 0], zoom: 1,
+        regions: [
+          { name: "Region A", color: "#22d3ee", label: "A", pin: { lat: 40, lng: -100 } },
+          { name: "Region B", color: "#f472b6", label: "B", pin: { lat: 10, lng: 30 } },
+          { name: "Region C", color: "#facc15", label: "C", pin: { lat: -20, lng: 130 } },
+        ],
+      },
+    };
+  }
+  if (/photosynthesis|mitosis|water cycle|cpu|algorithm|network packet|process|step/.test(text)) {
+    return {
+      subject: "process",
+      title: prompt.slice(0, 60) || "Step-by-step process",
+      summary: "Animated step-by-step breakdown.",
+      tags: ["process", "animation"],
+      visualization: "process",
+      objects: [
+        { type: "node", position: [-4, 1, 0], radius: 0.8, color: "#22c55e", label: "Input" },
+        { type: "node", position: [0, 1, 0], radius: 0.8, color: "#f59e0b", label: "Process" },
+        { type: "node", position: [4, 1, 0], radius: 0.8, color: "#06b6d4", label: "Output" },
+      ],
+      connections: [{ from: 0, to: 1, type: "flow" }, { from: 1, to: 2, type: "flow" }],
+      rules: ["flow_dynamics"], timeline: 10,
+      steps: [
+        { title: "Step 1: Input", description: "Initial conditions are set.", duration: 3, highlight: [0] },
+        { title: "Step 2: Transformation", description: "The core process runs.", duration: 4, highlight: [1] },
+        { title: "Step 3: Output", description: "The result is produced.", duration: 3, highlight: [2] },
+      ],
+    };
+  }
+  if (/derivative|integral|function|sin|cos|graph|plot|equation|inflation|supply|demand/.test(text)) {
+    return {
+      subject: "math",
+      title: prompt.slice(0, 60) || "Function plot",
+      summary: "Live 2D graph with animated curve.",
+      tags: ["math", "graph"],
+      visualization: "scene2d",
+      objects: [], connections: [], rules: [], timeline: 10,
+      graph2d: {
+        xLabel: "x", yLabel: "y", xMin: -10, xMax: 10, yMin: -3, yMax: 3,
+        curves: [
+          { label: "y = sin(x + t)", color: "#22d3ee", expr: "Math.sin(x + t)" },
+          { label: "y = cos(x + t)", color: "#f472b6", expr: "Math.cos(x + t)" },
+        ],
+        points: [],
+      },
+    };
+  }
+  if (/cell|biology|blood|heart|organ|plant|dna|respiration/.test(text)) {
+    return {
+      subject: "biology", title: prompt.slice(0, 60) || "Biology system", visualization: "scene3d",
       summary: "A living-system process shown as animated cells and directional flows.",
       tags: ["biology", "system", "process"],
       objects: [
         { type: "cell", position: [-4, 1.2, 0], radius: 1.2, color: "#22c55e", label: "Input", velocity: [0.35, 0, 0] },
         { type: "organ", position: [0, 1.4, 0], radius: 1.6, color: "#ef4444", label: "System", fixed: true },
         { type: "cell", position: [4, 1.2, 0], radius: 1.2, color: "#06b6d4", label: "Output", velocity: [-0.25, 0, 0] },
-        { type: "particle", position: [-2, 1, 1.8], radius: 0.35, color: "#fde047", label: "energy", velocity: [0.7, 0, -0.25] },
       ],
       connections: [{ from: 0, to: 1, type: "flow" }, { from: 1, to: 2, type: "flow" }],
-      rules: ["flow_dynamics", "growth_cycle"],
-      timeline: 12,
+      rules: ["flow_dynamics", "growth_cycle"], timeline: 12,
     };
   }
   if (/chem|atom|molecule|bond|reaction|acid|base|electron|compound/.test(text)) {
     return {
-      subject: "chemistry",
-      title: prompt.slice(0, 60) || "Chemistry interaction simulation",
-      summary: "Atoms and bonds are represented as a dynamic molecular structure.",
+      subject: "chemistry", title: prompt.slice(0, 60) || "Chemistry", visualization: "scene3d",
+      summary: "Atoms and bonds as a dynamic molecular structure.",
       tags: ["chemistry", "molecule", "bonding"],
       objects: [
         { type: "atom", position: [-2, 1.2, 0], radius: 0.8, color: "#60a5fa", label: "A", velocity: [0.25, 0, 0] },
@@ -183,48 +277,12 @@ function fallbackSchema(prompt: string): SimulationSchemaT {
         { type: "atom", position: [2, 1.2, 0], radius: 0.8, color: "#a78bfa", label: "C", velocity: [-0.25, 0, 0] },
       ],
       connections: [{ from: 0, to: 1, type: "bond" }, { from: 1, to: 2, type: "bond" }],
-      rules: ["chemical_bonding", "orbital_motion"],
-      timeline: 10,
-    };
-  }
-  if (/math|equation|function|graph|calculus|geometry|vector|algebra|slope|parabola/.test(text)) {
-    return {
-      subject: "math",
-      title: prompt.slice(0, 60) || "Mathematical transformation simulation",
-      summary: "A mathematical relationship shown with axes, a changing curve, and labelled points.",
-      tags: ["math", "graph", "transformation"],
-      objects: [
-        { type: "axis", position: [0, 0.05, 0], size: [9, 0.05, 9], color: "#94a3b8", label: "axes", fixed: true },
-        { type: "curve", position: [-3, 1, 0], radius: 0.35, color: "#22d3ee", label: "f(x)", velocity: [0.6, 0, 0.2] },
-        { type: "curve", position: [0, 2, 0], radius: 0.35, color: "#f472b6", label: "turning point", velocity: [0.15, 0, -0.35] },
-        { type: "curve", position: [3, 1, 0], radius: 0.35, color: "#22d3ee", label: "x", velocity: [-0.45, 0, 0.25] },
-      ],
-      connections: [{ from: 1, to: 2, type: "relationship" }, { from: 2, to: 3, type: "relationship" }],
-      rules: ["graph_transform", "flow_dynamics"],
-      timeline: 10,
-    };
-  }
-  if (/econom|market|supply|demand|price|inflation|trade|money|business/.test(text)) {
-    return {
-      subject: "economics",
-      title: prompt.slice(0, 60) || "Economics flow simulation",
-      summary: "Economic cause and effect shown as moving value flows between market nodes.",
-      tags: ["economics", "market", "flow"],
-      objects: [
-        { type: "node", position: [-5, 1, 0], radius: 0.9, color: "#38bdf8", label: "Supply", fixed: true },
-        { type: "flow", position: [-2, 1, 0], radius: 0.45, color: "#facc15", label: "price", velocity: [0.8, 0, 0] },
-        { type: "node", position: [1.5, 1, 0], radius: 0.9, color: "#fb7185", label: "Demand", fixed: true },
-        { type: "node", position: [5, 1, 0], radius: 0.9, color: "#34d399", label: "Equilibrium", fixed: true },
-      ],
-      connections: [{ from: 0, to: 2, type: "flow" }, { from: 2, to: 3, type: "flow" }],
-      rules: ["market_flow", "flow_dynamics"],
-      timeline: 12,
+      rules: ["chemical_bonding", "orbital_motion"], timeline: 10,
     };
   }
   return {
-    subject: "abstract",
-    title: prompt.slice(0, 60) || "Abstract simulation",
-    summary: "A metaphor-based concept map with moving ideas and reusable knowledge links.",
+    subject: "abstract", title: prompt.slice(0, 60) || "Concept map", visualization: "scene3d",
+    summary: "A metaphor-based concept map with moving ideas.",
     tags: ["concept", "flow", "simulation"],
     objects: [
       { type: "sphere", position: [-4, 1, 0], radius: 0.8, color: "#7c3aed", label: "A", velocity: [1, 0, 0] },
@@ -232,8 +290,7 @@ function fallbackSchema(prompt: string): SimulationSchemaT {
       { type: "sphere", position: [4, 1, 0], radius: 0.8, color: "#22d3ee", label: "C", velocity: [-1, 0, 0] },
     ],
     connections: [{ from: 0, to: 1, type: "flow" }, { from: 1, to: 2, type: "flow" }],
-    rules: ["flow_dynamics"],
-    timeline: 10,
+    rules: ["flow_dynamics"], timeline: 10,
   };
 }
 
