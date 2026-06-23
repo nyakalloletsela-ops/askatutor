@@ -71,7 +71,11 @@ function Lab3DPage() {
   const [subject, setSubject] = useState<string>("");
   const [match, setMatch] = useState<LibraryItem | null>(null);
   const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
-  const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const [selectedObj, setSelectedObj] = useState<number | null>(null);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
+  const [quizReveal, setQuizReveal] = useState(false);
   const sceneWrapRef = useRef<HTMLDivElement>(null);
 
   async function refreshLibrary() {
