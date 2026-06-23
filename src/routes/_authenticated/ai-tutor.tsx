@@ -25,7 +25,21 @@ export const Route = createFileRoute("/_authenticated/ai-tutor")({
   }),
 });
 
-type Msg = { role: "user" | "assistant"; content: string };
+type TextPart = { type: "text"; text: string };
+type ImagePart = { type: "image_url"; image_url: { url: string } };
+type MsgContent = string | Array<TextPart | ImagePart>;
+type Msg = { role: "user" | "assistant"; content: MsgContent };
+
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // 4MB
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
 
 function AiTutorPage() {
   const send = useServerFn(aiTutorChat);
@@ -34,23 +48,54 @@ function AiTutorPage() {
     {
       role: "assistant",
       content:
-        "Hi! I'm your AI Study Coach. Tell me the subject and the problem you're stuck on — I'll guide you with hints and concepts, not full answers. What are you working on?",
+        "Hi! I'm your AI Study Coach. Tell me the subject and the problem you're stuck on — I'll guide you with hints and concepts, not full answers. When you've understood the idea, I'll ask you to try the solution yourself and upload a photo or file of your working using the paperclip button. What are you working on?",
     },
   ]);
   const [input, setInput] = useState("");
+  const [attachment, setAttachment] = useState<{ dataUrl: string; name: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      toast.error("Please upload an image of your working (PNG, JPG, HEIC, etc.).");
+      return;
+    }
+    if (f.size > MAX_IMAGE_BYTES) {
+      toast.error("Image is too large. Please keep it under 4 MB.");
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(f);
+      setAttachment({ dataUrl, name: f.name });
+    } catch {
+      toast.error("Could not read that file.");
+    }
+  };
+
   const submit = async () => {
     const text = input.trim();
-    if (!text || loading) return;
-    const next: Msg[] = [...messages, { role: "user", content: text }];
+    if ((!text && !attachment) || loading) return;
+
+    const userContent: MsgContent = attachment
+      ? [
+          { type: "text", text: text || "Here is my attempt — please comment but don't solve it for me." },
+          { type: "image_url", image_url: { url: attachment.dataUrl } },
+        ]
+      : text;
+
+    const next: Msg[] = [...messages, { role: "user", content: userContent }];
     setMessages(next);
     setInput("");
+    setAttachment(null);
     setLoading(true);
     try {
       const { reply, mode: serverMode } = await send({ data: { messages: next } });
