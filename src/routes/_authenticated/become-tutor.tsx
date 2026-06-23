@@ -25,7 +25,17 @@ type Existing = {
 
 type DocRow = { id: string; label: string; storage_path: string };
 
-const DOC_LABELS = ["CV / Resume", "Government ID", "Highest Qualification", "Teaching Certificate (optional)"];
+type DocSpec = { label: string; required: boolean; accept: string; hint: string };
+const DOC_SPECS: DocSpec[] = [
+  { label: "Government ID", required: true, accept: "application/pdf,image/*", hint: "Passport or national ID — clear photo or PDF." },
+  { label: "Highest Qualification", required: true, accept: "application/pdf,image/*", hint: "Degree certificate, diploma or transcript." },
+  { label: "Additional Education Documents", required: false, accept: "application/pdf,image/*", hint: "Extra transcripts, certifications, or training records." },
+  { label: "Teaching Certificate", required: false, accept: "application/pdf,image/*", hint: "PGCE, TEFL, or equivalent if available." },
+  { label: "CV / Resume", required: true, accept: "application/pdf,image/*", hint: "Up-to-date CV listing teaching experience." },
+  { label: "Motivational Letter", required: true, accept: "application/pdf,.doc,.docx,image/*", hint: "Why do you want to tutor on AskATutorLive?" },
+  { label: "Introduction Video", required: true, accept: "video/*", hint: "60–120s self-intro. MP4/MOV/WebM, max ~100MB." },
+];
+
 
 function BecomeTutorPage() {
   const { user, isTutor } = useAuth();
@@ -41,6 +51,7 @@ function BecomeTutorPage() {
   const [bio, setBio] = useState("");
   const [subjects, setSubjects] = useState("");
   const [qualifications, setQualifications] = useState("");
+  const [motivation, setMotivation] = useState("");
 
   const load = async () => {
     if (!user) return;
@@ -68,8 +79,8 @@ function BecomeTutorPage() {
 
   const submit = async () => {
     if (!user) return;
-    if (!fullName.trim() || !bio.trim() || !qualifications.trim() || !subjects.trim()) {
-      return toast.error("Please fill in name, subjects, bio, and qualifications");
+    if (!fullName.trim() || !bio.trim() || !qualifications.trim() || !subjects.trim() || !motivation.trim()) {
+      return toast.error("Please fill in name, subjects, bio, qualifications and motivation");
     }
     setSubmitting(true);
     const { data, error } = await supabase
@@ -81,7 +92,7 @@ function BecomeTutorPage() {
         phone: phone.trim() || null,
         bio: bio.trim(),
         subjects: subjects.split(",").map((s) => s.trim()).filter(Boolean),
-        qualifications: qualifications.trim(),
+        qualifications: `${qualifications.trim()}\n\n--- Motivation ---\n${motivation.trim()}`,
       })
       .select("id, status, admin_notes, submitted_at")
       .single();
@@ -189,6 +200,10 @@ function BecomeTutorPage() {
               <div className="sm:col-span-2"><Label>Subjects you can teach (comma-separated)</Label><Input value={subjects} onChange={(e) => setSubjects(e.target.value)} placeholder="Mathematics, Physical Sciences, English" /></div>
               <div className="sm:col-span-2"><Label>Short bio</Label><Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell us about your teaching experience and approach." /></div>
               <div className="sm:col-span-2"><Label>Qualifications</Label><Textarea rows={3} value={qualifications} onChange={(e) => setQualifications(e.target.value)} placeholder="e.g. BSc Mathematics (UCT, 2022); 3 years tutoring..." /></div>
+              <div className="sm:col-span-2"><Label>Motivational letter</Label><Textarea rows={5} value={motivation} onChange={(e) => setMotivation(e.target.value)} placeholder="Why do you want to tutor on AskATutorLive? What's your teaching philosophy?" /></div>
+              <div className="sm:col-span-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                After submitting, you'll upload supporting documents: government ID, qualifications, CV, motivational letter (optional file), and a short intro video.
+              </div>
               <div className="sm:col-span-2 flex justify-end">
                 <Button disabled={submitting} onClick={submit}>{submitting ? "Submitting…" : "Submit application"}</Button>
               </div>
@@ -202,20 +217,41 @@ function BecomeTutorPage() {
               <CardTitle>Supporting documents</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">Upload clear PDF or image files. Admins use these to verify your identity and qualifications.</p>
-              {DOC_LABELS.map((label) => {
-                const uploaded = docs.filter((d) => d.label === label);
+              <p className="text-sm text-muted-foreground">
+                Upload clear PDF, image or video files. Admins use these to verify your identity, qualifications and teaching readiness.
+              </p>
+              {(() => {
+                const missing = DOC_SPECS.filter((d) => d.required && !docs.some((u) => u.label === d.label));
+                if (missing.length === 0) return null;
                 return (
-                  <div key={label} className="rounded-md border p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-medium">{label}</p>
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                    Still needed: {missing.map((m) => m.label).join(", ")}.
+                  </div>
+                );
+              })()}
+              {DOC_SPECS.map((spec) => {
+                const uploaded = docs.filter((d) => d.label === spec.label);
+                return (
+                  <div key={spec.label} className="rounded-md border p-3">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-2 text-sm font-medium">
+                          {spec.label}
+                          {spec.required ? (
+                            <Badge variant="destructive" className="text-[10px]">Required</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Optional</Badge>
+                          )}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{spec.hint}</p>
+                      </div>
                       <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs hover:bg-muted/70">
                         <Upload className="h-3.5 w-3.5" /> Upload
                         <input
                           type="file"
                           className="hidden"
-                          accept="application/pdf,image/*"
-                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(label, f); e.target.value = ""; }}
+                          accept={spec.accept}
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(spec.label, f); e.target.value = ""; }}
                         />
                       </label>
                     </div>

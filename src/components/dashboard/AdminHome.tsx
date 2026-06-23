@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Users,
   GraduationCap,
@@ -159,6 +170,47 @@ export function AdminHome({ firstName }: { firstName: string }) {
     load();
   };
 
+  // Bulk selection / confirmation
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirm, setConfirm] = useState<null | "approve" | "reject">(null);
+  const toggleSel = (id: string, on: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+  const selectAllVisible = (rows: AppRow[], on: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      rows.forEach((r) => (on ? next.add(r.id) : next.delete(r.id)));
+      return next;
+    });
+  };
+  const runBulk = async () => {
+    if (!confirm) return;
+    const ids = Array.from(selected);
+    if (ids.length === 0) {
+      setConfirm(null);
+      return;
+    }
+    const fn = confirm === "approve" ? "approve_tutor_application" : "reject_tutor_application";
+    setBusy("bulk");
+    const results = await Promise.allSettled(
+      ids.map((id) => supabase.rpc(fn, { _application_id: id, _notes: notes[id] ?? null })),
+    );
+    setBusy(null);
+    setConfirm(null);
+    setSelected(new Set());
+    const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.error)).length;
+    if (failed > 0) toast.error(`${failed} of ${ids.length} failed`);
+    else toast.success(`${ids.length} application(s) ${confirm === "approve" ? "approved" : "rejected"}`);
+    load();
+  };
+
+
+
   const toggleFeatured = async (p: TutorProfile, v: boolean) => {
     const { error } = await supabase
       .from("profiles")
@@ -225,7 +277,7 @@ export function AdminHome({ firstName }: { firstName: string }) {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Verification queue */}
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
             <CardTitle className="text-base">Tutor verification queue</CardTitle>
             <Badge variant="secondary">{pending.length} pending</Badge>
           </CardHeader>
@@ -237,53 +289,98 @@ export function AdminHome({ firstName }: { firstName: string }) {
                 <p className="mt-1 text-xs text-muted-foreground">No applications waiting for review.</p>
               </div>
             ) : (
-              <ul className="divide-y divide-border/60">
-                {pending.slice(0, 6).map((r) => (
-                  <li key={r.id} className="py-3">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold">
-                          {r.full_name}
-                          <Badge variant="secondary" className="ml-2 text-[10px]">{r.status}</Badge>
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {r.email} · {new Date(r.submitted_at).toLocaleDateString()}
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {(r.subjects ?? []).slice(0, 5).map((s) => (
-                            <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
-                          ))}
-                        </div>
-                        {r.bio && (
-                          <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{r.bio}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-2 space-y-2">
-                      <Textarea
-                        rows={1}
-                        placeholder="Optional note to applicant"
-                        value={notes[r.id] ?? ""}
-                        onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
-                        className="text-xs"
-                      />
-                      <div className="flex justify-end gap-2">
+              <>
+                {(() => {
+                  const visible = pending.slice(0, 6);
+                  const allChecked = visible.length > 0 && visible.every((r) => selected.has(r.id));
+                  return (
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                      <label className="flex items-center gap-2 text-xs font-medium">
+                        <Checkbox
+                          checked={allChecked}
+                          onCheckedChange={(v) => selectAllVisible(visible, !!v)}
+                          aria-label="Select all visible"
+                        />
+                        {selected.size > 0 ? `${selected.size} selected` : "Select all"}
+                      </label>
+                      <div className="flex gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={busy === r.id}
-                          onClick={() => decide(r, false)}
+                          disabled={selected.size === 0 || busy === "bulk"}
+                          onClick={() => setConfirm("reject")}
                         >
-                          Reject
+                          Reject selected
                         </Button>
-                        <Button size="sm" disabled={busy === r.id} onClick={() => decide(r, true)}>
-                          Approve
+                        <Button
+                          size="sm"
+                          disabled={selected.size === 0 || busy === "bulk"}
+                          onClick={() => setConfirm("approve")}
+                        >
+                          Approve selected
                         </Button>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ul>
+                  );
+                })()}
+                <ul className="divide-y divide-border/60">
+                  {pending.slice(0, 6).map((r) => (
+                    <li key={r.id} className="py-3">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          className="mt-1"
+                          checked={selected.has(r.id)}
+                          onCheckedChange={(v) => toggleSel(r.id, !!v)}
+                          aria-label={`Select ${r.full_name}`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold">
+                            {r.full_name}
+                            <Badge variant="secondary" className="ml-2 text-[10px]">{r.status}</Badge>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.email} · {new Date(r.submitted_at).toLocaleDateString()}
+                          </p>
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {(r.subjects ?? []).slice(0, 5).map((s) => (
+                              <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
+                            ))}
+                          </div>
+                          {r.bio && (
+                            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{r.bio}</p>
+                          )}
+                          <div className="mt-2 space-y-2">
+                            <Textarea
+                              rows={1}
+                              placeholder="Optional note to applicant"
+                              value={notes[r.id] ?? ""}
+                              onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })}
+                              className="text-xs"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy === r.id || busy === "bulk"}
+                                onClick={() => decide(r, false)}
+                              >
+                                Reject
+                              </Button>
+                              <Button
+                                size="sm"
+                                disabled={busy === r.id || busy === "bulk"}
+                                onClick={() => decide(r, true)}
+                              >
+                                Approve
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
             {pending.length > 6 && (
               <div className="mt-3 text-right">
@@ -294,6 +391,32 @@ export function AdminHome({ firstName }: { firstName: string }) {
             )}
           </CardContent>
         </Card>
+
+        <AlertDialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {confirm === "approve" ? "Approve" : "Reject"} {selected.size} application{selected.size === 1 ? "" : "s"}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirm === "approve"
+                  ? "Each selected applicant will be granted the tutor role and notified."
+                  : "Each selected applicant will be marked as rejected. Any notes you've added will be sent with the decision."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={busy === "bulk"}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={busy === "bulk"}
+                onClick={(e) => { e.preventDefault(); runBulk(); }}
+                className={confirm === "reject" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
+              >
+                {busy === "bulk" ? "Working…" : confirm === "approve" ? "Approve all" : "Reject all"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
 
         {/* Featured placement */}
         <Card>
