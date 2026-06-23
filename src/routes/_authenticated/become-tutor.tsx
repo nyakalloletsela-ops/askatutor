@@ -200,6 +200,10 @@ function BecomeTutorPage() {
               <div className="sm:col-span-2"><Label>Subjects you can teach (comma-separated)</Label><Input value={subjects} onChange={(e) => setSubjects(e.target.value)} placeholder="Mathematics, Physical Sciences, English" /></div>
               <div className="sm:col-span-2"><Label>Short bio</Label><Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell us about your teaching experience and approach." /></div>
               <div className="sm:col-span-2"><Label>Qualifications</Label><Textarea rows={3} value={qualifications} onChange={(e) => setQualifications(e.target.value)} placeholder="e.g. BSc Mathematics (UCT, 2022); 3 years tutoring..." /></div>
+              <div className="sm:col-span-2"><Label>Motivational letter</Label><Textarea rows={5} value={motivation} onChange={(e) => setMotivation(e.target.value)} placeholder="Why do you want to tutor on AskATutorLive? What's your teaching philosophy?" /></div>
+              <div className="sm:col-span-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                After submitting, you'll upload supporting documents: government ID, qualifications, CV, motivational letter (optional file), and a short intro video.
+              </div>
               <div className="sm:col-span-2 flex justify-end">
                 <Button disabled={submitting} onClick={submit}>{submitting ? "Submitting…" : "Submit application"}</Button>
               </div>
