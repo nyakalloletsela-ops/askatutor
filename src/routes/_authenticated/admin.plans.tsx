@@ -183,7 +183,10 @@ function AdminPlans() {
       </div>
 
       {renderGroup("student")}
-      {renderGroup("tutor")}
+      <p className="text-xs text-muted-foreground">
+        Tutors don't pay a fixed subscription — the platform earns a 5% commission on each lesson
+        instead. Configure that in Admin → Commissions.
+      </p>
 
       {/* Edit dialog */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
