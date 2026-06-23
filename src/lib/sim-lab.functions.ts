@@ -24,7 +24,7 @@ export const SimulationSchema = z.object({
 
 export type SimulationSchemaT = z.infer<typeof SimulationSchema>;
 
-const SYSTEM_PROMPT = `You are the AskATutorLive 3D AI Lab schema generator.
+const SYSTEM_PROMPT = `You are the AskATutorLive Simulation Lab schema generator.
 Convert any educational prompt into a strict JSON simulation schema.
 
 RULES:
