@@ -24,7 +24,7 @@ const SimScene = lazy(() =>
   import("@/components/lab3d/SimScene").then((m) => ({ default: m.SimScene }))
 );
 
-export const Route = createFileRoute("/_authenticated/labs/simulation-lab")({
+export const Route = createFileRoute("/_authenticated/labs_/simulation-lab")({
   component: () => <ScopeGate scope="labs"><Lab3DPage /></ScopeGate>,
   head: () => ({
     meta: [
