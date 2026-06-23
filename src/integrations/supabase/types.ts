@@ -1563,6 +1563,42 @@ export type Database = {
           },
         ]
       }
+      simulations: {
+        Row: {
+          created_at: string
+          embedding: string | null
+          id: string
+          prompt: string
+          schema_json: Json
+          subject: string | null
+          thumbnail_url: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          prompt: string
+          schema_json: Json
+          subject?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          prompt?: string
+          schema_json?: Json
+          subject?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       site_content: {
         Row: {
           key: string
@@ -2490,6 +2526,23 @@ export type Database = {
       mark_payment_failed: {
         Args: { _intent: string; _reason: string }
         Returns: undefined
+      }
+      match_simulations: {
+        Args: {
+          match_count?: number
+          min_similarity?: number
+          query_embedding: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          prompt: string
+          schema_json: Json
+          similarity: number
+          subject: string
+          thumbnail_url: string
+          title: string
+        }[]
       }
       move_to_dlq: {
         Args: {

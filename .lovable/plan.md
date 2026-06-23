@@ -1,58 +1,84 @@
-## New subscription & payment model
+# AskATutorLive 3D AI Lab — MVP
 
-**Students** subscribe to unlock platform features. They then pay tutors directly by entering a Tutor ID, in bulk for one or many lessons, calculated from the tutor's hourly rate. The platform takes a 5% commission from that payment — that 5% IS the tutor's "subscription" (no separate tutor plan, no fixed fee).
+A new feature inside the existing app (not a replacement). Lives at `/_authenticated/labs/3d-ai-lab`, gated by the existing `labs` feature scope via `<ScopeGate>`. Uses Lovable AI Gateway (no user API key) and Lovable Cloud (Supabase) for storage + pgvector memory.
 
-### Student subscription tiers (seeded)
-| Plan | Unlocks |
-|---|---|
-| AI Tutor | AI tutor chat + AI tools |
-| Find Tutors | Browse tutor directory, view profiles, book sessions |
-| Labs | Interactive labs (`/labs`) |
-| All Access | All of the above (bundle) |
+## Scope of this pass (MVP)
 
-A student can hold one or more plans. Gating reads `student_subscriptions` (status = approved/active, not expired) joined to `subscription_plans.feature_scope`.
+Included:
+- New route + page with three-pane layout (left prompt, center 3D viewport, right Library)
+- Empty initial scene: dark bg, subtle grid, ambient light, no objects
+- Prompt → embedding similarity check → load existing OR generate new schema via Lovable AI
+- Strict JSON schema for simulations (subject, title, objects, rules, timeline)
+- R3F renderer with object mapping (car, sphere, wall, particle, default cube)
+- Simple physics loop: velocity, gravity, basic AABB collision, Newton 2nd law
+- Controls: Play / Pause / Reset / time scrubber / OrbitControls / fullscreen
+- Library: list, search (text + semantic), subject filter, click to load, thumbnail
+- Canvas screenshot → upload to Storage → save thumbnail_url
+- Universal subject fallback (abstract glowing shapes when subject unknown)
+- Dark futuristic styling using existing design tokens
 
-### Tutor side (no fixed subscription)
-- Remove the tutor plans group from admin & remove the tutor plan picker on the dashboard.
-- All tutor features (whiteboard, AI tools, classroom, course uploads) stay free to use; the platform earns via the 5% commission already wired through `compute_commission_cents` — set the global commission rule to 5%.
-- Tutors still need approval/role to receive bookings (existing flow).
+Out of scope (explicitly deferred):
+- Versioning, remix, JSON import/export, duplicate button
+- Advanced physics (rigid body engine, constraints, fluids)
+- Multi-user shared simulations
+- Mobile-optimized layout (desktop-first only this pass)
 
-### Bulk lesson payment via Tutor ID
-New student-side flow at `/pay-tutor`:
-1. Student enters a Tutor ID (UUID) or picks from past tutors.
-2. App fetches tutor name + hourly rate via a public RPC.
-3. Student picks number of lessons + lesson length (30/45/60/90 min) → total auto-calculated (`hourly_rate × hours × lessons`).
-4. Submit creates a single `payment_intents` row (gross, 5% commission, tutor net) via existing payment flow (PayPal / manual). On success, credits N "prepaid lesson units" to the student⇄tutor pair so the student can book that many lessons without re-paying.
+## Technical details
 
-### Feature gates (frontend + serverFn)
-| Route / action | Required scope |
-|---|---|
-| `/ai-tutor`, `/ai-tools` | `ai` |
-| `/tutors`, `/tutor/$id`, `/book/$tutorId` | `find_tutors` |
-| `/labs` | `labs` |
-| `/pay-tutor` | `find_tutors` (must be subscribed to pay a tutor) |
+**Routes & gating**
+- `src/routes/_authenticated/labs.3d-ai-lab.tsx` — new page, wrapped in `<ScopeGate scope="labs">`
+- Add card/link from existing `/labs` page
 
-If a signed-in student lacks the scope, render an inline "Subscribe to unlock" card linking to `/settings` (Plans tab) — no hard redirect.
+**Dependencies**
+- `three`, `@react-three/fiber`, `@react-three/drei` (bun add)
 
-### Schema changes (one migration)
-- `subscription_plans.feature_scope text[]` — e.g. `{ai,find_tutors,labs}`.
-- New table `prepaid_lessons (id, student_id, tutor_id, lessons_remaining, lesson_minutes, hourly_rate_cents, payment_intent_id, created_at)` with RLS: student & tutor can read their rows; only the payment flow inserts.
-- RPC `get_tutor_pricing(_tutor uuid)` returning `(full_name, hourly_rate, currency)` — `SECURITY DEFINER`, callable by any authenticated user with an active `find_tutors` scope.
-- RPC `student_has_scope(_scope text)` for gates.
-- Seed: the four student plans above; deactivate existing tutor plans; ensure a global 5% commission rule.
+**Database (one migration)**
+- Enable `vector` extension
+- Create `public.simulations`:
+  - `id uuid pk`, `user_id uuid → auth.users`, `prompt text`, `subject text`, `title text`, `schema_json jsonb`, `embedding vector(3072)`, `thumbnail_url text`, `created_at timestamptz`
+  - GRANTs for `authenticated` + `service_role`; RLS: owner-only SELECT/INSERT/UPDATE/DELETE via `auth.uid() = user_id`
+  - HNSW index on `embedding vector_cosine_ops`
+- RPC `match_simulations(query_embedding, match_count, min_similarity)` — security definer, filters by `auth.uid()`
+- New storage bucket `simulation-thumbnails` (public read, owner-write policy)
 
-### Files
-- Migration (new tables / RPCs / seed).
-- `src/lib/entitlements.functions.ts` (new) — `getMyScopes()`, `requireScope(scope)`.
-- `src/hooks/use-entitlements.ts` (new) — wraps `getMyScopes` with React Query.
-- `src/components/ScopeGate.tsx` (new) — renders children or the upsell card.
-- `src/routes/_authenticated/pay-tutor.tsx` (new) — bulk pay form.
-- `src/routes/_authenticated/admin.plans.tsx` — add `feature_scope` multi-select, hide tutor group.
-- `src/routes/_authenticated/dashboard.tsx` — remove tutor plan UI; for students show held scopes + missing-plan CTAs.
-- Wrap `/ai-tutor`, `/ai-tools`, `/labs`, `/tutors`, `/tutor.$id`, `/book.$tutorId` content in `<ScopeGate>`.
-- Update `Navbar` / `HomeSections` copy to drop "no subscriptions required".
+**Server functions** (`src/lib/sim-lab.functions.ts`, all `requireSupabaseAuth`)
+- `embedPrompt({ text })` → calls Lovable AI Gateway `/v1/embeddings` with `google/gemini-embedding-001`, returns 3072-dim vector
+- `findSimilarSimulation({ embedding })` → calls `match_simulations` RPC, returns top match + similarity
+- `generateSimulationSchema({ prompt })` → calls Lovable AI `google/gemini-3-flash-preview` with strict system prompt + Zod-validated JSON output; fallback schema on parse failure
+- `saveSimulation({ prompt, schema, embedding, thumbnailDataUrl })` → uploads thumbnail to storage, inserts row, returns saved record
+- `listSimulations({ search?, subject? })` → semantic when search present (embed → RPC), else recent first
 
-### Out of scope
-- Refactoring `tutor_subscriptions` table (left in place, just unused by new flow).
-- Stripe/Paddle integration (continues to ride existing PayPal/manual rails).
-- Promo codes for the new plans (existing `promotions` table already covers it).
+**Frontend modules**
+- `src/components/lab3d/Scene.tsx` — Canvas, grid, lights, camera, OrbitControls
+- `src/components/lab3d/SimRenderer.tsx` — maps `objects[]` → primitives via instanced meshes where repeated
+- `src/components/lab3d/physics.ts` — pure functions: `stepNewton`, `stepCollision`, `stepGravity`, `stepFlow`; rule dispatch table
+- `src/components/lab3d/useSimLoop.ts` — `useFrame` loop with play/pause/scrub, memoized rule handlers
+- `src/components/lab3d/PromptPanel.tsx` — input + Generate + similar-match modal
+- `src/components/lab3d/LibraryPanel.tsx` — list, search, filter, thumbnail grid
+- `src/components/lab3d/Controls.tsx` — play/pause/reset/time slider/fullscreen
+- `src/components/lab3d/captureThumbnail.ts` — `gl.domElement.toDataURL()` helper
+
+**AI system prompt (one source of truth, in server fn)**
+Forces JSON-only output matching the schema, auto-detects subject, no prose. Validated server-side with Zod; on failure, retry once with the validator error, then fall back to a minimal abstract schema (`{subject:"abstract", objects:[3 glowing spheres], rules:["flow_dynamics"]}`).
+
+**Error handling**
+- AI failure → fallback schema + toast
+- Embedding failure → skip similarity check, proceed to generate
+- DB failure on save → keep simulation in local state, toast "saved locally"
+- Unknown rule → skipped in dispatch table
+
+**Performance**
+- `InstancedMesh` for ≥4 objects of same primitive type
+- Physics state in refs, not React state, to avoid re-renders
+- Library queries paginated to 50
+
+## What the user sees
+
+1. Visits `/labs/3d-ai-lab` (linked from `/labs`)
+2. Empty dark 3D scene, prompt panel left, empty Library right
+3. Types prompt → Generate
+4. If similar simulation exists: modal "Load existing or generate new?"
+5. New simulation renders, controls appear, auto-saves with thumbnail
+6. Library updates instantly; click any item to reload
+
+Ready to build on approval.
