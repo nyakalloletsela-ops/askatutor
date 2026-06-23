@@ -273,12 +273,27 @@ function Lab3DPage() {
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             </Button>
           </div>
+          {/* mode selector */}
+          <div className="absolute left-1/2 top-3 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-black/70 px-1.5 py-1 backdrop-blur md:flex">
+            {([
+              { id: "guided" as const, icon: <Wand2 className="h-3 w-3" />, label: "Guided" },
+              { id: "explore" as const, icon: <Compass className="h-3 w-3" />, label: "Explore" },
+              { id: "tutor" as const, icon: <Lock className="h-3 w-3" />, label: "Tutor" },
+              { id: "assessment" as const, icon: <ClipboardCheck className="h-3 w-3" />, label: "Assess" },
+            ]).map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setMode(m.id)}
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium transition ${mode === m.id ? "bg-violet-500 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"}`}
+              >{m.icon}{m.label}</button>
+            ))}
+          </div>
           {/* controls */}
           <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3 py-2 backdrop-blur">
-            <Button size="icon" variant="ghost" onClick={() => setPlaying((p) => !p)} className="h-8 w-8 text-white hover:bg-white/10">
+            <Button size="icon" variant="ghost" onClick={() => setPlaying((p) => !p)} disabled={mode === "tutor"} className="h-8 w-8 text-white hover:bg-white/10 disabled:opacity-40">
               {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
-            <Button size="icon" variant="ghost" onClick={() => setResetKey((k) => k + 1)} className="h-8 w-8 text-white hover:bg-white/10">
+            <Button size="icon" variant="ghost" onClick={() => setResetKey((k) => k + 1)} disabled={mode === "tutor"} className="h-8 w-8 text-white hover:bg-white/10 disabled:opacity-40">
               <RotateCcw className="h-4 w-4" />
             </Button>
             <div className="hidden items-center gap-1 sm:flex">
@@ -296,6 +311,9 @@ function Lab3DPage() {
                 <GraduationCap className="h-4 w-4" />
               </Button>
             )}
+            <Button size="icon" variant="ghost" onClick={() => { setRightTab("chat"); }} className="h-8 w-8 text-white hover:bg-white/10" aria-label="AI Tutor">
+              <Sparkles className="h-4 w-4" />
+            </Button>
             <Button size="icon" variant="ghost" onClick={goFullscreen} className="h-8 w-8 text-white hover:bg-white/10">
               <Maximize2 className="h-4 w-4" />
             </Button>
