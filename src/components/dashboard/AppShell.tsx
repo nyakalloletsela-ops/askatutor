@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { CommandPalette } from "@/components/dashboard/CommandPalette";
 
 type NavItem = {
   label: string;
@@ -156,8 +157,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SidebarProvider>
-      <Sidebar collapsible="icon" className="border-r">
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-background": "222 47% 11%",
+          "--sidebar-foreground": "215 25% 89%",
+          "--sidebar-primary": "217 91% 60%",
+          "--sidebar-primary-foreground": "0 0% 100%",
+          "--sidebar-accent": "217 33% 17%",
+          "--sidebar-accent-foreground": "0 0% 100%",
+          "--sidebar-border": "217 33% 17%",
+          "--sidebar-ring": "217 91% 60%",
+        } as React.CSSProperties
+      }
+    >
+      <Sidebar collapsible="icon" className="border-r border-sidebar-border">
         <SidebarHeader>
           <div className="flex items-center gap-2 px-2 py-1.5">
             <img src={logoUrl} alt="Logo" className="h-7 w-7 rounded-md object-contain" />
@@ -249,8 +263,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </Sidebar>
 
       <SidebarInset>
-        {/* Topbar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/80 px-3 backdrop-blur-xl sm:px-4">
+        {/* Topbar — glass */}
+        <header className="sticky top-0 z-30 flex h-[72px] items-center gap-2 border-b border-border/60 bg-background/60 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 sm:px-4">
           <SidebarTrigger className="md:hidden">
             <Menu className="h-4 w-4" />
           </SidebarTrigger>
@@ -275,18 +289,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
 
-          {/* Search */}
-          <div className="relative ml-auto hidden max-w-sm flex-1 sm:flex">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search…"
-              className="h-9 w-full rounded-md border bg-muted/40 pl-8 pr-12 text-sm outline-none ring-0 transition focus:border-foreground/20 focus:bg-background"
-            />
-            <kbd className="pointer-events-none absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 select-none items-center gap-0.5 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground sm:flex">
+          {/* Search → opens command palette */}
+          <button
+            type="button"
+            onClick={() => {
+              const ev = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
+              window.dispatchEvent(ev);
+            }}
+            className="relative ml-auto hidden h-10 max-w-sm flex-1 items-center rounded-xl border bg-muted/40 pl-9 pr-12 text-left text-sm text-muted-foreground transition hover:bg-background sm:flex"
+          >
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <span className="truncate">Search anything…</span>
+            <kbd className="pointer-events-none absolute right-2 top-1/2 hidden h-6 -translate-y-1/2 select-none items-center gap-0.5 rounded-md border bg-background px-1.5 text-[10px] font-medium text-muted-foreground sm:flex">
               ⌘K
             </kbd>
-          </div>
+          </button>
 
           <div className="ml-auto flex items-center gap-1 sm:ml-2">
             <NotificationsBell />
@@ -346,8 +363,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <div className="min-h-[calc(100svh-3.5rem)] bg-muted/20">{children}</div>
+        <div className="min-h-[calc(100svh-72px)] bg-[hsl(210_40%_98%)] dark:bg-background">{children}</div>
       </SidebarInset>
+      <CommandPalette />
     </SidebarProvider>
   );
 }
