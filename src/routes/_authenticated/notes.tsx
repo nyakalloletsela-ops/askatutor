@@ -186,5 +186,3 @@ function FolderFilter({ notes }: { notes: Note[] }) {
     </>
   );
 }
-
-}
