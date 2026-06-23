@@ -122,6 +122,15 @@ export function ActionBar(props: Props) {
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
+      <Link to="/labs" target="_blank" rel="noreferrer" title="PhET Lab" aria-label="PhET Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+        <FlaskConical className="h-4 w-4" />
+      </Link>
+      <Link to="/labs/simulation-lab" target="_blank" rel="noreferrer" title="Simulation Lab" aria-label="Simulation Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+        <Atom className="h-4 w-4" />
+      </Link>
+
+      <span className="mx-1 h-6 w-px bg-white/15" />
+
       <CircleButton onClick={onOpenSettings} title="Devices">
         <Settings className="h-4 w-4" />
       </CircleButton>
