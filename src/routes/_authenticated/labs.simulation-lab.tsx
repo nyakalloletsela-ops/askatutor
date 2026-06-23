@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Navbar } from "@/components/Navbar";
 import { ScopeGate } from "@/components/ScopeGate";
@@ -13,13 +13,16 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { SimScene } from "@/components/lab3d/SimScene";
 import {
   embedPrompt, findSimilarSimulation, generateSimulationSchema,
   saveSimulation, listSimulations, deleteSimulation,
   type SimulationSchemaT,
 } from "@/lib/sim-lab.functions";
-import * as THREE from "three";
+import type * as THREE from "three";
+
+const SimScene = lazy(() =>
+  import("@/components/lab3d/SimScene").then((m) => ({ default: m.SimScene }))
+);
 
 export const Route = createFileRoute("/_authenticated/labs/simulation-lab")({
   component: () => <ScopeGate scope="labs"><Lab3DPage /></ScopeGate>,
@@ -217,13 +220,15 @@ function Lab3DPage() {
 
         {/* CENTER — scene */}
         <main ref={sceneWrapRef} className="relative overflow-hidden">
-          <SimScene
-            schema={schema}
-            playing={playing}
-            resetKey={resetKey}
-            timeScale={timeScale}
-            onCanvasReady={(gl) => { glRef.current = gl; }}
-          />
+          <Suspense fallback={<div className="flex h-full items-center justify-center text-white/60"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+            <SimScene
+              schema={schema}
+              playing={playing}
+              resetKey={resetKey}
+              timeScale={timeScale}
+              onCanvasReady={(gl) => { glRef.current = gl; }}
+            />
+          </Suspense>
           {/* mobile prompt */}
           <div className="absolute left-3 right-3 top-3 z-10 flex gap-2 md:hidden">
             <Input
