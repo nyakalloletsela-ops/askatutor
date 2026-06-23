@@ -1,4 +1,5 @@
 import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
+import { SaveToNotes } from "@/components/ai/SaveToNotes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, useEffect } from "react";
@@ -8,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { aiTutorChat } from "@/lib/ai-tutor.functions";
+
 
 export const Route = createFileRoute("/_authenticated/ai-tutor")({
   component: AiTutorPage,
