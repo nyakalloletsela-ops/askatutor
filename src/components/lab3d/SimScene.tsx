@@ -24,7 +24,56 @@ function ObjectMesh({ s }: { s: SimObjectState }) {
   switch (s.type) {
     case "sphere":
     case "particle":
+    case "flow":
+    case "curve":
       geom = <mesh castShadow><sphereGeometry args={[s.radius, 24, 16]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25} /></mesh>;
+      break;
+    case "cell":
+      geom = (
+        <group>
+          <mesh castShadow><sphereGeometry args={[s.radius, 32, 18]} /><meshPhysicalMaterial color={color} transparent opacity={0.55} roughness={0.25} /></mesh>
+          <mesh castShadow><sphereGeometry args={[s.radius * 0.38, 18, 12]} /><meshStandardMaterial color="#fef3c7" emissive="#f59e0b" emissiveIntensity={0.18} /></mesh>
+        </group>
+      );
+      break;
+    case "atom":
+    case "molecule":
+    case "nucleus":
+      geom = (
+        <group>
+          <mesh castShadow><sphereGeometry args={[s.radius, 32, 18]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.35} /></mesh>
+          <mesh rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[s.radius * 1.45, 0.018, 8, 64]} /><meshBasicMaterial color="#e0f2fe" /></mesh>
+          <mesh rotation={[0.9, 0.25, 0.4]}><torusGeometry args={[s.radius * 1.28, 0.018, 8, 64]} /><meshBasicMaterial color="#bfdbfe" /></mesh>
+        </group>
+      );
+      break;
+    case "organ":
+      geom = <mesh castShadow><sphereGeometry args={[s.radius, 32, 18]} /><meshPhysicalMaterial color={color} roughness={0.5} clearcoat={0.4} /></mesh>;
+      break;
+    case "node":
+      geom = <mesh castShadow><icosahedronGeometry args={[s.radius, 1]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} /></mesh>;
+      break;
+    case "axis":
+    case "graph":
+      geom = (
+        <group>
+          <mesh receiveShadow><boxGeometry args={s.size} /><meshStandardMaterial color="#0f172a" transparent opacity={0.55} /></mesh>
+          <mesh position={[0, 0.06, 0]}><boxGeometry args={[s.size[0], 0.04, 0.04]} /><meshBasicMaterial color={color} /></mesh>
+          <mesh position={[0, 0.07, 0]}><boxGeometry args={[0.04, 0.04, s.size[2]]} /><meshBasicMaterial color={color} /></mesh>
+        </group>
+      );
+      break;
+    case "dna":
+      geom = (
+        <group>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <mesh key={i} position={[Math.sin(i) * 0.45, i * 0.22 - 0.8, Math.cos(i) * 0.45]} castShadow>
+              <sphereGeometry args={[0.12, 12, 8]} />
+              <meshStandardMaterial color={i % 2 ? "#22d3ee" : color} emissive={color} emissiveIntensity={0.2} />
+            </mesh>
+          ))}
+        </group>
+      );
       break;
     case "wall":
       geom = <mesh receiveShadow castShadow><boxGeometry args={s.size} /><meshStandardMaterial color="#475569" /></mesh>;
