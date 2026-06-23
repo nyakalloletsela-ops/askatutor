@@ -53,10 +53,6 @@ export function ClassroomHeader({
         <div className="min-w-0">
           <h1 className="truncate text-sm font-semibold sm:text-base">{title}</h1>
           {subtitle && <p className="hidden truncate text-[11px] text-muted-foreground sm:block">{subtitle}</p>}
-          <button onClick={copy} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground sm:hidden">
-            <span className="font-mono">{roomId}</span>
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          </button>
         </div>
       </div>
 
