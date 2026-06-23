@@ -229,24 +229,40 @@ function Home() {
                 size="sm"
                 variant={subject === null ? "default" : "outline"}
                 onClick={() => setSubject(null)}
-                className="rounded-full shrink-0"
+                aria-pressed={subject === null}
+                className={
+                  "rounded-full shrink-0 transition-all " +
+                  (subject === null
+                    ? "bg-aurora text-white border-transparent shadow-glow-electric ring-2 ring-primary/40 scale-[1.03]"
+                    : "hover:border-primary/50 hover:text-primary")
+                }
               >
                 All
               </Button>
-              {allSubjects.slice(0, 12).map((s) => (
-                <Button
-                  key={s}
-                  size="sm"
-                  variant={subject === s ? "default" : "outline"}
-                  onClick={() => setSubject(subject === s ? null : s)}
-                  className="rounded-full shrink-0"
-                >
-                  {s}
-                </Button>
-              ))}
+              {allSubjects.slice(0, 12).map((s) => {
+                const active = subject === s;
+                return (
+                  <Button
+                    key={s}
+                    size="sm"
+                    variant={active ? "default" : "outline"}
+                    onClick={() => setSubject(active ? null : s)}
+                    aria-pressed={active}
+                    className={
+                      "rounded-full shrink-0 transition-all " +
+                      (active
+                        ? "bg-aurora text-white border-transparent shadow-glow-electric ring-2 ring-primary/40 scale-[1.03]"
+                        : "hover:border-primary/50 hover:text-primary")
+                    }
+                  >
+                    {s}
+                  </Button>
+                );
+              })}
             </div>
           </div>
         )}
+
 
 
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
