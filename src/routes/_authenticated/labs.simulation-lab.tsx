@@ -219,16 +219,18 @@ function Lab3DPage() {
         </aside>
 
         {/* CENTER — scene */}
-        <main ref={sceneWrapRef} className="relative overflow-hidden">
-          <Suspense fallback={<div className="flex h-full items-center justify-center text-white/60"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
-            <SimScene
-              schema={schema}
-              playing={playing}
-              resetKey={resetKey}
-              timeScale={timeScale}
-              onCanvasReady={(gl) => { glRef.current = gl; }}
-            />
-          </Suspense>
+        <main ref={sceneWrapRef} className="relative h-full min-h-0 w-full overflow-hidden">
+          <div className="absolute inset-0">
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-white/60"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+              <SimScene
+                schema={schema}
+                playing={playing}
+                resetKey={resetKey}
+                timeScale={timeScale}
+                onCanvasReady={(gl) => { glRef.current = gl; }}
+              />
+            </Suspense>
+          </div>
           {/* mobile prompt */}
           <div className="absolute left-3 right-3 top-3 z-10 flex gap-2 md:hidden">
             <Input
