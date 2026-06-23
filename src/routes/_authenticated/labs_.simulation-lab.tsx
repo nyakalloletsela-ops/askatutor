@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState, lazy, Suspense } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Navbar } from "@/components/Navbar";
 import { ScopeGate } from "@/components/ScopeGate";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  Play, Pause, RotateCcw, Sparkles, Trash2, Maximize2, Loader2, Search,
+  Play, Pause, RotateCcw, Sparkles, Trash2, Maximize2, Loader2, Search, X, BookOpen, GraduationCap,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -18,11 +18,8 @@ import {
   saveSimulation, listSimulations, deleteSimulation,
   type SimulationSchemaT,
 } from "@/lib/sim-lab.functions";
+import { SimDispatch } from "@/components/lab3d/SimDispatch";
 import type * as THREE from "three";
-
-const SimScene = lazy(() =>
-  import("@/components/lab3d/SimScene").then((m) => ({ default: m.SimScene }))
-);
 
 export const Route = createFileRoute("/_authenticated/labs_/simulation-lab")({
   component: () => <ScopeGate scope="labs"><Lab3DPage /></ScopeGate>,
@@ -74,8 +71,13 @@ function Lab3DPage() {
   const [subject, setSubject] = useState<string>("");
   const [match, setMatch] = useState<LibraryItem | null>(null);
   const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
-  const glRef = useRef<THREE.WebGLRenderer | null>(null);
+  const [selectedObj, setSelectedObj] = useState<number | null>(null);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [quizIdx, setQuizIdx] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
+  const [quizReveal, setQuizReveal] = useState(false);
   const sceneWrapRef = useRef<HTMLDivElement>(null);
+  const glRef = useRef<THREE.WebGLRenderer | null>(null);
 
   async function refreshLibrary() {
     try {
@@ -232,15 +234,14 @@ function Lab3DPage() {
         {/* CENTER — scene */}
         <main ref={sceneWrapRef} className="relative h-full min-h-0 w-full overflow-hidden">
           <div className="absolute inset-0">
-            <Suspense fallback={<div className="flex h-full items-center justify-center text-white/60"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
-              <SimScene
-                schema={schema}
-                playing={playing}
-                resetKey={resetKey}
-                timeScale={timeScale}
-                onCanvasReady={(gl) => { glRef.current = gl; }}
-              />
-            </Suspense>
+            <SimDispatch
+              schema={schema}
+              playing={playing}
+              resetKey={resetKey}
+              timeScale={timeScale}
+              onCanvasReady={(gl: THREE.WebGLRenderer) => { glRef.current = gl; }}
+              onSelectObject={(i: number) => setSelectedObj(i)}
+            />
           </div>
           {/* mobile prompt */}
           <div className="absolute left-3 right-3 top-3 z-10 flex gap-2 md:hidden">
@@ -262,14 +263,21 @@ function Lab3DPage() {
             <Button size="icon" variant="ghost" onClick={() => setResetKey((k) => k + 1)} className="h-8 w-8 text-white hover:bg-white/10">
               <RotateCcw className="h-4 w-4" />
             </Button>
-            <input
-              type="range" min={0} max={3} step={0.1}
-              value={timeScale}
-              onChange={(e) => setTimeScale(parseFloat(e.target.value))}
-              className="w-32 accent-violet-400"
-              aria-label="Time scale"
-            />
-            <span className="text-[10px] text-white/60">{timeScale.toFixed(1)}×</span>
+            <div className="hidden items-center gap-1 sm:flex">
+              {[0.25, 0.5, 1, 2, 4].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setTimeScale(s)}
+                  className={`rounded px-1.5 py-0.5 text-[10px] transition ${Math.abs(timeScale - s) < 0.01 ? "bg-violet-500 text-white" : "text-white/60 hover:bg-white/10"}`}
+                >{s}×</button>
+              ))}
+            </div>
+            <span className="text-[10px] text-white/60 sm:hidden">{timeScale.toFixed(1)}×</span>
+            {schema && schema.quiz && schema.quiz.length > 0 && (
+              <Button size="icon" variant="ghost" onClick={() => setQuizOpen(true)} className="h-8 w-8 text-white hover:bg-white/10" aria-label="Quiz">
+                <GraduationCap className="h-4 w-4" />
+              </Button>
+            )}
             <Button size="icon" variant="ghost" onClick={goFullscreen} className="h-8 w-8 text-white hover:bg-white/10">
               <Maximize2 className="h-4 w-4" />
             </Button>
@@ -279,8 +287,41 @@ function Lab3DPage() {
               <div className="rounded-2xl border border-white/10 bg-black/40 px-6 py-4 text-white/70 backdrop-blur">
                 <Sparkles className="mx-auto mb-2 h-6 w-6 text-violet-400" />
                 <div className="text-sm">Type any question or scenario — from any subject — to build a live simulation.</div>
-                <div className="mt-1 text-[11px] text-white/50">Motion, structure, flows and labels are generated automatically.</div>
+                <div className="mt-1 text-[11px] text-white/50">Auto-detects subject and picks the best 2D, 3D, process, timeline, map, or dialogue view.</div>
               </div>
+            </div>
+          )}
+
+          {/* Explain panel */}
+          {selectedObj !== null && schema && schema.objects[selectedObj] && (
+            <div className="absolute right-3 top-3 z-20 w-72 rounded-xl border border-violet-400/40 bg-black/85 p-3 text-white shadow-2xl backdrop-blur">
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-violet-300" />
+                  <div className="text-sm font-semibold">{schema.objects[selectedObj].label ?? schema.objects[selectedObj].type}</div>
+                </div>
+                <button onClick={() => setSelectedObj(null)} className="text-white/50 hover:text-white" aria-label="Close"><X className="h-4 w-4" /></button>
+              </div>
+              {(() => {
+                const ex = schema.objects[selectedObj].explain;
+                if (!ex) return <div className="text-xs text-white/60">No explanation provided. Click another object or generate a new simulation.</div>;
+                return (
+                  <div className="space-y-2 text-xs">
+                    {ex.definition && <div><div className="text-[10px] uppercase tracking-wide text-white/40">Definition</div><div className="text-white/80">{ex.definition}</div></div>}
+                    {ex.purpose && <div><div className="text-[10px] uppercase tracking-wide text-white/40">Purpose</div><div className="text-white/80">{ex.purpose}</div></div>}
+                    {ex.keyFacts && ex.keyFacts.length > 0 && (
+                      <div><div className="text-[10px] uppercase tracking-wide text-white/40">Key facts</div>
+                        <ul className="ml-3 list-disc text-white/80">{ex.keyFacts.map((f, i) => <li key={i}>{f}</li>)}</ul>
+                      </div>
+                    )}
+                    {ex.misconceptions && ex.misconceptions.length > 0 && (
+                      <div><div className="text-[10px] uppercase tracking-wide text-rose-300">Common misconceptions</div>
+                        <ul className="ml-3 list-disc text-rose-200/80">{ex.misconceptions.map((f, i) => <li key={i}>{f}</li>)}</ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </main>
@@ -349,6 +390,62 @@ function Lab3DPage() {
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={generateAnyway}>Generate new</Button>
             <Button onClick={loadMatched}>Load existing</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quiz dialog */}
+      <Dialog open={quizOpen} onOpenChange={(o) => { setQuizOpen(o); if (!o) { setQuizIdx(0); setQuizAnswers({}); setQuizReveal(false); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-violet-400" /> Test your understanding</DialogTitle>
+            <DialogDescription>Auto-generated from this simulation.</DialogDescription>
+          </DialogHeader>
+          {schema?.quiz && schema.quiz.length > 0 ? (() => {
+            const q = schema.quiz[quizIdx];
+            const userAns = quizAnswers[quizIdx];
+            const correct = userAns?.trim().toLowerCase() === q.answer.trim().toLowerCase();
+            return (
+              <div className="space-y-3">
+                <div className="text-xs text-white/50">Question {quizIdx + 1} of {schema.quiz.length} · <span className="uppercase">{q.difficulty}</span> · {q.type}</div>
+                <div className="text-base font-medium">{q.question}</div>
+                {q.type === "mcq" && q.options ? (
+                  <div className="space-y-1">
+                    {q.options.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => setQuizAnswers({ ...quizAnswers, [quizIdx]: opt })}
+                        className={`w-full rounded border px-3 py-2 text-left text-sm transition ${userAns === opt ? "border-violet-400 bg-violet-500/20" : "border-white/10 hover:border-white/30"}`}
+                      >{opt}</button>
+                    ))}
+                  </div>
+                ) : q.type === "tf" ? (
+                  <div className="flex gap-2">
+                    {["True", "False"].map((opt) => (
+                      <button key={opt} onClick={() => setQuizAnswers({ ...quizAnswers, [quizIdx]: opt })} className={`flex-1 rounded border px-3 py-2 text-sm ${userAns === opt ? "border-violet-400 bg-violet-500/20" : "border-white/10"}`}>{opt}</button>
+                    ))}
+                  </div>
+                ) : (
+                  <Input value={userAns ?? ""} onChange={(e) => setQuizAnswers({ ...quizAnswers, [quizIdx]: e.target.value })} placeholder="Your answer…" />
+                )}
+                {quizReveal && (
+                  <div className={`rounded border p-2 text-sm ${correct ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200" : "border-rose-400/40 bg-rose-500/10 text-rose-200"}`}>
+                    <div className="font-semibold">{correct ? "✓ Correct" : `✗ Answer: ${q.answer}`}</div>
+                    {q.explanation && <div className="mt-1 text-xs opacity-80">{q.explanation}</div>}
+                  </div>
+                )}
+              </div>
+            );
+          })() : <div className="text-sm text-white/60">No quiz available.</div>}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setQuizReveal(false); setQuizIdx((i) => Math.max(0, i - 1)); }} disabled={quizIdx === 0}>Back</Button>
+            {!quizReveal ? (
+              <Button onClick={() => setQuizReveal(true)} disabled={!quizAnswers[quizIdx]}>Check</Button>
+            ) : quizIdx < (schema?.quiz?.length ?? 0) - 1 ? (
+              <Button onClick={() => { setQuizReveal(false); setQuizIdx((i) => i + 1); }}>Next</Button>
+            ) : (
+              <Button onClick={() => { setQuizOpen(false); setQuizIdx(0); setQuizAnswers({}); setQuizReveal(false); }}>Finish</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
