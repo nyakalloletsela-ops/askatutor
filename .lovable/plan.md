@@ -1,84 +1,59 @@
-# AskATutorLive 3D AI Lab — MVP
 
-A new feature inside the existing app (not a replacement). Lives at `/_authenticated/labs/3d-ai-lab`, gated by the existing `labs` feature scope via `<ScopeGate>`. Uses Lovable AI Gateway (no user API key) and Lovable Cloud (Supabase) for storage + pgvector memory.
+# Universal AI Simulation Lab — Build Plan
 
-## Scope of this pass (MVP)
+This is a large spec. To ship it production-ready (not as a buggy half-build), I'll deliver in tight phases. Each phase is independently testable; you approve, I move on.
 
-Included:
-- New route + page with three-pane layout (left prompt, center 3D viewport, right Library)
-- Empty initial scene: dark bg, subtle grid, ambient light, no objects
-- Prompt → embedding similarity check → load existing OR generate new schema via Lovable AI
-- Strict JSON schema for simulations (subject, title, objects, rules, timeline)
-- R3F renderer with object mapping (car, sphere, wall, particle, default cube)
-- Simple physics loop: velocity, gravity, basic AABB collision, Newton 2nd law
-- Controls: Play / Pause / Reset / time scrubber / OrbitControls / fullscreen
-- Library: list, search (text + semantic), subject filter, click to load, thumbnail
-- Canvas screenshot → upload to Storage → save thumbnail_url
-- Universal subject fallback (abstract glowing shapes when subject unknown)
-- Dark futuristic styling using existing design tokens
+## Current state (already exists)
+- Route: `/labs/simulation-lab` (lazy 3D scene, prompt → AI schema → save to library)
+- DB: `simulations`, `simulation_versions`, `simulation_assets` (+ embeddings, tags)
+- AI gateway helpers, similarity search, thumbnail capture
+- Subject-aware schema (physics/bio/chem/math/economics primitives + connections)
+- Classroom action bar links to PhET + Simulation Lab
 
-Out of scope (explicitly deferred):
-- Versioning, remix, JSON import/export, duplicate button
-- Advanced physics (rigid body engine, constraints, fluids)
-- Multi-user shared simulations
-- Mobile-optimized layout (desktop-first only this pass)
+Gap vs your spec: not truly universal (no history/geography/language/process modes), no per-object click-to-explain, no AI side-chat, no auto-quiz, no 4 learning modes, no live classroom sync, no tutor/student role split, empty-state not premium, mobile UX thin.
 
-## Technical details
+## Phase A — Universal Schema + Renderer Upgrade (foundation)
+Rewrite the AI schema + renderer to be truly multi-modal. One unified `SimulationDoc` with a `visualization` discriminator:
+- `scene3d` (current) — physics/bio/chem/astronomy/engineering
+- `scene2d` — math graphs, economics curves, statistics (Recharts + framer-motion overlays)
+- `process` — step-by-step animated flow (photosynthesis, CPU, water cycle)
+- `timeline` — historical events with scrub bar + map pins
+- `geo` — world/region map with animated layers (tectonics, climate)
+- `language` — illustrated dialogue scene with speakable lines
 
-**Routes & gating**
-- `src/routes/_authenticated/labs.3d-ai-lab.tsx` — new page, wrapped in `<ScopeGate scope="labs">`
-- Add card/link from existing `/labs` page
+AI system prompt rewritten to pick the right `visualization` automatically and emit labels + per-object `explain` text.
 
-**Dependencies**
-- `three`, `@react-three/fiber`, `@react-three/drei` (bun add)
+## Phase B — Premium UX shell + Empty state + Controls
+- Glassmorphism dark shell, ambient particles + grid in empty state
+- Full control bar: play/pause/restart/replay, speed 0.25/0.5/1/2/4, zoom/pan/rotate hints, fullscreen, step-forward/back for process/timeline modes
+- Mobile-first prompt bar that doesn't fight the canvas
+- Object click → right-side **Explain panel** (name, definition, purpose, key facts, misconceptions)
 
-**Database (one migration)**
-- Enable `vector` extension
-- Create `public.simulations`:
-  - `id uuid pk`, `user_id uuid → auth.users`, `prompt text`, `subject text`, `title text`, `schema_json jsonb`, `embedding vector(3072)`, `thumbnail_url text`, `created_at timestamptz`
-  - GRANTs for `authenticated` + `service_role`; RLS: owner-only SELECT/INSERT/UPDATE/DELETE via `auth.uid() = user_id`
-  - HNSW index on `embedding vector_cosine_ops`
-- RPC `match_simulations(query_embedding, match_count, min_similarity)` — security definer, filters by `auth.uid()`
-- New storage bucket `simulation-thumbnails` (public read, owner-write policy)
+## Phase C — AI Side Chat + Auto Quiz
+- Persistent right-side AI chat (AI Elements) with current simulation as context: "Explain", "Simplify", "Harder example", "Quiz me"
+- One-tap **Generate Quiz** → MCQ / T-F / short-answer at Beginner/Intermediate/Advanced, scored inline
 
-**Server functions** (`src/lib/sim-lab.functions.ts`, all `requireSupabaseAuth`)
-- `embedPrompt({ text })` → calls Lovable AI Gateway `/v1/embeddings` with `google/gemini-embedding-001`, returns 3072-dim vector
-- `findSimilarSimulation({ embedding })` → calls `match_simulations` RPC, returns top match + similarity
-- `generateSimulationSchema({ prompt })` → calls Lovable AI `google/gemini-3-flash-preview` with strict system prompt + Zod-validated JSON output; fallback schema on parse failure
-- `saveSimulation({ prompt, schema, embedding, thumbnailDataUrl })` → uploads thumbnail to storage, inserts row, returns saved record
-- `listSimulations({ search?, subject? })` → semantic when search present (embed → RPC), else recent first
+## Phase D — Learning Modes
+Mode switcher: Guided (AI narrates step-by-step) · Explore (free) · Tutor (locked playback) · Assessment (quiz-only)
 
-**Frontend modules**
-- `src/components/lab3d/Scene.tsx` — Canvas, grid, lights, camera, OrbitControls
-- `src/components/lab3d/SimRenderer.tsx` — maps `objects[]` → primitives via instanced meshes where repeated
-- `src/components/lab3d/physics.ts` — pure functions: `stepNewton`, `stepCollision`, `stepGravity`, `stepFlow`; rule dispatch table
-- `src/components/lab3d/useSimLoop.ts` — `useFrame` loop with play/pause/scrub, memoized rule handlers
-- `src/components/lab3d/PromptPanel.tsx` — input + Generate + similar-match modal
-- `src/components/lab3d/LibraryPanel.tsx` — list, search, filter, thumbnail grid
-- `src/components/lab3d/Controls.tsx` — play/pause/reset/time slider/fullscreen
-- `src/components/lab3d/captureThumbnail.ts` — `gl.domElement.toDataURL()` helper
+## Phase E — Classroom integration + Realtime sync
+- Mount Simulation Lab as a classroom tab (alongside Video / Whiteboard / PhET / Notes)
+- New table `classroom_sim_state(room_id, schema, playing, t, controller_user_id, mode)` + Realtime
+- Tutor = controller; students view/interact within mode permissions
+- Tutor tools: highlight object, freeze, draw-over (reuse whiteboard overlay)
 
-**AI system prompt (one source of truth, in server fn)**
-Forces JSON-only output matching the schema, auto-detects subject, no prose. Validated server-side with Zod; on failure, retry once with the validator error, then fall back to a minimal abstract schema (`{subject:"abstract", objects:[3 glowing spheres], rules:["flow_dynamics"]}`).
+## Phase F — Polish & perf
+- Scene caching, lazy primitives, 60fps audit on mobile
+- SEO/meta, accessibility pass, error boundaries, credit-exhaustion + rate-limit toasts
 
-**Error handling**
-- AI failure → fallback schema + toast
-- Embedding failure → skip similarity check, proceed to generate
-- DB failure on save → keep simulation in local state, toast "saved locally"
-- Unknown rule → skipped in dispatch table
+---
 
-**Performance**
-- `InstancedMesh` for ≥4 objects of same primitive type
-- Physics state in refs, not React state, to avoid re-renders
-- Library queries paginated to 50
+## What I need from you before starting
 
-## What the user sees
+This is a 2–4 hour build at minimum. To avoid another round of "not what I wanted", confirm:
 
-1. Visits `/labs/3d-ai-lab` (linked from `/labs`)
-2. Empty dark 3D scene, prompt panel left, empty Library right
-3. Types prompt → Generate
-4. If similar simulation exists: modal "Load existing or generate new?"
-5. New simulation renders, controls appear, auto-saves with thumbnail
-6. Library updates instantly; click any item to reload
+1. **Start with Phase A (universal schema + renderer)?** That's the foundation everything else stands on. Without it, classroom sync / quiz / modes are decorating a renderer that can't handle history or language.
+2. **Classroom sync scope** — should every classroom participant truly see the same frame in realtime (full sync, more complex), or is "tutor generates, students see the result + can explore on their own copy" acceptable for v1?
+3. **Quiz storage** — save quiz attempts to DB (analytics later), or just in-memory for the session?
 
-Ready to build on approval.
+Once you answer, I'll execute Phase A end-to-end and report back before touching B.
