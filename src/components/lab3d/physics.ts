@@ -5,6 +5,7 @@ export type Vec3 = [number, number, number];
 export type SimObjectState = {
   index: number;
   type: string;
+  basePosition: Vec3;
   position: Vec3;
   velocity: Vec3;
   mass: number;
@@ -16,6 +17,8 @@ export type SimObjectState = {
 };
 
 const PALETTE = ["#7c3aed", "#06b6d4", "#22d3ee", "#f472b6", "#facc15", "#34d399", "#fb923c"];
+
+const FIXED_TYPES = new Set(["wall", "plane", "axis", "organ", "node", "graph"]);
 
 function toVec3(v: unknown, fallback: Vec3): Vec3 {
   if (Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === "number")) return v as Vec3;
@@ -33,23 +36,28 @@ export function buildInitialState(schema: SimulationSchemaT): SimObjectState[] {
     return {
       index: i,
       type,
-      position: toVec3((o as any).position, [i * 2 - schema.objects.length, type === "plane" ? 0 : 1, 0]),
+      basePosition: toVec3((o as any).position, [i * 2 - schema.objects.length, type === "plane" || type === "axis" ? 0 : 1, 0]),
+      position: toVec3((o as any).position, [i * 2 - schema.objects.length, type === "plane" || type === "axis" ? 0 : 1, 0]),
       velocity: toVec3((o as any).velocity, [0, 0, 0]),
       mass: typeof (o as any).mass === "number" ? (o as any).mass : 1,
-      radius: typeof (o as any).radius === "number" ? (o as any).radius : 0.6,
+      radius: typeof (o as any).radius === "number" ? (o as any).radius : type === "particle" || type === "flow" || type === "curve" ? 0.35 : 0.7,
       size: toSize(
         (o as any).size,
         type === "wall"
           ? [0.5, 4, 6]
           : type === "plane"
             ? [40, 0.1, 40]
+            : type === "axis"
+              ? [10, 0.06, 10]
             : type === "car"
               ? [2, 1, 1]
+              : type === "graph"
+                ? [7, 0.08, 5]
               : [1, 1, 1],
       ),
       color: (o as any).color || PALETTE[i % PALETTE.length],
       label: (o as any).label,
-      fixed: !!(o as any).fixed || type === "wall" || type === "plane",
+      fixed: !!(o as any).fixed || FIXED_TYPES.has(type),
     };
   });
 }
@@ -57,16 +65,37 @@ export function buildInitialState(schema: SimulationSchemaT): SimObjectState[] {
 export function stepSim(state: SimObjectState[], rules: string[], dt: number) {
   const hasGravity = rules.includes("gravity");
   const hasCollision = rules.includes("collision_response");
-  const hasFlow = rules.includes("flow_dynamics");
+  const hasFlow = rules.includes("flow_dynamics") || rules.includes("market_flow") || rules.includes("semantic_flow");
+  const hasOrbit = rules.includes("orbital_motion") || rules.includes("chemical_bonding");
+  const hasGrowth = rules.includes("growth_cycle");
+  const hasGraph = rules.includes("graph_transform");
   const g = 9.81;
+  const t = performance.now() * 0.001;
 
   for (const o of state) {
-    if (o.fixed) continue;
+    if (o.fixed) {
+      if (hasGrowth && (o.type === "organ" || o.type === "node")) {
+        o.position[1] = o.basePosition[1] + Math.sin(t * 1.6 + o.index) * 0.08;
+      }
+      continue;
+    }
     if (hasGravity) o.velocity[1] -= g * dt;
+    if (hasOrbit) {
+      const angle = t * (0.6 + o.index * 0.05) + o.index;
+      const orbit = 0.35 + o.index * 0.04;
+      o.position[0] += Math.sin(angle) * orbit * dt;
+      o.position[2] += Math.cos(angle) * orbit * dt;
+    }
+    if (hasGraph && (o.type === "curve" || o.type === "particle")) {
+      o.position[1] = Math.max(0.35, o.basePosition[1] + Math.sin(t * 1.4 + o.index) * 0.8);
+    }
+    if (hasGrowth && (o.type === "cell" || o.type === "dna" || o.type === "particle")) {
+      o.position[1] = Math.max(o.radius, o.position[1] + Math.sin(t * 2 + o.index) * 0.08 * dt);
+    }
     if (hasFlow) {
       // gentle circular drift
-      o.velocity[0] += Math.sin(performance.now() * 0.0005 + o.index) * 0.05 * dt;
-      o.velocity[2] += Math.cos(performance.now() * 0.0005 + o.index) * 0.05 * dt;
+      o.velocity[0] += Math.sin(t * 0.5 + o.index) * 0.05 * dt;
+      o.velocity[2] += Math.cos(t * 0.5 + o.index) * 0.05 * dt;
     }
     o.position[0] += o.velocity[0] * dt;
     o.position[1] += o.velocity[1] * dt;
