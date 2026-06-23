@@ -37,9 +37,7 @@ export function ScopeGate({ scope, title, description, children }: Props) {
               `This area is part of the ${labels[scope]} plan. Subscribe to unlock it for your account.`}
           </p>
           <Button asChild>
-            <Link to="/settings" search={{ tab: "plans" } as never}>
-              View plans
-            </Link>
+            <Link to="/settings">View plans</Link>
           </Button>
         </CardContent>
       </Card>
