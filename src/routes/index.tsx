@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  MessageSquare, Video, Bot, ArrowRight, Sparkles, Zap,
+  MessageSquare, Video, Bot, ArrowRight, Sparkles, GraduationCap as GradCap, Users,
   Sigma, FlaskConical, BookOpen, Code2, Briefcase, GraduationCap,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
