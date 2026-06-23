@@ -92,6 +92,17 @@ function Stat({
   );
 }
 
+type AuditRow = {
+  id: string;
+  actor_id: string;
+  action: "approve" | "reject";
+  application_ids: string[];
+  tutor_ids: string[];
+  is_bulk: boolean;
+  notes: string | null;
+  created_at: string;
+};
+
 export function AdminHome({ firstName }: { firstName: string }) {
   const [apps, setApps] = useState<AppRow[]>([]);
   const [tutors, setTutors] = useState<TutorProfile[]>([]);
@@ -99,9 +110,11 @@ export function AdminHome({ firstName }: { firstName: string }) {
   const [counts, setCounts] = useState({ students: 0, tutors: 0, sessions: 0 });
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [actorNames, setActorNames] = useState<Record<string, string>>({});
 
   const load = async () => {
-    const [{ data: a }, { data: t }, { data: s }, students, tutorRoles, allSessions] = await Promise.all([
+    const [{ data: a }, { data: t }, { data: s }, students, tutorRoles, allSessions, { data: al }] = await Promise.all([
       supabase
         .from("tutor_applications")
         .select("id,user_id,full_name,email,subjects,bio,status,submitted_at")
@@ -117,6 +130,11 @@ export function AdminHome({ firstName }: { firstName: string }) {
       supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "student"),
       supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tutor"),
       supabase.from("sessions").select("id", { count: "exact", head: true }),
+      supabase
+        .from("admin_audit_log")
+        .select("id,actor_id,action,application_ids,tutor_ids,is_bulk,notes,created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
     setApps((a as AppRow[]) ?? []);
     setTutors(((t as TutorProfile[]) ?? []).slice(0, 30));
@@ -126,6 +144,20 @@ export function AdminHome({ firstName }: { firstName: string }) {
       tutors: tutorRoles.count ?? 0,
       sessions: allSessions.count ?? 0,
     });
+    const auditRows = (al as AuditRow[]) ?? [];
+    setAudit(auditRows);
+    const actorIds = Array.from(new Set(auditRows.map((r) => r.actor_id).filter(Boolean)));
+    if (actorIds.length) {
+      const { data: pr } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", actorIds);
+      const map: Record<string, string> = {};
+      (pr ?? []).forEach((p: { id: string; full_name: string | null }) => {
+        map[p.id] = p.full_name ?? "Admin";
+      });
+      setActorNames(map);
+    }
   };
 
   useEffect(() => {
