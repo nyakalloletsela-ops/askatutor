@@ -9,17 +9,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   Play, Pause, RotateCcw, Sparkles, Trash2, Maximize2, Loader2, Search, X, BookOpen, GraduationCap,
+  Compass, Lock, ClipboardCheck, Wand2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   embedPrompt, findSimilarSimulation, generateSimulationSchema,
   saveSimulation, listSimulations, deleteSimulation,
   type SimulationSchemaT,
 } from "@/lib/sim-lab.functions";
 import { SimDispatch } from "@/components/lab3d/SimDispatch";
+import { SimChat } from "@/components/lab3d/SimChat";
+import { AmbientEmpty } from "@/components/lab3d/AmbientEmpty";
 import type * as THREE from "three";
+
+type LearningMode = "guided" | "explore" | "tutor" | "assessment";
 
 export const Route = createFileRoute("/_authenticated/labs_/simulation-lab")({
   component: () => <ScopeGate scope="labs"><Lab3DPage /></ScopeGate>,
