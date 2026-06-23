@@ -113,6 +113,7 @@ const adminNav: NavItem[] = [
   { label: "Platform Audit", to: "/admin/audit", icon: ShieldCheck },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
   { label: "Payouts & Ledger", to: "/admin/payouts", icon: Banknote },
+  { label: "Payment Providers", to: "/admin/payouts#providers", icon: CreditCard },
   { label: "Subscriptions", to: "/admin/payments", icon: Wallet },
   { label: "Promotions", to: "/admin/promotions", icon: Wallet },
   { label: "AI Controls", to: "/admin/ai", icon: Sparkles },
