@@ -157,20 +157,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-background": "222 47% 11%",
-          "--sidebar-foreground": "215 25% 89%",
-          "--sidebar-primary": "217 91% 60%",
-          "--sidebar-primary-foreground": "0 0% 100%",
-          "--sidebar-accent": "217 33% 17%",
-          "--sidebar-accent-foreground": "0 0% 100%",
-          "--sidebar-border": "217 33% 17%",
-          "--sidebar-ring": "217 91% 60%",
-        } as React.CSSProperties
-      }
-    >
+    <SidebarProvider>
+
       <Sidebar collapsible="icon" className="border-r border-sidebar-border">
         <SidebarHeader>
           <div className="flex items-center gap-2 px-2 py-1.5">
