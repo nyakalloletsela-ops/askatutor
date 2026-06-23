@@ -77,6 +77,7 @@ function Lab3DPage() {
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
   const [quizReveal, setQuizReveal] = useState(false);
   const sceneWrapRef = useRef<HTMLDivElement>(null);
+  const glRef = useRef<THREE.WebGLRenderer | null>(null);
 
   async function refreshLibrary() {
     try {
