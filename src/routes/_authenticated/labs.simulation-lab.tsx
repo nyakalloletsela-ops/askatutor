@@ -191,7 +191,7 @@ function Lab3DPage() {
   return (
     <div className="flex h-screen flex-col bg-[#0b1020] text-white">
       <Navbar />
-      <div className="grid flex-1 grid-cols-1 overflow-hidden md:grid-cols-[300px_1fr_320px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[300px_1fr_320px]">
         {/* LEFT — prompt */}
         <aside className="hidden flex-col gap-3 border-r border-white/5 bg-black/30 p-4 md:flex">
           <div className="flex items-center gap-2 text-sm font-semibold">
