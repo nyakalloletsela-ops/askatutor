@@ -79,8 +79,8 @@ function BecomeTutorPage() {
 
   const submit = async () => {
     if (!user) return;
-    if (!fullName.trim() || !bio.trim() || !qualifications.trim() || !subjects.trim()) {
-      return toast.error("Please fill in name, subjects, bio, and qualifications");
+    if (!fullName.trim() || !bio.trim() || !qualifications.trim() || !subjects.trim() || !motivation.trim()) {
+      return toast.error("Please fill in name, subjects, bio, qualifications and motivation");
     }
     setSubmitting(true);
     const { data, error } = await supabase
@@ -92,7 +92,7 @@ function BecomeTutorPage() {
         phone: phone.trim() || null,
         bio: bio.trim(),
         subjects: subjects.split(",").map((s) => s.trim()).filter(Boolean),
-        qualifications: qualifications.trim(),
+        qualifications: `${qualifications.trim()}\n\n--- Motivation ---\n${motivation.trim()}`,
       })
       .select("id, status, admin_notes, submitted_at")
       .single();
