@@ -1563,38 +1563,123 @@ export type Database = {
           },
         ]
       }
-      simulations: {
+      simulation_assets: {
         Row: {
+          asset_data: Json
+          asset_type: string
           created_at: string
-          embedding: string | null
           id: string
-          prompt: string
-          schema_json: Json
-          subject: string | null
-          thumbnail_url: string | null
-          title: string | null
+          simulation_id: string
           user_id: string
         }
         Insert: {
+          asset_data?: Json
+          asset_type: string
           created_at?: string
-          embedding?: string | null
           id?: string
-          prompt: string
-          schema_json: Json
-          subject?: string | null
-          thumbnail_url?: string | null
-          title?: string | null
+          simulation_id: string
           user_id: string
         }
         Update: {
+          asset_data?: Json
+          asset_type?: string
           created_at?: string
-          embedding?: string | null
+          id?: string
+          simulation_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_assets_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulation_versions: {
+        Row: {
+          created_at: string
+          id: string
+          prompt: string
+          schema_json: Json
+          simulation_id: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          prompt: string
+          schema_json: Json
+          simulation_id: string
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          created_at?: string
           id?: string
           prompt?: string
           schema_json?: Json
+          simulation_id?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_versions_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulations: {
+        Row: {
+          ai_schema_version: number
+          created_at: string
+          embedding: string | null
+          id: string
+          processed: boolean
+          prompt: string
+          schema_json: Json
+          subject: string | null
+          tags: string[]
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_schema_version?: number
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          processed?: boolean
+          prompt: string
+          schema_json: Json
           subject?: string | null
+          tags?: string[]
           thumbnail_url?: string | null
           title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_schema_version?: number
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          processed?: boolean
+          prompt?: string
+          schema_json?: Json
+          subject?: string | null
+          tags?: string[]
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

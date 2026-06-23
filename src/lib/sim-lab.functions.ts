@@ -14,10 +14,20 @@ const ObjectSchema = z.object({
   fixed: z.boolean().optional(),
 });
 
+const ConnectionSchema = z.object({
+  from: z.number().int().nonnegative(),
+  to: z.number().int().nonnegative(),
+  type: z.string().optional(),
+  label: z.string().optional(),
+});
+
 export const SimulationSchema = z.object({
   subject: z.string(),
   title: z.string(),
+  summary: z.string().optional(),
+  tags: z.array(z.string()).max(12).default([]),
   objects: z.array(ObjectSchema).max(60),
+  connections: z.array(ConnectionSchema).max(80).default([]),
   rules: z.array(z.string()).default([]),
   timeline: z.number().positive().max(120).default(10),
 });
@@ -25,33 +35,111 @@ export const SimulationSchema = z.object({
 export type SimulationSchemaT = z.infer<typeof SimulationSchema>;
 
 const SYSTEM_PROMPT = `You are the AskATutorLive Simulation Lab schema generator.
-Convert any educational prompt into a strict JSON simulation schema.
+Convert ANY educational prompt into a strict JSON simulation schema for a reusable 3D learning lab.
 
 RULES:
 - Output ONLY a single valid JSON object. No prose, no markdown fences.
-- Auto-detect "subject" (physics, biology, chemistry, math, economics, abstract, ...).
+- Auto-detect "subject" (physics, biology, chemistry, math, economics, language, history, geography, abstract, ...).
 - Provide a short human "title".
-- "objects" is an array (max 20) of primitives the renderer understands:
-  type ∈ {"car","sphere","wall","particle","cube","plane","arrow"}.
+- Add "summary" explaining the concept in one sentence and "tags" as reusable knowledge labels.
+- "objects" is an array (max 30) of primitives the renderer understands:
+  type ∈ {"car","sphere","wall","particle","cube","plane","arrow","cell","nucleus","molecule","atom","bond","graph","curve","node","flow","organ","dna","axis"}.
   Each object MAY include: position [x,y,z], velocity (number along x OR [vx,vy,vz]),
   mass, radius, size (scalar or [w,h,d]), color (hex), label, fixed (bool).
-- "rules" subset of: ["newton_second_law","collision_response","gravity","flow_dynamics"].
+- "connections" links object indexes: {"from":0,"to":1,"type":"bond|force|flow|relationship","label":"..."}.
+- "rules" subset of: ["newton_second_law","collision_response","gravity","flow_dynamics","orbital_motion","growth_cycle","chemical_bonding","graph_transform","market_flow","semantic_flow"].
 - "timeline" seconds (1-60).
-- For unknown / abstract subjects, return 3-6 glowing labelled spheres with flow_dynamics.
+- Physics: moving masses, vectors, forces, collisions. Biology: cells, organs, cycles, flows. Chemistry: atoms/molecules/bonds. Math: axes, curves, transformations. Economics: nodes, flows, supply/demand curves. Language/history: semantic or cause-effect flow maps.
+- For unknown / abstract subjects, return a metaphor-based simulation with labelled nodes, arrows, and flow_dynamics.
 - Keep coordinates in -20..20 range.`;
 
 function fallbackSchema(prompt: string): SimulationSchemaT {
+  const text = prompt.toLowerCase();
+  if (/cell|biology|blood|heart|organ|plant|photosynthesis|dna|mitosis|respiration/.test(text)) {
+    return {
+      subject: "biology",
+      title: prompt.slice(0, 60) || "Biology system simulation",
+      summary: "A living-system process shown as animated cells and directional flows.",
+      tags: ["biology", "system", "process"],
+      objects: [
+        { type: "cell", position: [-4, 1.2, 0], radius: 1.2, color: "#22c55e", label: "Input", velocity: [0.35, 0, 0] },
+        { type: "organ", position: [0, 1.4, 0], radius: 1.6, color: "#ef4444", label: "System", fixed: true },
+        { type: "cell", position: [4, 1.2, 0], radius: 1.2, color: "#06b6d4", label: "Output", velocity: [-0.25, 0, 0] },
+        { type: "particle", position: [-2, 1, 1.8], radius: 0.35, color: "#fde047", label: "energy", velocity: [0.7, 0, -0.25] },
+      ],
+      connections: [{ from: 0, to: 1, type: "flow" }, { from: 1, to: 2, type: "flow" }],
+      rules: ["flow_dynamics", "growth_cycle"],
+      timeline: 12,
+    };
+  }
+  if (/chem|atom|molecule|bond|reaction|acid|base|electron|compound/.test(text)) {
+    return {
+      subject: "chemistry",
+      title: prompt.slice(0, 60) || "Chemistry interaction simulation",
+      summary: "Atoms and bonds are represented as a dynamic molecular structure.",
+      tags: ["chemistry", "molecule", "bonding"],
+      objects: [
+        { type: "atom", position: [-2, 1.2, 0], radius: 0.8, color: "#60a5fa", label: "A", velocity: [0.25, 0, 0] },
+        { type: "atom", position: [0, 1.2, 0], radius: 0.6, color: "#f97316", label: "B", fixed: true },
+        { type: "atom", position: [2, 1.2, 0], radius: 0.8, color: "#a78bfa", label: "C", velocity: [-0.25, 0, 0] },
+      ],
+      connections: [{ from: 0, to: 1, type: "bond" }, { from: 1, to: 2, type: "bond" }],
+      rules: ["chemical_bonding", "orbital_motion"],
+      timeline: 10,
+    };
+  }
+  if (/math|equation|function|graph|calculus|geometry|vector|algebra|slope|parabola/.test(text)) {
+    return {
+      subject: "math",
+      title: prompt.slice(0, 60) || "Mathematical transformation simulation",
+      summary: "A mathematical relationship shown with axes, a changing curve, and labelled points.",
+      tags: ["math", "graph", "transformation"],
+      objects: [
+        { type: "axis", position: [0, 0.05, 0], size: [9, 0.05, 9], color: "#94a3b8", label: "axes", fixed: true },
+        { type: "curve", position: [-3, 1, 0], radius: 0.35, color: "#22d3ee", label: "f(x)", velocity: [0.6, 0, 0.2] },
+        { type: "curve", position: [0, 2, 0], radius: 0.35, color: "#f472b6", label: "turning point", velocity: [0.15, 0, -0.35] },
+        { type: "curve", position: [3, 1, 0], radius: 0.35, color: "#22d3ee", label: "x", velocity: [-0.45, 0, 0.25] },
+      ],
+      connections: [{ from: 1, to: 2, type: "relationship" }, { from: 2, to: 3, type: "relationship" }],
+      rules: ["graph_transform", "flow_dynamics"],
+      timeline: 10,
+    };
+  }
+  if (/econom|market|supply|demand|price|inflation|trade|money|business/.test(text)) {
+    return {
+      subject: "economics",
+      title: prompt.slice(0, 60) || "Economics flow simulation",
+      summary: "Economic cause and effect shown as moving value flows between market nodes.",
+      tags: ["economics", "market", "flow"],
+      objects: [
+        { type: "node", position: [-5, 1, 0], radius: 0.9, color: "#38bdf8", label: "Supply", fixed: true },
+        { type: "flow", position: [-2, 1, 0], radius: 0.45, color: "#facc15", label: "price", velocity: [0.8, 0, 0] },
+        { type: "node", position: [1.5, 1, 0], radius: 0.9, color: "#fb7185", label: "Demand", fixed: true },
+        { type: "node", position: [5, 1, 0], radius: 0.9, color: "#34d399", label: "Equilibrium", fixed: true },
+      ],
+      connections: [{ from: 0, to: 2, type: "flow" }, { from: 2, to: 3, type: "flow" }],
+      rules: ["market_flow", "flow_dynamics"],
+      timeline: 12,
+    };
+  }
   return {
     subject: "abstract",
     title: prompt.slice(0, 60) || "Abstract simulation",
+    summary: "A metaphor-based concept map with moving ideas and reusable knowledge links.",
+    tags: ["concept", "flow", "simulation"],
     objects: [
       { type: "sphere", position: [-4, 1, 0], radius: 0.8, color: "#7c3aed", label: "A", velocity: [1, 0, 0] },
       { type: "sphere", position: [0, 1, 0], radius: 0.8, color: "#06b6d4", label: "B", velocity: [0, 0, 1] },
       { type: "sphere", position: [4, 1, 0], radius: 0.8, color: "#22d3ee", label: "C", velocity: [-1, 0, 0] },
     ],
+    connections: [{ from: 0, to: 1, type: "flow" }, { from: 1, to: 2, type: "flow" }],
     rules: ["flow_dynamics"],
     timeline: 10,
   };
+}
+
+function toVectorLiteral(embedding: number[]) {
+  return `[${embedding.map((n) => Number.isFinite(n) ? n.toFixed(8) : "0").join(",")}]`;
 }
 
 async function callGateway(path: string, body: unknown) {
@@ -59,7 +147,7 @@ async function callGateway(path: string, body: unknown) {
   if (!apiKey) throw new Error("AI is not configured");
   const res = await fetch(`https://ai.gateway.lovable.dev/v1${path}`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -102,8 +190,9 @@ export const findSimilarSimulation = createServerFn({ method: "POST" })
     z.object({ embedding: z.array(z.number()).length(1536), minSimilarity: z.number().default(0.85) }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    await assertLabsScope(context.supabase);
     const { data: rows, error } = await context.supabase.rpc("match_simulations", {
-      query_embedding: data.embedding as unknown as string,
+      query_embedding: toVectorLiteral(data.embedding),
       match_count: 1,
       min_similarity: data.minSimilarity,
     });
@@ -154,15 +243,26 @@ export const saveSimulation = createServerFn({ method: "POST" })
       subject: data.schema.subject,
       title: data.schema.title,
       schema_json: data.schema,
-      embedding: data.embedding ? (data.embedding as unknown as string) : null,
+      embedding: data.embedding ? toVectorLiteral(data.embedding) : null,
       thumbnail_url: data.thumbnailDataUrl ?? null,
+      tags: data.schema.tags ?? [],
+      processed: true,
+      ai_schema_version: 2,
     };
     const { data: row, error } = await context.supabase
       .from("simulations")
       .insert(insert)
-      .select("id, prompt, subject, title, schema_json, thumbnail_url, created_at")
+      .select("id, prompt, subject, title, schema_json, thumbnail_url, created_at, tags")
       .single();
     if (error) throw new Error(error.message);
+    const saved = row as { id: string };
+    await (context.supabase as any).from("simulation_versions").insert({
+      simulation_id: saved.id,
+      user_id: context.userId,
+      schema_json: data.schema,
+      prompt: data.prompt,
+      version_number: 1,
+    });
     return { simulation: row };
   });
 
@@ -174,11 +274,11 @@ export const listSimulations = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     let q = context.supabase
       .from("simulations")
-      .select("id, prompt, subject, title, thumbnail_url, created_at, schema_json")
+      .select("id, prompt, subject, title, thumbnail_url, created_at, schema_json, tags")
       .order("created_at", { ascending: false })
       .limit(50);
     if (data.subject) q = q.eq("subject", data.subject);
-    if (data.search) q = q.ilike("title", `%${data.search}%`);
+    if (data.search) q = q.or(`title.ilike.%${data.search}%,prompt.ilike.%${data.search}%`);
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
     return { simulations: rows ?? [] };

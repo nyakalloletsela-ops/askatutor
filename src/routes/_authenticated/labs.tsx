@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { LorddaLab } from "@/components/LorddaLab";
@@ -26,6 +26,7 @@ type Mode = "phet" | "3d";
 
 function LabsPage() {
   const [mode, setMode] = useState<Mode>("phet");
+  const location = useLocation();
   const { isAdmin, isTutor } = useAuth();
   const [viewed, setViewed] = useState<string[]>([]);
 
@@ -38,6 +39,8 @@ function LabsPage() {
     if (!enforceLimit) return;
     setViewed(recordViewedSlug(slug));
   };
+
+  if (location.pathname !== "/labs") return <Outlet />;
 
   return (
     <div className="flex h-screen flex-col">

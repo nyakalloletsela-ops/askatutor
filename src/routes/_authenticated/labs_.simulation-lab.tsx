@@ -24,7 +24,7 @@ const SimScene = lazy(() =>
   import("@/components/lab3d/SimScene").then((m) => ({ default: m.SimScene }))
 );
 
-export const Route = createFileRoute("/_authenticated/labs/simulation-lab")({
+export const Route = createFileRoute("/_authenticated/labs_/simulation-lab")({
   component: () => <ScopeGate scope="labs"><Lab3DPage /></ScopeGate>,
   head: () => ({
     meta: [
@@ -39,10 +39,21 @@ type LibraryItem = {
   prompt: string;
   subject: string | null;
   title: string | null;
+  tags?: string[] | null;
   thumbnail_url: string | null;
   created_at: string;
   schema_json: SimulationSchemaT;
 };
+
+type GenerateResult = { schema: SimulationSchemaT; fallback: boolean };
+
+function toLibraryItems(rows: unknown): LibraryItem[] {
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((row): row is LibraryItem => {
+    const item = row as Partial<LibraryItem>;
+    return typeof item.id === "string" && typeof item.prompt === "string" && !!item.schema_json;
+  });
+}
 
 function Lab3DPage() {
   const embedFn = useServerFn(embedPrompt);
@@ -69,13 +80,14 @@ function Lab3DPage() {
   async function refreshLibrary() {
     try {
       const { simulations } = await listFn({ data: { search: search || undefined, subject: subject || undefined } });
-      setLibrary((simulations ?? []) as LibraryItem[]);
+      setLibrary(toLibraryItems(simulations));
     } catch (e: any) {
       // silent
     }
   }
 
   useEffect(() => { refreshLibrary(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => { refreshLibrary(); /* eslint-disable-next-line */ }, [subject]);
 
   async function handleGenerate(forceNew = false) {
     if (!prompt.trim() || busy) return;
@@ -99,7 +111,7 @@ function Lab3DPage() {
         } catch { /* ignore */ }
       }
 
-      const { schema: gen, fallback } = await genFn({ data: { prompt } });
+      const { schema: gen, fallback } = (await genFn({ data: { prompt } })) as GenerateResult;
       if (fallback) toast.warning("AI returned an unexpected shape — showing a safe fallback scene.");
       setSchema(gen as SimulationSchemaT);
       setResetKey((k) => k + 1);
@@ -111,7 +123,6 @@ function Lab3DPage() {
         try {
           const gl = glRef.current;
           if (gl) {
-            gl.render(gl.getRenderTarget() as any, gl.getRenderTarget() as any); // noop ensure
             thumb = gl.domElement.toDataURL("image/jpeg", 0.5);
             if (thumb && thumb.length > 350_000) thumb = null;
           }
@@ -155,7 +166,7 @@ function Lab3DPage() {
     // bypass similarity check by passing through embedding
     setBusy(true);
     try {
-      const { schema: gen, fallback } = await genFn({ data: { prompt } });
+      const { schema: gen, fallback } = (await genFn({ data: { prompt } })) as GenerateResult;
       if (fallback) toast.warning("Using a safe fallback scene.");
       setSchema(gen as SimulationSchemaT);
       setResetKey((k) => k + 1);
