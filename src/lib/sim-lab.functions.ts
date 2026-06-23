@@ -2,19 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const ObjectSchema = z
-  .object({
-    type: z.string(),
-    position: z.array(z.number()).length(3).optional(),
-    velocity: z.union([z.number(), z.array(z.number()).length(3)]).optional(),
-    mass: z.number().optional(),
-    radius: z.number().optional(),
-    size: z.union([z.number(), z.array(z.number()).length(3)]).optional(),
-    color: z.string().optional(),
-    label: z.string().optional(),
-    fixed: z.boolean().optional(),
-  })
-  .passthrough();
+const ObjectSchema = z.object({
+  type: z.string(),
+  position: z.array(z.number()).length(3).optional(),
+  velocity: z.union([z.number(), z.array(z.number()).length(3)]).optional(),
+  mass: z.number().optional(),
+  radius: z.number().optional(),
+  size: z.union([z.number(), z.array(z.number()).length(3)]).optional(),
+  color: z.string().optional(),
+  label: z.string().optional(),
+  fixed: z.boolean().optional(),
+});
 
 export const SimulationSchema = z.object({
   subject: z.string(),
@@ -150,12 +148,12 @@ export const saveSimulation = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const insert = {
+    const insert: any = {
       user_id: context.userId,
       prompt: data.prompt,
       subject: data.schema.subject,
       title: data.schema.title,
-      schema_json: data.schema as unknown as Record<string, unknown>,
+      schema_json: data.schema,
       embedding: data.embedding ? (data.embedding as unknown as string) : null,
       thumbnail_url: data.thumbnailDataUrl ?? null,
     };

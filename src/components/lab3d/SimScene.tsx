@@ -19,7 +19,7 @@ function ObjectMesh({ s }: { s: SimObjectState }) {
     if (ref.current) ref.current.position.set(s.position[0], s.position[1], s.position[2]);
   });
   const color = s.color;
-  let geom: JSX.Element;
+  let geom: React.ReactNode;
   switch (s.type) {
     case "sphere":
     case "particle":
