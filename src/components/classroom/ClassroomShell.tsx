@@ -170,8 +170,8 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
           </aside>
         )}
 
-        {/* Floating / Focus video overlays — only when joined */}
-        {rtc.joined && (effectiveMode === "FLOATING" || effectiveMode === "FOCUS") && (
+        {/* Focus mode overlay — only when joined */}
+        {rtc.joined && effectiveMode === "FOCUS" && (
           <AnimatedVideoLayout tutor={tutorSlot} student={studentSlot} mode={effectiveMode} />
         )}
 
