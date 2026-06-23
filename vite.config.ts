@@ -14,6 +14,36 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    plugins: [
+      {
+        // Stub three.js / r3f / drei in the SSR bundle. These are only used by
+        // the Simulation Lab (ssr:false under _authenticated) and pulling them
+        // into the nitro SSR transform OOMs the build.
+        name: "stub-three-in-ssr",
+        enforce: "pre",
+        resolveId(id, _importer, opts) {
+          if (!opts?.ssr) return null;
+          if (id === "three" || id.startsWith("three/") ||
+              id.startsWith("@react-three/")) {
+            return "\0virtual:empty-three";
+          }
+          return null;
+        },
+        load(id) {
+          if (id === "\0virtual:empty-three") {
+            return `const noop = () => null;
+const proxy = new Proxy(function () {}, {
+  get: () => proxy,
+  apply: () => proxy,
+  construct: () => ({}),
+});
+export default proxy;
+export { proxy as Canvas, proxy as useFrame, proxy as useThree, proxy as OrbitControls, proxy as Grid, proxy as Stats, proxy as Html, proxy as Text };`;
+          }
+          return null;
+        },
+      },
+    ],
     resolve: {
       alias: {
         // parse5 v7 imports "entities/decode" — only the nested entities@6 inside parse5 has that subpath
