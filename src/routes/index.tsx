@@ -263,23 +263,25 @@ function Home() {
 /* ===================== INSTANT-MATCH SUBJECT CARD ===================== */
 
 function InstantMatchCard({
-  icon: Icon, title, tag, subject,
+  icon: Icon, title, tag, subject, tutors,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   tag: string;
   subject: string;
+  tutors: TutorRow[];
 }) {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  // Pick the top-ranked tutor for this subject (RPC already sorts featured → sessions → rating).
+  const match = tutors.find((tu) => (tu.subjects ?? []).includes(subject));
+  const liveCount = tutors.filter((tu) => (tu.subjects ?? []).includes(subject)).length;
   const trigger = () => {
-    if (!user) {
-      toast.info(`Sign in to start an instant ${title} session`);
-      navigate({ to: "/auth" });
-      return;
+    if (match) {
+      // 1-click teleport: straight into the tutor's room, no auth wall for guests.
+      navigate({ to: "/tutor/$id", params: { id: match.id } });
+    } else {
+      navigate({ to: "/tutors" });
     }
-    // Funnel into existing tutor list filtered by subject
-    navigate({ to: "/tutors" });
   };
   return (
     <button
@@ -292,17 +294,18 @@ function InstantMatchCard({
           <Icon className="h-5 w-5" />
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-          <span className="neon-dot" /> Live tutors
+          <span className="neon-dot" /> {liveCount > 0 ? `${liveCount} live` : "Live tutors"}
         </span>
       </div>
       <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
       <p className="mt-1 text-xs text-muted-foreground">{tag}</p>
       <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-electric">
-        Match in ~11s <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+        {match ? "Teleport in ~10s" : "Browse tutors"} <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
       </div>
     </button>
   );
 }
+
 
 /* ===================== LIVE NETWORK STATUS (sticky) ===================== */
 
