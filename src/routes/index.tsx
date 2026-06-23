@@ -141,6 +141,9 @@ function Home() {
           <p className="mt-4 text-xs text-muted-foreground">
             <span className="neon-dot mr-1.5" /> Live tutor in under 10 seconds — no booking, no waiting.
           </p>
+          <div className="mt-10">
+            <TrustStrip />
+          </div>
         </div>
       </section>
 
