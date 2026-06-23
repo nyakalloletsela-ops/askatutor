@@ -241,7 +241,18 @@ export function AdminHome({ firstName }: { firstName: string }) {
     setBusy(null);
     setConfirm(null);
     setSelected(new Set());
-    const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.error)).length;
+    const succeededIds = ids.filter((_, i) => {
+      const r = results[i];
+      return r.status === "fulfilled" && !r.value.error;
+    });
+    const failed = ids.length - succeededIds.length;
+    if (succeededIds.length > 0) {
+      await supabase.rpc("log_tutor_decision", {
+        _action: confirm,
+        _application_ids: succeededIds,
+        _notes: null,
+      });
+    }
     if (failed > 0) toast.error(`${failed} of ${ids.length} failed`);
     else toast.success(`${ids.length} application(s) ${confirm === "approve" ? "approved" : "rejected"}`);
     load();
