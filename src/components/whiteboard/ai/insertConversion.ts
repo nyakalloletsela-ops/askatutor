@@ -105,17 +105,73 @@ function svgToDataUrl(svg: string): string {
   return `data:image/svg+xml;base64,${b64}`;
 }
 
+type ExtractedLabel = { x: number; y: number; w: number; h: number; text: string; color: string; size: number };
+
+/** Pull <text> nodes out of an SVG so each label becomes an independent, editable text shape.
+ *  Returns the SVG with text nodes removed plus the labels in the SVG's own coordinate space. */
+function extractSvgLabels(svg: string): { cleanedSvg: string; labels: ExtractedLabel[] } {
+  if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+    return { cleanedSvg: svg, labels: [] };
+  }
+  try {
+    const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
+    if (doc.getElementsByTagName("parsererror").length > 0) return { cleanedSvg: svg, labels: [] };
+    const root = doc.documentElement;
+    const labels: ExtractedLabel[] = [];
+    const nodes = Array.from(root.getElementsByTagName("text"));
+    for (const node of nodes) {
+      const raw = (node.textContent ?? "").trim();
+      if (!raw) { node.parentNode?.removeChild(node); continue; }
+      const x = parseFloat(node.getAttribute("x") ?? "0") || 0;
+      const y = parseFloat(node.getAttribute("y") ?? "0") || 0;
+      const fontSizeAttr = node.getAttribute("font-size") ?? node.getAttribute("fontSize") ?? "";
+      const size = parseFloat(fontSizeAttr) || 16;
+      const color = node.getAttribute("fill") || node.getAttribute("color") || "#0f172a";
+      const approxW = Math.max(40, Math.round(raw.length * size * 0.6));
+      const approxH = Math.max(size + 6, Math.round(size * 1.4));
+      labels.push({
+        x: Math.round(x - approxW / 2),
+        y: Math.round(y - size),
+        w: approxW,
+        h: approxH,
+        text: raw,
+        color,
+        size: Math.round(size),
+      });
+      node.parentNode?.removeChild(node);
+    }
+    const cleanedSvg = new XMLSerializer().serializeToString(root);
+    return { cleanedSvg, labels };
+  } catch {
+    return { cleanedSvg: svg, labels: [] };
+  }
+}
+
 /** Convert AI-parsed blocks into laid-out Shape objects to be inserted into the whiteboard.
- *  LaTeX math is rendered locally with KaTeX to a self-contained SVG data URL — no network. */
+ *  LaTeX math is rendered locally with KaTeX to a self-contained SVG data URL — no network.
+ *  Diagram labels (<text> in SVG) are extracted as independent text shapes so they can be
+ *  edited, moved, or deleted without touching the underlying diagram. */
 export function blocksToShapes(blocks: ConvertedBlock[], origin?: { x: number; y: number }): Shape[] {
   const shapes: Shape[] = [];
   let x = origin?.x ?? 80, y = origin?.y ?? 80; const colWidth = 560; const gap = 18;
   let z = 1000;
   for (const b of blocks) {
     if (b.kind === "svg") {
+      const { cleanedSvg, labels } = extractSvgLabels(b.svg);
       const scale = Math.min(1, colWidth / b.w);
       const w = Math.round(b.w * scale), h = Math.round(b.h * scale);
-      shapes.push({ id: nextId(), type: "image", x, y, w, h, src: svgToDataUrl(b.svg), z: z++, page: 1, ts: tick() });
+      shapes.push({ id: nextId(), type: "image", x, y, w, h, src: svgToDataUrl(cleanedSvg), z: z++, page: 1, ts: tick() });
+      for (const lb of labels) {
+        const lx = x + Math.round(lb.x * scale);
+        const ly = y + Math.round(lb.y * scale);
+        const lw = Math.max(24, Math.round(lb.w * scale));
+        const lh = Math.max(20, Math.round(lb.h * scale));
+        shapes.push({
+          id: nextId(), type: "text", x: lx, y: ly, w: lw, h: lh,
+          text: lb.text, color: lb.color, size: Math.max(10, Math.round(lb.size * scale)),
+          z: z++, page: 1, ts: tick(),
+        });
+      }
       y += h + gap;
     } else if (b.kind === "math") {
       const rendered = renderLatexToSvgDataUrl(b.latex, { displayMode: true });
