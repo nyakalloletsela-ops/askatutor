@@ -1,4 +1,6 @@
 import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
+import { SaveToNotes } from "@/components/ai/SaveToNotes";
+
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
