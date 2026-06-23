@@ -126,20 +126,23 @@ function Home() {
             {t("hero.subtitle")}
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="bg-aurora text-white hover:opacity-90">
-              <a href="#tutors"><Search className="mr-2 h-4 w-4" /> {t("hero.cta_primary")}</a>
+            <Button asChild size="lg" className="bg-aurora text-white shadow-glow-electric hover:opacity-90">
+              <a href="#instant"><Zap className="mr-2 h-4 w-4" /> Start Learning Now</a>
             </Button>
-            {!user && (
-              <Button asChild size="lg" variant="outline">
-                <Link to="/auth">{t("hero.cta_secondary")}</Link>
-              </Button>
-            )}
+            <Button asChild size="lg" variant="outline" className="border-electric text-electric hover:bg-primary/10">
+              <Link to={user ? "/dashboard" : "/become-tutor"}>
+                <GraduationCap className="mr-2 h-4 w-4" /> Start Teaching
+              </Link>
+            </Button>
           </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            <span className="neon-dot mr-1.5" /> Live tutor in under 10 seconds — no booking, no waiting.
+          </p>
         </div>
       </section>
 
       {/* ===== INSTANT-MATCH SUBJECT TRIAGE (AskATutorLive premium) ===== */}
-      <section className="border-b border-border/60 bg-gradient-to-b from-background to-muted/30">
+      <section id="instant" className="border-b border-border/60 bg-gradient-to-b from-background to-muted/30">
         <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
@@ -152,12 +155,13 @@ function Home() {
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            <InstantMatchCard icon={Sigma} title="Mathematics" tag="Algebra · Calculus · Stats" subject="Mathematics" />
-            <InstantMatchCard icon={Atom} title="Physics" tag="Mechanics · E&M · Waves" subject="Physics" />
-            <InstantMatchCard icon={FlaskConical} title="Chemistry" tag="Organic · Reactions · Stoich" subject="Chemistry" />
+            <InstantMatchCard icon={Sigma} title="Mathematics" tag="Algebra · Calculus · Stats" subject="Mathematics" tutors={tutors} />
+            <InstantMatchCard icon={Atom} title="Physics" tag="Mechanics · E&M · Waves" subject="Physics" tutors={tutors} />
+            <InstantMatchCard icon={FlaskConical} title="Chemistry" tag="Organic · Reactions · Stoich" subject="Chemistry" tutors={tutors} />
           </div>
         </div>
       </section>
+
 
 
       {/* ===== SHORTCUT CATEGORIES (3 audiences) ===== */}
@@ -259,23 +263,25 @@ function Home() {
 /* ===================== INSTANT-MATCH SUBJECT CARD ===================== */
 
 function InstantMatchCard({
-  icon: Icon, title, tag, subject,
+  icon: Icon, title, tag, subject, tutors,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   tag: string;
   subject: string;
+  tutors: TutorRow[];
 }) {
-  const { user } = useAuth();
   const navigate = useNavigate();
+  // Pick the top-ranked tutor for this subject (RPC already sorts featured → sessions → rating).
+  const match = tutors.find((tu) => (tu.subjects ?? []).includes(subject));
+  const liveCount = tutors.filter((tu) => (tu.subjects ?? []).includes(subject)).length;
   const trigger = () => {
-    if (!user) {
-      toast.info(`Sign in to start an instant ${title} session`);
-      navigate({ to: "/auth" });
-      return;
+    if (match) {
+      // 1-click teleport: straight into the tutor's room, no auth wall for guests.
+      navigate({ to: "/tutor/$id", params: { id: match.id } });
+    } else {
+      navigate({ to: "/tutors" });
     }
-    // Funnel into existing tutor list filtered by subject
-    navigate({ to: "/tutors" });
   };
   return (
     <button
@@ -288,17 +294,18 @@ function InstantMatchCard({
           <Icon className="h-5 w-5" />
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-          <span className="neon-dot" /> Live tutors
+          <span className="neon-dot" /> {liveCount > 0 ? `${liveCount} live` : "Live tutors"}
         </span>
       </div>
       <h3 className="mt-4 text-lg font-semibold tracking-tight">{title}</h3>
       <p className="mt-1 text-xs text-muted-foreground">{tag}</p>
       <div className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-electric">
-        Match in ~11s <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+        {match ? "Teleport in ~10s" : "Browse tutors"} <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
       </div>
     </button>
   );
 }
+
 
 /* ===================== LIVE NETWORK STATUS (sticky) ===================== */
 
