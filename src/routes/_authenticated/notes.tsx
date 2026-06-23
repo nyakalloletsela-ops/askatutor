@@ -104,33 +104,87 @@ function NotesPage() {
         </CardContent>
       </Card>
 
-      {notes.length === 0 ? (
-        <EmptyState icon={StickyNote} title="No notes yet" description="Capture ideas, summaries, or bookmarks." />
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {notes.map((n) => (
-            <Card key={n.id} className="group">
-              <CardContent className="space-y-1 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-semibold">{n.title}</h3>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={() => del.mutate(n.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-                {n.body && <div className="text-xs text-muted-foreground"><SmartMarkdown>{n.body}</SmartMarkdown></div>}
-                <p className="text-[10px] text-muted-foreground">
-                  {new Date(n.created_at).toLocaleDateString()}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <FolderFilter notes={notes} />
     </PageContainer>
   );
+}
+
+function FolderFilter({ notes }: { notes: Note[] }) {
+  const qc = useQueryClient();
+  const [folder, setFolder] = useState<string>("all");
+
+  const folders = useMemo(() => {
+    const counts = new Map<string, number>();
+    notes.forEach((n) => counts.set(n.kind, (counts.get(n.kind) ?? 0) + 1));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+  }, [notes]);
+
+  const visible = folder === "all" ? notes : notes.filter((n) => n.kind === folder);
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("notes").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (notes.length === 0) {
+    return <EmptyState icon={StickyNote} title="No notes yet" description="Capture ideas, summaries, or save AI Coach answers and Toolkit outputs here." />;
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <FolderOpen className="h-4 w-4 text-muted-foreground" />
+        <Button
+          size="sm"
+          variant={folder === "all" ? "default" : "outline"}
+          onClick={() => setFolder("all")}
+          className="h-7 rounded-full text-xs"
+        >
+          All <Badge variant="secondary" className="ml-1 text-[10px]">{notes.length}</Badge>
+        </Button>
+        {folders.map(([k, count]) => (
+          <Button
+            key={k}
+            size="sm"
+            variant={folder === k ? "default" : "outline"}
+            onClick={() => setFolder(k)}
+            className="h-7 rounded-full text-xs"
+          >
+            {folderLabel(k)} <Badge variant="secondary" className="ml-1 text-[10px]">{count}</Badge>
+          </Button>
+        ))}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        {visible.map((n) => (
+          <Card key={n.id} className="group">
+            <CardContent className="space-y-1 p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm font-semibold">{n.title}</h3>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100"
+                  onClick={() => remove.mutate(n.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              {n.body && <div className="text-xs text-muted-foreground"><SmartMarkdown>{n.body}</SmartMarkdown></div>}
+              <div className="flex items-center justify-between pt-1">
+                <Badge variant="outline" className="text-[10px]">{folderLabel(n.kind)}</Badge>
+                <p className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleDateString()}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </>
+  );
+}
+
 }
