@@ -31,6 +31,7 @@ import {
   CalendarOff,
   CreditCard,
   Percent,
+  Banknote,
 } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/hooks/use-auth";
