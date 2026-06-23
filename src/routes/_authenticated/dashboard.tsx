@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { StudentHome } from "@/components/dashboard/StudentHome";
 import { TutorHome } from "@/components/dashboard/TutorHome";
+import { AdminHome } from "@/components/dashboard/AdminHome";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
