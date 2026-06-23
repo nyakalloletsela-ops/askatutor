@@ -24,7 +24,7 @@ const sections = [
 
 function SettingsPage() {
   return (
-    <AppShell title="Settings">
+    <AppShell>
       <div className="mx-auto w-full max-w-4xl space-y-6 p-4 sm:p-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
