@@ -2,9 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const TextPartSchema = z.object({ type: z.literal("text"), text: z.string().min(1).max(4000) });
+const ImagePartSchema = z.object({
+  type: z.literal("image_url"),
+  image_url: z.object({ url: z.string().max(2_000_000) }),
+});
+const PartSchema = z.union([TextPartSchema, ImagePartSchema]);
+
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
-  content: z.string().min(1).max(4000),
+  content: z.union([z.string().min(1).max(4000), z.array(PartSchema).min(1).max(6)]),
 });
 
 const InputSchema = z.object({
