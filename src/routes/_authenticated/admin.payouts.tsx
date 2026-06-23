@@ -598,13 +598,24 @@ type Provider = {
   display_name: string;
   is_enabled: boolean;
   priority: number;
+  mode: "sandbox" | "live";
+  credentials_ref: string | null;
   supported_methods: string[];
   supported_currencies: string[];
   supported_countries: string[];
+  supported_regions: unknown;
+  success_count: number;
+  failure_count: number;
+  last_error: string | null;
+  last_success_at: string | null;
+  last_failure_at: string | null;
 };
 
 function ProvidersTab() {
   const qc = useQueryClient();
+  const [editing, setEditing] = useState<Provider | null>(null);
+  const [adding, setAdding] = useState(false);
+
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["payment-providers"],
     queryFn: async () => {
@@ -639,57 +650,317 @@ function ProvidersTab() {
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Available payment methods</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Lower priority wins. Enable only providers you have API keys for. Adding a new method later is a single row insert + provider file.
-        </p>
-      </CardHeader>
-      <CardContent className="p-0">
-        {isLoading ? (
-          <p className="p-6 text-sm text-muted-foreground">Loading…</p>
-        ) : (
-          <div className="divide-y divide-border/60">
-            {rows.map((p) => (
-              <div key={p.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{p.display_name}</p>
-                    <Badge variant="outline" className="text-[10px] uppercase">{p.slug}</Badge>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {p.supported_methods.join(", ") || "—"} · {p.supported_currencies.join(", ") || "—"}
-                    {p.supported_countries.length ? ` · ${p.supported_countries.join(", ")}` : ""}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 text-xs">
-                    <Label className="text-xs text-muted-foreground">Priority</Label>
-                    <Input
-                      type="number"
-                      defaultValue={p.priority}
-                      className="h-8 w-20"
-                      onBlur={(e) => {
-                        const v = Number(e.target.value);
-                        if (!Number.isNaN(v) && v !== p.priority) setPriority.mutate({ id: p.id, priority: v });
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={p.is_enabled}
-                      onCheckedChange={(v) => toggle.mutate({ id: p.id, is_enabled: v })}
-                    />
-                    <span className="text-xs text-muted-foreground">{p.is_enabled ? "Enabled" : "Off"}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">Payment providers</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Smart router picks the best provider per request (priority weighted by recent success rate).
+              Add a provider here and paste API keys into project secrets using the credentials prefix.
+            </p>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Plus className="mr-1.5 h-4 w-4" /> Add provider
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">Loading…</p>
+          ) : rows.length === 0 ? (
+            <EmptyState
+              icon={Settings2}
+              title="No providers yet"
+              description="Add one to start accepting payments."
+            />
+          ) : (
+            <div className="divide-y divide-border/60">
+              {rows.map((p) => {
+                const total = p.success_count + p.failure_count;
+                const rate = total > 0 ? Math.round((p.success_count / total) * 100) : null;
+                const credsOk = !!p.credentials_ref;
+                return (
+                  <div key={p.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{p.display_name}</p>
+                        <Badge variant="outline" className="text-[10px] uppercase">{p.slug}</Badge>
+                        <Badge
+                          variant={p.mode === "live" ? "default" : "secondary"}
+                          className="text-[10px] uppercase"
+                        >
+                          {p.mode}
+                        </Badge>
+                        {!credsOk && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            <AlertCircle className="mr-1 h-3 w-3" /> Keys missing
+                          </Badge>
+                        )}
+                        {rate !== null && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {rate}% success · {total} attempts
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {(p.supported_methods?.join(", ") || "—")} ·{" "}
+                        {(p.supported_currencies?.join(", ") || "—")}
+                        {p.supported_countries?.length
+                          ? ` · ${p.supported_countries.join(", ")}`
+                          : ""}
+                      </p>
+                      {p.last_error && (
+                        <p className="mt-1 truncate text-[11px] text-destructive/80">
+                          Last error: {p.last_error}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Label className="text-xs text-muted-foreground">Priority</Label>
+                        <Input
+                          type="number"
+                          defaultValue={p.priority}
+                          className="h-8 w-20"
+                          onBlur={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isNaN(v) && v !== p.priority)
+                              setPriority.mutate({ id: p.id, priority: v });
+                          }}
+                        />
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(p)}>
+                        Edit
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={p.is_enabled}
+                          onCheckedChange={(v) => toggle.mutate({ id: p.id, is_enabled: v })}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {p.is_enabled ? "Enabled" : "Off"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <ProviderFormDialog
+        open={adding}
+        onOpenChange={setAdding}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["payment-providers"] })}
+      />
+      <ProviderFormDialog
+        open={!!editing}
+        onOpenChange={(v) => !v && setEditing(null)}
+        provider={editing ?? undefined}
+        onSaved={() => {
+          setEditing(null);
+          qc.invalidateQueries({ queryKey: ["payment-providers"] });
+        }}
+      />
+    </>
+  );
+}
+
+function ProviderFormDialog({
+  open,
+  onOpenChange,
+  provider,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  provider?: Provider;
+  onSaved: () => void;
+}) {
+  const isEdit = !!provider;
+  const [form, setForm] = useState(() => ({
+    slug: provider?.slug ?? "",
+    display_name: provider?.display_name ?? "",
+    mode: provider?.mode ?? "sandbox",
+    priority: provider?.priority ?? 100,
+    credentials_ref: provider?.credentials_ref ?? "",
+    supported_methods: (provider?.supported_methods ?? ["card"]).join(", "),
+    supported_currencies: (provider?.supported_currencies ?? ["USD"]).join(", "),
+    supported_countries: (provider?.supported_countries ?? ["*"]).join(", "),
+    supported_regions: Array.isArray(provider?.supported_regions)
+      ? (provider!.supported_regions as string[]).join(", ")
+      : "GLOBAL",
+  }));
+
+  // Reset when reopening with new provider
+  useMemo(() => {
+    if (open) {
+      setForm({
+        slug: provider?.slug ?? "",
+        display_name: provider?.display_name ?? "",
+        mode: provider?.mode ?? "sandbox",
+        priority: provider?.priority ?? 100,
+        credentials_ref: provider?.credentials_ref ?? "",
+        supported_methods: (provider?.supported_methods ?? ["card"]).join(", "),
+        supported_currencies: (provider?.supported_currencies ?? ["USD"]).join(", "),
+        supported_countries: (provider?.supported_countries ?? ["*"]).join(", "),
+        supported_regions: Array.isArray(provider?.supported_regions)
+          ? (provider!.supported_regions as string[]).join(", ")
+          : "GLOBAL",
+      });
+    }
+  }, [open, provider?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const split = (s: string) =>
+        s.split(",").map((x) => x.trim()).filter(Boolean);
+      const payload = {
+        slug: form.slug.trim().toLowerCase(),
+        display_name: form.display_name.trim(),
+        mode: form.mode,
+        priority: Number(form.priority) || 100,
+        credentials_ref: form.credentials_ref.trim().toUpperCase() || null,
+        supported_methods: split(form.supported_methods),
+        supported_currencies: split(form.supported_currencies).map((x) => x.toUpperCase()),
+        supported_countries: split(form.supported_countries).map((x) => x.toUpperCase()),
+        supported_regions: split(form.supported_regions).map((x) => x.toUpperCase()),
+      };
+      if (!payload.slug || !payload.display_name) throw new Error("Slug and display name required");
+      if (isEdit && provider) {
+        const { error } = await supabase
+          .from("payment_providers")
+          .update(payload)
+          .eq("id", provider.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("payment_providers").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(isEdit ? "Provider updated" : "Provider added");
+      onSaved();
+      onOpenChange(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? `Edit ${provider?.display_name}` : "Add payment provider"}</DialogTitle>
+          <DialogDescription>
+            The credentials prefix points to project secrets — never paste raw keys here.
+            For prefix <code className="font-mono">PAYPAL</code> the router reads{" "}
+            <code className="font-mono">PAYPAL_CLIENT_ID</code>,{" "}
+            <code className="font-mono">PAYPAL_CLIENT_SECRET</code>, and{" "}
+            <code className="font-mono">PAYPAL_WEBHOOK_ID</code>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Slug</Label>
+              <Input
+                value={form.slug}
+                disabled={isEdit}
+                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                placeholder="paypal"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Display name</Label>
+              <Input
+                value={form.display_name}
+                onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
+                placeholder="PayPal"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Mode</Label>
+              <select
+                value={form.mode}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, mode: e.target.value as "sandbox" | "live" }))
+                }
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="sandbox">Sandbox (test)</option>
+                <option value="live">Live (production)</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Priority (lower = first)</Label>
+              <Input
+                type="number"
+                value={form.priority}
+                onChange={(e) => setForm((f) => ({ ...f, priority: Number(e.target.value) }))}
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Credentials prefix</Label>
+            <Input
+              value={form.credentials_ref}
+              onChange={(e) => setForm((f) => ({ ...f, credentials_ref: e.target.value }))}
+              placeholder="PAYPAL"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Add the actual secret values (<code>{form.credentials_ref || "PREFIX"}_CLIENT_ID</code>,
+              etc.) via Backend → Secrets.
+            </p>
+          </div>
+          <div>
+            <Label className="text-xs">Supported methods (comma-separated)</Label>
+            <Input
+              value={form.supported_methods}
+              onChange={(e) => setForm((f) => ({ ...f, supported_methods: e.target.value }))}
+              placeholder="card, paypal_wallet, mobile_money"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Supported currencies</Label>
+            <Input
+              value={form.supported_currencies}
+              onChange={(e) => setForm((f) => ({ ...f, supported_currencies: e.target.value }))}
+              placeholder="USD, EUR, ZAR"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Countries (ISO, * = any)</Label>
+              <Input
+                value={form.supported_countries}
+                onChange={(e) => setForm((f) => ({ ...f, supported_countries: e.target.value }))}
+                placeholder="* or LS, ZA, KE"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Regions</Label>
+              <Input
+                value={form.supported_regions}
+                onChange={(e) => setForm((f) => ({ ...f, supported_regions: e.target.value }))}
+                placeholder="GLOBAL or AFRICA"
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            {save.isPending ? "Saving…" : isEdit ? "Save" : "Add provider"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
