@@ -1,6 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, Circle, Copy, Check, Signal, SignalLow, SignalMedium, SignalZero, Users, Settings } from "lucide-react";
+import { ArrowLeft, Circle, Signal, SignalLow, SignalMedium, SignalZero, Users, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fmtTimer, useSessionTimer } from "./useSessionTimer";
 import type { ConnectionQuality } from "@/lib/classroom-rtc";
@@ -36,10 +35,7 @@ export function ClassroomHeader({
   quality, recording, onOpenSettings,
 }: Props) {
   const elapsed = useSessionTimer();
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(roomId); setCopied(true); setTimeout(() => setCopied(false), 1200); } catch { /* */ }
-  };
+  void roomId;
   const subtitle = [tutorName && `Tutor: ${tutorName}`, studentName && `Student: ${studentName}`].filter(Boolean).join(" · ");
 
   return (
@@ -53,10 +49,6 @@ export function ClassroomHeader({
         <div className="min-w-0">
           <h1 className="truncate text-sm font-semibold sm:text-base">{title}</h1>
           {subtitle && <p className="hidden truncate text-[11px] text-muted-foreground sm:block">{subtitle}</p>}
-          <button onClick={copy} className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground sm:hidden">
-            <span className="font-mono">{roomId}</span>
-            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          </button>
         </div>
       </div>
 
