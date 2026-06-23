@@ -88,7 +88,7 @@ function Lab3DPage() {
         try {
           const { match: m } = await findFn({ data: { embedding, minSimilarity: 0.85 } });
           if (m) {
-            setMatch(m as LibraryItem);
+            setMatch(m as unknown as LibraryItem);
             setPendingEmbedding(embedding);
             setBusy(false);
             return;

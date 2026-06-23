@@ -51,6 +51,7 @@ import { Route as AuthenticatedWhiteboardReviewSessionIdRouteImport } from './ro
 import { Route as AuthenticatedTutorHolidaysRouteImport } from './routes/_authenticated/tutor.holidays'
 import { Route as AuthenticatedTutorAvailabilityRouteImport } from './routes/_authenticated/tutor.availability'
 import { Route as AuthenticatedParentChildrenRouteImport } from './routes/_authenticated/parent.children'
+import { Route as AuthenticatedLabs3dAiLabRouteImport } from './routes/_authenticated/labs.3d-ai-lab'
 import { Route as AuthenticatedClassroomRoomIdRouteImport } from './routes/_authenticated/classroom.$roomId'
 import { Route as AuthenticatedBookTutorIdRouteImport } from './routes/_authenticated/book.$tutorId'
 import { Route as AuthenticatedAdminWhiteboardRouteImport } from './routes/_authenticated/admin.whiteboard'
@@ -289,6 +290,12 @@ const AuthenticatedParentChildrenRoute =
     path: '/children',
     getParentRoute: () => AuthenticatedParentRoute,
   } as any)
+const AuthenticatedLabs3dAiLabRoute =
+  AuthenticatedLabs3dAiLabRouteImport.update({
+    id: '/3d-ai-lab',
+    path: '/3d-ai-lab',
+    getParentRoute: () => AuthenticatedLabsRoute,
+  } as any)
 const AuthenticatedClassroomRoomIdRoute =
   AuthenticatedClassroomRoomIdRouteImport.update({
     id: '/classroom/$roomId',
@@ -424,7 +431,7 @@ export interface FileRoutesByFullPath {
   '/code': typeof AuthenticatedCodeRoute
   '/courses': typeof AuthenticatedCoursesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/labs': typeof AuthenticatedLabsRoute
+  '/labs': typeof AuthenticatedLabsRouteWithChildren
   '/lessons': typeof AuthenticatedLessonsRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/my-courses': typeof AuthenticatedMyCoursesRoute
@@ -457,6 +464,7 @@ export interface FileRoutesByFullPath {
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/book/$tutorId': typeof AuthenticatedBookTutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
+  '/labs/3d-ai-lab': typeof AuthenticatedLabs3dAiLabRoute
   '/parent/children': typeof AuthenticatedParentChildrenRoute
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
@@ -487,7 +495,7 @@ export interface FileRoutesByTo {
   '/code': typeof AuthenticatedCodeRoute
   '/courses': typeof AuthenticatedCoursesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/labs': typeof AuthenticatedLabsRoute
+  '/labs': typeof AuthenticatedLabsRouteWithChildren
   '/lessons': typeof AuthenticatedLessonsRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/my-courses': typeof AuthenticatedMyCoursesRoute
@@ -520,6 +528,7 @@ export interface FileRoutesByTo {
   '/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/book/$tutorId': typeof AuthenticatedBookTutorIdRoute
   '/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
+  '/labs/3d-ai-lab': typeof AuthenticatedLabs3dAiLabRoute
   '/parent/children': typeof AuthenticatedParentChildrenRoute
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
@@ -552,7 +561,7 @@ export interface FileRoutesById {
   '/_authenticated/code': typeof AuthenticatedCodeRoute
   '/_authenticated/courses': typeof AuthenticatedCoursesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/labs': typeof AuthenticatedLabsRoute
+  '/_authenticated/labs': typeof AuthenticatedLabsRouteWithChildren
   '/_authenticated/lessons': typeof AuthenticatedLessonsRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/my-courses': typeof AuthenticatedMyCoursesRoute
@@ -585,6 +594,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/whiteboard': typeof AuthenticatedAdminWhiteboardRoute
   '/_authenticated/book/$tutorId': typeof AuthenticatedBookTutorIdRoute
   '/_authenticated/classroom/$roomId': typeof AuthenticatedClassroomRoomIdRoute
+  '/_authenticated/labs/3d-ai-lab': typeof AuthenticatedLabs3dAiLabRoute
   '/_authenticated/parent/children': typeof AuthenticatedParentChildrenRoute
   '/_authenticated/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/_authenticated/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
@@ -650,6 +660,7 @@ export interface FileRouteTypes {
     | '/admin/whiteboard'
     | '/book/$tutorId'
     | '/classroom/$roomId'
+    | '/labs/3d-ai-lab'
     | '/parent/children'
     | '/tutor/availability'
     | '/tutor/holidays'
@@ -713,6 +724,7 @@ export interface FileRouteTypes {
     | '/admin/whiteboard'
     | '/book/$tutorId'
     | '/classroom/$roomId'
+    | '/labs/3d-ai-lab'
     | '/parent/children'
     | '/tutor/availability'
     | '/tutor/holidays'
@@ -777,6 +789,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/whiteboard'
     | '/_authenticated/book/$tutorId'
     | '/_authenticated/classroom/$roomId'
+    | '/_authenticated/labs/3d-ai-lab'
     | '/_authenticated/parent/children'
     | '/_authenticated/tutor/availability'
     | '/_authenticated/tutor/holidays'
@@ -1109,6 +1122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedParentChildrenRouteImport
       parentRoute: typeof AuthenticatedParentRoute
     }
+    '/_authenticated/labs/3d-ai-lab': {
+      id: '/_authenticated/labs/3d-ai-lab'
+      path: '/3d-ai-lab'
+      fullPath: '/labs/3d-ai-lab'
+      preLoaderRoute: typeof AuthenticatedLabs3dAiLabRouteImport
+      parentRoute: typeof AuthenticatedLabsRoute
+    }
     '/_authenticated/classroom/$roomId': {
       id: '/_authenticated/classroom/$roomId'
       path: '/classroom/$roomId'
@@ -1252,6 +1272,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedLabsRouteChildren {
+  AuthenticatedLabs3dAiLabRoute: typeof AuthenticatedLabs3dAiLabRoute
+}
+
+const AuthenticatedLabsRouteChildren: AuthenticatedLabsRouteChildren = {
+  AuthenticatedLabs3dAiLabRoute: AuthenticatedLabs3dAiLabRoute,
+}
+
+const AuthenticatedLabsRouteWithChildren =
+  AuthenticatedLabsRoute._addFileChildren(AuthenticatedLabsRouteChildren)
+
 interface AuthenticatedParentRouteChildren {
   AuthenticatedParentChildrenRoute: typeof AuthenticatedParentChildrenRoute
 }
@@ -1273,7 +1304,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCodeRoute: typeof AuthenticatedCodeRoute
   AuthenticatedCoursesRoute: typeof AuthenticatedCoursesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedLabsRoute: typeof AuthenticatedLabsRoute
+  AuthenticatedLabsRoute: typeof AuthenticatedLabsRouteWithChildren
   AuthenticatedLessonsRoute: typeof AuthenticatedLessonsRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedMyCoursesRoute: typeof AuthenticatedMyCoursesRoute
@@ -1317,7 +1348,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCodeRoute: AuthenticatedCodeRoute,
   AuthenticatedCoursesRoute: AuthenticatedCoursesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedLabsRoute: AuthenticatedLabsRoute,
+  AuthenticatedLabsRoute: AuthenticatedLabsRouteWithChildren,
   AuthenticatedLessonsRoute: AuthenticatedLessonsRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedMyCoursesRoute: AuthenticatedMyCoursesRoute,
