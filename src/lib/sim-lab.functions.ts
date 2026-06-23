@@ -12,14 +12,14 @@ const ObjectSchema = z.object({
   color: z.string().optional(),
   label: z.string().optional(),
   fixed: z.boolean().optional(),
-}).passthrough();
+});
 
 const ConnectionSchema = z.object({
   from: z.number().int().nonnegative(),
   to: z.number().int().nonnegative(),
   type: z.string().optional(),
   label: z.string().optional(),
-}).passthrough();
+});
 
 export const SimulationSchema = z.object({
   subject: z.string(),
@@ -255,8 +255,9 @@ export const saveSimulation = createServerFn({ method: "POST" })
       .select("id, prompt, subject, title, schema_json, thumbnail_url, created_at, tags")
       .single();
     if (error) throw new Error(error.message);
+    const saved = row as { id: string };
     await (context.supabase as any).from("simulation_versions").insert({
-      simulation_id: row.id,
+      simulation_id: saved.id,
       user_id: context.userId,
       schema_json: data.schema,
       prompt: data.prompt,
