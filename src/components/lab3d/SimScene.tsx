@@ -12,9 +12,10 @@ type Props = {
   resetKey: number;
   timeScale: number;
   onCanvasReady?: (gl: THREE.WebGLRenderer) => void;
+  onSelectObject?: (i: number) => void;
 };
 
-function ObjectMesh({ s }: { s: SimObjectState }) {
+function ObjectMesh({ s, onClick }: { s: SimObjectState; onClick?: () => void }) {
   const ref = useRef<THREE.Group>(null);
   useFrame(() => {
     if (ref.current) ref.current.position.set(s.position[0], s.position[1], s.position[2]);
@@ -101,11 +102,11 @@ function ObjectMesh({ s }: { s: SimObjectState }) {
       geom = <mesh castShadow><boxGeometry args={s.size} /><meshStandardMaterial color={color} /></mesh>;
   }
   return (
-    <group ref={ref}>
+    <group ref={ref} onClick={(e) => { e.stopPropagation(); onClick?.(); }}>
       {geom}
       {s.label && (
         <Html distanceFactor={12} position={[0, s.radius + 0.6, 0]} center>
-          <div className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white">{s.label}</div>
+          <div className="cursor-pointer rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-white hover:bg-violet-600">{s.label}</div>
         </Html>
       )}
     </group>
