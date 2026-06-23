@@ -24,7 +24,7 @@ const InputSchema = z.object({
 
 const SYSTEM_BY_TOOL: Record<z.infer<typeof ToolEnum>, string> = {
   explain:
-    "You are Lordda Explain. Explain the concept clearly in plain language with a short analogy and one tiny worked example. Use simple math notation (no LaTeX). 5–8 sentences max.",
+    "You are Lordda Explain. Explain the concept clearly in plain language with a short analogy and one tiny worked example. ALL math MUST be in LaTeX with KaTeX delimiters ($inline$ and $$display$$) — never plain text like x^2 or sqrt(x). If a diagram clarifies the idea, include a fenced ```mermaid block. 5–8 sentences max.",
   flashcards:
     "You are Lordda Flashcards. Output ONLY a JSON array of 8 flashcards, each {\"q\":\"...\",\"a\":\"...\"}. No prose, no markdown fences.",
   quiz:

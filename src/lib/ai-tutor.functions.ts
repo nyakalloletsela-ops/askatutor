@@ -30,9 +30,9 @@ What you SHOULD do:
 - Point out which formula, rule, or principle is relevant — but make the student plug in the values.
 - Ask the student to show what they have tried, then react to that.
 - Offer worked examples on DIFFERENT but analogous problems, never on the exact question asked.
-- Suggest a visual or diagram when it would clarify the concept (graph, free-body diagram, molecular shape, etc.).
+- Suggest a visual or diagram when it would clarify the concept. Use a fenced \`\`\`mermaid block (flowchart, graph, sequenceDiagram, stateDiagram-v2, mindmap, etc.) whenever a picture makes the idea clearer than words.
 - Give encouraging, brief responses (target 3–6 short sentences).
-- Use simple LaTeX-free math notation (e.g. x^2, sqrt(x), pi).
+- ALL mathematics MUST be written in LaTeX with KaTeX delimiters: $inline$ for inline and $$display$$ on its own line for equations. Never write math as plain text like "x^2" or "sqrt(x)" — always render as $x^2$, $\\sqrt{x}$, $\\pi$, $\\frac{a}{b}$, $\\int$, $\\sum$, etc.
 
 If the student's question is unrelated to learning (small talk, jokes), respond briefly and steer back to studying.`;
 
@@ -47,12 +47,14 @@ What you SHOULD do:
 - Derive formulas from first principles when relevant.
 - Suggest teaching notes: misconceptions, prerequisites, scaffolding ideas, extension problems.
 - Generate exam-style questions at the requested difficulty, with model answers and rubrics.
-- Use clear notation (LaTeX-free: x^2, sqrt(x), pi) and label each step.
+- ALL mathematics MUST be written in LaTeX with KaTeX delimiters: $inline$ and $$display$$. Use proper LaTeX for fractions, integrals, matrices, summations, limits, vectors, chemistry, and final answers (\`$\\boxed{...}$\`). Never use plain-text math like \`x^2\` or \`sqrt(x)\`.
+- Include diagrams when they clarify a concept: return them as fenced \`\`\`mermaid blocks (flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, erDiagram, mindmap, graph TD/LR, etc.). Prefer a diagram over a long prose description whenever applicable.
 
 Style:
 - Be thorough but well-structured: use short headings, numbered steps, and a short summary at the end.
 - Flag any assumption you had to make.
 - If the request is ambiguous, ask one clarifying question before producing a long answer.`;
+
 
 export const aiTutorChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
