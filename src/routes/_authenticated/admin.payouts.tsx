@@ -820,11 +820,11 @@ function ManualIntentDialog() {
       const { error } = await supabase.rpc("admin_record_manual_intent", {
         _student: studentId,
         _tutor: tutorId,
-        _session: sessionId || null,
+        _session: sessionId || undefined,
         _gross_cents: cents,
         _currency: currency || "USD",
         _method: method || "manual",
-        _subject: null,
+        _subject: undefined,
       });
       if (error) throw error;
     },
