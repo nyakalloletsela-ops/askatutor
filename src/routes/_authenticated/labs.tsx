@@ -10,9 +10,10 @@ import {
   readViewedSlugs,
   recordViewedSlug,
 } from "@/lib/lab-modules";
+import { ScopeGate } from "@/components/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/labs")({
-  component: LabsPage,
+  component: () => (<ScopeGate scope="labs"><LabsPage /></ScopeGate>),
   head: () => ({
     meta: [
       { title: "Virtual STEM Labs — Ask A Tutor Live" },
