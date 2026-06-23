@@ -260,6 +260,13 @@ function Home() {
         )}
       </section>
 
+      <HowItWorks />
+      <WhyUs />
+      <SuccessStories />
+      <PricingSnapshot />
+      <FAQ />
+      <FinalCTA />
+
       <Footer tagline={t("footer.tagline")} />
       <LiveNetworkBar />
     </div>
