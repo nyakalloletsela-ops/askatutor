@@ -34,9 +34,12 @@ type Plan = {
   duration_unit: string;
   duration_count: number;
   features: any;
+  feature_scope: string[] | null;
   is_active: boolean;
   sort_order: number;
 };
+
+const ALL_SCOPES = ["ai", "find_tutors", "labs"] as const;
 
 const emptyPlan = (audience: "student" | "tutor"): Partial<Plan> => ({
   name: "",
@@ -47,6 +50,7 @@ const emptyPlan = (audience: "student" | "tutor"): Partial<Plan> => ({
   duration_unit: "month",
   duration_count: 1,
   features: [],
+  feature_scope: [],
   is_active: true,
   sort_order: 0,
 });
