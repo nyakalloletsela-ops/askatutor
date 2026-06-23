@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { LayoutMode } from "./VideoLayout";
 
-export type PanelKey = "chat" | "files" | "notes" | "ai" | null;
+export type PanelKey = "chat" | "files" | "notes" | "ai" | "lab" | null;
 
 interface Props {
   micOn: boolean;
