@@ -356,56 +356,66 @@ function Lab3DPage() {
           )}
         </main>
 
-        {/* RIGHT — library */}
+        {/* RIGHT — tabs: Library / AI Tutor */}
         <aside className="hidden flex-col border-l border-white/5 bg-black/30 md:flex">
-          <div className="border-b border-white/5 p-3">
-            <div className="mb-2 text-sm font-semibold">Library</div>
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && refreshLibrary()}
-                onBlur={refreshLibrary}
-                placeholder="Search title…"
-                className="h-8 bg-black/40 pl-7 text-xs text-white placeholder:text-white/40"
-              />
-            </div>
-            {subjects.length > 0 && (
-              <select
-                value={subject}
-                onChange={(e) => { setSubject(e.target.value); setTimeout(refreshLibrary, 0); }}
-                className="mt-2 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs"
-              >
-                <option value="">All subjects</option>
-                {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            )}
-          </div>
-          <div className="flex-1 overflow-y-auto p-2">
-            {library.length === 0 ? (
-              <div className="p-6 text-center text-xs text-white/50">No simulations yet</div>
-            ) : (
-              library.map((it) => (
-                <div key={it.id} className="group mb-2 flex gap-2 rounded border border-white/10 bg-black/30 p-2 hover:border-violet-400/50">
-                  <button onClick={() => loadFromLibrary(it)} className="flex flex-1 items-start gap-2 text-left">
-                    {it.thumbnail_url ? (
-                      <img src={it.thumbnail_url} alt="" className="h-12 w-16 rounded object-cover" />
-                    ) : (
-                      <div className="h-12 w-16 rounded bg-gradient-to-br from-violet-500/40 to-cyan-500/40" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-xs font-semibold">{it.title || it.prompt.slice(0, 40)}</div>
-                      <div className="truncate text-[10px] text-white/50">{it.subject ?? "—"}</div>
-                    </div>
-                  </button>
-                  <button onClick={() => removeItem(it.id)} className="opacity-0 transition-opacity group-hover:opacity-100" aria-label="Delete">
-                    <Trash2 className="h-3.5 w-3.5 text-white/60 hover:text-red-400" />
-                  </button>
+          <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as "library" | "chat")} className="flex h-full min-h-0 flex-col">
+            <TabsList className="m-2 grid grid-cols-2 bg-black/40">
+              <TabsTrigger value="library" className="text-xs">Library</TabsTrigger>
+              <TabsTrigger value="chat" className="text-xs">AI Tutor</TabsTrigger>
+            </TabsList>
+            <TabsContent value="library" className="m-0 flex min-h-0 flex-1 flex-col">
+              <div className="border-b border-white/5 p-3">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && refreshLibrary()}
+                    onBlur={refreshLibrary}
+                    placeholder="Search title…"
+                    className="h-8 bg-black/40 pl-7 text-xs text-white placeholder:text-white/40"
+                  />
                 </div>
-              ))
-            )}
-          </div>
+                {subjects.length > 0 && (
+                  <select
+                    value={subject}
+                    onChange={(e) => { setSubject(e.target.value); setTimeout(refreshLibrary, 0); }}
+                    className="mt-2 w-full rounded border border-white/10 bg-black/40 px-2 py-1 text-xs"
+                  >
+                    <option value="">All subjects</option>
+                    {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                )}
+              </div>
+              <div className="flex-1 overflow-y-auto p-2">
+                {library.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-white/50">No simulations yet</div>
+                ) : (
+                  library.map((it) => (
+                    <div key={it.id} className="group mb-2 flex gap-2 rounded border border-white/10 bg-black/30 p-2 hover:border-violet-400/50">
+                      <button onClick={() => loadFromLibrary(it)} className="flex flex-1 items-start gap-2 text-left">
+                        {it.thumbnail_url ? (
+                          <img src={it.thumbnail_url} alt="" className="h-12 w-16 rounded object-cover" />
+                        ) : (
+                          <div className="h-12 w-16 rounded bg-gradient-to-br from-violet-500/40 to-cyan-500/40" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-xs font-semibold">{it.title || it.prompt.slice(0, 40)}</div>
+                          <div className="truncate text-[10px] text-white/50">{it.subject ?? "—"}</div>
+                        </div>
+                      </button>
+                      <button onClick={() => removeItem(it.id)} className="opacity-0 transition-opacity group-hover:opacity-100" aria-label="Delete">
+                        <Trash2 className="h-3.5 w-3.5 text-white/60 hover:text-red-400" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="chat" className="m-0 flex min-h-0 flex-1 flex-col">
+              <SimChat schema={schema} />
+            </TabsContent>
+          </Tabs>
         </aside>
       </div>
 
