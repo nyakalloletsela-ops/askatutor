@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Grid, Html } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
@@ -19,7 +20,7 @@ function ObjectMesh({ s }: { s: SimObjectState }) {
     if (ref.current) ref.current.position.set(s.position[0], s.position[1], s.position[2]);
   });
   const color = s.color;
-  let geom: React.ReactNode;
+  let geom: ReactNode;
   switch (s.type) {
     case "sphere":
     case "particle":
