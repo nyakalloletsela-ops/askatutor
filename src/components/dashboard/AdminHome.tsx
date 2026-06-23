@@ -500,6 +500,66 @@ export function AdminHome({ firstName }: { firstName: string }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Audit log */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <History className="h-4 w-4" /> Decision audit log
+          </CardTitle>
+          <Badge variant="secondary">{audit.length} recent</Badge>
+        </CardHeader>
+        <CardContent className="p-0">
+          {audit.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-muted-foreground">No approve/reject actions yet.</p>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {audit.map((row) => (
+                <li key={row.id} className="flex items-start gap-3 px-4 py-3">
+                  <div
+                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
+                      row.action === "approve"
+                        ? "bg-green-500/10 text-green-600"
+                        : "bg-red-500/10 text-red-600"
+                    }`}
+                  >
+                    {row.action === "approve" ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <ShieldCheck className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      <span className="font-semibold">
+                        {actorNames[row.actor_id] ?? "Admin"}
+                      </span>{" "}
+                      {row.action === "approve" ? "approved" : "rejected"}{" "}
+                      <span className="font-semibold">{row.application_ids.length}</span>{" "}
+                      application{row.application_ids.length === 1 ? "" : "s"}
+                      {row.is_bulk && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">bulk</Badge>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {new Date(row.created_at).toLocaleString()}
+                    </p>
+                    {row.tutor_ids.length > 0 && (
+                      <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground">
+                        tutor ids: {row.tutor_ids.slice(0, 4).join(", ")}
+                        {row.tutor_ids.length > 4 && ` +${row.tutor_ids.length - 4} more`}
+                      </p>
+                    )}
+                    {row.notes && (
+                      <p className="mt-1 text-xs italic text-muted-foreground">"{row.notes}"</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
