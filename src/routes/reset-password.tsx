@@ -18,18 +18,61 @@ function ResetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Supabase places a recovery session in the URL hash when the user
-    // clicks the email link. Wait for it to hydrate.
+    let cancelled = false;
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
-    return () => sub.subscription.unsubscribe();
+
+    const init = async () => {
+      try {
+        const url = new URL(window.location.href);
+
+        // 1. PKCE flow — Supabase appends ?code=...
+        const code = url.searchParams.get("code");
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          // Clean the code out of the address bar so a refresh doesn't retry it.
+          url.searchParams.delete("code");
+          window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+          if (!cancelled) setReady(true);
+          return;
+        }
+
+        // 2. Legacy hash-token flow (#access_token=...&type=recovery)
+        const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : "";
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        const errDesc = hashParams.get("error_description") ?? url.searchParams.get("error_description");
+        if (errDesc) throw new Error(errDesc);
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          if (error) throw error;
+          window.history.replaceState({}, "", url.pathname + url.search);
+          if (!cancelled) setReady(true);
+          return;
+        }
+
+        // 3. Already signed in via an existing recovery session
+        const { data } = await supabase.auth.getSession();
+        if (data.session && !cancelled) setReady(true);
+      } catch (e) {
+        if (!cancelled) setLinkError((e as Error).message);
+      }
+    };
+
+    void init();
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, []);
+
 
   const handleSubmit = async () => {
     if (password.length < 6) return toast.error("Password must be at least 6 characters.");
@@ -58,7 +101,17 @@ function ResetPasswordPage() {
           <CardTitle>Set a new password</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {!ready ? (
+          {linkError ? (
+            <div className="space-y-2 text-center">
+              <p className="text-sm text-destructive">{linkError}</p>
+              <p className="text-xs text-muted-foreground">
+                The link may be expired or already used. Request a new one from the sign-in page.
+              </p>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/auth">Back to sign in</Link>
+              </Button>
+            </div>
+          ) : !ready ? (
             <p className="text-center text-sm text-muted-foreground">
               Open this page from the password-reset link in your email.
             </p>
