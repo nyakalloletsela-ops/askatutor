@@ -131,11 +131,21 @@ function AiTutorPage() {
       <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {messages.map((m, i) => {
-            // Find the user prompt that produced this assistant reply (for a good note title).
+            const prev = i > 0 ? messages[i - 1] : null;
             const promptForTitle =
-              m.role === "assistant" && i > 0 && messages[i - 1].role === "user"
-                ? messages[i - 1].content
+              m.role === "assistant" && prev?.role === "user"
+                ? (typeof prev.content === "string"
+                    ? prev.content
+                    : (prev.content.find((p) => p.type === "text") as TextPart | undefined)?.text ?? "AI Coach response")
                 : "AI Coach response";
+            const parts = typeof m.content === "string"
+              ? [{ type: "text", text: m.content } as TextPart]
+              : m.content;
+            const assistantText = m.role === "assistant"
+              ? (typeof m.content === "string"
+                  ? m.content
+                  : parts.filter((p): p is TextPart => p.type === "text").map((p) => p.text).join("\n\n"))
+              : "";
             return (
               <div
                 key={i}
@@ -144,14 +154,31 @@ function AiTutorPage() {
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
                     m.role === "user"
-                      ? "whitespace-pre-wrap bg-primary text-primary-foreground"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted"
                   }`}
                 >
-                  {m.role === "user" ? m.content : <SmartMarkdown>{m.content}</SmartMarkdown>}
+                  {m.role === "user" ? (
+                    <div className="space-y-2">
+                      {parts.map((p, idx) =>
+                        p.type === "text" ? (
+                          <p key={idx} className="whitespace-pre-wrap">{p.text}</p>
+                        ) : (
+                          <img
+                            key={idx}
+                            src={p.image_url.url}
+                            alt="Student attempt"
+                            className="max-h-72 w-auto rounded-lg border border-white/20"
+                          />
+                        ),
+                      )}
+                    </div>
+                  ) : (
+                    <SmartMarkdown>{assistantText}</SmartMarkdown>
+                  )}
                   {m.role === "assistant" && i > 0 && (
                     <div className="mt-1 flex justify-end">
-                      <SaveToNotes content={m.content} title={promptForTitle} kind="ai-coach" />
+                      <SaveToNotes content={assistantText} title={promptForTitle} kind="ai-coach" />
                     </div>
                   )}
                 </div>
@@ -169,7 +196,38 @@ function AiTutorPage() {
           <div ref={endRef} />
         </div>
         <div className="border-t p-2">
+          {attachment && (
+            <div className="mb-2 flex items-center gap-2 rounded-lg border bg-muted/40 px-2 py-1.5">
+              <img src={attachment.dataUrl} alt="Attachment preview" className="h-10 w-10 rounded object-cover" />
+              <span className="flex-1 truncate text-xs text-muted-foreground">{attachment.name}</span>
+              <button
+                type="button"
+                onClick={() => setAttachment(null)}
+                aria-label="Remove attachment"
+                className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onPickFile}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              title="Upload your attempted solution (photo or screenshot)"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -179,12 +237,12 @@ function AiTutorPage() {
                   submit();
                 }
               }}
-              placeholder="Describe what you're stuck on…"
+              placeholder={attachment ? "Add a note about your attempt (optional)…" : "Describe what you're stuck on…"}
               rows={2}
               className="min-h-[44px] resize-none"
               disabled={loading}
             />
-            <Button onClick={submit} disabled={loading || !input.trim()}>
+            <Button onClick={submit} disabled={loading || (!input.trim() && !attachment)}>
               <Send className="h-4 w-4" />
             </Button>
           </div>
