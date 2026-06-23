@@ -20,6 +20,9 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIdRouteImport } from './routes/tutor.$id'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as CheckoutSuccessRouteImport } from './routes/checkout.success'
+import { Route as CheckoutFailedRouteImport } from './routes/checkout.failed'
+import { Route as CheckoutCancelledRouteImport } from './routes/checkout.cancelled'
 import { Route as AuthenticatedWalletRouteImport } from './routes/_authenticated/wallet'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedResourcesRouteImport } from './routes/_authenticated/resources'
@@ -42,6 +45,7 @@ import { Route as AuthenticatedAiTutorRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAiToolsRouteImport } from './routes/_authenticated/ai-tools'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ApiCheckoutReturnRouteImport } from './routes/api/checkout/return'
 import { Route as AuthenticatedWhiteboardReviewSessionIdRouteImport } from './routes/_authenticated/whiteboard-review.$sessionId'
 import { Route as AuthenticatedTutorHolidaysRouteImport } from './routes/_authenticated/tutor.holidays'
 import { Route as AuthenticatedTutorAvailabilityRouteImport } from './routes/_authenticated/tutor.availability'
@@ -65,6 +69,7 @@ import { Route as AuthenticatedAdminAiRouteImport } from './routes/_authenticate
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicWebhooksPaypalRouteImport } from './routes/api/public/webhooks/paypal'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
@@ -118,6 +123,21 @@ const TutorIdRoute = TutorIdRouteImport.update({
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutSuccessRoute = CheckoutSuccessRouteImport.update({
+  id: '/checkout/success',
+  path: '/checkout/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutFailedRoute = CheckoutFailedRouteImport.update({
+  id: '/checkout/failed',
+  path: '/checkout/failed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutCancelledRoute = CheckoutCancelledRouteImport.update({
+  id: '/checkout/cancelled',
+  path: '/checkout/cancelled',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWalletRoute = AuthenticatedWalletRouteImport.update({
@@ -232,6 +252,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCheckoutReturnRoute = ApiCheckoutReturnRouteImport.update({
+  id: '/api/checkout/return',
+  path: '/api/checkout/return',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedWhiteboardReviewSessionIdRoute =
@@ -369,6 +394,11 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicWebhooksPaypalRoute = ApiPublicWebhooksPaypalRouteImport.update({
+  id: '/api/public/webhooks/paypal',
+  path: '/api/public/webhooks/paypal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -399,6 +429,9 @@ export interface FileRoutesByFullPath {
   '/resources': typeof AuthenticatedResourcesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/checkout/cancelled': typeof CheckoutCancelledRoute
+  '/checkout/failed': typeof CheckoutFailedRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -421,8 +454,10 @@ export interface FileRoutesByFullPath {
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
   '/whiteboard-review/$sessionId': typeof AuthenticatedWhiteboardReviewSessionIdRoute
+  '/api/checkout/return': typeof ApiCheckoutReturnRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -456,6 +491,9 @@ export interface FileRoutesByTo {
   '/resources': typeof AuthenticatedResourcesRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/wallet': typeof AuthenticatedWalletRoute
+  '/checkout/cancelled': typeof CheckoutCancelledRoute
+  '/checkout/failed': typeof CheckoutFailedRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -478,8 +516,10 @@ export interface FileRoutesByTo {
   '/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
   '/whiteboard-review/$sessionId': typeof AuthenticatedWhiteboardReviewSessionIdRoute
+  '/api/checkout/return': typeof ApiCheckoutReturnRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -515,6 +555,9 @@ export interface FileRoutesById {
   '/_authenticated/resources': typeof AuthenticatedResourcesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/wallet': typeof AuthenticatedWalletRoute
+  '/checkout/cancelled': typeof CheckoutCancelledRoute
+  '/checkout/failed': typeof CheckoutFailedRoute
+  '/checkout/success': typeof CheckoutSuccessRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -537,8 +580,10 @@ export interface FileRoutesById {
   '/_authenticated/tutor/availability': typeof AuthenticatedTutorAvailabilityRoute
   '/_authenticated/tutor/holidays': typeof AuthenticatedTutorHolidaysRoute
   '/_authenticated/whiteboard-review/$sessionId': typeof AuthenticatedWhiteboardReviewSessionIdRoute
+  '/api/checkout/return': typeof ApiCheckoutReturnRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/webhooks/paypal': typeof ApiPublicWebhooksPaypalRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -574,6 +619,9 @@ export interface FileRouteTypes {
     | '/resources'
     | '/settings'
     | '/wallet'
+    | '/checkout/cancelled'
+    | '/checkout/failed'
+    | '/checkout/success'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/admin/ai'
@@ -596,8 +644,10 @@ export interface FileRouteTypes {
     | '/tutor/availability'
     | '/tutor/holidays'
     | '/whiteboard-review/$sessionId'
+    | '/api/checkout/return'
     | '/lovable/email/suppression'
     | '/admin/'
+    | '/api/public/webhooks/paypal'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -631,6 +681,9 @@ export interface FileRouteTypes {
     | '/resources'
     | '/settings'
     | '/wallet'
+    | '/checkout/cancelled'
+    | '/checkout/failed'
+    | '/checkout/success'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/admin/ai'
@@ -653,8 +706,10 @@ export interface FileRouteTypes {
     | '/tutor/availability'
     | '/tutor/holidays'
     | '/whiteboard-review/$sessionId'
+    | '/api/checkout/return'
     | '/lovable/email/suppression'
     | '/admin'
+    | '/api/public/webhooks/paypal'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -689,6 +744,9 @@ export interface FileRouteTypes {
     | '/_authenticated/resources'
     | '/_authenticated/settings'
     | '/_authenticated/wallet'
+    | '/checkout/cancelled'
+    | '/checkout/failed'
+    | '/checkout/success'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/_authenticated/admin/ai'
@@ -711,8 +769,10 @@ export interface FileRouteTypes {
     | '/_authenticated/tutor/availability'
     | '/_authenticated/tutor/holidays'
     | '/_authenticated/whiteboard-review/$sessionId'
+    | '/api/checkout/return'
     | '/lovable/email/suppression'
     | '/_authenticated/admin/'
+    | '/api/public/webhooks/paypal'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -728,9 +788,14 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   TutorsRoute: typeof TutorsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  CheckoutCancelledRoute: typeof CheckoutCancelledRoute
+  CheckoutFailedRoute: typeof CheckoutFailedRoute
+  CheckoutSuccessRoute: typeof CheckoutSuccessRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   TutorIdRoute: typeof TutorIdRoute
+  ApiCheckoutReturnRoute: typeof ApiCheckoutReturnRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicWebhooksPaypalRoute: typeof ApiPublicWebhooksPaypalRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
   LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
@@ -813,6 +878,27 @@ declare module '@tanstack/react-router' {
       path: '/email/unsubscribe'
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/success': {
+      id: '/checkout/success'
+      path: '/checkout/success'
+      fullPath: '/checkout/success'
+      preLoaderRoute: typeof CheckoutSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/failed': {
+      id: '/checkout/failed'
+      path: '/checkout/failed'
+      fullPath: '/checkout/failed'
+      preLoaderRoute: typeof CheckoutFailedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/cancelled': {
+      id: '/checkout/cancelled'
+      path: '/checkout/cancelled'
+      fullPath: '/checkout/cancelled'
+      preLoaderRoute: typeof CheckoutCancelledRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/wallet': {
@@ -967,6 +1053,13 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/suppression'
       fullPath: '/lovable/email/suppression'
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/checkout/return': {
+      id: '/api/checkout/return'
+      path: '/api/checkout/return'
+      fullPath: '/api/checkout/return'
+      preLoaderRoute: typeof ApiCheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/whiteboard-review/$sessionId': {
@@ -1130,6 +1223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/paypal': {
+      id: '/api/public/webhooks/paypal'
+      path: '/api/public/webhooks/paypal'
+      fullPath: '/api/public/webhooks/paypal'
+      preLoaderRoute: typeof ApiPublicWebhooksPaypalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1245,9 +1345,14 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   TutorsRoute: TutorsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  CheckoutCancelledRoute: CheckoutCancelledRoute,
+  CheckoutFailedRoute: CheckoutFailedRoute,
+  CheckoutSuccessRoute: CheckoutSuccessRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   TutorIdRoute: TutorIdRoute,
+  ApiCheckoutReturnRoute: ApiCheckoutReturnRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicWebhooksPaypalRoute: ApiPublicWebhooksPaypalRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
   LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
@@ -1255,13 +1360,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
