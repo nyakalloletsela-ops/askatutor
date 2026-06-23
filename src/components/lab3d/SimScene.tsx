@@ -113,14 +113,16 @@ function ObjectMesh({ s }: { s: SimObjectState }) {
 }
 
 function ConnectionLine({ from, to, label, color = "#67e8f9" }: { from?: SimObjectState; to?: SimObjectState; label?: string; color?: string }) {
-  const ref = useRef<THREE.Line>(null);
+  const ref = useRef<THREE.Mesh>(null);
   useFrame(() => {
     if (!ref.current || !from || !to) return;
-    ref.current.geometry.setFromPoints([
-      new THREE.Vector3(from.position[0], from.position[1], from.position[2]),
-      new THREE.Vector3(to.position[0], to.position[1], to.position[2]),
-    ]);
-    ref.current.geometry.attributes.position.needsUpdate = true;
+    const start = new THREE.Vector3(from.position[0], from.position[1], from.position[2]);
+    const end = new THREE.Vector3(to.position[0], to.position[1], to.position[2]);
+    const dir = end.clone().sub(start);
+    const len = Math.max(dir.length(), 0.001);
+    ref.current.position.copy(start.add(end).multiplyScalar(0.5));
+    ref.current.scale.set(1, len, 1);
+    ref.current.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
   });
   if (!from || !to) return null;
   const mid: [number, number, number] = [
@@ -130,10 +132,10 @@ function ConnectionLine({ from, to, label, color = "#67e8f9" }: { from?: SimObje
   ];
   return (
     <>
-      <line ref={ref}>
-        <bufferGeometry />
-        <lineBasicMaterial color={color} transparent opacity={0.75} />
-      </line>
+      <mesh ref={ref}>
+        <cylinderGeometry args={[0.025, 0.025, 1, 8]} />
+        <meshBasicMaterial color={color} transparent opacity={0.75} />
+      </mesh>
       {label && (
         <Html distanceFactor={14} position={mid} center>
           <div className="rounded bg-black/70 px-1.5 py-0.5 text-[9px] text-cyan-100">{label}</div>
@@ -143,7 +145,7 @@ function ConnectionLine({ from, to, label, color = "#67e8f9" }: { from?: SimObje
   );
 }
 
-function SimRunner({ schema, playing, resetKey, timeScale }: Omit<Props, "onCanvasReady">) {
+function SimRunner({ schema, playing, resetKey, timeScale }: { schema: SimulationSchemaT; playing: boolean; resetKey: number; timeScale: number }) {
   const state = useMemo<SimObjectState[]>(() => (schema ? buildInitialState(schema) : []), [schema, resetKey]);
   useFrame((_, dt) => {
     if (!schema || !playing) return;
