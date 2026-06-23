@@ -217,20 +217,41 @@ function BecomeTutorPage() {
               <CardTitle>Supporting documents</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">Upload clear PDF or image files. Admins use these to verify your identity and qualifications.</p>
-              {DOC_LABELS.map((label) => {
-                const uploaded = docs.filter((d) => d.label === label);
+              <p className="text-sm text-muted-foreground">
+                Upload clear PDF, image or video files. Admins use these to verify your identity, qualifications and teaching readiness.
+              </p>
+              {(() => {
+                const missing = DOC_SPECS.filter((d) => d.required && !docs.some((u) => u.label === d.label));
+                if (missing.length === 0) return null;
                 return (
-                  <div key={label} className="rounded-md border p-3">
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-medium">{label}</p>
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                    Still needed: {missing.map((m) => m.label).join(", ")}.
+                  </div>
+                );
+              })()}
+              {DOC_SPECS.map((spec) => {
+                const uploaded = docs.filter((d) => d.label === spec.label);
+                return (
+                  <div key={spec.label} className="rounded-md border p-3">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-2 text-sm font-medium">
+                          {spec.label}
+                          {spec.required ? (
+                            <Badge variant="destructive" className="text-[10px]">Required</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">Optional</Badge>
+                          )}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{spec.hint}</p>
+                      </div>
                       <label className="inline-flex cursor-pointer items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs hover:bg-muted/70">
                         <Upload className="h-3.5 w-3.5" /> Upload
                         <input
                           type="file"
                           className="hidden"
-                          accept="application/pdf,image/*"
-                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(label, f); e.target.value = ""; }}
+                          accept={spec.accept}
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(spec.label, f); e.target.value = ""; }}
                         />
                       </label>
                     </div>
