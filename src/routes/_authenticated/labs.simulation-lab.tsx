@@ -220,13 +220,15 @@ function Lab3DPage() {
 
         {/* CENTER — scene */}
         <main ref={sceneWrapRef} className="relative overflow-hidden">
-          <SimScene
-            schema={schema}
-            playing={playing}
-            resetKey={resetKey}
-            timeScale={timeScale}
-            onCanvasReady={(gl) => { glRef.current = gl; }}
-          />
+          <Suspense fallback={<div className="flex h-full items-center justify-center text-white/60"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
+            <SimScene
+              schema={schema}
+              playing={playing}
+              resetKey={resetKey}
+              timeScale={timeScale}
+              onCanvasReady={(gl) => { glRef.current = gl; }}
+            />
+          </Suspense>
           {/* mobile prompt */}
           <div className="absolute left-3 right-3 top-3 z-10 flex gap-2 md:hidden">
             <Input
