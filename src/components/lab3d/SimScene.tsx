@@ -146,7 +146,7 @@ function ConnectionLine({ from, to, label, color = "#67e8f9" }: { from?: SimObje
   );
 }
 
-function SimRunner({ schema, playing, resetKey, timeScale }: { schema: SimulationSchemaT; playing: boolean; resetKey: number; timeScale: number }) {
+function SimRunner({ schema, playing, resetKey, timeScale, onSelectObject }: { schema: SimulationSchemaT; playing: boolean; resetKey: number; timeScale: number; onSelectObject?: (i: number) => void }) {
   const state = useMemo<SimObjectState[]>(() => (schema ? buildInitialState(schema) : []), [schema, resetKey]);
   useFrame((_, dt) => {
     if (!schema || !playing) return;
@@ -163,7 +163,7 @@ function SimRunner({ schema, playing, resetKey, timeScale }: { schema: Simulatio
           color={c.type === "bond" ? "#fef08a" : c.type === "force" ? "#fb7185" : "#67e8f9"}
         />
       ))}
-      {state.map((s) => <ObjectMesh key={s.index} s={s} />)}
+      {state.map((s) => <ObjectMesh key={s.index} s={s} onClick={() => onSelectObject?.(s.index)} />)}
     </>
   );
 }
@@ -174,7 +174,7 @@ function CanvasReadyBridge({ onReady }: { onReady?: (gl: THREE.WebGLRenderer) =>
   return null;
 }
 
-export function SimScene({ schema, playing, resetKey, timeScale, onCanvasReady }: Props) {
+export function SimScene({ schema, playing, resetKey, timeScale, onCanvasReady, onSelectObject }: Props) {
   return (
     <Canvas
       shadows
@@ -187,7 +187,7 @@ export function SimScene({ schema, playing, resetKey, timeScale, onCanvasReady }
       <directionalLight position={[10, 15, 10]} intensity={0.8} castShadow />
       <Grid args={[40, 40]} cellColor="#1e293b" sectionColor="#334155" fadeDistance={40} infiniteGrid />
       <OrbitControls makeDefault enableDamping />
-      {schema && <SimRunner schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} />}
+      {schema && <SimRunner schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} onSelectObject={onSelectObject} />}
     </Canvas>
   );
 }
