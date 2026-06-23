@@ -301,13 +301,7 @@ function Lab3DPage() {
             </Button>
           </div>
           {!schema && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-center">
-              <div className="rounded-2xl border border-white/10 bg-black/40 px-6 py-4 text-white/70 backdrop-blur">
-                <Sparkles className="mx-auto mb-2 h-6 w-6 text-violet-400" />
-                <div className="text-sm">Type any question or scenario — from any subject — to build a live simulation.</div>
-                <div className="mt-1 text-[11px] text-white/50">Auto-detects subject and picks the best 2D, 3D, process, timeline, map, or dialogue view.</div>
-              </div>
-            </div>
+            <AmbientEmpty onPick={(t) => { setPrompt(t); }} />
           )}
 
           {/* Explain panel */}
