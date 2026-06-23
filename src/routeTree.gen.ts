@@ -20,6 +20,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TutorIdRouteImport } from './routes/tutor.$id'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedResourcesRouteImport } from './routes/_authenticated/resources'
 import { Route as AuthenticatedRecordsRouteImport } from './routes/_authenticated/records'
 import { Route as AuthenticatedParentRouteImport } from './routes/_authenticated/parent'
@@ -116,6 +117,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedResourcesRoute = AuthenticatedResourcesRouteImport.update({
   id: '/resources',
@@ -378,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/parent': typeof AuthenticatedParentRouteWithChildren
   '/records': typeof AuthenticatedRecordsRoute
   '/resources': typeof AuthenticatedResourcesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByTo {
   '/parent': typeof AuthenticatedParentRouteWithChildren
   '/records': typeof AuthenticatedRecordsRoute
   '/resources': typeof AuthenticatedResourcesRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -488,6 +496,7 @@ export interface FileRoutesById {
   '/_authenticated/parent': typeof AuthenticatedParentRouteWithChildren
   '/_authenticated/records': typeof AuthenticatedRecordsRoute
   '/_authenticated/resources': typeof AuthenticatedResourcesRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/tutor/$id': typeof TutorIdRoute
   '/_authenticated/admin/ai': typeof AuthenticatedAdminAiRoute
@@ -544,6 +553,7 @@ export interface FileRouteTypes {
     | '/parent'
     | '/records'
     | '/resources'
+    | '/settings'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/admin/ai'
@@ -598,6 +608,7 @@ export interface FileRouteTypes {
     | '/parent'
     | '/records'
     | '/resources'
+    | '/settings'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/admin/ai'
@@ -653,6 +664,7 @@ export interface FileRouteTypes {
     | '/_authenticated/parent'
     | '/_authenticated/records'
     | '/_authenticated/resources'
+    | '/_authenticated/settings'
     | '/email/unsubscribe'
     | '/tutor/$id'
     | '/_authenticated/admin/ai'
@@ -777,6 +789,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/resources': {
       id: '/_authenticated/resources'
@@ -1105,6 +1124,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedParentRoute: typeof AuthenticatedParentRouteWithChildren
   AuthenticatedRecordsRoute: typeof AuthenticatedRecordsRoute
   AuthenticatedResourcesRoute: typeof AuthenticatedResourcesRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedAdminAiRoute: typeof AuthenticatedAdminAiRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminAuditRoute: typeof AuthenticatedAdminAuditRoute
@@ -1145,6 +1165,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedParentRoute: AuthenticatedParentRouteWithChildren,
   AuthenticatedRecordsRoute: AuthenticatedRecordsRoute,
   AuthenticatedResourcesRoute: AuthenticatedResourcesRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedAdminAiRoute: AuthenticatedAdminAiRoute,
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminAuditRoute: AuthenticatedAdminAuditRoute,
