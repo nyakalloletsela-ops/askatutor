@@ -1,9 +1,9 @@
 import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { StickyNote, Plus, Trash2 } from "lucide-react";
+import { StickyNote, Plus, Trash2, FolderOpen } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { PageContainer, EmptyState } from "@/components/dashboard/primitives";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/notes")({
   component: NotesPage,
@@ -20,8 +21,19 @@ type Note = {
   id: string;
   title: string;
   body: string | null;
+  kind: string;
   created_at: string;
 };
+
+// Friendly folder labels for the kind tag we save against AI artifacts.
+function folderLabel(kind: string): string {
+  if (kind === "note") return "My notes";
+  if (kind === "ai-coach") return "AI Coach";
+  if (kind === "whiteboard") return "Whiteboard";
+  if (kind.startsWith("ai-tool:")) return `AI Toolkit · ${kind.slice("ai-tool:".length)}`;
+  return kind;
+}
+
 
 function NotesPage() {
   const { user } = useAuth();
