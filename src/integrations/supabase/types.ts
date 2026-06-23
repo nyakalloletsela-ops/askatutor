@@ -810,6 +810,47 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_attempts: {
+        Row: {
+          created_at: string
+          failure_reason: string | null
+          id: string
+          latency_ms: number | null
+          payment_intent_id: string
+          provider_ref: string | null
+          provider_slug: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          latency_ms?: number | null
+          payment_intent_id: string
+          provider_ref?: string | null
+          provider_slug: string
+          status: string
+        }
+        Update: {
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          latency_ms?: number | null
+          payment_intent_id?: string
+          provider_ref?: string | null
+          provider_slug?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_attempts_payment_intent_id_fkey"
+            columns: ["payment_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_intents: {
         Row: {
           commission_cents: number
@@ -927,40 +968,64 @@ export type Database = {
         Row: {
           config: Json
           created_at: string
+          credentials_ref: string | null
           display_name: string
+          failure_count: number
           id: string
           is_enabled: boolean
+          last_error: string | null
+          last_failure_at: string | null
+          last_success_at: string | null
+          mode: string
           priority: number
           slug: string
+          success_count: number
           supported_countries: string[]
           supported_currencies: string[]
           supported_methods: string[]
+          supported_regions: Json
           updated_at: string
         }
         Insert: {
           config?: Json
           created_at?: string
+          credentials_ref?: string | null
           display_name: string
+          failure_count?: number
           id?: string
           is_enabled?: boolean
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          mode?: string
           priority?: number
           slug: string
+          success_count?: number
           supported_countries?: string[]
           supported_currencies?: string[]
           supported_methods?: string[]
+          supported_regions?: Json
           updated_at?: string
         }
         Update: {
           config?: Json
           created_at?: string
+          credentials_ref?: string | null
           display_name?: string
+          failure_count?: number
           id?: string
           is_enabled?: boolean
+          last_error?: string | null
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          mode?: string
           priority?: number
           slug?: string
+          success_count?: number
           supported_countries?: string[]
           supported_currencies?: string[]
           supported_methods?: string[]
+          supported_regions?: Json
           updated_at?: string
         }
         Relationships: []
@@ -2267,6 +2332,10 @@ export type Database = {
         Returns: number
       }
       ensure_whiteboard: { Args: { _room_id: string }; Returns: string }
+      finalize_payment_succeeded: {
+        Args: { _intent: string; _provider: string; _provider_ref: string }
+        Returns: undefined
+      }
       get_session_participant_names: {
         Args: never
         Returns: {
@@ -2342,6 +2411,10 @@ export type Database = {
         Args: { _action: string; _application_ids: string[]; _notes?: string }
         Returns: string
       }
+      mark_payment_failed: {
+        Args: { _intent: string; _reason: string }
+        Returns: undefined
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -2369,6 +2442,17 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_payment_attempt: {
+        Args: {
+          _failure_reason?: string
+          _intent: string
+          _latency_ms?: number
+          _provider: string
+          _provider_ref?: string
+          _status: string
+        }
+        Returns: string
       }
       reject_tutor_application: {
         Args: { _application_id: string; _notes?: string }
