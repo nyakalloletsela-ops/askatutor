@@ -237,7 +237,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Settings">
-                <Link to="/dashboard">
+                <Link to="/settings">
                   <Settings className="h-4 w-4" />
                   <span>Settings</span>
                 </Link>
