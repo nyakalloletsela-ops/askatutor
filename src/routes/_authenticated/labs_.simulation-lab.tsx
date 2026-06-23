@@ -278,7 +278,8 @@ function Lab3DPage() {
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-center">
               <div className="rounded-2xl border border-white/10 bg-black/40 px-6 py-4 text-white/70 backdrop-blur">
                 <Sparkles className="mx-auto mb-2 h-6 w-6 text-violet-400" />
-                <div className="text-sm">Describe a scenario to build a live 3D simulation.</div>
+                <div className="text-sm">Type any question or scenario — from any subject — to build a live simulation.</div>
+                <div className="mt-1 text-[11px] text-white/50">Motion, structure, flows and labels are generated automatically.</div>
               </div>
             </div>
           )}
