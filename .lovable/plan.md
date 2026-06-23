@@ -1,111 +1,118 @@
-## Goal
+# AskATutorLive — End-to-End Redesign Plan
 
-Stand up a **multi-agent AI layer** on Lovable AI Gateway (free for you — billed from workspace credits, no key needed) so every AI surface in the app renders **KaTeX equations** and **Mermaid/SVG diagrams** cleanly. Each role gets its own dedicated agent (system prompt + model + output contract), invoked from one shared client hook.
-
-Note on Ollama: you confirmed Lovable AI Gateway instead. Ollama still requires a GPU host (RunPod/your VPS) — not free in practice. The gateway gives us Gemini 3 Flash + GPT-5 family without per-key setup, and we can swap to Ollama later behind the same agent interface.
+Big scope. I'll break it into shippable phases so each one is testable on its own. We've already done Dashboard Phases 1–4 (shell, student home, tutor home, admin home + audit log + bulk actions + expanded application). This plan covers what you just listed.
 
 ---
 
-## Architecture
+## Phase A — Homepage (Priority 1)
 
-```text
-              ┌──────────────────────────────────────────┐
-              │  src/lib/agents/  (server-only registry) │
-              │  ─ math.agent.ts        (LaTeX solver)   │
-              │  ─ diagram.agent.ts     (Mermaid/SVG)    │
-              │  ─ tutor.agent.ts       (explainer)      │
-              │  ─ whiteboard.agent.ts  (ink → shapes)   │
-              │     each: { model, system, schema }      │
-              └──────────────────────────────────────────┘
-                              ▲
-                              │ createServerFn / streaming route
-              ┌──────────────────────────────────────────┐
-              │  src/routes/api/agent.ts  (stream)       │
-              │  src/lib/ai/run-agent.functions.ts (RPC) │
-              └──────────────────────────────────────────┘
-                              ▲
-                              │ useAgent(role) hook
-              ┌──────────────────────────────────────────┐
-              │  Renderers (client)                      │
-              │  ─ <SmartMarkdown/>  KaTeX + Mermaid +   │
-              │                       code + tables      │
-              │  ─ <DiagramBlock/>   mermaid → SVG       │
-              │  ─ <EquationBlock/>  KaTeX               │
-              └──────────────────────────────────────────┘
-                              ▲
-                              │ used by:
-              Classroom chat • Assistant • Whiteboard convert
-              • Lesson notes • Content library
-```
+Goal: visitor understands the platform in 5s, books in <10s.
 
-### Agent contract (uniform output)
+Sections (in order):
+1. Hero — value prop headline, subhead, primary CTA "Find a Tutor", secondary "Become a Tutor", trust strip (students taught, tutors, avg rating, countries).
+2. Quick search bar — subject + level + language, jumps straight to discovery.
+3. Subject categories — icon grid (Math, Sciences, Languages, Coding, Test Prep, Music, Business…).
+4. Featured tutors carousel — pulls from `list_public_tutors()` where `is_featured=true`, shows photo/rating/price/Instant Join.
+5. How it works — 3 steps (Search → Book → Join).
+6. Why AskATutorLive — interactive classroom, AI tools, pay-as-you-go, Africa-first payments.
+7. Success stories — testimonials (seeded copy + photos).
+8. Pricing snapshot — free trial minutes, hourly range, subscription teaser.
+9. FAQ accordion (10 Qs).
+10. Final CTA — "Start learning in under 10 seconds".
+11. Footer with trust badges.
 
-Every agent returns markdown with two extensions the renderer always knows how to parse:
-
-- **Math** — `$inline$` and `$$block$$` (KaTeX)
-- **Diagrams** — fenced ```` ```mermaid ```` blocks
-
-This means *one renderer* covers chat bubbles, lesson notes, and whiteboard text shapes. The diagram agent additionally emits a `<DiagramSpec>` JSON block when the caller needs a raw spec (e.g. to drop onto the whiteboard canvas as an editable shape).
+Files: `src/routes/index.tsx` rebuilt; new components in `src/components/home/*`.
 
 ---
 
-## Steps
+## Phase B — Tutor Discovery (Priority 2)
 
-1. **Install renderers** (client-only):
-   `katex`, `react-katex`, `mermaid`, `remark-math`, `rehype-katex`, plus existing `react-markdown`.
-
-2. **Create `<SmartMarkdown/>`** at `src/components/ai/SmartMarkdown.tsx`
-   - `react-markdown` + `remark-math` + `rehype-katex` for equations
-   - custom `code` renderer: when `lang === "mermaid"` → `<DiagramBlock spec={children}/>`, else syntax-highlighted code
-   - safe-mode: sanitise, no raw HTML
-
-3. **Create `<DiagramBlock/>`** at `src/components/ai/DiagramBlock.tsx`
-   - lazy-loads `mermaid`, renders to SVG into a ref
-   - error fallback: shows the raw spec + "retry" so a broken diagram never breaks the page
-   - "Open in whiteboard" action emits the SVG to the active whiteboard handle
-
-4. **Agent registry** at `src/lib/agents/registry.server.ts`
-   - Each role: `{ id, label, model, system, temperature, postProcess? }`
-   - Math → `google/gemini-2.5-pro` (strong reasoning, LaTeX-aware)
-   - Diagram → `google/gemini-3-flash-preview` (fast, structured)
-   - Tutor → `google/gemini-3-flash-preview` (conversational)
-   - Whiteboard → existing `whiteboardConvert` re-pointed at this registry
-   - Shared system-prompt preamble enforces the markdown/KaTeX/Mermaid contract
-
-5. **Server endpoints**
-   - `src/routes/api/agent.ts` — streaming `useChat` transport, takes `{ role, messages }`, picks agent from registry, calls `streamText` via the Lovable gateway helper
-   - `src/lib/ai/run-agent.functions.ts` — `createServerFn` for one-shot calls (whiteboard convert, lesson-note generation) returning `{ markdown, diagrams[] }`
-
-6. **Client hook** `src/hooks/use-agent.ts`
-   - `useAgent("math" | "diagram" | "tutor")` → wraps AI SDK `useChat` pointed at `/api/agent` with the role baked in
-   - `runAgentOnce(role, prompt)` → wraps the server-fn for non-chat callers
-
-7. **Wire renderers everywhere**
-   - **Classroom chat** (`ClassroomShell` chat panel) — replace plaintext bubbles with `<SmartMarkdown/>`, add a role switcher (Tutor / Math / Diagram)
-   - **Assistant route** (if present, else add `src/routes/_authenticated/assistant.tsx`)
-   - **Whiteboard convert** — pipe converter output through the diagram agent so handwriting like "x²+y²=r²" returns a KaTeX-rendered shape, and "flowchart of photosynthesis" returns a Mermaid diagram dropped on canvas
-   - **Lesson notes / content library** — render note bodies with `<SmartMarkdown/>`; add "Ask AI" action that calls the tutor agent and inserts the response
-
-8. **Error + cost handling**
-   - 429 → toast "AI is busy, retrying" + exponential backoff
-   - 402 → toast "Workspace AI credits exhausted" + link to billing
-   - Mermaid parse error → inline retry, never throws
+- New `/tutors` route with filter sidebar: subject, language, price range, rating, availability now, country.
+- Tutor card: photo, name, ⭐ rating + review count, subjects (chips), languages, years experience, hourly price, "Available now" green badge (derived from availability + no current session), "Instant Join" (creates demo room or books next slot).
+- Sort: relevance, price asc/desc, rating, most booked.
+- Pagination / infinite scroll.
+- Data source: `list_public_tutors()` extended (add languages, experience_years, available_now). Add RPC `list_tutors_filtered(...)`.
 
 ---
 
-## Technical details
+## Phase C — Tutor Profile (Priority 3)
 
-- All agents share the gateway helper from `src/lib/ai-gateway.server.ts` (per `connecting-to-ai-models-tanstack`). `LOVABLE_API_KEY` stays server-side.
-- Streaming route returns `result.toUIMessageStreamResponse()` wrapped with `withLovableAiGatewayRunIdHeader` so run-ids propagate.
-- `SmartMarkdown` is the single render path — no surface renders raw model text directly. This is the rule that guarantees LaTeX + diagrams "everywhere".
-- KaTeX CSS imported once in `src/styles.css` via the @fontsource pattern? No — KaTeX ships its own CSS; import from `katex/dist/katex.min.css` in `src/main.tsx` (one-time).
-- Mermaid initialised with `{ startOnLoad: false, theme: 'dark' | 'default' }` matching app theme.
-- Adding Ollama later = add one entry to the registry with a custom `fetch` baseURL — no caller changes.
+`/tutors/$tutorId`:
+- Hero: avatar, name, headline, rating, response time, "Book Trial" + "Book Now".
+- Tabs/sections: About (bio), Intro video, Qualifications & Certifications, Subjects & Levels, Reviews (paginated), Availability calendar (week view with bookable slots), Pricing & Packages.
+- Sticky booking card on desktop.
 
 ---
 
-## Out of scope (this turn)
+## Phase D — Booking System (Priority 4)
 
-- Persisting agent chat history per user (will follow `chat-agent-ui-contract` later if you want threads)
-- Voice/TTS agent
-- Self-hosted Ollama wiring (kept as a future registry entry)
+Single-page wizard, 3 steps max:
+1. Pick slot (calendar with `get_tutor_availability_public` + `get_tutor_busy_slots`).
+2. Pay (Phase F providers).
+3. Confirm + Join link.
+
+No account? Allow guest start, account creation collapses into payment step (email + password inline).
+
+---
+
+## Phase E — Classroom Experience (Priority 5)
+
+Upgrades to `/classroom/$roomId`:
+- Floating video PiP: draggable, resizable (corner handle), minimize to thumbnail.
+- Whiteboard full-screen toggle (already exists? confirm).
+- Mobile layout: bottom toolbar, swipeable panels (Video / Whiteboard / Chat / Notes).
+- AI panel: Notes (summary), Translator (target language), Solver (problem → step-by-step). Hooks to Lovable AI Gateway.
+- Tools dock: screen share, file share, raise hand, reactions.
+
+---
+
+## Phase F — Payments (Priority 6)
+
+- Stripe seamless for cards (recommended path).
+- Africa methods via Paystack or Flutterwave connector for M-Pesa, EcoCash, Airtel, Orange, Bank Transfer. (Requires a connector; will request keys when we get to this phase.)
+- Wallet model: top up minutes, sessions debit wallet. Schema: `wallets`, `wallet_transactions`.
+
+---
+
+## Phase G — Notifications (Priority 7)
+
+Channels: Email (Resend already), SMS + WhatsApp (Twilio or GatewayAPI connector), Push (web push).
+Events: booking created/cancelled/rescheduled, 24h + 1h reminders, payment receipt, homework due, new message.
+User preferences page to opt in/out per channel per event.
+
+---
+
+## Phase H — AI Features (Priority 8)
+
+Powered by Lovable AI Gateway (google/gemini-2.5-flash default; pro for heavy tasks).
+- Student: Explain, Quiz, Summarize, Translate.
+- Tutor: Lesson plan, Assignment, Auto-grade, Test generator.
+- Admin: Churn risk, struggling students, top tutors, weekly report.
+
+---
+
+## Phase I — Speed Obsession (Priority 9)
+
+- Route prefetch on hover.
+- Image: `loading="lazy"`, responsive sizes, WebP.
+- `list_public_tutors` cached via React Query with `staleTime: 60s`.
+- Skeletons everywhere, optimistic UI for booking.
+- Bundle audit, code-split heavy routes (classroom, admin).
+- Target: Homepage LCP < 1.5s, Find Tutor → Book Class < 10s.
+
+---
+
+## Suggested order (one phase per turn)
+
+A → B → C → D → I (speed pass on the funnel) → E (classroom) → F (payments) → G (notifications) → H (AI).
+
+---
+
+## What I need from you
+
+1. Confirm the order above, or reshuffle.
+2. **Phase A first?** I'll start with the Homepage rebuild — that's the highest-leverage single change and unblocks the discovery funnel.
+3. For Africa payments (Phase F): do you already have Paystack or Flutterwave accounts? They cover M-Pesa/EcoCash/Airtel/Orange/Bank Transfer in one integration.
+4. For SMS/WhatsApp (Phase G): Twilio or another provider?
+
+Approve and I'll start Phase A.
