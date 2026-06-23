@@ -207,6 +207,9 @@ export function AdminHome({ firstName }: { firstName: string }) {
     if (failed > 0) toast.error(`${failed} of ${ids.length} failed`);
     else toast.success(`${ids.length} application(s) ${confirm === "approve" ? "approved" : "rejected"}`);
     load();
+  };
+
+
 
   const toggleFeatured = async (p: TutorProfile, v: boolean) => {
     const { error } = await supabase
