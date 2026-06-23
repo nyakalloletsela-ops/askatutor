@@ -393,6 +393,62 @@ function Lab3DPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Quiz dialog */}
+      <Dialog open={quizOpen} onOpenChange={(o) => { setQuizOpen(o); if (!o) { setQuizIdx(0); setQuizAnswers({}); setQuizReveal(false); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><GraduationCap className="h-4 w-4 text-violet-400" /> Test your understanding</DialogTitle>
+            <DialogDescription>Auto-generated from this simulation.</DialogDescription>
+          </DialogHeader>
+          {schema?.quiz && schema.quiz.length > 0 ? (() => {
+            const q = schema.quiz[quizIdx];
+            const userAns = quizAnswers[quizIdx];
+            const correct = userAns?.trim().toLowerCase() === q.answer.trim().toLowerCase();
+            return (
+              <div className="space-y-3">
+                <div className="text-xs text-white/50">Question {quizIdx + 1} of {schema.quiz.length} · <span className="uppercase">{q.difficulty}</span> · {q.type}</div>
+                <div className="text-base font-medium">{q.question}</div>
+                {q.type === "mcq" && q.options ? (
+                  <div className="space-y-1">
+                    {q.options.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => setQuizAnswers({ ...quizAnswers, [quizIdx]: opt })}
+                        className={`w-full rounded border px-3 py-2 text-left text-sm transition ${userAns === opt ? "border-violet-400 bg-violet-500/20" : "border-white/10 hover:border-white/30"}`}
+                      >{opt}</button>
+                    ))}
+                  </div>
+                ) : q.type === "tf" ? (
+                  <div className="flex gap-2">
+                    {["True", "False"].map((opt) => (
+                      <button key={opt} onClick={() => setQuizAnswers({ ...quizAnswers, [quizIdx]: opt })} className={`flex-1 rounded border px-3 py-2 text-sm ${userAns === opt ? "border-violet-400 bg-violet-500/20" : "border-white/10"}`}>{opt}</button>
+                    ))}
+                  </div>
+                ) : (
+                  <Input value={userAns ?? ""} onChange={(e) => setQuizAnswers({ ...quizAnswers, [quizIdx]: e.target.value })} placeholder="Your answer…" />
+                )}
+                {quizReveal && (
+                  <div className={`rounded border p-2 text-sm ${correct ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200" : "border-rose-400/40 bg-rose-500/10 text-rose-200"}`}>
+                    <div className="font-semibold">{correct ? "✓ Correct" : `✗ Answer: ${q.answer}`}</div>
+                    {q.explanation && <div className="mt-1 text-xs opacity-80">{q.explanation}</div>}
+                  </div>
+                )}
+              </div>
+            );
+          })() : <div className="text-sm text-white/60">No quiz available.</div>}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setQuizReveal(false); setQuizIdx((i) => Math.max(0, i - 1)); }} disabled={quizIdx === 0}>Back</Button>
+            {!quizReveal ? (
+              <Button onClick={() => setQuizReveal(true)} disabled={!quizAnswers[quizIdx]}>Check</Button>
+            ) : quizIdx < (schema?.quiz?.length ?? 0) - 1 ? (
+              <Button onClick={() => { setQuizReveal(false); setQuizIdx((i) => i + 1); }}>Next</Button>
+            ) : (
+              <Button onClick={() => { setQuizOpen(false); setQuizIdx(0); setQuizAnswers({}); setQuizReveal(false); }}>Finish</Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
