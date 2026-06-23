@@ -1,4 +1,5 @@
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop, FlaskConical, Atom } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
