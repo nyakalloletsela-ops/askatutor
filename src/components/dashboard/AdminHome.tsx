@@ -30,6 +30,7 @@ import {
   Sparkles,
   CheckCircle2,
   Clock,
+  History,
 } from "lucide-react";
 
 type AppRow = {
@@ -92,6 +93,17 @@ function Stat({
   );
 }
 
+type AuditRow = {
+  id: string;
+  actor_id: string;
+  action: "approve" | "reject";
+  application_ids: string[];
+  tutor_ids: string[];
+  is_bulk: boolean;
+  notes: string | null;
+  created_at: string;
+};
+
 export function AdminHome({ firstName }: { firstName: string }) {
   const [apps, setApps] = useState<AppRow[]>([]);
   const [tutors, setTutors] = useState<TutorProfile[]>([]);
@@ -99,9 +111,11 @@ export function AdminHome({ firstName }: { firstName: string }) {
   const [counts, setCounts] = useState({ students: 0, tutors: 0, sessions: 0 });
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
+  const [audit, setAudit] = useState<AuditRow[]>([]);
+  const [actorNames, setActorNames] = useState<Record<string, string>>({});
 
   const load = async () => {
-    const [{ data: a }, { data: t }, { data: s }, students, tutorRoles, allSessions] = await Promise.all([
+    const [{ data: a }, { data: t }, { data: s }, students, tutorRoles, allSessions, { data: al }] = await Promise.all([
       supabase
         .from("tutor_applications")
         .select("id,user_id,full_name,email,subjects,bio,status,submitted_at")
@@ -117,6 +131,11 @@ export function AdminHome({ firstName }: { firstName: string }) {
       supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "student"),
       supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tutor"),
       supabase.from("sessions").select("id", { count: "exact", head: true }),
+      supabase
+        .from("admin_audit_log")
+        .select("id,actor_id,action,application_ids,tutor_ids,is_bulk,notes,created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
     setApps((a as AppRow[]) ?? []);
     setTutors(((t as TutorProfile[]) ?? []).slice(0, 30));
@@ -126,6 +145,20 @@ export function AdminHome({ firstName }: { firstName: string }) {
       tutors: tutorRoles.count ?? 0,
       sessions: allSessions.count ?? 0,
     });
+    const auditRows = (al as AuditRow[]) ?? [];
+    setAudit(auditRows);
+    const actorIds = Array.from(new Set(auditRows.map((r) => r.actor_id).filter(Boolean)));
+    if (actorIds.length) {
+      const { data: pr } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", actorIds);
+      const map: Record<string, string> = {};
+      (pr ?? []).forEach((p: { id: string; full_name: string | null }) => {
+        map[p.id] = p.full_name ?? "Admin";
+      });
+      setActorNames(map);
+    }
   };
 
   useEffect(() => {
@@ -134,6 +167,7 @@ export function AdminHome({ firstName }: { firstName: string }) {
       .channel("admin-home")
       .on("postgres_changes", { event: "*", schema: "public", table: "tutor_applications" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "sessions" }, load)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_audit_log" }, load)
       .subscribe();
     const t = setInterval(load, 30000);
     return () => {
@@ -166,6 +200,11 @@ export function AdminHome({ firstName }: { firstName: string }) {
     });
     setBusy(null);
     if (error) return toast.error(error.message);
+    await supabase.rpc("log_tutor_decision", {
+      _action: approve ? "approve" : "reject",
+      _application_ids: [row.id],
+      _notes: notes[row.id] || undefined,
+    });
     toast.success(approve ? "Approved — tutor role granted" : "Rejected");
     load();
   };
@@ -203,7 +242,18 @@ export function AdminHome({ firstName }: { firstName: string }) {
     setBusy(null);
     setConfirm(null);
     setSelected(new Set());
-    const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && r.value.error)).length;
+    const succeededIds = ids.filter((_, i) => {
+      const r = results[i];
+      return r.status === "fulfilled" && !r.value.error;
+    });
+    const failed = ids.length - succeededIds.length;
+    if (succeededIds.length > 0) {
+      await supabase.rpc("log_tutor_decision", {
+        _action: confirm,
+        _application_ids: succeededIds,
+        _notes: undefined,
+      });
+    }
     if (failed > 0) toast.error(`${failed} of ${ids.length} failed`);
     else toast.success(`${ids.length} application(s) ${confirm === "approve" ? "approved" : "rejected"}`);
     load();
@@ -451,6 +501,66 @@ export function AdminHome({ firstName }: { firstName: string }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Audit log */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <History className="h-4 w-4" /> Decision audit log
+          </CardTitle>
+          <Badge variant="secondary">{audit.length} recent</Badge>
+        </CardHeader>
+        <CardContent className="p-0">
+          {audit.length === 0 ? (
+            <p className="px-4 py-6 text-sm text-muted-foreground">No approve/reject actions yet.</p>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {audit.map((row) => (
+                <li key={row.id} className="flex items-start gap-3 px-4 py-3">
+                  <div
+                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${
+                      row.action === "approve"
+                        ? "bg-green-500/10 text-green-600"
+                        : "bg-red-500/10 text-red-600"
+                    }`}
+                  >
+                    {row.action === "approve" ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <ShieldCheck className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm">
+                      <span className="font-semibold">
+                        {actorNames[row.actor_id] ?? "Admin"}
+                      </span>{" "}
+                      {row.action === "approve" ? "approved" : "rejected"}{" "}
+                      <span className="font-semibold">{row.application_ids.length}</span>{" "}
+                      application{row.application_ids.length === 1 ? "" : "s"}
+                      {row.is_bulk && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">bulk</Badge>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {new Date(row.created_at).toLocaleString()}
+                    </p>
+                    {row.tutor_ids.length > 0 && (
+                      <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground">
+                        tutor ids: {row.tutor_ids.slice(0, 4).join(", ")}
+                        {row.tutor_ids.length > 4 && ` +${row.tutor_ids.length - 4} more`}
+                      </p>
+                    )}
+                    {row.notes && (
+                      <p className="mt-1 text-xs italic text-muted-foreground">"{row.notes}"</p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

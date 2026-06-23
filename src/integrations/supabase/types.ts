@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          application_ids: string[]
+          created_at: string
+          id: string
+          is_bulk: boolean
+          notes: string | null
+          target_kind: string
+          tutor_ids: string[]
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          application_ids?: string[]
+          created_at?: string
+          id?: string
+          is_bulk?: boolean
+          notes?: string | null
+          target_kind?: string
+          tutor_ids?: string[]
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          application_ids?: string[]
+          created_at?: string
+          id?: string
+          is_bulk?: boolean
+          notes?: string | null
+          target_kind?: string
+          tutor_ids?: string[]
+        }
+        Relationships: []
+      }
       assignment_submissions: {
         Row: {
           assignment_id: string
@@ -1894,6 +1930,10 @@ export type Database = {
           full_name: string
           id: string
         }[]
+      }
+      log_tutor_decision: {
+        Args: { _action: string; _application_ids: string[]; _notes?: string }
+        Returns: string
       }
       move_to_dlq: {
         Args: {
