@@ -82,8 +82,20 @@ function Lab3DPage() {
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
   const [quizReveal, setQuizReveal] = useState(false);
+  const [mode, setMode] = useState<LearningMode>("explore");
+  const [rightTab, setRightTab] = useState<"library" | "chat">("library");
   const sceneWrapRef = useRef<HTMLDivElement>(null);
   const glRef = useRef<THREE.WebGLRenderer | null>(null);
+
+  // Mode side effects
+  useEffect(() => {
+    if (mode === "assessment" && schema?.quiz && schema.quiz.length > 0) {
+      setQuizOpen(true);
+    }
+    if (mode === "tutor") {
+      setPlaying(false);
+    }
+  }, [mode, schema]);
 
   async function refreshLibrary() {
     try {
