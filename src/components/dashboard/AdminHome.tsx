@@ -30,6 +30,7 @@ import {
   Sparkles,
   CheckCircle2,
   Clock,
+  History,
 } from "lucide-react";
 
 type AppRow = {
