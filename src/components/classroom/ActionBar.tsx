@@ -1,4 +1,4 @@
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PictureInPicture2, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -54,7 +54,7 @@ export function ActionBar(props: Props) {
             </Group>
             <Group title="Video layout">
               <PillButton active={layoutMode === "TOP_STRIP"} onClick={() => onSetLayout("TOP_STRIP")} icon={<LayoutPanelTop className="h-3.5 w-3.5" />} label="Top strip" />
-              <PillButton active={layoutMode === "FLOATING"} onClick={() => onSetLayout("FLOATING")} icon={<PictureInPicture2 className="h-3.5 w-3.5" />} label="Floating" />
+              <PillButton active={layoutMode === "DOCKED"} onClick={() => onSetLayout("DOCKED")} icon={<PanelLeft className="h-3.5 w-3.5" />} label="Docked" />
               <PillButton active={layoutMode === "FOCUS"} onClick={() => onSetLayout("FOCUS")} icon={<Focus className="h-3.5 w-3.5" />} label="Focus" />
             </Group>
             <Group title="Panels">
@@ -90,8 +90,8 @@ export function ActionBar(props: Props) {
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
-      <CircleButton active={layoutMode === "FLOATING"} onClick={() => onSetLayout("FLOATING")} title="Floating video (PiP)">
-        <PictureInPicture2 className="h-4 w-4" />
+      <CircleButton active={layoutMode === "TOP_STRIP"} onClick={() => onSetLayout("TOP_STRIP")} title="Top strip video">
+        <LayoutPanelTop className="h-4 w-4" />
       </CircleButton>
       <CircleButton active={layoutMode === "DOCKED"} onClick={() => onSetLayout("DOCKED")} title="Dock video to sidebar">
         <PanelLeft className="h-4 w-4" />

@@ -28,7 +28,7 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const isMobile = useIsMobile();
   const [panel, setPanel] = useState<PanelKey>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>(isMobile ? "TOP_STRIP" : "FLOATING");
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(isMobile ? "TOP_STRIP" : "DOCKED");
   const [stripCollapsed, setStripCollapsed] = useState(false);
   const [stripHidden, setStripHidden] = useState(false);
   const rtc = useClassroomRTC({ roomId, userId, displayName });
@@ -170,8 +170,8 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
           </aside>
         )}
 
-        {/* Floating / Focus video overlays — only when joined */}
-        {rtc.joined && (effectiveMode === "FLOATING" || effectiveMode === "FOCUS") && (
+        {/* Focus mode overlay — only when joined */}
+        {rtc.joined && effectiveMode === "FOCUS" && (
           <AnimatedVideoLayout tutor={tutorSlot} student={studentSlot} mode={effectiveMode} />
         )}
 
