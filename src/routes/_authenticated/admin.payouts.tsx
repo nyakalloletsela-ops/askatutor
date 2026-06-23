@@ -464,7 +464,7 @@ function PayoutRunDialog({ runId, onClose }: { runId: string | null; onClose: ()
     mutationFn: async ({ id, ref }: { id: string; ref: string }) => {
       const { error } = await supabase.rpc("admin_mark_payout_item_paid", {
         _item: id,
-        _provider_ref: ref || null,
+        _provider_ref: ref || undefined,
       });
       if (error) throw error;
     },
