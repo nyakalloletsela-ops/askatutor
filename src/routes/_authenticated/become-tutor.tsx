@@ -50,6 +50,7 @@ function BecomeTutorPage() {
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [subjects, setSubjects] = useState("");
+  const [qualifications, setQualifications] = useState("");
   const [motivation, setMotivation] = useState("");
 
   const load = async () => {
