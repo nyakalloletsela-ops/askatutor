@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Navbar } from "@/components/Navbar";
 import { ScopeGate } from "@/components/ScopeGate";
@@ -13,13 +13,16 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { SimScene } from "@/components/lab3d/SimScene";
 import {
   embedPrompt, findSimilarSimulation, generateSimulationSchema,
   saveSimulation, listSimulations, deleteSimulation,
   type SimulationSchemaT,
 } from "@/lib/sim-lab.functions";
-import * as THREE from "three";
+import type * as THREE from "three";
+
+const SimScene = lazy(() =>
+  import("@/components/lab3d/SimScene").then((m) => ({ default: m.SimScene }))
+);
 
 export const Route = createFileRoute("/_authenticated/labs/simulation-lab")({
   component: () => <ScopeGate scope="labs"><Lab3DPage /></ScopeGate>,
