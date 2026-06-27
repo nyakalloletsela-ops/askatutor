@@ -69,31 +69,17 @@ export const aiToolRun = createServerFn({ method: "POST" })
       );
     }
 
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI is not configured");
-
     const ctx = [data.subject && `Subject: ${data.subject}`, data.level && `Level: ${data.level}`]
       .filter(Boolean)
       .join(" · ");
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_BY_TOOL[data.tool] },
-          { role: "user", content: ctx ? `${ctx}\n\n${data.prompt}` : data.prompt },
-        ],
-      }),
+    const { aiChat } = await import("@/lib/ai/provider.server");
+    const { text: reply } = await aiChat({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: SYSTEM_BY_TOOL[data.tool] },
+        { role: "user", content: ctx ? `${ctx}\n\n${data.prompt}` : data.prompt },
+      ],
     });
-
-    if (!res.ok) {
-      if (res.status === 429) throw new Error("Too many requests — please slow down.");
-      if (res.status === 402) throw new Error("AI credits exhausted. Please notify the admin.");
-      throw new Error("AI service error");
-    }
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const reply = json.choices?.[0]?.message?.content?.trim() ?? "";
     return { reply };
   });

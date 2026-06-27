@@ -298,21 +298,22 @@ function toVectorLiteral(embedding: number[]) {
   return `[${embedding.map((n) => Number.isFinite(n) ? n.toFixed(8) : "0").join(",")}]`;
 }
 
-async function callGateway(path: string, body: unknown) {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured");
-  const res = await fetch(`https://ai.gateway.lovable.dev/v1${path}`, {
-    method: "POST",
-    headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    if (res.status === 429) throw new Error("Too many requests — slow down.");
-    if (res.status === 402) throw new Error("AI credits exhausted.");
-    const txt = await res.text().catch(() => "");
-    throw new Error(`AI error ${res.status}: ${txt.slice(0, 200)}`);
+async function callGateway(path: string, body: any) {
+  const { aiChat, aiEmbed } = await import("@/lib/ai/provider.server");
+  if (path === "/chat/completions") {
+    const { raw } = await aiChat({
+      model: body.model,
+      messages: body.messages,
+      temperature: body.temperature,
+      response_format: body.response_format,
+    });
+    return raw;
   }
-  return res.json();
+  if (path === "/embeddings") {
+    const { embedding } = await aiEmbed({ model: body.model, input: body.input });
+    return { data: [{ embedding }] };
+  }
+  throw new Error(`Unsupported AI path: ${path}`);
 }
 
 async function assertLabsScope(supabase: any) {

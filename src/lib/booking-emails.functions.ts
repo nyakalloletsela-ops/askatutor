@@ -9,26 +9,8 @@ async function sendOne(payload: {
   idempotencyKey: string
   templateData: Record<string, any>
 }) {
-  const baseUrl =
-    process.env.PUBLIC_BASE_URL ||
-    process.env.VITE_PUBLIC_BASE_URL ||
-    'https://askatutor.lovable.app'
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  try {
-    const r = await fetch(`${baseUrl}/lovable/email/transactional/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${serviceKey}`,
-      },
-      body: JSON.stringify(payload),
-    })
-    if (!r.ok) {
-      console.error('booking email send failed', r.status, await r.text())
-    }
-  } catch (e) {
-    console.error('booking email send error', e)
-  }
+  const { sendTransactionalEmail } = await import('@/lib/email/provider.server')
+  await sendTransactionalEmail(payload)
 }
 
 function formatWhen(iso: string): string {

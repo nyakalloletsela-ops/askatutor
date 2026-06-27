@@ -113,35 +113,13 @@ export const aiTutorChat = createServerFn({ method: "POST" })
     const mode: "tutor" | "student" = isAdmin || isTutor ? "tutor" : "student";
     const systemPrompt = mode === "tutor" ? TUTOR_SYSTEM_PROMPT : STUDENT_SYSTEM_PROMPT;
 
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI is not configured");
-
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...data.messages,
-        ],
-      }),
+    const { aiChat } = await import("@/lib/ai/provider.server");
+    const { text: reply } = await aiChat({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...data.messages,
+      ],
     });
-
-    if (!res.ok) {
-      if (res.status === 429) throw new Error("Too many requests — please slow down and try again.");
-      if (res.status === 402) throw new Error("AI credits exhausted. Please notify the admin.");
-      const t = await res.text();
-      console.error("AI gateway error", res.status, t);
-      throw new Error("AI service error");
-    }
-
-    const json = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const reply = json.choices?.[0]?.message?.content?.trim() ?? "";
     return { reply, mode };
   });

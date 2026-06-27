@@ -26,10 +26,8 @@ export const simLabChat = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI is not configured");
-
     const ctx = data.context;
+
     const ctxBlob = ctx
       ? `Current simulation:\n- Title: ${ctx.title ?? "?"}\n- Subject: ${ctx.subject ?? "?"}\n- View: ${ctx.visualization ?? "?"}\n- Summary: ${ctx.summary ?? ""}\n- Objects: ${(ctx.objects ?? []).map((o) => o.label || o.type).filter(Boolean).join(", ")}`
       : "No active simulation.";
@@ -45,20 +43,10 @@ export const simLabChat = createServerFn({ method: "POST" })
 Keep replies short (under 120 words), friendly, and grounded in the active simulation when available.
 ${ctxBlob}`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { "Lovable-API-Key": apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: sys }, ...data.messages],
-      }),
+    const { aiChat } = await import("@/lib/ai/provider.server");
+    const { text } = await aiChat({
+      model: "google/gemini-3-flash-preview",
+      messages: [{ role: "system", content: sys }, ...data.messages],
     });
-    if (!res.ok) {
-      if (res.status === 429) throw new Error("Too many requests — slow down.");
-      if (res.status === 402) throw new Error("AI credits exhausted.");
-      throw new Error(`AI error ${res.status}`);
-    }
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const reply = json.choices?.[0]?.message?.content ?? "";
-    return { reply };
+    return { reply: text };
   });

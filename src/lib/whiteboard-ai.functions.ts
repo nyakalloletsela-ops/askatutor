@@ -14,8 +14,7 @@ export const whiteboardConvert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => Input.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI is not configured");
+
 
     const system = `You are an expert whiteboard OCR digitiser for live mathematics, science, engineering and chemistry tutoring.
 Reproduce the page as a clean, polished digital version with ZERO handwritten elements remaining.
@@ -31,40 +30,24 @@ Strict output rules:
 8. Do NOT add commentary, headings, Markdown code fences, explanations, or labels such as "LaTeX:". Output only the digitised content.
 9. If handwriting is ambiguous, make the most mathematically plausible best-effort conversion instead of refusing.`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Lovable-API-Key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: system },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text:
-                  "Digitise this whiteboard. Pay special attention to all mathematical notation, especially integrals and calculus symbols. Return only plain text, $$LaTeX$$ math blocks, and inline SVG diagrams.",
-              },
-              { type: "image_url", image_url: { url: data.imageDataUrl } },
-            ],
-          },
-        ],
-      }),
+    const { aiChat } = await import("@/lib/ai/provider.server");
+    const { text } = await aiChat({
+      model: "google/gemini-2.5-flash",
+      messages: [
+        { role: "system", content: system },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "Digitise this whiteboard. Pay special attention to all mathematical notation, especially integrals and calculus symbols. Return only plain text, $$LaTeX$$ math blocks, and inline SVG diagrams.",
+            },
+            { type: "image_url", image_url: { url: data.imageDataUrl } },
+          ],
+        },
+      ],
     });
-
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error("whiteboardConvert AI error", res.status, detail.slice(0, 500));
-      if (res.status === 429) throw new Error("Too many requests — please slow down.");
-      if (res.status === 402) throw new Error("AI credits exhausted. Please notify the admin.");
-      throw new Error(`AI service error (${res.status})`);
-    }
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const text = json.choices?.[0]?.message?.content?.trim() ?? "";
     if (!text) throw new Error("AI returned an empty response. Try again.");
     return { text };
   });
