@@ -71,42 +71,21 @@ export interface ChatMessage {
   content: string;
 }
 
-/** Call the Lovable AI Gateway with a chosen agent. Server-only. */
+/** Call the configured AI provider with a chosen agent. Server-only. */
 export async function callAgent(
   role: AgentRole,
   messages: ChatMessage[],
   opts?: { model?: string; temperature?: number },
 ): Promise<string> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("AI is not configured");
-
   const agent = AGENT_REGISTRY[role];
   if (!agent) throw new Error(`Unknown agent role: ${role}`);
 
-  const body = {
+  const { aiChat } = await import("@/lib/ai/provider.server");
+  const { text } = await aiChat({
     model: opts?.model ?? agent.model,
     temperature: opts?.temperature ?? agent.temperature ?? 0.4,
-    messages: [{ role: "system" as const, content: agent.system }, ...messages],
-  };
-
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Lovable-API-Key": apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
+    messages: [{ role: "system", content: agent.system }, ...messages],
   });
-
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    console.error("[agent]", role, res.status, detail.slice(0, 400));
-    if (res.status === 429) throw new Error("AI is busy. Try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits exhausted. Notify admin.");
-    throw new Error(`AI service error (${res.status})`);
-  }
-  const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  const text = json.choices?.[0]?.message?.content?.trim() ?? "";
   if (!text) throw new Error("AI returned an empty response.");
   return text;
 }
