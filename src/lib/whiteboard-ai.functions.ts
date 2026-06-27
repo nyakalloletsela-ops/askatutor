@@ -14,8 +14,7 @@ export const whiteboardConvert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => Input.parse(input))
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI is not configured");
+
 
     const system = `You are an expert whiteboard OCR digitiser for live mathematics, science, engineering and chemistry tutoring.
 Reproduce the page as a clean, polished digital version with ZERO handwritten elements remaining.
