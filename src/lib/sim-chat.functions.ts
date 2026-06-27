@@ -26,10 +26,8 @@ export const simLabChat = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("AI is not configured");
-
     const ctx = data.context;
+
     const ctxBlob = ctx
       ? `Current simulation:\n- Title: ${ctx.title ?? "?"}\n- Subject: ${ctx.subject ?? "?"}\n- View: ${ctx.visualization ?? "?"}\n- Summary: ${ctx.summary ?? ""}\n- Objects: ${(ctx.objects ?? []).map((o) => o.label || o.type).filter(Boolean).join(", ")}`
       : "No active simulation.";
