@@ -174,7 +174,12 @@ function BookTutorPage() {
           </CardHeader>
           <CardContent>
             {avail.length === 0 ? (
-              <p className="text-sm text-muted-foreground">This tutor has not set availability yet.</p>
+              <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <p>This tutor has not set availability yet.</p>
+                <Button variant="link" size="sm" onClick={() => joinWaitlist(tutorId, subject, duration)}>
+                  Request a time
+                </Button>
+              </div>
             ) : totalSlots === 0 ? (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                 No open slots this week.{" "}
