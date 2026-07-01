@@ -50,6 +50,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_provider_keys: {
+        Row: {
+          api_key: string | null
+          base_url: string | null
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          base_url?: string | null
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          base_url?: string | null
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       assignment_submissions: {
         Row: {
           assignment_id: string
