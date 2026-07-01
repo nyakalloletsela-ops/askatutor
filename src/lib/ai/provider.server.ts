@@ -168,10 +168,11 @@ interface Endpoint {
   headers: Record<string, string>;
 }
 
-function endpointFor(provider: Provider): Endpoint {
+async function endpointFor(provider: Provider): Promise<Endpoint> {
+  const creds = await getProviderCreds(provider);
   switch (provider) {
     case "lovable": {
-      const key = process.env.LOVABLE_API_KEY;
+      const key = creds.api_key;
       if (!key) throw new AiError("AI is not configured (LOVABLE_API_KEY missing)");
       return {
         chat: "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -180,8 +181,8 @@ function endpointFor(provider: Provider): Endpoint {
       };
     }
     case "groq": {
-      const key = process.env.GROQ_API_KEY;
-      if (!key) throw new AiError("Groq is selected but GROQ_API_KEY is not set");
+      const key = creds.api_key;
+      if (!key) throw new AiError("Groq is selected but no GROQ_API_KEY is configured");
       return {
         chat: "https://api.groq.com/openai/v1/chat/completions",
         embed: "https://api.groq.com/openai/v1/embeddings",
@@ -189,8 +190,8 @@ function endpointFor(provider: Provider): Endpoint {
       };
     }
     case "gemini": {
-      const key = process.env.GEMINI_API_KEY;
-      if (!key) throw new AiError("Gemini is selected but GEMINI_API_KEY is not set");
+      const key = creds.api_key;
+      if (!key) throw new AiError("Gemini is selected but no GEMINI_API_KEY is configured");
       return {
         chat: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         embed: "https://generativelanguage.googleapis.com/v1beta/openai/embeddings",
@@ -198,7 +199,7 @@ function endpointFor(provider: Provider): Endpoint {
       };
     }
     case "ollama": {
-      const base = (process.env.OLLAMA_BASE_URL ?? "http://localhost:11434").replace(/\/+$/, "");
+      const base = (creds.base_url ?? "http://localhost:11434").replace(/\/+$/, "");
       return {
         chat: `${base}/v1/chat/completions`,
         embed: `${base}/v1/embeddings`,
