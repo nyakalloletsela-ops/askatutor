@@ -1147,6 +1147,7 @@ export type Database = {
       platform_config: {
         Row: {
           ai_enabled: boolean
+          ai_provider: string
           ai_token_limit_per_user: number
           classrooms_enabled: boolean
           id: number
@@ -1161,6 +1162,7 @@ export type Database = {
         }
         Insert: {
           ai_enabled?: boolean
+          ai_provider?: string
           ai_token_limit_per_user?: number
           classrooms_enabled?: boolean
           id?: number
@@ -1175,6 +1177,7 @@ export type Database = {
         }
         Update: {
           ai_enabled?: boolean
+          ai_provider?: string
           ai_token_limit_per_user?: number
           classrooms_enabled?: boolean
           id?: number
@@ -2493,6 +2496,7 @@ export type Database = {
         Args: { _reason?: string; _session: string }
         Returns: undefined
       }
+      complete_session: { Args: { _session: string }; Returns: undefined }
       compute_commission_cents: {
         Args: { _amount_cents: number; _subject?: string; _tutor: string }
         Returns: number
