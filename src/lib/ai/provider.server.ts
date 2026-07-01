@@ -87,7 +87,46 @@ async function resolveProvider(): Promise<Provider> {
 }
 
 /** Invalidate the cached provider (call after admin updates the setting). */
+// ---------------------------------------------------------------------------
+// Per-provider credential resolver (DB overrides env)
+// ---------------------------------------------------------------------------
+const _credsCache = new Map<Provider, { creds: { api_key: string | null; base_url: string | null }; expires: number }>();
+
+export async function getProviderCreds(provider: Provider): Promise<{ api_key: string | null; base_url: string | null }> {
+  const now = Date.now();
+  const cached = _credsCache.get(provider);
+  if (cached && cached.expires > now) return cached.creds;
+  let api_key: string | null = null;
+  let base_url: string | null = null;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any)
+      .from("ai_provider_keys")
+      .select("api_key, base_url")
+      .eq("provider", provider)
+      .maybeSingle();
+    if (data) {
+      api_key = (data as any).api_key ?? null;
+      base_url = (data as any).base_url ?? null;
+    }
+  } catch {
+    // ignore, fall back to env
+  }
+  if (!api_key) {
+    if (provider === "groq") api_key = process.env.GROQ_API_KEY ?? null;
+    else if (provider === "gemini") api_key = process.env.GEMINI_API_KEY ?? null;
+    else if (provider === "lovable") api_key = process.env.LOVABLE_API_KEY ?? null;
+  }
+  if (!base_url && provider === "ollama") {
+    base_url = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+  }
+  const creds = { api_key, base_url };
+  _credsCache.set(provider, { creds, expires: now + CACHE_MS });
+  return creds;
+}
+
 export function clearAiProviderCache() {
+  _credsCache.clear();
   _cached = null;
 }
 
