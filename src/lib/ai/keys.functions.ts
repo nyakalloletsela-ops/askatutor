@@ -26,7 +26,7 @@ export const saveAiKey = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("ai_provider_keys").upsert(
+    const { error } = await (supabaseAdmin as any).from("ai_provider_keys").upsert(
       {
         provider: data.provider,
         api_key: data.api_key ?? null,
@@ -47,10 +47,10 @@ export const getAiKeyStatus = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
+    const { data } = await (supabaseAdmin as any)
       .from("ai_provider_keys")
       .select("provider, api_key, base_url, updated_at");
-    const rows = (data ?? []) as { provider: string; api_key: string | null; base_url: string | null; updated_at: string }[];
+    const rows = ((data ?? []) as unknown) as { provider: string; api_key: string | null; base_url: string | null; updated_at: string }[];
     const byProvider = Object.fromEntries(rows.map((r) => [r.provider, r]));
     const env = {
       groq: !!process.env.GROQ_API_KEY,

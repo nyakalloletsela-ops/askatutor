@@ -215,7 +215,7 @@ async function endpointFor(provider: Provider): Promise<Endpoint> {
 
 export async function aiChat(opts: AiChatOptions): Promise<AiChatResult> {
   const provider = await resolveProvider();
-  const ep = endpointFor(provider);
+  const ep = await endpointFor(provider);
 
   const body: Record<string, unknown> = {
     model: mapModel(provider, opts.model),
@@ -249,7 +249,7 @@ export async function aiChat(opts: AiChatOptions): Promise<AiChatResult> {
 
 export async function aiEmbed(opts: AiEmbedOptions): Promise<{ embedding: number[] }> {
   const provider = await resolveProvider();
-  const ep = endpointFor(provider);
+  const ep = await endpointFor(provider);
 
   const res = await fetch(ep.embed, {
     method: "POST",
