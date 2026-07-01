@@ -3,6 +3,7 @@ import { checkIsAdmin } from "@/lib/access.functions";
 import { PageContainer, SectionHeader } from "@/components/dashboard/primitives";
 import { ConfigToggle } from "@/components/admin/ConfigToggle";
 import { AiProviderSelect } from "@/components/admin/AiProviderSelect";
+import { AiKeyManager } from "@/components/admin/AiKeyManager";
 
 export const Route = createFileRoute("/_authenticated/admin/ai")({
   beforeLoad: async () => {
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/_authenticated/admin/ai")({
           description="Master switch for AI Coach, AI Toolkit, and whiteboard AI."
         />
         <AiProviderSelect />
+        <AiKeyManager />
+
         <ConfigToggle
           k="ai_token_limit_per_user"
           label="Token limit per user"
