@@ -87,7 +87,46 @@ async function resolveProvider(): Promise<Provider> {
 }
 
 /** Invalidate the cached provider (call after admin updates the setting). */
+// ---------------------------------------------------------------------------
+// Per-provider credential resolver (DB overrides env)
+// ---------------------------------------------------------------------------
+const _credsCache = new Map<Provider, { creds: { api_key: string | null; base_url: string | null }; expires: number }>();
+
+export async function getProviderCreds(provider: Provider): Promise<{ api_key: string | null; base_url: string | null }> {
+  const now = Date.now();
+  const cached = _credsCache.get(provider);
+  if (cached && cached.expires > now) return cached.creds;
+  let api_key: string | null = null;
+  let base_url: string | null = null;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any)
+      .from("ai_provider_keys")
+      .select("api_key, base_url")
+      .eq("provider", provider)
+      .maybeSingle();
+    if (data) {
+      api_key = (data as any).api_key ?? null;
+      base_url = (data as any).base_url ?? null;
+    }
+  } catch {
+    // ignore, fall back to env
+  }
+  if (!api_key) {
+    if (provider === "groq") api_key = process.env.GROQ_API_KEY ?? null;
+    else if (provider === "gemini") api_key = process.env.GEMINI_API_KEY ?? null;
+    else if (provider === "lovable") api_key = process.env.LOVABLE_API_KEY ?? null;
+  }
+  if (!base_url && provider === "ollama") {
+    base_url = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+  }
+  const creds = { api_key, base_url };
+  _credsCache.set(provider, { creds, expires: now + CACHE_MS });
+  return creds;
+}
+
 export function clearAiProviderCache() {
+  _credsCache.clear();
   _cached = null;
 }
 
@@ -129,10 +168,11 @@ interface Endpoint {
   headers: Record<string, string>;
 }
 
-function endpointFor(provider: Provider): Endpoint {
+async function endpointFor(provider: Provider): Promise<Endpoint> {
+  const creds = await getProviderCreds(provider);
   switch (provider) {
     case "lovable": {
-      const key = process.env.LOVABLE_API_KEY;
+      const key = creds.api_key;
       if (!key) throw new AiError("AI is not configured (LOVABLE_API_KEY missing)");
       return {
         chat: "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -141,8 +181,8 @@ function endpointFor(provider: Provider): Endpoint {
       };
     }
     case "groq": {
-      const key = process.env.GROQ_API_KEY;
-      if (!key) throw new AiError("Groq is selected but GROQ_API_KEY is not set");
+      const key = creds.api_key;
+      if (!key) throw new AiError("Groq is selected but no GROQ_API_KEY is configured");
       return {
         chat: "https://api.groq.com/openai/v1/chat/completions",
         embed: "https://api.groq.com/openai/v1/embeddings",
@@ -150,8 +190,8 @@ function endpointFor(provider: Provider): Endpoint {
       };
     }
     case "gemini": {
-      const key = process.env.GEMINI_API_KEY;
-      if (!key) throw new AiError("Gemini is selected but GEMINI_API_KEY is not set");
+      const key = creds.api_key;
+      if (!key) throw new AiError("Gemini is selected but no GEMINI_API_KEY is configured");
       return {
         chat: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
         embed: "https://generativelanguage.googleapis.com/v1beta/openai/embeddings",
@@ -159,7 +199,7 @@ function endpointFor(provider: Provider): Endpoint {
       };
     }
     case "ollama": {
-      const base = (process.env.OLLAMA_BASE_URL ?? "http://localhost:11434").replace(/\/+$/, "");
+      const base = (creds.base_url ?? "http://localhost:11434").replace(/\/+$/, "");
       return {
         chat: `${base}/v1/chat/completions`,
         embed: `${base}/v1/embeddings`,
@@ -175,7 +215,7 @@ function endpointFor(provider: Provider): Endpoint {
 
 export async function aiChat(opts: AiChatOptions): Promise<AiChatResult> {
   const provider = await resolveProvider();
-  const ep = endpointFor(provider);
+  const ep = await endpointFor(provider);
 
   const body: Record<string, unknown> = {
     model: mapModel(provider, opts.model),
@@ -209,7 +249,7 @@ export async function aiChat(opts: AiChatOptions): Promise<AiChatResult> {
 
 export async function aiEmbed(opts: AiEmbedOptions): Promise<{ embedding: number[] }> {
   const provider = await resolveProvider();
-  const ep = endpointFor(provider);
+  const ep = await endpointFor(provider);
 
   const res = await fetch(ep.embed, {
     method: "POST",
