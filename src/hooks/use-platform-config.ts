@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type AiProvider = "lovable" | "groq" | "gemini" | "ollama";
+
 export type PlatformConfig = {
   is_subscriptions_enabled: boolean;
   ai_enabled: boolean;
+  ai_provider: AiProvider;
   ai_token_limit_per_user: number;
   classrooms_enabled: boolean;
   whiteboard_graphing_enabled: boolean;
@@ -15,6 +18,7 @@ export type PlatformConfig = {
 const DEFAULTS: PlatformConfig = {
   is_subscriptions_enabled: false,
   ai_enabled: true,
+  ai_provider: "lovable",
   ai_token_limit_per_user: 100000,
   classrooms_enabled: true,
   whiteboard_graphing_enabled: true,
@@ -22,6 +26,7 @@ const DEFAULTS: PlatformConfig = {
   whiteboard_ocr_enabled: true,
   whiteboard_export_enabled: true,
 };
+
 
 export function usePlatformConfig() {
   const { data, isLoading } = useQuery({

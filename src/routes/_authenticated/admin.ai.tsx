@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { PageContainer, SectionHeader } from "@/components/dashboard/primitives";
 import { ConfigToggle } from "@/components/admin/ConfigToggle";
+import { AiProviderSelect } from "@/components/admin/AiProviderSelect";
 
 export const Route = createFileRoute("/_authenticated/admin/ai")({
   beforeLoad: async () => {
@@ -17,10 +18,15 @@ export const Route = createFileRoute("/_authenticated/admin/ai")({
     <PageContainer>
       <SectionHeader
         title="AI controls"
-        description="Enable or disable AI features platform-wide and cap usage per user."
+        description="Enable or disable AI features platform-wide, choose the AI provider, and cap usage per user."
       />
       <div className="space-y-3">
-        <ConfigToggle k="ai_enabled" label="AI features enabled" description="Master switch for AI Coach, AI Toolkit, and whiteboard AI." />
+        <ConfigToggle
+          k="ai_enabled"
+          label="AI features enabled"
+          description="Master switch for AI Coach, AI Toolkit, and whiteboard AI."
+        />
+        <AiProviderSelect />
         <ConfigToggle
           k="ai_token_limit_per_user"
           label="Token limit per user"

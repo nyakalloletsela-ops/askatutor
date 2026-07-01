@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Video, RefreshCw, X } from "lucide-react";
+import { Video, RefreshCw, X, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/lessons")({
   component: LessonsPage,
@@ -84,6 +84,13 @@ function LessonsPage() {
     load();
   };
 
+  const doComplete = async (l: Lesson) => {
+    const { error } = await supabase.rpc("complete_session", { _session: l.id });
+    if (error) return toast.error(error.message);
+    toast.success("Lesson marked complete");
+    load();
+  };
+
   const renderList = (list: Lesson[]) =>
     list.length === 0 ? (
       <p className="text-sm text-muted-foreground">Nothing here.</p>
@@ -94,6 +101,8 @@ function LessonsPage() {
           const counterRole = l.tutor_id === user?.id ? "Student" : "Tutor";
           const startsAt = new Date(l.scheduled_at);
           const joinable = l.status === "scheduled" && startsAt.getTime() - now < 10 * 60000 && now - startsAt.getTime() < l.duration_min * 60000;
+          const isTutor = l.tutor_id === user?.id;
+          const canComplete = isTutor && l.status === "scheduled" && startsAt.getTime() <= now;
           return (
             <Card key={l.id}>
               <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -102,6 +111,7 @@ function LessonsPage() {
                     <p className="font-medium">{l.subject || "Lesson"}</p>
                     <Badge variant="secondary">{counterRole}: {names[counterId] ?? "—"}</Badge>
                     {l.status === "cancelled" && <Badge variant="destructive">Cancelled</Badge>}
+                    {l.status === "completed" && <Badge>Completed</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {startsAt.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
@@ -110,12 +120,17 @@ function LessonsPage() {
                   {l.cancel_reason && <p className="text-xs text-muted-foreground">Reason: {l.cancel_reason}</p>}
                 </div>
                 {l.status === "scheduled" && (
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     <Button asChild size="sm" disabled={!joinable} variant={joinable ? "default" : "outline"}>
                       <Link to="/classroom/$roomId" params={{ roomId: l.room_id }}>
                         <Video className="mr-1 h-3.5 w-3.5" /> {joinable ? "Join" : "Classroom"}
                       </Link>
                     </Button>
+                    {canComplete && (
+                      <Button size="sm" variant="secondary" onClick={() => doComplete(l)}>
+                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Complete
+                      </Button>
+                    )}
                     <Button size="sm" variant="outline" onClick={() => {
                       setResched(l);
                       setNewWhen(startsAt.toISOString().slice(0, 16));
