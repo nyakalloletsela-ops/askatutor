@@ -90,6 +90,8 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
 
   return (
     <div className="flex h-screen flex-col bg-muted/30 text-foreground">
+      {/* Always-mounted hidden audio: remote voice keeps playing regardless of video layout. */}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <ClassroomHeader
         roomId={roomId}
         tutorName={tutorName}
