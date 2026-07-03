@@ -31,6 +31,13 @@ export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
         toast.info("Draw or add something first, then tap Convert.");
         return;
       }
+
+      // Snapshot shapes BEFORE deletion so we can compute a safe insertion origin
+      // that never overlaps existing (already-converted) content.
+      const snapshot = wb.getShapes();
+      const handwriting = snapshot.filter((s) => s.type === "pencil" || s.type === "highlighter");
+      const others = snapshot.filter((s) => s.type !== "pencil" && s.type !== "highlighter");
+
       const { text } = await convert({ data: { imageDataUrl: dataUrl } });
       const blocks = parseConversion(text);
       if (blocks.length === 0) {
@@ -39,13 +46,20 @@ export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
         return;
       }
       if (onlyHandwriting) {
-        const ids = wb
-          .getShapes()
-          .filter((s: Shape) => s.type === "pencil" || s.type === "highlighter")
-          .map((s) => s.id);
-        wb.deleteShapes(ids);
+        wb.deleteShapes(handwriting.map((s) => s.id));
       }
-      const shapes = blocksToShapes(blocks);
+
+      // Place new blocks at the handwriting's top-left, but push them below any
+      // already-converted content so nothing overwrites what's already there.
+      const hwBounds = boundsOf(handwriting);
+      const otherBounds = boundsOf(others);
+      const originX = hwBounds ? hwBounds.x : 80;
+      const originY = Math.max(
+        hwBounds ? hwBounds.y : 80,
+        otherBounds ? otherBounds.y + otherBounds.h + 32 : 80,
+      );
+
+      const shapes = blocksToShapes(blocks, { x: originX, y: originY });
       wb.addShapes(shapes);
       toast.success(`Converted ${blocks.length} block${blocks.length === 1 ? "" : "s"}.`);
     } catch (e) {
