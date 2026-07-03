@@ -33,6 +33,20 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const [stripHidden, setStripHidden] = useState(false);
   const rtc = useClassroomRTC({ roomId, userId, displayName });
 
+  // Persistent hidden audio sink for the remote stream so voice keeps playing
+  // even when the video tile is collapsed, hidden, or between layout modes.
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    const el = remoteAudioRef.current;
+    if (!el) return;
+    if (rtc.remoteStream && el.srcObject !== rtc.remoteStream) {
+      el.srcObject = rtc.remoteStream;
+      el.play().catch(() => { /* autoplay may be blocked until user gesture */ });
+    } else if (!rtc.remoteStream) {
+      el.srcObject = null;
+    }
+  }, [rtc.remoteStream]);
+
   useEffect(() => {
     document.body.classList.add("overflow-hidden");
     return () => document.body.classList.remove("overflow-hidden");
