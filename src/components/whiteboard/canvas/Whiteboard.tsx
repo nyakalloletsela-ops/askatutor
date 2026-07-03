@@ -68,6 +68,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const peersRef = useRef<Map<string, CursorMsg & { lastSeen: number }>>(new Map());
   const historyRef = useRef<{ past: Shape[][]; future: Shape[][] }>({ past: [], future: [] });
   const lastSaveRef = useRef<number>(0);
+  // Multi-touch (pinch-zoom + two-finger pan).
+  const activeTouchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{
+    startDist: number; startZ: number;
+    startMid: { x: number; y: number };
+    startCam: { x: number; y: number };
+  } | null>(null);
 
   // ----- reactive UI state -----
   const isMobile = useIsMobile();
