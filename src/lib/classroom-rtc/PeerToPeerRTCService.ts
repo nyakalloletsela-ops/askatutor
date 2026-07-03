@@ -274,6 +274,8 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     } finally {
       this.makingOffer = false;
     }
+  }
+
 
   private sendSignal(s: Omit<SignalPayload, "senderId" | "senderName">) {
     if (!this.channel) return;
