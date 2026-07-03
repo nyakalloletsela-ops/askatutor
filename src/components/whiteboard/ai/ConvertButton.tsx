@@ -6,7 +6,21 @@ import { toast } from "sonner";
 import { whiteboardConvert } from "@/lib/whiteboard-ai.functions";
 import { parseConversion, blocksToShapes } from "./insertConversion";
 import type { WhiteboardHandle } from "../canvas/Whiteboard";
-import type { Shape } from "../canvas/engine";
+import { shapeBounds, type Shape } from "../canvas/engine";
+
+function boundsOf(list: Shape[]): { x: number; y: number; w: number; h: number } | null {
+  if (!list.length) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const s of list) {
+    const b = shapeBounds(s);
+    if (b.x < x0) x0 = b.x;
+    if (b.y < y0) y0 = b.y;
+    if (b.x + b.w > x1) x1 = b.x + b.w;
+    if (b.y + b.h > y1) y1 = b.y + b.h;
+  }
+  if (!isFinite(x0)) return null;
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
 
 export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
   const convert = useServerFn(whiteboardConvert);
