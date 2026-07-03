@@ -419,6 +419,27 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const onPointerMove = (e: React.PointerEvent) => {
     const rect = wrapperRef.current!.getBoundingClientRect();
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
+    // Update touch tracker and, if pinching, drive camera from the two-finger gesture.
+    if (e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
+      activeTouchesRef.current.set(e.pointerId, { x: sx, y: sy });
+    }
+    if (pinchRef.current && activeTouchesRef.current.size >= 2) {
+      const pts = Array.from(activeTouchesRef.current.values()).slice(0, 2);
+      const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+      const p = pinchRef.current;
+      const newZ = Math.min(8, Math.max(0.1, p.startZ * (dist / p.startDist)));
+      const k = newZ / p.startZ;
+      // Zoom about the initial midpoint, then translate by midpoint delta for two-finger pan.
+      cameraRef.current.z = newZ;
+      cameraRef.current.x = p.startMid.x - (p.startMid.x - p.startCam.x) * k + (mid.x - p.startMid.x);
+      cameraRef.current.y = p.startMid.y - (p.startMid.y - p.startCam.y) * k + (mid.y - p.startMid.y);
+      scheduleRender();
+      return;
+    }
+
     const pg = screenToPage(sx, sy);
 
     // Broadcast cursor (throttled)
