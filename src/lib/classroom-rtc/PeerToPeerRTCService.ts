@@ -241,10 +241,39 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
       }
     };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") this.emit("error", "Peer connection failed");
+      const st = pc.connectionState;
+      if (st === "failed") {
+        this.emit("error", "Peer connection failed — attempting to reconnect…");
+        void this.restartIce();
+      } else if (st === "disconnected") {
+        // Transient drop — give it a few seconds, then force ICE restart.
+        setTimeout(() => {
+          if (this.pc && (this.pc.connectionState === "disconnected" || this.pc.connectionState === "failed")) {
+            void this.restartIce();
+          }
+        }, 4000);
+      }
+    };
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "failed") void this.restartIce();
     };
     return pc;
   }
+
+  private async restartIce(): Promise<void> {
+    const pc = this.pc;
+    if (!pc || this.makingOffer || this.isPolite || !this.remoteUserId) return;
+    // Only the impolite peer re-offers; the other side answers.
+    this.makingOffer = true;
+    try {
+      const offer = await pc.createOffer({ iceRestart: true });
+      await pc.setLocalDescription(offer);
+      this.sendSignal({ kind: "offer", targetId: this.remoteUserId, description: pc.localDescription?.toJSON() });
+    } catch (err) {
+      this.emit("error", err instanceof Error ? err.message : "Reconnect failed");
+    } finally {
+      this.makingOffer = false;
+    }
 
   private sendSignal(s: Omit<SignalPayload, "senderId" | "senderName">) {
     if (!this.channel) return;
