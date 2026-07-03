@@ -515,7 +515,15 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     }
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e?: React.PointerEvent) => {
+    if (e && e.pointerType === "touch") {
+      activeTouchesRef.current.delete(e.pointerId);
+      if (activeTouchesRef.current.size < 2 && pinchRef.current) {
+        pinchRef.current = null;
+        // If one finger remains, don't start a new drag with it — wait for a fresh press.
+        if (activeTouchesRef.current.size === 1) return;
+      }
+    }
     const d = dragRef.current;
     dragRef.current = null;
     if (!d) return;
