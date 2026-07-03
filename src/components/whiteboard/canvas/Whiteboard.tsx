@@ -68,6 +68,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const peersRef = useRef<Map<string, CursorMsg & { lastSeen: number }>>(new Map());
   const historyRef = useRef<{ past: Shape[][]; future: Shape[][] }>({ past: [], future: [] });
   const lastSaveRef = useRef<number>(0);
+  // Multi-touch (pinch-zoom + two-finger pan).
+  const activeTouchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{
+    startDist: number; startZ: number;
+    startMid: { x: number; y: number };
+    startCam: { x: number; y: number };
+  } | null>(null);
 
   // ----- reactive UI state -----
   const isMobile = useIsMobile();
@@ -280,11 +287,41 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   };
 
   // ----- pointer handlers -----
+  const cancelCurrentDraw = () => {
+    // Abort any in-progress shape and undo the history entry that was pushed for it.
+    if (drawingRef.current) {
+      drawingRef.current = null;
+      historyRef.current.past.pop();
+    }
+    dragRef.current = null;
+    marqueeRef.current = null;
+    scheduleRender();
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (textEdit) return;
     const rect = wrapperRef.current!.getBoundingClientRect();
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     (e.target as Element).setPointerCapture?.(e.pointerId);
+
+    // Multi-touch → pinch/pan and abort any current single-finger draw.
+    if (e.pointerType === "touch") {
+      activeTouchesRef.current.set(e.pointerId, { x: sx, y: sy });
+      if (activeTouchesRef.current.size >= 2) {
+        cancelCurrentDraw();
+        const pts = Array.from(activeTouchesRef.current.values()).slice(0, 2);
+        const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+        const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        pinchRef.current = {
+          startDist: dist, startZ: cameraRef.current.z,
+          startMid: mid,
+          startCam: { x: cameraRef.current.x, y: cameraRef.current.y },
+        };
+        return;
+      }
+    }
+
     const pg = screenToPage(sx, sy);
 
     // Pan: middle button, space, or hand tool.
@@ -382,6 +419,27 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const onPointerMove = (e: React.PointerEvent) => {
     const rect = wrapperRef.current!.getBoundingClientRect();
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+
+    // Update touch tracker and, if pinching, drive camera from the two-finger gesture.
+    if (e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
+      activeTouchesRef.current.set(e.pointerId, { x: sx, y: sy });
+    }
+    if (pinchRef.current && activeTouchesRef.current.size >= 2) {
+      const pts = Array.from(activeTouchesRef.current.values()).slice(0, 2);
+      const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+      const dist = Math.max(1, Math.hypot(dx, dy));
+      const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+      const p = pinchRef.current;
+      const newZ = Math.min(8, Math.max(0.1, p.startZ * (dist / p.startDist)));
+      const k = newZ / p.startZ;
+      // Zoom about the initial midpoint, then translate by midpoint delta for two-finger pan.
+      cameraRef.current.z = newZ;
+      cameraRef.current.x = p.startMid.x - (p.startMid.x - p.startCam.x) * k + (mid.x - p.startMid.x);
+      cameraRef.current.y = p.startMid.y - (p.startMid.y - p.startCam.y) * k + (mid.y - p.startMid.y);
+      scheduleRender();
+      return;
+    }
+
     const pg = screenToPage(sx, sy);
 
     // Broadcast cursor (throttled)
@@ -457,7 +515,15 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     }
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e?: React.PointerEvent) => {
+    if (e && e.pointerType === "touch") {
+      activeTouchesRef.current.delete(e.pointerId);
+      if (activeTouchesRef.current.size < 2 && pinchRef.current) {
+        pinchRef.current = null;
+        // If one finger remains, don't start a new drag with it — wait for a fresh press.
+        if (activeTouchesRef.current.size === 1) return;
+      }
+    }
     const d = dragRef.current;
     dragRef.current = null;
     if (!d) return;
