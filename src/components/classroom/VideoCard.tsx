@@ -60,7 +60,7 @@ export function VideoCard({
         ref={videoRef}
         autoPlay
         playsInline
-        muted={isLocal}
+        muted
         className={`h-full w-full object-cover ${!stream || !cameraOn ? "opacity-0" : "opacity-100"}`}
       />
       {(!stream || !cameraOn) && (

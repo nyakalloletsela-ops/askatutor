@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,20 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const [stripCollapsed, setStripCollapsed] = useState(false);
   const [stripHidden, setStripHidden] = useState(false);
   const rtc = useClassroomRTC({ roomId, userId, displayName });
+
+  // Persistent hidden audio sink for the remote stream so voice keeps playing
+  // even when the video tile is collapsed, hidden, or between layout modes.
+  const remoteAudioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    const el = remoteAudioRef.current;
+    if (!el) return;
+    if (rtc.remoteStream && el.srcObject !== rtc.remoteStream) {
+      el.srcObject = rtc.remoteStream;
+      el.play().catch(() => { /* autoplay may be blocked until user gesture */ });
+    } else if (!rtc.remoteStream) {
+      el.srcObject = null;
+    }
+  }, [rtc.remoteStream]);
 
   useEffect(() => {
     document.body.classList.add("overflow-hidden");
@@ -76,6 +90,8 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
 
   return (
     <div className="flex h-screen flex-col bg-muted/30 text-foreground">
+      {/* Always-mounted hidden audio: remote voice keeps playing regardless of video layout. */}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
       <ClassroomHeader
         roomId={roomId}
         tutorName={tutorName}
