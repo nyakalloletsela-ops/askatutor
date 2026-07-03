@@ -287,11 +287,41 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   };
 
   // ----- pointer handlers -----
+  const cancelCurrentDraw = () => {
+    // Abort any in-progress shape and undo the history entry that was pushed for it.
+    if (drawingRef.current) {
+      drawingRef.current = null;
+      historyRef.current.past.pop();
+    }
+    dragRef.current = null;
+    marqueeRef.current = null;
+    scheduleRender();
+  };
+
   const onPointerDown = (e: React.PointerEvent) => {
     if (textEdit) return;
     const rect = wrapperRef.current!.getBoundingClientRect();
     const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
     (e.target as Element).setPointerCapture?.(e.pointerId);
+
+    // Multi-touch → pinch/pan and abort any current single-finger draw.
+    if (e.pointerType === "touch") {
+      activeTouchesRef.current.set(e.pointerId, { x: sx, y: sy });
+      if (activeTouchesRef.current.size >= 2) {
+        cancelCurrentDraw();
+        const pts = Array.from(activeTouchesRef.current.values()).slice(0, 2);
+        const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+        const dist = Math.max(1, Math.hypot(dx, dy));
+        const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+        pinchRef.current = {
+          startDist: dist, startZ: cameraRef.current.z,
+          startMid: mid,
+          startCam: { x: cameraRef.current.x, y: cameraRef.current.y },
+        };
+        return;
+      }
+    }
+
     const pg = screenToPage(sx, sy);
 
     // Pan: middle button, space, or hand tool.
