@@ -13,9 +13,10 @@ type SignalPayload = {
   senderId: string;
   senderName?: string;
   targetId?: string;
-  kind: "offer" | "answer" | "candidate" | "leave";
+  kind: "offer" | "answer" | "candidate" | "leave" | "screen-share";
   description?: RTCSessionDescriptionInit;
   candidate?: RTCIceCandidateInit;
+  screenSharing?: boolean;
 };
 
 type PresencePayload = { userId: string; displayName: string };
