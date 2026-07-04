@@ -18,7 +18,8 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 type CalEvent = { id: string; date: string; title: string; kind: "session" | "assignment" };
 
 function CalendarPage() {
-  const { user } = useAuth();
+  const { user, isTutor, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
     d.setDate(1);
