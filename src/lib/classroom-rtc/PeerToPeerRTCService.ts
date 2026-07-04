@@ -381,6 +381,11 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
         this.remoteParticipant = null;
         this.emit("remote-stream", null);
         this.emit("remote-participant", null);
+      } else if (payload.kind === "screen-share") {
+        if (this.remoteParticipant) {
+          this.remoteParticipant = { ...this.remoteParticipant, isScreenSharing: !!payload.screenSharing };
+          this.emit("remote-participant", this.remoteParticipant);
+        }
       }
     } catch (err) {
       this.emit("error", err instanceof Error ? err.message : "Signal error");
