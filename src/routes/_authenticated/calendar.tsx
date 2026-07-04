@@ -91,6 +91,21 @@ function CalendarPage() {
         </div>
       }
     >
+      {(isTutor || isAdmin) && user && (
+        <Card className="mb-4">
+          <CardContent className="p-0">
+            <div className="border-b bg-muted/40 px-4 py-2 text-sm font-semibold">
+              Book a session for a student
+            </div>
+            <div className="p-4">
+              <ScheduleStudentCard
+                tutorId={user.id}
+                onCreated={() => queryClient.invalidateQueries({ queryKey: ["calendar"] })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardContent className="p-2">
           <div className="grid grid-cols-7 gap-px text-[10px] uppercase tracking-wider text-muted-foreground">
