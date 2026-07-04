@@ -46,25 +46,22 @@ export function ClassroomSidePanel({ open, onChange, roomId, userId, displayName
           <AIAssistantPanel />
         </TabsContent>
         <TabsContent value="lab" className="m-0 min-h-0 flex-1">
-          <LabTab />
+          <LabTab roomId={roomId} />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-function LabTab() {
+function LabTab({ roomId }: { roomId: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between gap-2 border-b px-3 py-2 text-xs">
-        <span className="font-semibold">Simulation Lab</span>
-        <a href="/labs/simulation-lab" target="_blank" rel="noreferrer" className="text-primary hover:underline">Open full screen</a>
-      </div>
-      <iframe
-        src="/labs/simulation-lab"
-        title="Simulation Lab"
-        className="min-h-0 w-full flex-1 border-0"
-        allow="fullscreen; clipboard-read; clipboard-write"
+      <LorddaLab
+        enforceLimit={false}
+        viewedSlugs={[]}
+        limit={999}
+        onOpen={() => {}}
+        roomId={roomId}
       />
     </div>
   );
