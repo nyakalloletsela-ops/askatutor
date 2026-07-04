@@ -13,9 +13,10 @@ type SignalPayload = {
   senderId: string;
   senderName?: string;
   targetId?: string;
-  kind: "offer" | "answer" | "candidate" | "leave";
+  kind: "offer" | "answer" | "candidate" | "leave" | "screen-share";
   description?: RTCSessionDescriptionInit;
   candidate?: RTCIceCandidateInit;
+  screenSharing?: boolean;
 };
 
 type PresencePayload = { userId: string; displayName: string };
@@ -167,6 +168,7 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
       this.emit("local-stream", newLocal);
     }
     this.emit("screen-share", true);
+    this.sendSignal({ kind: "screen-share", targetId: this.remoteUserId, screenSharing: true });
     screenTrack.onended = () => { void this.stopScreenShare(); };
   }
 
@@ -192,6 +194,7 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
       this.emit("local-stream", newLocal);
     }
     this.emit("screen-share", false);
+    this.sendSignal({ kind: "screen-share", targetId: this.remoteUserId, screenSharing: false });
   }
 
   async setDevices(d: Partial<Record<DeviceKind, string>>): Promise<void> {
@@ -378,6 +381,11 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
         this.remoteParticipant = null;
         this.emit("remote-stream", null);
         this.emit("remote-participant", null);
+      } else if (payload.kind === "screen-share") {
+        if (this.remoteParticipant) {
+          this.remoteParticipant = { ...this.remoteParticipant, isScreenSharing: !!payload.screenSharing };
+          this.emit("remote-participant", this.remoteParticipant);
+        }
       }
     } catch (err) {
       this.emit("error", err instanceof Error ? err.message : "Signal error");

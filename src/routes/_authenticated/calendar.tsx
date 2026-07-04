@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { PageContainer } from "@/components/dashboard/primitives";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScheduleStudentCard } from "@/components/ScheduleStudentCard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({
@@ -17,7 +18,8 @@ export const Route = createFileRoute("/_authenticated/calendar")({
 type CalEvent = { id: string; date: string; title: string; kind: "session" | "assignment" };
 
 function CalendarPage() {
-  const { user } = useAuth();
+  const { user, isTutor, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -89,6 +91,21 @@ function CalendarPage() {
         </div>
       }
     >
+      {(isTutor || isAdmin) && user && (
+        <Card className="mb-4">
+          <CardContent className="p-0">
+            <div className="border-b bg-muted/40 px-4 py-2 text-sm font-semibold">
+              Book a session for a student
+            </div>
+            <div className="p-4">
+              <ScheduleStudentCard
+                tutorId={user.id}
+                onCreated={() => queryClient.invalidateQueries({ queryKey: ["calendar"] })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardContent className="p-2">
           <div className="grid grid-cols-7 gap-px text-[10px] uppercase tracking-wider text-muted-foreground">

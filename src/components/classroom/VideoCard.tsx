@@ -61,7 +61,7 @@ export function VideoCard({
         autoPlay
         playsInline
         muted
-        className={`h-full w-full object-cover ${!stream || !cameraOn ? "opacity-0" : "opacity-100"}`}
+        className={`h-full w-full ${screenSharing ? "object-contain bg-black" : "object-cover"} ${!stream || !cameraOn ? "opacity-0" : "opacity-100"}`}
       />
       {(!stream || !cameraOn) && (
         <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-zinc-900 to-zinc-800 text-zinc-300">
