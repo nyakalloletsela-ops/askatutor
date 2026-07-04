@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ClassroomChat } from "./ClassroomChat";
 import { AIAssistantPanel } from "./AIAssistantPanel";
 import { ClassroomFiles } from "@/components/ClassroomFiles";
+import { LorddaLab } from "@/components/LorddaLab";
 import { useEffect, useState } from "react";
 
 export type SidePanelKey = "chat" | "files" | "notes" | "ai" | "lab";
