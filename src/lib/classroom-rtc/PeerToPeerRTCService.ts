@@ -168,6 +168,7 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
       this.emit("local-stream", newLocal);
     }
     this.emit("screen-share", true);
+    this.sendSignal({ kind: "screen-share", targetId: this.remoteUserId, screenSharing: true });
     screenTrack.onended = () => { void this.stopScreenShare(); };
   }
 
