@@ -86,7 +86,7 @@ function importBounds(s: Shape) {
   }
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: number, mode: "grid" | "dots") {
+function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: number, mode: "grid" | "dots" | "graph") {
   const step = 32 * cam.z;
   if (step < 6) return;
   const offX = ((cam.x % step) + step) % step;
@@ -98,11 +98,57 @@ function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: numb
     for (let x = offX; x < w; x += step) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
     for (let y = offY; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
     ctx.stroke();
-  } else {
+  } else if (mode === "dots") {
     ctx.fillStyle = "rgba(15,23,42,0.18)";
     for (let x = offX; x < w; x += step) {
       for (let y = offY; y < h; y += step) {
         ctx.fillRect(x, y, 1.5, 1.5);
+      }
+    }
+  } else {
+    // graph: minor 1-unit grid, major every 5 units, axes with tick labels.
+    const major = step * 5;
+    // Minor lines
+    ctx.strokeStyle = "rgba(15,23,42,0.05)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = offX; x < w; x += step) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
+    for (let y = offY; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
+    ctx.stroke();
+    // Major lines
+    const offMX = ((cam.x % major) + major) % major;
+    const offMY = ((cam.y % major) + major) % major;
+    ctx.strokeStyle = "rgba(15,23,42,0.15)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = offMX; x < w; x += major) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
+    for (let y = offMY; y < h; y += major) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
+    ctx.stroke();
+    // Axes at page origin
+    const ox = cam.x, oy = cam.y;
+    ctx.strokeStyle = "rgba(15,23,42,0.55)";
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    if (oy >= 0 && oy <= h) { ctx.moveTo(0, oy + 0.5); ctx.lineTo(w, oy + 0.5); }
+    if (ox >= 0 && ox <= w) { ctx.moveTo(ox + 0.5, 0); ctx.lineTo(ox + 0.5, h); }
+    ctx.stroke();
+    // Tick labels on major lines (units of 5 page-px per major since step=32*z? Use page units: 1 major = 5 grid squares of 32 page units.)
+    if (major >= 40) {
+      ctx.fillStyle = "rgba(15,23,42,0.65)";
+      ctx.font = "10px ui-sans-serif, system-ui, sans-serif";
+      ctx.textBaseline = "top";
+      const labelY = Math.min(Math.max(oy + 2, 2), h - 12);
+      for (let x = offMX; x < w; x += major) {
+        const val = Math.round((x - ox) / (32 * cam.z) / 5) * 5;
+        if (val === 0) continue;
+        ctx.fillText(String(val), x + 2, labelY);
+      }
+      ctx.textBaseline = "middle";
+      const labelX = Math.min(Math.max(ox + 4, 2), w - 20);
+      for (let y = offMY; y < h; y += major) {
+        const val = -Math.round((y - oy) / (32 * cam.z) / 5) * 5;
+        if (val === 0) continue;
+        ctx.fillText(String(val), labelX, y);
       }
     }
   }
