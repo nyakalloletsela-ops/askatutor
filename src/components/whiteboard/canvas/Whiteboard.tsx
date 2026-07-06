@@ -855,13 +855,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       <LiveCursors peers={peers} project={pageToScreen} />
 
       {/* Top-right utility bar — compact on mobile */}
-      <div className="absolute right-2 top-14 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur sm:top-2">
+      <div className="absolute right-2 top-14 z-30 flex max-w-[calc(100%-1rem)] items-center gap-1 rounded-full border bg-background/95 px-1.5 py-1 shadow-md backdrop-blur">
         <ConvertButton handle={handle} />
         {!isMobile && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" />
-            <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} title={`Grid: ${grid}`}>
-              {grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off")} title={`Grid: ${grid}`}>
+              {grid === "graph" ? <LineChart className="h-3.5 w-3.5" /> : grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </Button>
             <span className="h-4 w-px shrink-0 bg-border" />
             <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
