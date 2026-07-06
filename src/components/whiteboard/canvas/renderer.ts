@@ -7,7 +7,7 @@ export interface RenderOpts {
   width: number;
   height: number;
   dpr: number;
-  grid?: "off" | "grid" | "dots";
+  grid?: "off" | "grid" | "dots" | "graph";
   selection?: Set<string>;
   marquee?: { x: number; y: number; w: number; h: number } | null;
   /** Background colour (defaults to white). */
