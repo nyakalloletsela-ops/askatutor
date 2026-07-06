@@ -890,8 +890,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             </PopoverTrigger>
             <PopoverContent side="bottom" align="end" className="w-56 p-2">
               <div className="grid grid-cols-3 gap-1">
-                <IconTile onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : "off")} label={`Grid`}>
-                  {grid === "dots" ? <CircleDot className="h-4 w-4" /> : grid === "grid" ? <Grid3x3 className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <IconTile onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off")} label={`Grid`}>
+                  {grid === "graph" ? <LineChart className="h-4 w-4" /> : grid === "dots" ? <CircleDot className="h-4 w-4" /> : grid === "grid" ? <Grid3x3 className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </IconTile>
                 <IconTile onClick={toggleFullscreen} label="Full"><Maximize2 className="h-4 w-4" /></IconTile>
                 {isTeacher && (
