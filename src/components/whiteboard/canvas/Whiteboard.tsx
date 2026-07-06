@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   MousePointer2, Pencil, Highlighter, Eraser, Minus, ArrowUpRight,
   Square, Circle, Triangle, Type, StickyNote, ImagePlus, Hand,
-  Undo2, Redo2, Trash2, Download, Lock, Unlock, Maximize2, Grid3x3, CircleDot, Eye, LineChart,
+  Undo2, Redo2, Trash2, Download, Lock, Unlock, Maximize2, Grid3x3, CircleDot, Eye, LineChart, ZoomIn, ZoomOut,
   Copy, ChevronUp, ChevronDown, MoreHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -860,6 +860,21 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         {!isMobile && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" />
+            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); force((n) => n + 1); }} title="Zoom out">
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <button
+              type="button"
+              onClick={() => { const c = cameraRef.current; c.x = 0; c.y = 0; c.z = 1; scheduleRender(); force((n) => n + 1); }}
+              className="min-w-[3.25rem] shrink-0 rounded px-1 text-center font-mono text-[11px] tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Reset zoom & pan"
+            >
+              {Math.round(cameraRef.current.z * 100)}%
+            </button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.25); force((n) => n + 1); }} title="Zoom in">
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+            <span className="h-4 w-px shrink-0 bg-border" />
             <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off")} title={`Grid: ${grid}`}>
               {grid === "graph" ? <LineChart className="h-3.5 w-3.5" /> : grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </Button>
@@ -893,6 +908,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
                 <IconTile onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off")} label={`Grid`}>
                   {grid === "graph" ? <LineChart className="h-4 w-4" /> : grid === "dots" ? <CircleDot className="h-4 w-4" /> : grid === "grid" ? <Grid3x3 className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </IconTile>
+                <IconTile onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); force((n) => n + 1); }} label="Zoom −"><ZoomOut className="h-4 w-4" /></IconTile>
+                <IconTile onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.25); force((n) => n + 1); }} label="Zoom +"><ZoomIn className="h-4 w-4" /></IconTile>
+                <IconTile onClick={() => { const c = cameraRef.current; c.x = 0; c.y = 0; c.z = 1; scheduleRender(); force((n) => n + 1); }} label={`${Math.round(cameraRef.current.z * 100)}%`}><Eye className="h-4 w-4" /></IconTile>
                 <IconTile onClick={toggleFullscreen} label="Full"><Maximize2 className="h-4 w-4" /></IconTile>
                 {isTeacher && (
                   <IconTile onClick={() => setLockBroadcast(!locked)} label={locked ? "Locked" : "Lock"}>
