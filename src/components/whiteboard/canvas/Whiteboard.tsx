@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   MousePointer2, Pencil, Highlighter, Eraser, Minus, ArrowUpRight,
   Square, Circle, Triangle, Type, StickyNote, ImagePlus, Hand,
-  Undo2, Redo2, Trash2, Download, Lock, Unlock, Maximize2, Grid3x3, CircleDot, Eye,
+  Undo2, Redo2, Trash2, Download, Lock, Unlock, Maximize2, Grid3x3, CircleDot, Eye, LineChart,
   Copy, ChevronUp, ChevronDown, MoreHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
