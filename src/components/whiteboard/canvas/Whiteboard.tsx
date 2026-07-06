@@ -908,6 +908,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
                 <IconTile onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off")} label={`Grid`}>
                   {grid === "graph" ? <LineChart className="h-4 w-4" /> : grid === "dots" ? <CircleDot className="h-4 w-4" /> : grid === "grid" ? <Grid3x3 className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </IconTile>
+                <IconTile onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); force((n) => n + 1); }} label="Zoom −"><ZoomOut className="h-4 w-4" /></IconTile>
+                <IconTile onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.25); force((n) => n + 1); }} label="Zoom +"><ZoomIn className="h-4 w-4" /></IconTile>
+                <IconTile onClick={() => { const c = cameraRef.current; c.x = 0; c.y = 0; c.z = 1; scheduleRender(); force((n) => n + 1); }} label={`${Math.round(cameraRef.current.z * 100)}%`}><Eye className="h-4 w-4" /></IconTile>
                 <IconTile onClick={toggleFullscreen} label="Full"><Maximize2 className="h-4 w-4" /></IconTile>
                 {isTeacher && (
                   <IconTile onClick={() => setLockBroadcast(!locked)} label={locked ? "Locked" : "Lock"}>
