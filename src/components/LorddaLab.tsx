@@ -34,13 +34,16 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
   const [levelFilter, setLevelFilter] = useState<LabLevel | "All">("All");
   const [query, setQuery] = useState("");
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  const remoteApplyRef = useRef(false);
+  const subscribedRef = useRef(false);
+  const selectedRef = useRef<LabModule | null>(selected);
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
 
   // Sync the active experiment between classroom participants.
   useEffect(() => {
     if (!roomId) return;
+    subscribedRef.current = false;
     const channel = supabase.channel(`lab:${roomId}`, {
-      config: { broadcast: { self: false } },
+      config: { broadcast: { self: false, ack: false } },
     });
     channel
       .on("broadcast", { event: "select" }, ({ payload }) => {
@@ -48,13 +51,33 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
         if (!slug) return;
         const m = LAB_MODULES.find((x) => x.slug === slug);
         if (!m) return;
-        remoteApplyRef.current = true;
         setSelected(m);
         setKey((k) => k + 1);
       })
-      .subscribe();
+      .on("broadcast", { event: "state-request" }, () => {
+        // Reply with the current selection so late joiners land on the same experiment.
+        const cur = selectedRef.current;
+        if (!cur || !subscribedRef.current) return;
+        void channel.send({
+          type: "broadcast",
+          event: "select",
+          payload: { slug: cur.slug },
+        });
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          subscribedRef.current = true;
+          // Ask any existing peer for the current selection.
+          void channel.send({
+            type: "broadcast",
+            event: "state-request",
+            payload: {},
+          });
+        }
+      });
     channelRef.current = channel;
     return () => {
+      subscribedRef.current = false;
       channel.unsubscribe();
       channelRef.current = null;
     };
@@ -91,15 +114,15 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
     setSelected(m);
     setKey((k) => k + 1);
     onOpen(m.slug);
-    if (roomId && !remoteApplyRef.current) {
-      channelRef.current?.send({
+    if (roomId && channelRef.current && subscribedRef.current) {
+      void channelRef.current.send({
         type: "broadcast",
         event: "select",
         payload: { slug: m.slug },
       });
     }
-    remoteApplyRef.current = false;
   };
+
 
   return (
     <div className="flex h-full flex-col">
