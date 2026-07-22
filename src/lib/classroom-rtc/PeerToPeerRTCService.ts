@@ -217,7 +217,9 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
 
   async setDevices(d: Partial<Record<DeviceKind, string>>): Promise<void> {
     this.deviceIds = { ...this.deviceIds, ...d };
+    if (d.speaker) this.emit("speaker-change", d.speaker);
     if (!this.localStream || this.screenStream) return; // skip while sharing screen
+    if (!d.camera && !d.mic) return; // speaker-only change doesn't need renegotiation
     const stream = await navigator.mediaDevices.getUserMedia({
       video: this.videoConstraints(),
       audio: this.audioConstraints(),
