@@ -195,7 +195,7 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     this.screenStream.getTracks().forEach((t) => t.stop());
     this.screenStream = null;
     const cam = await navigator.mediaDevices.getUserMedia({
-      video: this.deviceIds.camera ? { deviceId: { exact: this.deviceIds.camera } } : true,
+      video: this.videoConstraints(),
       audio: false,
     });
     const newCam = cam.getVideoTracks()[0];
