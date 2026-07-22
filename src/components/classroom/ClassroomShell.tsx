@@ -47,6 +47,15 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
     }
   }, [rtc.remoteStream]);
 
+  // Apply speaker device changes to the hidden audio sink.
+  useEffect(() => {
+    const off = rtc.service.on("speaker-change", (deviceId) => {
+      const el = remoteAudioRef.current as (HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> }) | null;
+      if (el?.setSinkId) el.setSinkId(deviceId).catch(() => { /* unsupported */ });
+    });
+    return off;
+  }, [rtc.service]);
+
   useEffect(() => {
     document.body.classList.add("overflow-hidden");
     return () => document.body.classList.remove("overflow-hidden");

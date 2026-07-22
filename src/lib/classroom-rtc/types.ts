@@ -35,6 +35,7 @@ export type RTCEventMap = {
   "mic-state": boolean;
   "camera-state": boolean;
   "screen-share": boolean;
+  "speaker-change": string;
   "error": string;
   "joined": void;
 };

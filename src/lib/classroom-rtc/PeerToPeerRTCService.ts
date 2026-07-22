@@ -91,16 +91,34 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
   }
 
   // ---------- public api ----------
+  private audioConstraints(): MediaTrackConstraints {
+    const base: MediaTrackConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      channelCount: 1,
+      sampleRate: 48000,
+    };
+    if (this.deviceIds.mic) base.deviceId = { exact: this.deviceIds.mic };
+    return base;
+  }
+
+  private videoConstraints(): MediaTrackConstraints | boolean {
+    if (this.deviceIds.camera) return { deviceId: { exact: this.deviceIds.camera } };
+    return true;
+  }
+
   async join(): Promise<void> {
     if (this.joined) return;
     this.joined = true;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: this.deviceIds.camera ? { deviceId: { exact: this.deviceIds.camera } } : true,
-        audio: this.deviceIds.mic ? { deviceId: { exact: this.deviceIds.mic } } : true,
+        video: this.videoConstraints(),
+        audio: this.audioConstraints(),
       });
       this.localStream = stream;
       this.cameraTrack = stream.getVideoTracks()[0] ?? null;
+      // Prefer Opus stereo/DTX-friendly settings on the audio sender post-connect.
       this.emit("local-stream", stream);
       this.emit("mic-state", true);
       this.emit("camera-state", true);
@@ -177,7 +195,7 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     this.screenStream.getTracks().forEach((t) => t.stop());
     this.screenStream = null;
     const cam = await navigator.mediaDevices.getUserMedia({
-      video: this.deviceIds.camera ? { deviceId: { exact: this.deviceIds.camera } } : true,
+      video: this.videoConstraints(),
       audio: false,
     });
     const newCam = cam.getVideoTracks()[0];
@@ -199,10 +217,12 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
 
   async setDevices(d: Partial<Record<DeviceKind, string>>): Promise<void> {
     this.deviceIds = { ...this.deviceIds, ...d };
+    if (d.speaker) this.emit("speaker-change", d.speaker);
     if (!this.localStream || this.screenStream) return; // skip while sharing screen
+    if (!d.camera && !d.mic) return; // speaker-only change doesn't need renegotiation
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: this.deviceIds.camera ? { deviceId: { exact: this.deviceIds.camera } } : true,
-      audio: this.deviceIds.mic ? { deviceId: { exact: this.deviceIds.mic } } : true,
+      video: this.videoConstraints(),
+      audio: this.audioConstraints(),
     });
     const old = this.localStream;
     this.localStream = stream;
