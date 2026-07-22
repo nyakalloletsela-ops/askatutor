@@ -219,8 +219,8 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     this.deviceIds = { ...this.deviceIds, ...d };
     if (!this.localStream || this.screenStream) return; // skip while sharing screen
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: this.deviceIds.camera ? { deviceId: { exact: this.deviceIds.camera } } : true,
-      audio: this.deviceIds.mic ? { deviceId: { exact: this.deviceIds.mic } } : true,
+      video: this.videoConstraints(),
+      audio: this.audioConstraints(),
     });
     const old = this.localStream;
     this.localStream = stream;
