@@ -91,16 +91,34 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
   }
 
   // ---------- public api ----------
+  private audioConstraints(): MediaTrackConstraints {
+    const base: MediaTrackConstraints = {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      channelCount: 1,
+      sampleRate: 48000,
+    };
+    if (this.deviceIds.mic) base.deviceId = { exact: this.deviceIds.mic };
+    return base;
+  }
+
+  private videoConstraints(): MediaTrackConstraints | boolean {
+    if (this.deviceIds.camera) return { deviceId: { exact: this.deviceIds.camera } };
+    return true;
+  }
+
   async join(): Promise<void> {
     if (this.joined) return;
     this.joined = true;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: this.deviceIds.camera ? { deviceId: { exact: this.deviceIds.camera } } : true,
-        audio: this.deviceIds.mic ? { deviceId: { exact: this.deviceIds.mic } } : true,
+        video: this.videoConstraints(),
+        audio: this.audioConstraints(),
       });
       this.localStream = stream;
       this.cameraTrack = stream.getVideoTracks()[0] ?? null;
+      // Prefer Opus stereo/DTX-friendly settings on the audio sender post-connect.
       this.emit("local-stream", stream);
       this.emit("mic-state", true);
       this.emit("camera-state", true);
