@@ -84,6 +84,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const [filled, setFilled] = useState<boolean>(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [grid, setGrid] = useState<"off" | "grid" | "dots" | "graph">("off");
+  const [graphAxes, setGraphAxes] = useState<{ xMin: number; xMax: number; yMin: number; yMax: number }>({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
   const [locked, setLocked] = useState<boolean>(false);
   const [fullscreen, setFullscreen] = useState<boolean>(false);
   const [textEdit, setTextEdit] = useState<{ shapeId: string; screenX: number; screenY: number; w: number; h: number; value: string } | null>(null);
