@@ -36,48 +36,89 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const subscribedRef = useRef(false);
   const selectedRef = useRef<LabModule | null>(selected);
+  const lastAppliedSlugRef = useRef<string | null>(selected?.slug ?? null);
+  const pendingBroadcastRef = useRef<string | null>(null);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
+
+  const applyRemoteSlug = (slug: string, ts?: number) => {
+    if (!slug || lastAppliedSlugRef.current === slug) return;
+    const m = LAB_MODULES.find((x) => x.slug === slug);
+    if (!m) return;
+    lastAppliedSlugRef.current = slug;
+    setSelected(m);
+    setKey((k) => k + 1);
+    void ts;
+  };
 
   // Sync the active experiment between classroom participants.
   useEffect(() => {
     if (!roomId) return;
     subscribedRef.current = false;
     const channel = supabase.channel(`lab:${roomId}`, {
-      config: { broadcast: { self: false, ack: false } },
+      config: {
+        broadcast: { self: false, ack: false },
+        presence: { key: `${Math.random().toString(36).slice(2)}-${Date.now()}` },
+      },
     });
+    let latestTs = 0;
     channel
       .on("broadcast", { event: "select" }, ({ payload }) => {
-        const slug = (payload as { slug?: string })?.slug;
-        if (!slug) return;
-        const m = LAB_MODULES.find((x) => x.slug === slug);
-        if (!m) return;
-        setSelected(m);
-        setKey((k) => k + 1);
+        const p = payload as { slug?: string; ts?: number } | undefined;
+        if (!p?.slug) return;
+        if (p.ts && p.ts < latestTs) return;
+        if (p.ts) latestTs = p.ts;
+        applyRemoteSlug(p.slug, p.ts);
       })
       .on("broadcast", { event: "state-request" }, () => {
-        // Reply with the current selection so late joiners land on the same experiment.
         const cur = selectedRef.current;
         if (!cur || !subscribedRef.current) return;
         void channel.send({
           type: "broadcast",
           event: "select",
-          payload: { slug: cur.slug },
+          payload: { slug: cur.slug, ts: Date.now() },
         });
       })
-      .subscribe((status) => {
+      .on("presence", { event: "sync" }, () => {
+        // Pick the presence entry with the highest ts and adopt its slug.
+        const state = channel.presenceState() as Record<string, Array<{ slug?: string; ts?: number }>>;
+        let bestSlug: string | null = null;
+        let bestTs = latestTs;
+        for (const entries of Object.values(state)) {
+          for (const e of entries) {
+            if (e?.slug && typeof e.ts === "number" && e.ts > bestTs) {
+              bestTs = e.ts; bestSlug = e.slug;
+            }
+          }
+        }
+        if (bestSlug) {
+          latestTs = bestTs;
+          applyRemoteSlug(bestSlug, bestTs);
+        }
+      })
+      .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
           subscribedRef.current = true;
+          const cur = selectedRef.current;
+          // Publish our current selection into presence so late peers see it.
+          await channel.track({ slug: cur?.slug ?? null, ts: Date.now() });
           // Ask any existing peer for the current selection.
-          void channel.send({
-            type: "broadcast",
-            event: "state-request",
-            payload: {},
-          });
+          void channel.send({ type: "broadcast", event: "state-request", payload: {} });
+          // Flush a pending local selection that fired before we were SUBSCRIBED.
+          if (pendingBroadcastRef.current) {
+            const slug = pendingBroadcastRef.current;
+            pendingBroadcastRef.current = null;
+            void channel.send({
+              type: "broadcast",
+              event: "select",
+              payload: { slug, ts: Date.now() },
+            });
+          }
         }
       });
     channelRef.current = channel;
     return () => {
       subscribedRef.current = false;
+      void channel.untrack();
       channel.unsubscribe();
       channelRef.current = null;
     };
@@ -111,15 +152,20 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
       setSelected(m);
       return;
     }
+    lastAppliedSlugRef.current = m.slug;
     setSelected(m);
     setKey((k) => k + 1);
     onOpen(m.slug);
-    if (roomId && channelRef.current && subscribedRef.current) {
-      void channelRef.current.send({
-        type: "broadcast",
-        event: "select",
-        payload: { slug: m.slug },
-      });
+    if (roomId) {
+      const ch = channelRef.current;
+      const ts = Date.now();
+      if (ch && subscribedRef.current) {
+        void ch.send({ type: "broadcast", event: "select", payload: { slug: m.slug, ts } });
+        void ch.track({ slug: m.slug, ts });
+      } else {
+        // Channel not yet subscribed — queue for flush in the SUBSCRIBED handler.
+        pendingBroadcastRef.current = m.slug;
+      }
     }
   };
 
