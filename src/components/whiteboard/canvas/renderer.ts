@@ -1,5 +1,12 @@
 import type { Camera, Shape } from "./engine";
 
+export interface GraphAxes {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+}
+
 export interface RenderOpts {
   ctx: CanvasRenderingContext2D;
   shapes: Shape[];
@@ -14,16 +21,18 @@ export interface RenderOpts {
   bg?: string;
   /** Cached <img> elements for image shapes, keyed by src. */
   imageCache?: Map<string, HTMLImageElement>;
+  /** When grid is "graph", use these axis ranges (viewport-fitted, independent of camera zoom). */
+  graphAxes?: GraphAxes;
 }
 
 export function render(opts: RenderOpts) {
-  const { ctx, shapes, camera, width, height, dpr, grid = "off", selection, marquee, bg = "#ffffff", imageCache } = opts;
+  const { ctx, shapes, camera, width, height, dpr, grid = "off", selection, marquee, bg = "#ffffff", imageCache, graphAxes } = opts;
   // Reset transform
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  if (grid !== "off") drawGrid(ctx, camera, width, height, grid);
+  if (grid !== "off") drawGrid(ctx, camera, width, height, grid, graphAxes);
 
   ctx.save();
   // Camera: translate then scale
@@ -86,7 +95,11 @@ function importBounds(s: Shape) {
   }
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: number, mode: "grid" | "dots" | "graph") {
+function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: number, mode: "grid" | "dots" | "graph", axes?: GraphAxes) {
+  if (mode === "graph") {
+    drawGraphAxes(ctx, w, h, axes ?? { xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+    return;
+  }
   const step = 32 * cam.z;
   if (step < 6) return;
   const offX = ((cam.x % step) + step) % step;
@@ -98,59 +111,92 @@ function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: numb
     for (let x = offX; x < w; x += step) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
     for (let y = offY; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
     ctx.stroke();
-  } else if (mode === "dots") {
+  } else {
     ctx.fillStyle = "rgba(15,23,42,0.18)";
     for (let x = offX; x < w; x += step) {
       for (let y = offY; y < h; y += step) {
         ctx.fillRect(x, y, 1.5, 1.5);
       }
     }
-  } else {
-    // graph: minor 1-unit grid, major every 5 units, axes with tick labels.
-    const major = step * 5;
-    // Minor lines
-    ctx.strokeStyle = "rgba(15,23,42,0.05)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = offX; x < w; x += step) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
-    for (let y = offY; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
-    ctx.stroke();
-    // Major lines
-    const offMX = ((cam.x % major) + major) % major;
-    const offMY = ((cam.y % major) + major) % major;
-    ctx.strokeStyle = "rgba(15,23,42,0.15)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = offMX; x < w; x += major) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
-    for (let y = offMY; y < h; y += major) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
-    ctx.stroke();
-    // Axes at page origin
-    const ox = cam.x, oy = cam.y;
-    ctx.strokeStyle = "rgba(15,23,42,0.55)";
-    ctx.lineWidth = 1.25;
-    ctx.beginPath();
-    if (oy >= 0 && oy <= h) { ctx.moveTo(0, oy + 0.5); ctx.lineTo(w, oy + 0.5); }
-    if (ox >= 0 && ox <= w) { ctx.moveTo(ox + 0.5, 0); ctx.lineTo(ox + 0.5, h); }
-    ctx.stroke();
-    // Tick labels on major lines (units of 5 page-px per major since step=32*z? Use page units: 1 major = 5 grid squares of 32 page units.)
-    if (major >= 40) {
-      ctx.fillStyle = "rgba(15,23,42,0.65)";
-      ctx.font = "10px ui-sans-serif, system-ui, sans-serif";
-      ctx.textBaseline = "top";
-      const labelY = Math.min(Math.max(oy + 2, 2), h - 12);
-      for (let x = offMX; x < w; x += major) {
-        const val = Math.round((x - ox) / (32 * cam.z) / 5) * 5;
-        if (val === 0) continue;
-        ctx.fillText(String(val), x + 2, labelY);
-      }
-      ctx.textBaseline = "middle";
-      const labelX = Math.min(Math.max(ox + 4, 2), w - 20);
-      for (let y = offMY; y < h; y += major) {
-        const val = -Math.round((y - oy) / (32 * cam.z) / 5) * 5;
-        if (val === 0) continue;
-        ctx.fillText(String(val), labelX, y);
-      }
-    }
+  }
+}
+
+function niceStep(range: number, targetDivisions = 10): number {
+  if (!isFinite(range) || range <= 0) return 1;
+  const rough = range / Math.max(1, targetDivisions);
+  const pow = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / pow;
+  const nice = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10;
+  return nice * pow;
+}
+
+function drawGraphAxes(ctx: CanvasRenderingContext2D, w: number, h: number, ax: GraphAxes) {
+  let { xMin, xMax, yMin, yMax } = ax;
+  if (!(xMax > xMin)) xMax = xMin + 1;
+  if (!(yMax > yMin)) yMax = yMin + 1;
+  const uX = w / (xMax - xMin);
+  const uY = h / (yMax - yMin);
+  const sx = (x: number) => (x - xMin) * uX;
+  const sy = (y: number) => h - (y - yMin) * uY;
+
+  const stepX = niceStep(xMax - xMin);
+  const stepY = niceStep(yMax - yMin);
+  const minorX = stepX / 5;
+  const minorY = stepY / 5;
+
+  // Minor lines
+  ctx.strokeStyle = "rgba(15,23,42,0.05)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = Math.ceil(xMin / minorX) * minorX; x <= xMax + 1e-9; x += minorX) {
+    const px = sx(x); ctx.moveTo(px + 0.5, 0); ctx.lineTo(px + 0.5, h);
+  }
+  for (let y = Math.ceil(yMin / minorY) * minorY; y <= yMax + 1e-9; y += minorY) {
+    const py = sy(y); ctx.moveTo(0, py + 0.5); ctx.lineTo(w, py + 0.5);
+  }
+  ctx.stroke();
+
+  // Major lines
+  ctx.strokeStyle = "rgba(15,23,42,0.15)";
+  ctx.beginPath();
+  for (let x = Math.ceil(xMin / stepX) * stepX; x <= xMax + 1e-9; x += stepX) {
+    const px = sx(x); ctx.moveTo(px + 0.5, 0); ctx.lineTo(px + 0.5, h);
+  }
+  for (let y = Math.ceil(yMin / stepY) * stepY; y <= yMax + 1e-9; y += stepY) {
+    const py = sy(y); ctx.moveTo(0, py + 0.5); ctx.lineTo(w, py + 0.5);
+  }
+  ctx.stroke();
+
+  // Axes
+  ctx.strokeStyle = "rgba(15,23,42,0.6)";
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  const ay = sy(0);
+  if (ay >= 0 && ay <= h) { ctx.moveTo(0, ay + 0.5); ctx.lineTo(w, ay + 0.5); }
+  const axc = sx(0);
+  if (axc >= 0 && axc <= w) { ctx.moveTo(axc + 0.5, 0); ctx.lineTo(axc + 0.5, h); }
+  ctx.stroke();
+
+  // Tick labels
+  ctx.fillStyle = "rgba(15,23,42,0.7)";
+  ctx.font = "10px ui-sans-serif, system-ui, sans-serif";
+  const decimals = Math.max(0, -Math.floor(Math.log10(stepX)) + 0);
+  const decY = Math.max(0, -Math.floor(Math.log10(stepY)) + 0);
+  const fmt = (v: number, d: number) => {
+    if (Math.abs(v) < 1e-9) return "0";
+    return d > 0 ? v.toFixed(Math.min(4, d)) : String(Math.round(v));
+  };
+  ctx.textBaseline = "top";
+  const labelY = Math.min(Math.max(ay + 2, 2), h - 12);
+  for (let x = Math.ceil(xMin / stepX) * stepX; x <= xMax + 1e-9; x += stepX) {
+    if (Math.abs(x) < 1e-9) continue;
+    ctx.fillText(fmt(x, decimals), sx(x) + 2, labelY);
+  }
+  ctx.textBaseline = "middle";
+  const labelX = Math.min(Math.max(axc + 4, 2), w - 32);
+  for (let y = Math.ceil(yMin / stepY) * stepY; y <= yMax + 1e-9; y += stepY) {
+    if (Math.abs(y) < 1e-9) continue;
+    ctx.fillText(fmt(y, decY), labelX, sy(y));
   }
 }
 
