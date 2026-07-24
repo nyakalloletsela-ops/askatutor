@@ -205,7 +205,7 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     return () => ro.disconnect();
   }, [scheduleRender]);
 
-  useEffect(() => { scheduleRender(); }, [grid, selection, scheduleRender]);
+  useEffect(() => { scheduleRender(); }, [grid, selection, graphAxes, scheduleRender]);
 
   // ----- coordinate helpers -----
   const screenToPage = (sx: number, sy: number) => {
