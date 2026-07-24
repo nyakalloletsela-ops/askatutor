@@ -32,7 +32,7 @@ export function render(opts: RenderOpts) {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  if (grid !== "off") drawGrid(ctx, camera, width, height, grid);
+  if (grid !== "off") drawGrid(ctx, camera, width, height, grid, graphAxes);
 
   ctx.save();
   // Camera: translate then scale
