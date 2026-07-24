@@ -1,5 +1,12 @@
 import type { Camera, Shape } from "./engine";
 
+export interface GraphAxes {
+  xMin: number;
+  xMax: number;
+  yMin: number;
+  yMax: number;
+}
+
 export interface RenderOpts {
   ctx: CanvasRenderingContext2D;
   shapes: Shape[];
@@ -14,10 +21,12 @@ export interface RenderOpts {
   bg?: string;
   /** Cached <img> elements for image shapes, keyed by src. */
   imageCache?: Map<string, HTMLImageElement>;
+  /** When grid is "graph", use these axis ranges (viewport-fitted, independent of camera zoom). */
+  graphAxes?: GraphAxes;
 }
 
 export function render(opts: RenderOpts) {
-  const { ctx, shapes, camera, width, height, dpr, grid = "off", selection, marquee, bg = "#ffffff", imageCache } = opts;
+  const { ctx, shapes, camera, width, height, dpr, grid = "off", selection, marquee, bg = "#ffffff", imageCache, graphAxes } = opts;
   // Reset transform
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = bg;
