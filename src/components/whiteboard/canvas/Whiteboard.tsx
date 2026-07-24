@@ -182,9 +182,10 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         ctx, shapes: shapesRef.current.concat(drawingRef.current ? [drawingRef.current] : []),
         camera: cameraRef.current, width: sizeRef.current.w, height: sizeRef.current.h,
         dpr: dprRef.current, grid, selection, marquee: marqueeRef.current, imageCache: imageCacheRef.current,
+        graphAxes,
       });
     });
-  }, [grid, selection]);
+  }, [grid, selection, graphAxes]);
 
   useEffect(() => {
     const wrap = wrapperRef.current!;
