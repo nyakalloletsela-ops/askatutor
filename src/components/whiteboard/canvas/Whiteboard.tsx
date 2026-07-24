@@ -931,6 +931,55 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         )}
       </div>
 
+      {/* Graph axes editor — visible only when the graph grid is on */}
+      {grid === "graph" && (
+        <div className="pointer-events-auto absolute bottom-3 right-3 z-30 flex flex-col gap-1.5 rounded-xl border bg-background/95 p-2 shadow-md backdrop-blur">
+          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Graph axes</div>
+          <div className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-1.5">
+            <label className="text-[11px] text-muted-foreground">x min</label>
+            <input type="number" value={graphAxes.xMin}
+              onChange={(e) => setGraphAxes((a) => ({ ...a, xMin: Number(e.target.value) }))}
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+            <label className="text-[11px] text-muted-foreground">x max</label>
+            <input type="number" value={graphAxes.xMax}
+              onChange={(e) => setGraphAxes((a) => ({ ...a, xMax: Number(e.target.value) }))}
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+            <label className="text-[11px] text-muted-foreground">y min</label>
+            <input type="number" value={graphAxes.yMin}
+              onChange={(e) => setGraphAxes((a) => ({ ...a, yMin: Number(e.target.value) }))}
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+            <label className="text-[11px] text-muted-foreground">y max</label>
+            <input type="number" value={graphAxes.yMax}
+              onChange={(e) => setGraphAxes((a) => ({ ...a, yMax: Number(e.target.value) }))}
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+          </div>
+          <div className="flex items-center justify-between gap-1 pt-0.5">
+            <button type="button"
+              onClick={() => setGraphAxes({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 })}
+              className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Reset axes">Reset</button>
+            <div className="flex gap-0.5">
+              <button type="button"
+                onClick={() => setGraphAxes((a) => {
+                  const cx = (a.xMin + a.xMax) / 2, cy = (a.yMin + a.yMax) / 2;
+                  const rx = (a.xMax - a.xMin) / 2 * 0.8, ry = (a.yMax - a.yMin) / 2 * 0.8;
+                  return { xMin: cx - rx, xMax: cx + rx, yMin: cy - ry, yMax: cy + ry };
+                })}
+                className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Zoom in axes">−</button>
+              <button type="button"
+                onClick={() => setGraphAxes((a) => {
+                  const cx = (a.xMin + a.xMax) / 2, cy = (a.yMin + a.yMax) / 2;
+                  const rx = (a.xMax - a.xMin) / 2 * 1.25, ry = (a.yMax - a.yMin) / 2 * 1.25;
+                  return { xMin: cx - rx, xMax: cx + rx, yMin: cy - ry, yMax: cy + ry };
+                })}
+                className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Zoom out axes">+</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main toolbar — essentials inline, rest grouped behind "More" on mobile */}
       <div className="pointer-events-auto absolute left-1/2 top-2 z-30 flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-1 rounded-2xl border bg-background/95 px-2 py-1.5 shadow-lg backdrop-blur">
         {isMobile ? (
