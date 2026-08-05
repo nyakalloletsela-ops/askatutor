@@ -47,8 +47,11 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
     lastAppliedSlugRef.current = slug;
     setSelected(m);
     setKey((k) => k + 1);
+    // Mirror remote selections into the usage log (never counts against a quota).
+    if (!enforceLimit) onOpen(slug);
     void ts;
   };
+
 
   // Sync the active experiment between classroom participants.
   useEffect(() => {
