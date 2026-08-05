@@ -1,11 +1,11 @@
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop, FlaskConical, Atom } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop, FlaskConical, Atom, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { LayoutMode } from "./VideoLayout";
+import type { StageKey } from "./ClassroomStage";
 
-export type PanelKey = "chat" | "files" | "notes" | "ai" | "lab" | null;
+export type PanelKey = "chat" | "files" | "notes" | "ai" | null;
 
 interface Props {
   micOn: boolean;
@@ -13,6 +13,8 @@ interface Props {
   screenSharing: boolean;
   panel: PanelKey;
   layoutMode: LayoutMode;
+  stage: StageKey;
+  onSetStage: (stage: StageKey) => void;
   onSetLayout: (mode: LayoutMode) => void;
   onToggleMic: () => void;
   onToggleCamera: () => void;
@@ -24,10 +26,11 @@ interface Props {
 
 export function ActionBar(props: Props) {
   const {
-    micOn, cameraOn, screenSharing, panel, layoutMode,
+    micOn, cameraOn, screenSharing, panel, layoutMode, stage, onSetStage,
     onSetLayout, onToggleMic, onToggleCamera, onToggleScreen, onTogglePanel, onOpenSettings, onLeave,
   } = props;
   const isMobile = useIsMobile();
+
 
   // ---- Mobile: essentials inline (mic / camera / chat / more / leave) ----
   if (isMobile) {
