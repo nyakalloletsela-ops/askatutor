@@ -189,6 +189,8 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
               screenSharing={rtc.screenSharing}
               panel={panel}
               layoutMode={layoutMode}
+              stage={stage}
+              onSetStage={setStage}
               onSetLayout={setLayoutMode}
               onToggleMic={() => void rtc.service.toggleMic()}
               onToggleCamera={() => void rtc.service.toggleCamera()}
@@ -211,6 +213,7 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
               roomId={roomId}
               userId={userId}
               displayName={displayName}
+              usedLabs={usedLabs}
             />
           </aside>
         )}
@@ -230,6 +233,7 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
                 roomId={roomId}
                 userId={userId}
                 displayName={displayName}
+                usedLabs={usedLabs}
               />
             )}
           </SheetContent>
