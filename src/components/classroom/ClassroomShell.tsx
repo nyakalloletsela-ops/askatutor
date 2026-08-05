@@ -31,7 +31,15 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const isMobile = useIsMobile();
   const [panel, setPanel] = useState<PanelKey>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [stage, setStage] = useState<StageKey>("whiteboard");
+  const [usedLabs, setUsedLabs] = useState<UsedLab[]>([]);
+  const onLabOpen = (slug: string) => {
+    const m = LAB_MODULES.find((x) => x.slug === slug);
+    const entry: UsedLab = { name: m?.name ?? slug, url: phetUrl(slug) };
+    setUsedLabs((cur) => (cur.some((l) => l.url === entry.url) ? cur : [...cur, entry]));
+  };
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(isMobile ? "TOP_STRIP" : "DOCKED");
+
   const [stripCollapsed, setStripCollapsed] = useState(false);
   const [stripHidden, setStripHidden] = useState(false);
   const rtc = useClassroomRTC({ roomId, userId, displayName });
