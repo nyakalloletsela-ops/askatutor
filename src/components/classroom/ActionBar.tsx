@@ -1,11 +1,11 @@
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop, FlaskConical, Atom } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorOff, MessageSquare, FileText, StickyNote, Sparkles, PhoneOff, Settings, PanelLeft, Focus, MoreHorizontal, LayoutPanelTop, FlaskConical, Atom, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { LayoutMode } from "./VideoLayout";
+import type { StageKey } from "./ClassroomStage";
 
-export type PanelKey = "chat" | "files" | "notes" | "ai" | "lab" | null;
+export type PanelKey = "chat" | "files" | "notes" | "ai" | null;
 
 interface Props {
   micOn: boolean;
@@ -13,6 +13,8 @@ interface Props {
   screenSharing: boolean;
   panel: PanelKey;
   layoutMode: LayoutMode;
+  stage: StageKey;
+  onSetStage: (stage: StageKey) => void;
   onSetLayout: (mode: LayoutMode) => void;
   onToggleMic: () => void;
   onToggleCamera: () => void;
@@ -24,10 +26,11 @@ interface Props {
 
 export function ActionBar(props: Props) {
   const {
-    micOn, cameraOn, screenSharing, panel, layoutMode,
+    micOn, cameraOn, screenSharing, panel, layoutMode, stage, onSetStage,
     onSetLayout, onToggleMic, onToggleCamera, onToggleScreen, onTogglePanel, onOpenSettings, onLeave,
   } = props;
   const isMobile = useIsMobile();
+
 
   // ---- Mobile: essentials inline (mic / camera / chat / more / leave) ----
   if (isMobile) {
@@ -63,10 +66,12 @@ export function ActionBar(props: Props) {
               <PillButton active={panel === "notes"} onClick={() => onTogglePanel("notes")} icon={<StickyNote className="h-3.5 w-3.5" />} label="Notes" />
               <PillButton active={panel === "ai"} onClick={() => onTogglePanel("ai")} icon={<Sparkles className="h-3.5 w-3.5" />} label="AI Tutor" />
             </Group>
-            <Group title="Labs">
-              <LinkPill to="/labs" icon={<FlaskConical className="h-3.5 w-3.5" />} label="PhET Lab" />
-              <LinkPill to="/labs/simulation-lab" icon={<Atom className="h-3.5 w-3.5" />} label="Simulation Lab" />
+            <Group title="Main stage">
+              <PillButton active={stage === "whiteboard"} onClick={() => onSetStage("whiteboard")} icon={<PenTool className="h-3.5 w-3.5" />} label="Whiteboard" />
+              <PillButton active={stage === "phet"} onClick={() => onSetStage("phet")} icon={<FlaskConical className="h-3.5 w-3.5" />} label="PhET Lab" />
+              <PillButton active={stage === "sim"} onClick={() => onSetStage("sim")} icon={<Atom className="h-3.5 w-3.5" />} label="Simulation Lab" />
             </Group>
+
             <Group title="System">
               <PillButton onClick={onOpenSettings} icon={<Settings className="h-3.5 w-3.5" />} label="Devices" />
             </Group>
@@ -122,12 +127,16 @@ export function ActionBar(props: Props) {
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
-      <Link to="/labs" target="_blank" rel="noreferrer" title="PhET Lab" aria-label="PhET Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+      <CircleButton active={stage === "whiteboard"} onClick={() => onSetStage("whiteboard")} title="Whiteboard">
+        <PenTool className="h-4 w-4" />
+      </CircleButton>
+      <CircleButton active={stage === "phet"} onClick={() => onSetStage("phet")} title="PhET Lab">
         <FlaskConical className="h-4 w-4" />
-      </Link>
-      <Link to="/labs/simulation-lab" target="_blank" rel="noreferrer" title="Simulation Lab" aria-label="Simulation Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+      </CircleButton>
+      <CircleButton active={stage === "sim"} onClick={() => onSetStage("sim")} title="Simulation Lab">
         <Atom className="h-4 w-4" />
-      </Link>
+      </CircleButton>
+
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
@@ -185,16 +194,3 @@ function PillButton({ active, onClick, icon, label }: { active?: boolean; onClic
   );
 }
 
-function LinkPill({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) {
-  return (
-    <Link
-      to={to}
-      target="_blank"
-      rel="noreferrer"
-      className="flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs text-white transition hover:bg-white/20"
-    >
-      {icon}
-      {label}
-    </Link>
-  );
-}

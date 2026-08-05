@@ -6,7 +6,10 @@ import { Video, Loader2, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useClassroomRTC } from "@/hooks/useClassroomRTC";
-import { Whiteboard } from "@/components/whiteboard";
+import { ClassroomStage, type StageKey } from "./ClassroomStage";
+import { LAB_MODULES, phetUrl } from "@/lib/lab-modules";
+import type { UsedLab } from "./SidePanel";
+
 import { ClassroomHeader } from "./ClassroomHeader";
 import { AnimatedVideoLayout, VideoLayout, type LayoutMode, type VideoSlot } from "./VideoLayout";
 import { ActionBar, type PanelKey } from "./ActionBar";
@@ -28,7 +31,15 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   const isMobile = useIsMobile();
   const [panel, setPanel] = useState<PanelKey>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [stage, setStage] = useState<StageKey>("whiteboard");
+  const [usedLabs, setUsedLabs] = useState<UsedLab[]>([]);
+  const onLabOpen = (slug: string) => {
+    const m = LAB_MODULES.find((x) => x.slug === slug);
+    const entry: UsedLab = { name: m?.name ?? slug, url: phetUrl(slug) };
+    setUsedLabs((cur) => (cur.some((l) => l.url === entry.url) ? cur : [...cur, entry]));
+  };
   const [layoutMode, setLayoutMode] = useState<LayoutMode>(isMobile ? "TOP_STRIP" : "DOCKED");
+
   const [stripCollapsed, setStripCollapsed] = useState(false);
   const [stripHidden, setStripHidden] = useState(false);
   const rtc = useClassroomRTC({ roomId, userId, displayName });
@@ -158,7 +169,16 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
             transition={{ duration: 0.25 }}
             className="relative z-0 min-h-0 flex-1 overflow-hidden rounded-2xl border bg-card shadow-sm"
           >
-            <Whiteboard roomId={roomId} userId={userId} userName={displayName} isTeacher={isTutor || isAdmin} />
+            <ClassroomStage
+              stage={stage}
+              onSetStage={setStage}
+              roomId={roomId}
+              userId={userId}
+              displayName={displayName}
+              isTeacher={isTutor || isAdmin}
+              onLabOpen={onLabOpen}
+            />
+
           </motion.div>
 
           {/* Action bar */}
@@ -169,6 +189,8 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
               screenSharing={rtc.screenSharing}
               panel={panel}
               layoutMode={layoutMode}
+              stage={stage}
+              onSetStage={setStage}
               onSetLayout={setLayoutMode}
               onToggleMic={() => void rtc.service.toggleMic()}
               onToggleCamera={() => void rtc.service.toggleCamera()}
@@ -191,6 +213,7 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
               roomId={roomId}
               userId={userId}
               displayName={displayName}
+              usedLabs={usedLabs}
             />
           </aside>
         )}
@@ -210,6 +233,7 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
                 roomId={roomId}
                 userId={userId}
                 displayName={displayName}
+                usedLabs={usedLabs}
               />
             )}
           </SheetContent>
