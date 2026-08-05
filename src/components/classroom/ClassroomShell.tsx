@@ -6,7 +6,10 @@ import { Video, Loader2, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useClassroomRTC } from "@/hooks/useClassroomRTC";
-import { Whiteboard } from "@/components/whiteboard";
+import { ClassroomStage, type StageKey } from "./ClassroomStage";
+import { LAB_MODULES, phetUrl } from "@/lib/lab-modules";
+import type { UsedLab } from "./SidePanel";
+
 import { ClassroomHeader } from "./ClassroomHeader";
 import { AnimatedVideoLayout, VideoLayout, type LayoutMode, type VideoSlot } from "./VideoLayout";
 import { ActionBar, type PanelKey } from "./ActionBar";
