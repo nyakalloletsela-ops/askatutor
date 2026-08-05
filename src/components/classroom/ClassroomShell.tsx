@@ -161,7 +161,16 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
             transition={{ duration: 0.25 }}
             className="relative z-0 min-h-0 flex-1 overflow-hidden rounded-2xl border bg-card shadow-sm"
           >
-            <Whiteboard roomId={roomId} userId={userId} userName={displayName} isTeacher={isTutor || isAdmin} />
+            <ClassroomStage
+              stage={stage}
+              onSetStage={setStage}
+              roomId={roomId}
+              userId={userId}
+              displayName={displayName}
+              isTeacher={isTutor || isAdmin}
+              onLabOpen={onLabOpen}
+            />
+
           </motion.div>
 
           {/* Action bar */}
