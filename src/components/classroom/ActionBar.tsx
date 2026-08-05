@@ -127,12 +127,16 @@ export function ActionBar(props: Props) {
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
-      <Link to="/labs" target="_blank" rel="noreferrer" title="PhET Lab" aria-label="PhET Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+      <CircleButton active={stage === "whiteboard"} onClick={() => onSetStage("whiteboard")} title="Whiteboard">
+        <PenTool className="h-4 w-4" />
+      </CircleButton>
+      <CircleButton active={stage === "phet"} onClick={() => onSetStage("phet")} title="PhET Lab">
         <FlaskConical className="h-4 w-4" />
-      </Link>
-      <Link to="/labs/simulation-lab" target="_blank" rel="noreferrer" title="Simulation Lab" aria-label="Simulation Lab" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+      </CircleButton>
+      <CircleButton active={stage === "sim"} onClick={() => onSetStage("sim")} title="Simulation Lab">
         <Atom className="h-4 w-4" />
-      </Link>
+      </CircleButton>
+
 
       <span className="mx-1 h-6 w-px bg-white/15" />
 
