@@ -39,7 +39,13 @@ export function usePlatformConfig() {
         .eq("id", 1)
         .maybeSingle();
       if (error || !data) return DEFAULTS;
-      return data as PlatformConfig;
+      const row = data as PlatformConfig;
+      // Legacy rows may still hold a retired provider name — fall back to the default.
+      const valid: AiProvider[] = ["gemini", "groq", "ollama"];
+      return valid.includes(row.ai_provider)
+        ? row
+        : { ...row, ai_provider: DEFAULTS.ai_provider };
+
     },
   });
   return { config: data ?? DEFAULTS, isLoading };
