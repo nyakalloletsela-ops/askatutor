@@ -5,10 +5,6 @@ FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id AND role IN ('tutor','student'));
 
-INSERT INTO public.user_roles (user_id, role)
-VALUES ('9e11e7a9-51ca-44b9-bf2a-cf56e3fcebb7','admin')
-ON CONFLICT (user_id, role) DO NOTHING;
-
 ALTER TABLE public.tutor_subscriptions ALTER COLUMN amount SET DEFAULT 250;
 
 CREATE TABLE IF NOT EXISTS public.student_subscriptions (

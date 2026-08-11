@@ -1,9 +1,3 @@
--- Grant admin + tutor roles to the only user
-INSERT INTO public.user_roles (user_id, role) VALUES
-  ('6d653a26-c74a-442e-b1ca-74b94d007ab2', 'admin'),
-  ('6d653a26-c74a-442e-b1ca-74b94d007ab2', 'tutor')
-ON CONFLICT DO NOTHING;
-
 -- Storage bucket for classroom files (notes + videos), organized by room_id
 INSERT INTO storage.buckets (id, name, public) VALUES ('classroom-files', 'classroom-files', true)
 ON CONFLICT (id) DO NOTHING;

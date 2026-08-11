@@ -2,7 +2,6 @@
 -- 1) Realtime authorization for messages channels.
 -- Channel topic convention in the app: `messages-<userA>-<userB>`.
 -- Only allow auth'd users to subscribe when their uid appears in the topic.
-ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "authenticated can subscribe to own message threads" ON realtime.messages;
 CREATE POLICY "authenticated can subscribe to own message threads"
@@ -53,3 +52,4 @@ ALTER FUNCTION public.enqueue_email(text, jsonb) SET search_path = public;
 ALTER FUNCTION public.read_email_batch(text, integer, integer) SET search_path = public;
 ALTER FUNCTION public.delete_email(text, bigint) SET search_path = public;
 ALTER FUNCTION public.move_to_dlq(text, text, bigint, jsonb) SET search_path = public;
+

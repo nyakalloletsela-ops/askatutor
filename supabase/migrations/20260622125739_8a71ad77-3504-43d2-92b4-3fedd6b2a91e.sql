@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 
 -- =====================================================================
 -- 1. PARENT ROLE
@@ -50,7 +52,7 @@ CREATE TABLE public.child_invites (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   child_email text NOT NULL,
-  token text NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(24),'hex'),
+  token text NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(24),'hex'),
   status text NOT NULL DEFAULT 'pending',
   expires_at timestamptz NOT NULL DEFAULT (now() + interval '14 days'),
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -364,3 +366,5 @@ BEGIN
   RETURN _result;
 END;
 $$;
+
+
