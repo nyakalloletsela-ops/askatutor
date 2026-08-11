@@ -7,7 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * 'succeeded'.
  *
  * Endpoint URL (paste into PayPal Developer → Webhooks):
- *   https://askatutor.lovable.app/api/public/webhooks/paypal
+ *   https://<your-domain>/api/public/webhooks/paypal
  */
 export const Route = createFileRoute("/api/public/webhooks/paypal")({
   server: {
