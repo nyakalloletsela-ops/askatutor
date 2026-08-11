@@ -2,16 +2,27 @@ import * as React from 'react'
 import { render } from '@react-email/components'
 import { supabaseAdmin } from '@/integrations/supabase/client.server'
 import { TEMPLATES, type TemplateEntry } from '@/lib/email-templates/registry'
+import { deliverEmail, publicBaseUrl } from '@/lib/email/provider.server'
 
-const FROM_DOMAIN = 'www.askatutorlive.com'
-const SENDER_DOMAIN = 'notify.www.askatutorlive.com'
+/**
+ * Server-only transactional email sender.
+ *
+ * Renders a registered React Email template, honours the suppression list,
+ * appends an unsubscribe footer, delivers through the configured provider
+ * (see provider.server.ts) and records the outcome in `email_send_log`.
+ *
+ * Only call from trusted server code (server functions, webhooks).
+ */
+
+const FROM_DOMAIN = process.env.EMAIL_FROM_DOMAIN || 'askatutorlive.com'
+const BRAND = process.env.EMAIL_FROM_NAME || 'Ask A Tutor'
 const ALIAS_DISPLAY: Record<string, string> = {
-  noreply: 'askatutor',
-  admin: 'askatutor Admin',
-  help: 'askatutor Help',
-  tutors: 'askatutor Tutors',
-  students: 'askatutor Students',
-  billing: 'askatutor Billing',
+  noreply: BRAND,
+  admin: `${BRAND} Admin`,
+  help: `${BRAND} Help`,
+  tutors: `${BRAND} Tutors`,
+  students: `${BRAND} Students`,
+  billing: `${BRAND} Billing`,
 }
 const ALLOWED = new Set(Object.keys(ALIAS_DISPLAY))
 
@@ -28,11 +39,21 @@ interface EnqueueParams {
   fromAlias?: string
 }
 
-/**
- * Server-only helper that renders a registered template and enqueues it to
- * the transactional_emails pgmq queue. Mirrors the public send route, but
- * bypasses auth — only call from trusted server code (server fns, webhooks).
- */
+function unsubscribeFooter(token: string) {
+  const base = publicBaseUrl()
+  if (!base) return { html: '', text: '' }
+  const url = `${base}/unsubscribe?token=${token}`
+  return {
+    html:
+      `<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;` +
+      `font-family:Arial,sans-serif;font-size:12px;color:#6b7280">` +
+      `You are receiving this email because of activity on your ${BRAND} account. ` +
+      `<a href="${url}" style="color:#6b7280;text-decoration:underline">Unsubscribe</a>.` +
+      `</div>`,
+    text: `\n\n---\nUnsubscribe: ${url}\n`,
+  }
+}
+
 export async function enqueueTransactionalEmail(p: EnqueueParams) {
   const tpl = TEMPLATES[p.templateName] as TemplateEntry & { fromAlias?: string } | undefined
   if (!tpl) throw new Error(`Unknown template: ${p.templateName}`)
@@ -63,37 +84,41 @@ export async function enqueueTransactionalEmail(p: EnqueueParams) {
 
   // Render
   const el = React.createElement(tpl.component, p.templateData ?? {})
-  const html = await render(el)
-  const text = await render(el, { plainText: true })
+  const footer = unsubscribeFooter(unsub)
+  const html = (await render(el)) + footer.html
+  const text = (await render(el, { plainText: true })) + footer.text
   const subject = typeof tpl.subject === 'function' ? tpl.subject(p.templateData ?? {}) : tpl.subject
 
   const aliasRaw = (p.fromAlias ?? tpl.fromAlias ?? 'noreply').toLowerCase()
   const alias = ALLOWED.has(aliasRaw) ? aliasRaw : 'noreply'
 
+  try {
+    await deliverEmail({
+      to: recipient,
+      from: `${ALIAS_DISPLAY[alias]} <${alias}@${FROM_DOMAIN}>`,
+      subject,
+      html,
+      text,
+      label: p.templateName,
+      idempotencyKey: p.idempotencyKey ?? messageId,
+    })
+  } catch (e) {
+    await supabaseAdmin.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: p.templateName,
+      recipient_email: recipient,
+      status: 'failed',
+      error_message: (e as Error).message.slice(0, 500),
+    })
+    throw e
+  }
+
   await supabaseAdmin.from('email_send_log').insert({
     message_id: messageId,
     template_name: p.templateName,
     recipient_email: recipient,
-    status: 'pending',
+    status: 'sent',
   })
 
-  const { error } = await supabaseAdmin.rpc('enqueue_email', {
-    queue_name: 'transactional_emails',
-    payload: {
-      message_id: messageId,
-      to: recipient,
-      from: `${ALIAS_DISPLAY[alias]} <${alias}@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
-      subject,
-      html,
-      text,
-      purpose: 'transactional',
-      label: p.templateName,
-      idempotency_key: p.idempotencyKey ?? messageId,
-      unsubscribe_token: unsub,
-      queued_at: new Date().toISOString(),
-    },
-  })
-  if (error) throw new Error(error.message)
-  return { queued: true, messageId }
+  return { sent: true, messageId }
 }

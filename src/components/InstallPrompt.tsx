@@ -15,7 +15,7 @@ type BIPEvent = Event & {
  * - Reappears each session until the app is installed.
  *
  * Note: installation only works on the deployed site, not inside the
- * Lovable editor preview iframe.
+ * embedded preview iframe.
  */
 export function InstallPrompt() {
   const [deferred, setDeferred] = useState<BIPEvent | null>(null);
@@ -32,7 +32,7 @@ export function InstallPrompt() {
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
     if (standalone) return;
 
-    // Inside an iframe (Lovable preview) — installation isn't possible.
+    // Inside an iframe — installation isn't possible.
     try {
       if (window.self !== window.top) return;
     } catch {

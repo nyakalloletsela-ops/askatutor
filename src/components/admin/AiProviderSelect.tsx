@@ -12,10 +12,9 @@ import {
 import { usePlatformConfig, type AiProvider } from "@/hooks/use-platform-config";
 
 const OPTIONS: { value: AiProvider; label: string; hint: string }[] = [
-  { value: "lovable", label: "Lovable AI (default)", hint: "No key needed while running on Lovable." },
-  { value: "groq", label: "Groq", hint: "Requires GROQ_API_KEY secret." },
-  { value: "gemini", label: "Google Gemini", hint: "Requires GEMINI_API_KEY secret." },
-  { value: "ollama", label: "Ollama (self-hosted)", hint: "Requires OLLAMA_BASE_URL secret." },
+  { value: "groq", label: "Groq", hint: "Requires GROQ_API_KEY (or a key saved below)." },
+  { value: "gemini", label: "Google Gemini (default)", hint: "Requires GEMINI_API_KEY (or a key saved below)." },
+  { value: "ollama", label: "Ollama (self-hosted)", hint: "Requires OLLAMA_BASE_URL." },
 ];
 
 export function AiProviderSelect() {

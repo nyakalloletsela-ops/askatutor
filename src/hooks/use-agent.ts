@@ -12,7 +12,7 @@ export interface AgentMessage {
 
 /**
  * Multi-agent chat hook. Each call to send() picks an agent role and runs it
- * against the Lovable AI Gateway. Output is markdown with KaTeX + Mermaid —
+ * against the configured AI provider. Output is markdown with KaTeX + Mermaid —
  * render it with <SmartMarkdown/>.
  */
 export function useAgent(defaultRole: AgentRole = "tutor") {

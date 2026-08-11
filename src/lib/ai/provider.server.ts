@@ -1,20 +1,20 @@
 /**
  * AI Provider Adapter (server-only)
  * ---------------------------------
- * Single seam between the app and whichever AI gateway/SDK is in use.
+ * Single seam between the app and whichever AI API is in use.
  *
  * Provider resolution order (first non-empty wins):
- *   1. process.env.AI_PROVIDER  (deploy-time override, e.g. Vercel)
+ *   1. process.env.AI_PROVIDER  (deploy-time override)
  *   2. platform_config.ai_provider  (admin global switch, DB-driven)
- *   3. "lovable"  (default while running on Lovable)
+ *   3. "gemini"  (default)
  *
  * Supported providers (all OpenAI-compatible endpoints):
- *   - lovable  -> Lovable AI Gateway         (LOVABLE_API_KEY)
- *   - groq     -> https://api.groq.com/openai (GROQ_API_KEY)
  *   - gemini   -> Google Generative Language (GEMINI_API_KEY)
+ *   - groq     -> https://api.groq.com/openai (GROQ_API_KEY)
  *   - ollama   -> self-hosted Ollama          (OLLAMA_BASE_URL, no key)
  *
- * See MIGRATION.md for the off-platform swap recipe.
+ * Keys can also be stored per provider in the `ai_provider_keys` table via
+ * Admin -> AI; DB values win over env vars. See DEPLOYMENT.md.
  */
 
 export type AiContentPart =
@@ -53,7 +53,7 @@ export class AiError extends Error {
   }
 }
 
-type Provider = "lovable" | "groq" | "gemini" | "ollama";
+type Provider = "gemini" | "groq" | "ollama";
 
 // ---------------------------------------------------------------------------
 // Provider selection (cached, DB-backed, env override)
@@ -64,12 +64,12 @@ const CACHE_MS = 30_000;
 
 async function resolveProvider(): Promise<Provider> {
   const envChoice = (process.env.AI_PROVIDER ?? "").toLowerCase();
-  if (envChoice === "lovable" || envChoice === "groq" || envChoice === "gemini" || envChoice === "ollama") {
+  if (envChoice === "groq" || envChoice === "gemini" || envChoice === "ollama") {
     return envChoice as Provider;
   }
   const now = Date.now();
   if (_cached && _cached.expires > now) return _cached.value;
-  let value: Provider = "lovable";
+  let value: Provider = "gemini";
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
@@ -77,10 +77,10 @@ async function resolveProvider(): Promise<Provider> {
       .select("ai_provider")
       .eq("id", 1)
       .maybeSingle();
-    const v = ((data as { ai_provider?: string } | null)?.ai_provider ?? "lovable").toLowerCase();
-    if (v === "groq" || v === "gemini" || v === "ollama" || v === "lovable") value = v;
+    const v = ((data as { ai_provider?: string } | null)?.ai_provider ?? "gemini").toLowerCase();
+    if (v === "groq" || v === "gemini" || v === "ollama") value = v;
   } catch {
-    // fall through to lovable default
+    // fall through to the gemini default
   }
   _cached = { value, expires: now + CACHE_MS };
   return value;
@@ -115,7 +115,6 @@ export async function getProviderCreds(provider: Provider): Promise<{ api_key: s
   if (!api_key) {
     if (provider === "groq") api_key = process.env.GROQ_API_KEY ?? null;
     else if (provider === "gemini") api_key = process.env.GEMINI_API_KEY ?? null;
-    else if (provider === "lovable") api_key = process.env.LOVABLE_API_KEY ?? null;
   }
   if (!base_url && provider === "ollama") {
     base_url = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
@@ -143,8 +142,6 @@ function stripVendor(model: string): string {
 function mapModel(provider: Provider, model: string): string {
   const bare = stripVendor(model);
   switch (provider) {
-    case "lovable":
-      return model; // gateway wants the full "vendor/model" id
     case "gemini":
       // Google's OpenAI-compat endpoint expects e.g. "gemini-2.5-flash"
       return bare.startsWith("gemini-") ? bare : "gemini-2.5-flash";
@@ -171,15 +168,6 @@ interface Endpoint {
 async function endpointFor(provider: Provider): Promise<Endpoint> {
   const creds = await getProviderCreds(provider);
   switch (provider) {
-    case "lovable": {
-      const key = creds.api_key;
-      if (!key) throw new AiError("AI is not configured (LOVABLE_API_KEY missing)");
-      return {
-        chat: "https://ai.gateway.lovable.dev/v1/chat/completions",
-        embed: "https://ai.gateway.lovable.dev/v1/embeddings",
-        headers: { "Lovable-API-Key": key, "Content-Type": "application/json" },
-      };
-    }
     case "groq": {
       const key = creds.api_key;
       if (!key) throw new AiError("Groq is selected but no GROQ_API_KEY is configured");
