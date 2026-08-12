@@ -219,18 +219,23 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
       const scheduledAt = new Date(`${date}T${time}`);
       if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) { toast.error("Pick a future date and time"); return; }
       if (user.id === tutor.id) { toast.error("You can't book a session with yourself"); return; }
-      const { data: inserted, error } = await supabase.from("sessions").insert({
-        tutor_id: tutor.id, student_id: user.id, subject: subject || null,
-        scheduled_at: scheduledAt.toISOString(), duration_min: Number(duration), is_free: useFree,
-      }).select("id").single();
+      const { data, error } = await supabase.rpc("book_session", {
+        _tutor: tutor.id,
+        _start: scheduledAt.toISOString(),
+        _duration_min: Number(duration),
+        _subject: subject || "General",
+        _is_free: useFree,
+        _recurrence_weeks: 1,
+      });
+      const insertedId = (data as string[] | null)?.[0];
       if (error) {
-        const msg = /row-level security/i.test(error.message)
-          ? "You can't book this session. Make sure you're signed in as a student and not booking yourself."
+        const msg = /Not authenticated|Not authorized|Not enough free minutes|subscription or prepaid lessons/i.test(error.message)
+          ? "You can't book this session. Make sure you're signed in as a student and entitled to book paid lessons."
           : error.message;
         throw new Error(msg);
       }
-      if (inserted?.id) {
-        notifyBookingEmails({ data: { sessionId: inserted.id } }).catch(() => {});
+      if (insertedId) {
+        notifyBookingEmails({ data: { sessionId: insertedId } }).catch(() => {});
       }
       toast.success("Session booked!");
       setOpen(false);

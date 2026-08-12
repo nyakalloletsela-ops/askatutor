@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAiEntitlement, supabaseEntitlementGateway } from "@/lib/ai-entitlement";
 
 const ToolEnum = z.enum([
   "explain",
@@ -51,23 +52,8 @@ export const aiToolRun = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    const [{ data: roles }, { data: sub }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase
-        .from("student_subscriptions")
-        .select("id")
-        .eq("student_id", userId)
-        .eq("status", "approved")
-        .limit(1)
-        .maybeSingle(),
-    ]);
-    const roleSet = new Set((roles ?? []).map((r) => r.role));
-    const isPremium = roleSet.has("admin") || roleSet.has("tutor") || !!sub;
-    if (!isPremium) {
-      throw new Error(
-        "AI Toolkit is a premium feature. Submit your monthly subscription on the dashboard to unlock it.",
-      );
-    }
+    // Single shared server-side entitlement gate (scope 'ai').
+    await assertAiEntitlement(supabaseEntitlementGateway(supabase), userId, "ai");
 
     const ctx = [data.subject && `Subject: ${data.subject}`, data.level && `Level: ${data.level}`]
       .filter(Boolean)

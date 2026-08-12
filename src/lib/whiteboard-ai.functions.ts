@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAiEntitlement, supabaseEntitlementGateway } from "@/lib/ai-entitlement";
 
 const Input = z.object({
   imageDataUrl: z
@@ -13,7 +14,14 @@ const Input = z.object({
 export const whiteboardConvert = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => Input.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Single shared server-side entitlement gate (scope 'ai'); OCR also honours
+    // the platform's whiteboard_ocr_enabled flag.
+    await assertAiEntitlement(supabaseEntitlementGateway(supabase), userId, "ai", {
+      requireOcrEnabled: true,
+    });
 
 
     const system = `You are an expert whiteboard OCR digitiser for live mathematics, science, engineering and chemistry tutoring.

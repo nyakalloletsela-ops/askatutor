@@ -202,10 +202,7 @@ function Dashboard() {
   };
 
   const startSession = async (s: SessionRow) => {
-    const { error } = await supabase
-      .from("sessions")
-      .update({ status: "live" })
-      .eq("id", s.id);
+    const { error } = await supabase.rpc("start_session", { _session: s.id });
     if (error) { toast.error(error.message); return; }
     window.location.href = `/classroom/${s.room_id}`;
   };
@@ -534,16 +531,6 @@ function Dashboard() {
                   )}
                 </CardContent>
               </Card>
-              <div className="mt-2 flex justify-end">
-                <Button asChild variant="ghost" size="sm">
-                  <Link
-                    to="/classroom/$roomId"
-                    params={{ roomId: `demo-${user.id.slice(0, 8)}` }}
-                  >
-                    Try demo classroom →
-                  </Link>
-                </Button>
-              </div>
             </section>
 
 

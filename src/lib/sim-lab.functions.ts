@@ -1,6 +1,7 @@
-import { createServerFn } from "@tanstack/react-start";
+﻿import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAiEntitlement, supabaseEntitlementGateway } from "@/lib/ai-entitlement";
 
 const ExplainSchema = z.object({
   definition: z.string().optional(),
@@ -131,8 +132,8 @@ ALWAYS include 3-6 auto-generated "quiz" questions mixing mcq/tf/short, scaled a
 PER VISUALIZATION:
 
 scene3d / scene2d:
-  Fill "objects" (≤30). type ∈ {sphere,particle,cube,wall,plane,arrow,car,cell,nucleus,organ,atom,molecule,dna,axis,curve,node,flow}.
-  Each object: position[x,y,z]∈[-15,15], optional velocity (number for x-axis or [vx,vy,vz]), radius, size, color (hex), label, fixed.
+  Fill "objects" (â‰¤30). type âˆˆ {sphere,particle,cube,wall,plane,arrow,car,cell,nucleus,organ,atom,molecule,dna,axis,curve,node,flow}.
+  Each object: position[x,y,z]âˆˆ[-15,15], optional velocity (number for x-axis or [vx,vy,vz]), radius, size, color (hex), label, fixed.
   Add object "explain": {definition, purpose, keyFacts[], misconceptions[]} for the IMPORTANT objects so students can click them.
   "connections": [{from,to,type:"bond|force|flow|relationship",label}].
   "rules" subset of {newton_second_law,collision_response,gravity,flow_dynamics,orbital_motion,growth_cycle,chemical_bonding,graph_transform,market_flow,semantic_flow}.
@@ -180,13 +181,13 @@ function fallbackSchema(prompt: string): SimulationSchemaT {
       language: {
         setting: "A typical scenario",
         characters: [
-          { name: "You", emoji: "🧑", color: "#22d3ee" },
-          { name: "Other", emoji: "🧑‍🍳", color: "#f472b6" },
+          { name: "You", emoji: "ðŸ§‘", color: "#22d3ee" },
+          { name: "Other", emoji: "ðŸ§‘â€ðŸ³", color: "#f472b6" },
         ],
         dialogue: [
           { speaker: 1, original: "Bonjour !", translation: "Hello!", lang: "fr" },
-          { speaker: 0, original: "Bonjour, ça va ?", translation: "Hello, how are you?", lang: "fr" },
-          { speaker: 1, original: "Très bien, merci.", translation: "Very well, thank you.", lang: "fr" },
+          { speaker: 0, original: "Bonjour, Ã§a va ?", translation: "Hello, how are you?", lang: "fr" },
+          { speaker: 1, original: "TrÃ¨s bien, merci.", translation: "Very well, thank you.", lang: "fr" },
         ],
         vocabulary: [
           { term: "Bonjour", meaning: "Hello" },
@@ -316,22 +317,17 @@ async function callGateway(path: string, body: any) {
   throw new Error(`Unsupported AI path: ${path}`);
 }
 
-async function assertLabsScope(supabase: any) {
-  const { data, error } = await supabase.rpc("student_has_scope", { _scope: "labs" });
-  if (error) return; // fail open on rpc error; UI gate enforces too
-  if (!data) {
-    // admins/tutors don't need scope — check roles
-    const { data: roles } = await supabase.from("user_roles").select("role");
-    const ok = (roles ?? []).some((r: { role: string }) => r.role === "admin" || r.role === "tutor");
-    if (!ok) throw new Error("Labs subscription required");
-  }
+async function assertLabsScope(supabase: any, userId: string) {
+  // Fail closed: admins/tutors pass via role; students need the 'labs' scope.
+  // Any config/role/scope read error denies rather than allows.
+  await assertAiEntitlement(supabaseEntitlementGateway(supabase), userId, "labs");
 }
 
 export const embedPrompt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ text: z.string().min(1).max(4000) }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertLabsScope(context.supabase);
+    await assertLabsScope(context.supabase, context.userId);
     const json = (await callGateway("/embeddings", {
       model: "openai/text-embedding-3-small",
       input: data.text,
@@ -347,7 +343,7 @@ export const findSimilarSimulation = createServerFn({ method: "POST" })
     z.object({ embedding: z.array(z.number()).length(1536), minSimilarity: z.number().default(0.85) }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertLabsScope(context.supabase);
+    await assertLabsScope(context.supabase, context.userId);
     const { data: rows, error } = await context.supabase.rpc("match_simulations", {
       query_embedding: toVectorLiteral(data.embedding),
       match_count: 1,
@@ -361,7 +357,7 @@ export const generateSimulationSchema = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({ prompt: z.string().min(2).max(2000) }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertLabsScope(context.supabase);
+    await assertLabsScope(context.supabase, context.userId);
     try {
       const json = (await callGateway("/chat/completions", {
         model: "google/gemini-3-flash-preview",

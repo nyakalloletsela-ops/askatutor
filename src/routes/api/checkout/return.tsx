@@ -42,12 +42,25 @@ export const Route = createFileRoute("/api/checkout/return")({
           }
 
           if (provider.slug === "paypal") {
-            const { paypalCaptureOrder } = await import("@/lib/payments/paypal.server");
-            const cap = await paypalCaptureOrder({
-              mode: provider.mode as "sandbox" | "live",
-              credentialsRef: provider.credentials_ref,
-              orderId: paypalToken,
-            });
+            const { paypalCaptureOrder, paypalGetOrder } = await import("@/lib/payments/paypal.server");
+            let cap;
+            try {
+              cap = await paypalCaptureOrder({
+                mode: provider.mode as "sandbox" | "live",
+                credentialsRef: provider.credentials_ref,
+                orderId: paypalToken,
+              });
+            } catch (captureErr) {
+              // Race with the webhook: if the capture was already completed
+              // (webhook finalized it first), the capture call may error with
+              // 422. Verify the order state before deciding.
+              cap = await paypalGetOrder({
+                mode: provider.mode as "sandbox" | "live",
+                credentialsRef: provider.credentials_ref,
+                orderId: paypalToken,
+              });
+              if (cap.status !== "COMPLETED") throw captureErr;
+            }
             if (cap.status !== "COMPLETED") {
               await supabaseAdmin.rpc("mark_payment_failed", {
                 _intent: intentId,

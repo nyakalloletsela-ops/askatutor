@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAiEntitlement, supabaseEntitlementGateway } from "@/lib/ai-entitlement";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -15,7 +16,12 @@ const InputSchema = z.object({
 export const runAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => InputSchema.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Single shared server-side entitlement gate (scope 'ai').
+    await assertAiEntitlement(supabaseEntitlementGateway(supabase), userId, "ai");
+
     const { callAgent } = await import("./registry.server");
     const text = await callAgent(data.role, data.messages);
     return { text };

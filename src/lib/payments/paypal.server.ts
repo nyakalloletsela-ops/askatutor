@@ -121,6 +121,32 @@ export async function paypalCaptureOrder(opts: {
   return { status: j.status, captureId: cap?.id };
 }
 
+export async function paypalGetOrder(opts: {
+  mode: Mode;
+  credentialsRef: string;
+  orderId: string;
+}): Promise<{ status: string; captureId?: string }> {
+  const token = await getAccessToken(opts.mode, opts.credentialsRef);
+  const res = await fetch(
+    `${baseUrl(opts.mode)}/v2/checkout/orders/${encodeURIComponent(opts.orderId)}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`PayPal get order failed (${res.status}): ${await res.text()}`);
+  }
+  const j = (await res.json()) as {
+    status: string;
+    purchase_units?: Array<{
+      payments?: { captures?: Array<{ id: string; status: string }> };
+    }>;
+  };
+  const cap = j.purchase_units?.[0]?.payments?.captures?.find((c) => c.status === "COMPLETED");
+  return { status: j.status, captureId: cap?.id };
+}
+
 export async function paypalVerifyWebhook(opts: {
   mode: Mode;
   credentialsRef: string;

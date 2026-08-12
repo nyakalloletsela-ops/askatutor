@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAiEntitlement, supabaseEntitlementGateway } from "@/lib/ai-entitlement";
 
 const TextPartSchema = z.object({ type: z.literal("text"), text: z.string().min(1).max(4000) });
 const ImagePartSchema = z.object({
@@ -80,34 +81,15 @@ export const aiTutorChat = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Resolve role and platform config server-side. Role is NEVER taken from the client.
-    const [{ data: roles }, { data: cfg }, { data: sub }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("platform_config").select("is_subscriptions_enabled, ai_enabled").eq("id", 1).maybeSingle(),
-      supabase
-        .from("student_subscriptions")
-        .select("id")
-        .eq("student_id", userId)
-        .eq("status", "approved")
-        .limit(1)
-        .maybeSingle(),
-    ]);
+    // Single shared server-side entitlement gate (scope 'ai').
+    await assertAiEntitlement(supabaseEntitlementGateway(supabase), userId, "ai");
 
-    if (cfg && cfg.ai_enabled === false) {
-      throw new Error("AI features are currently disabled by the platform admin.");
-    }
+    // Resolve role server-side. Role is NEVER taken from the client.
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", userId);
 
     const roleSet = new Set((roles ?? []).map((r) => r.role));
     const isAdmin = roleSet.has("admin");
     const isTutor = roleSet.has("tutor");
-    const subscriptionsEnabled = cfg?.is_subscriptions_enabled !== false;
-
-    // Premium gate only applies to students AND only when the subscriptions system is on.
-    if (!isAdmin && !isTutor && subscriptionsEnabled && !sub) {
-      throw new Error(
-        "AI Coach is a premium feature. Submit your monthly subscription on the dashboard to unlock it.",
-      );
-    }
 
     // Mode is decided server-side from the user's role. Cannot be overridden by the client.
     const mode: "tutor" | "student" = isAdmin || isTutor ? "tutor" : "student";

@@ -1,10 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 /**
- * PayPal webhook receiver. Verifies signature, then finalizes the matching
- * payment_intent. Idempotent — calling twice with the same event is safe
- * because finalize_payment_succeeded short-circuits when status is already
- * 'succeeded'.
+ * PayPal webhook receiver. Verifies the signature, then maps the event to a
+ * single safe action:
+ *  - PAYMENT.CAPTURE.COMPLETED   -> finalize_payment_succeeded (credit ledger)
+ *  - PAYMENT.CAPTURE.REFUNDED / REVERSED -> refund_payment (reverse ledger)
+ *  - PAYMENT.CAPTURE.DENIED / DECLINED   -> mark_payment_failed
+ *  - CHECKOUT.ORDER.APPROVED and anything else -> ignored (order approval is
+ *    NOT a capture; money must move before the ledger is credited).
+ *
+ * finalize_payment_succeeded and refund_payment are idempotent — replaying a
+ * webhook or the return-URL flow is safe.
  *
  * Endpoint URL (paste into PayPal Developer → Webhooks):
  *   https://<your-domain>/api/public/webhooks/paypal
@@ -40,47 +46,31 @@ export const Route = createFileRoute("/api/public/webhooks/paypal")({
         });
         if (!ok) return new Response("Invalid signature", { status: 401 });
 
-        const type = event.event_type ?? "";
-        const resource = (event.resource ?? {}) as Record<string, unknown>;
+        const { resolvePaypalWebhookAction } = await import("@/lib/payments/webhook-actions");
+        const action = resolvePaypalWebhookAction(event);
 
-        if (
-          type === "CHECKOUT.ORDER.APPROVED" ||
-          type === "PAYMENT.CAPTURE.COMPLETED"
-        ) {
-          // Match either by custom_id on the capture or supplementary_data on the order
-          const customId =
-            (resource.custom_id as string | undefined) ??
-            (
-              (resource as { supplementary_data?: { related_ids?: { order_id?: string } } })
-                .supplementary_data?.related_ids?.order_id
-            );
-          const providerRef =
-            (resource.id as string | undefined) ??
-            (resource as { invoice_id?: string }).invoice_id;
-
-          if (customId && providerRef) {
-            try {
-              await supabaseAdmin.rpc("finalize_payment_succeeded", {
-                _intent: customId,
-                _provider: "paypal",
-                _provider_ref: providerRef,
-              });
-            } catch (e) {
-              // Already finalized or unknown intent — log only.
-              console.error("[paypal webhook] finalize error:", e);
-            }
-          }
-        } else if (
-          type === "PAYMENT.CAPTURE.DENIED" ||
-          type === "PAYMENT.CAPTURE.DECLINED"
-        ) {
-          const customId = resource.custom_id as string | undefined;
-          if (customId) {
+        try {
+          if (action.kind === "finalize") {
+            await supabaseAdmin.rpc("finalize_payment_succeeded", {
+              _intent: action.customId,
+              _provider: "paypal",
+              _provider_ref: action.providerRef,
+            });
+          } else if (action.kind === "refund") {
+            await supabaseAdmin.rpc("refund_payment", {
+              _intent: action.intentId,
+              _reason: action.reason,
+            });
+          } else if (action.kind === "mark_failed") {
             await supabaseAdmin.rpc("mark_payment_failed", {
-              _intent: customId,
-              _reason: `PayPal: ${type}`,
+              _intent: action.intentId,
+              _reason: action.reason,
             });
           }
+        } catch (e) {
+          // Unknown intent or already-finalized — log only, never crash the
+          // webhook (PayPal retries otherwise).
+          console.error("[paypal webhook] action error:", e);
         }
 
         return new Response("ok");

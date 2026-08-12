@@ -1,19 +1,18 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { checkRoomMembership } from "@/lib/access.functions";
+import { getClassroomContext } from "@/lib/access.functions";
 import { ClassroomShell } from "@/components/classroom/ClassroomShell";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
   beforeLoad: async ({ params }) => {
-    try {
-      const { isMember } = await checkRoomMembership({ data: { roomId: params.roomId } });
-      if (!isMember) throw redirect({ to: "/dashboard" });
-    } catch (e) {
+    // Fail closed: any error resolving membership denies entry.
+    const ctx = await getClassroomContext({ data: { roomId: params.roomId } }).catch((e) => {
       if (e && typeof e === "object" && "to" in e) throw e;
-      console.warn("[classroom] membership check failed, allowing entry:", e);
-    }
+      console.warn("[classroom] membership check failed, denying entry:", e);
+      throw redirect({ to: "/dashboard" });
+    });
+    if (!ctx.isMember) throw redirect({ to: "/dashboard" });
   },
   component: ClassroomPage,
 });
@@ -25,17 +24,11 @@ function ClassroomPage() {
 
   useEffect(() => {
     if (!user) return;
-    if (roomId.startsWith("demo-")) { setIsTutor(true); return; }
-    supabase
-      .from("sessions")
-      .select("tutor_id")
-      .eq("room_id", roomId)
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => {
-        const row = data as { tutor_id: string } | null;
-        setIsTutor(!!row && row.tutor_id === user.id);
-      });
+    // Resolve the tutor flag server-side from the session row — never from the
+    // room name or client state.
+    getClassroomContext({ data: { roomId } })
+      .then((ctx) => setIsTutor(ctx.isTutor))
+      .catch(() => setIsTutor(false));
   }, [roomId, user]);
 
   if (!user) return null;

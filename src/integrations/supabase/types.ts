@@ -2529,6 +2529,10 @@ export type Database = {
         Args: { _intent: string; _provider?: string; _provider_ref?: string }
         Returns: string
       }
+      consume_prepaid_lesson: {
+        Args: { _student: string; _tutor: string }
+        Returns: boolean
+      }
       create_bulk_lesson_intent: {
         Args: {
           _lesson_minutes: number
@@ -2543,6 +2547,7 @@ export type Database = {
         Returns: boolean
       }
       email_queue_dispatch: { Args: never; Returns: undefined }
+      end_session: { Args: { _session: string }; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
@@ -2697,6 +2702,10 @@ export type Database = {
         }
         Returns: string
       }
+      refund_payment: {
+        Args: { _intent: string; _reason: string }
+        Returns: undefined
+      }
       reject_tutor_application: {
         Args: { _application_id: string; _notes?: string }
         Returns: undefined
@@ -2705,6 +2714,7 @@ export type Database = {
         Args: { _new_start: string; _session: string }
         Returns: undefined
       }
+      start_session: { Args: { _session: string }; Returns: undefined }
       student_has_scope: { Args: { _scope: string }; Returns: boolean }
       tutor_balance: {
         Args: { _tutor: string }

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAiEntitlement, supabaseEntitlementGateway } from "@/lib/ai-entitlement";
 
 const MsgSchema = z.object({
   role: z.enum(["user", "assistant", "system"]),
@@ -25,7 +26,12 @@ export const simLabChat = createServerFn({ method: "POST" })
       mode: z.enum(["explain", "simplify", "harder", "quiz", "free"]).default("free"),
     }).parse(i),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Single shared server-side entitlement gate (scope 'ai').
+    await assertAiEntitlement(supabaseEntitlementGateway(supabase), userId, "ai");
+
     const ctx = data.context;
 
     const ctxBlob = ctx
