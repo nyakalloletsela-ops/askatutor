@@ -44,7 +44,7 @@ bun run build                                 # default: cloudflare-module
 
 ```bash
 NITRO_PRESET=node-server bun run build
-PORT=3000 bun run start          # scripts/start-node.mjs boots dist/server/index.mjs
+PORT=3000 bun run start          # scripts/start-node.mjs boots .output/server/index.mjs
 ```
 
 Minimal Dockerfile:
@@ -57,7 +57,7 @@ RUN bun install --frozen-lockfile && NITRO_PRESET=node-server bun run build
 
 FROM oven/bun:1
 WORKDIR /app
-COPY --from=build /app/dist ./dist
+COPY --from=build /app/.output ./output
 COPY --from=build /app/scripts ./scripts
 ENV PORT=3000
 EXPOSE 3000
