@@ -1,17 +1,18 @@
-import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
+import { SmartMarkdown } from "@/presentation/domains/2-learning-journey/ai/SmartMarkdown";
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { StickyNote, Plus, Trash2, FolderOpen } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, EmptyState } from "@/components/dashboard/primitives";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { createNote, deleteNote, listNotes } from "@/application/use-cases/learning/notes";
+import { PageContainer, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/notes")({
   component: NotesPage,
@@ -41,14 +42,15 @@ function NotesPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
 
+  const addNote = useServerFn(createNote);
+  const removeNote = useServerFn(deleteNote);
+
+  const listNotesFn = useServerFn(listNotes);
+
   const { data: notes = [] } = useQuery({
     queryKey: ["notes", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("notes")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw new Error(error.message);
+      const data = await listNotesFn();
       return (data ?? []) as Note[];
     },
     enabled: !!user,
@@ -57,13 +59,7 @@ function NotesPage() {
   const add = useMutation({
     mutationFn: async () => {
       if (!user || !title.trim()) throw new Error("Title required");
-      const { error } = await supabase.from("notes").insert({
-        user_id: user.id,
-        title: title.trim(),
-        body: body.trim() || null,
-        kind: "note",
-      });
-      if (error) throw new Error(error.message);
+      await addNote({ data: { title: title.trim(), body: body.trim() || "", kind: "note" } });
     },
     onSuccess: () => {
       setTitle("");
@@ -75,8 +71,7 @@ function NotesPage() {
 
   const del = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("notes").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      await removeNote({ data: { noteId: id } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
   });
@@ -111,6 +106,7 @@ function NotesPage() {
 
 function FolderFilter({ notes }: { notes: Note[] }) {
   const qc = useQueryClient();
+  const removeNote = useServerFn(deleteNote);
   const [folder, setFolder] = useState<string>("all");
 
   const folders = useMemo(() => {
@@ -123,8 +119,7 @@ function FolderFilter({ notes }: { notes: Note[] }) {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("notes").delete().eq("id", id);
-      if (error) throw new Error(error.message);
+      await removeNote({ data: { noteId: id } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
     onError: (e: Error) => toast.error(e.message),

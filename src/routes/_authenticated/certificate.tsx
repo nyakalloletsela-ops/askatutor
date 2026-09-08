@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Award, Printer, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { Navbar } from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/certificate")({

@@ -1,15 +1,15 @@
-import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
-import { SaveToNotes } from "@/components/ai/SaveToNotes";
+import { SmartMarkdown } from "@/presentation/domains/2-learning-journey/ai/SmartMarkdown";
+import { SaveToNotes } from "@/presentation/domains/2-learning-journey/ai/SaveToNotes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useRef, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
 import { Sparkles, Send, Loader2, Paperclip, X } from "lucide-react";
 import { toast } from "sonner";
-import { aiTutorChat } from "@/lib/ai-tutor.functions";
-import { ScopeGate } from "@/components/ScopeGate";
+import { aiTutorChat } from "@/application/use-cases/ai/tutor-chat";
+import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
 
 export const Route = createFileRoute("/_authenticated/ai-tutor")({

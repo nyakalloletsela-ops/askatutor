@@ -7,11 +7,11 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/hooks/use-auth";
-import { ThemeProvider } from "@/hooks/use-theme";
-import { MobileTabBar } from "@/components/MobileTabBar";
-import { InstallPrompt } from "@/components/InstallPrompt";
+import { Toaster } from "@/presentation/domains/8-core-ux-navigation/ui/sonner";
+import { AuthProvider } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { ThemeProvider } from "@/presentation/domains/8-core-ux-navigation/hooks/use-theme";
+import { MobileTabBar } from "@/presentation/domains/8-core-ux-navigation/MobileTabBar.tsx";
+import { InstallPrompt } from "@/presentation/domains/8-core-ux-navigation/InstallPrompt.tsx";
 
 import appCss from "../styles.css?url";
 

@@ -1,9 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, SectionHeader } from "@/components/dashboard/primitives";
-import { ConfigToggle } from "@/components/admin/ConfigToggle";
-import { AiProviderSelect } from "@/components/admin/AiProviderSelect";
-import { AiKeyManager } from "@/components/admin/AiKeyManager";
+import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { ConfigToggle } from "@/presentation/domains/3-personalization-role-context/admin/ConfigToggle";
+import { AiProviderSelect } from "@/presentation/domains/3-personalization-role-context/admin/AiProviderSelect";
+import { AiKeyManager } from "@/presentation/domains/3-personalization-role-context/admin/AiKeyManager";
 
 export const Route = createFileRoute("/_authenticated/admin/ai")({
   beforeLoad: async () => {

@@ -3,18 +3,18 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/presentation/domains/8-core-ux-navigation/ui/select";
+import { Switch } from "@/presentation/domains/8-core-ux-navigation/ui/switch";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Trash2, Plus } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/commissions")({
   beforeLoad: async () => {

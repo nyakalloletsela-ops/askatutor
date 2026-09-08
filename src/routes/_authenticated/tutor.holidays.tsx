@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import { Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tutor/holidays")({

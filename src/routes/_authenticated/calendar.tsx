@@ -2,13 +2,13 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer } from "@/components/dashboard/primitives";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScheduleStudentCard } from "@/components/ScheduleStudentCard";
+import { PageContainer } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { ScheduleStudentCard } from "@/presentation/domains/2-learning-journey/ScheduleStudentCard";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/calendar")({

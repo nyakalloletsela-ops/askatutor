@@ -1,0 +1,1 @@
+SELECT * FROM public.sessions LIMIT 20;

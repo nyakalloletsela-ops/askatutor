@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, SectionHeader } from "@/components/dashboard/primitives";
-import { ConfigToggle } from "@/components/admin/ConfigToggle";
+import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { ConfigToggle } from "@/presentation/domains/3-personalization-role-context/admin/ConfigToggle";
 
 export const Route = createFileRoute("/_authenticated/admin/whiteboard")({
   beforeLoad: async () => {

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 
 export const Route = createFileRoute("/checkout/failed")({
   validateSearch: (s: Record<string, unknown>) => ({

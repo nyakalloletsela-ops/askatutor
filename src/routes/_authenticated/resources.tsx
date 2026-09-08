@@ -3,14 +3,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FolderOpen, Plus, Trash2, Link as LinkIcon } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, EmptyState } from "@/components/dashboard/primitives";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PageContainer, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -18,14 +18,14 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
 
 export const Route = createFileRoute("/_authenticated/resources")({
   component: ResourcesPage,

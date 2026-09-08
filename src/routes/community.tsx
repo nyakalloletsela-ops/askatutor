@@ -2,15 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { MessageSquare, Plus, Send, Users, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { Navbar } from "@/components/Navbar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { createForumPost } from "@/application/use-cases/trust-safety/moderation";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 
 export const Route = createFileRoute("/community")({
   component: CommunityPage,
@@ -37,6 +39,7 @@ type Post = {
 
 function CommunityPage() {
   const { user } = useAuth();
+  const createPost = useServerFn(createForumPost);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -61,10 +64,7 @@ function CommunityPage() {
   const create = async () => {
     if (!user) return toast.error("Please sign in to post");
     if (!body.trim() || !title.trim()) return;
-    const { error } = await supabase.from("forum_posts").insert({
-      user_id: user.id, title: title.trim(), body: body.trim(), subject: subject.trim() || null,
-    });
-    if (error) return toast.error(error.message);
+    await createPost({ data: { title: title.trim(), body: body.trim(), subject: subject.trim() || undefined } });
     toast.success("Posted");
     setTitle(""); setBody(""); setSubject("");
     load();
@@ -73,10 +73,7 @@ function CommunityPage() {
   const reply = async (parentId: string, text: string) => {
     if (!user) return toast.error("Please sign in to reply");
     if (!text.trim()) return;
-    const { error } = await supabase.from("forum_posts").insert({
-      user_id: user.id, parent_id: parentId, body: text.trim(),
-    });
-    if (error) return toast.error(error.message);
+    await createPost({ data: { body: text.trim(), parentId } });
     load();
   };
 

@@ -4,19 +4,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { BookOpen, Video, FileText, Link as LinkIcon, Play } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, EmptyState } from "@/components/dashboard/primitives";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PageContainer, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { getCourseMaterialUrl } from "@/lib/course-materials.functions";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
+import { getCourseMaterialUrl } from "@/application/use-cases/courses/material-url";
 
 export const Route = createFileRoute("/_authenticated/my-courses")({
   component: MyCoursesPage,

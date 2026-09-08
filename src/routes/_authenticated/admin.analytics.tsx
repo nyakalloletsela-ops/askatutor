@@ -14,8 +14,8 @@ import {
 import { Users, GraduationCap, BookOpen, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, StatCard, SectionHeader } from "@/components/dashboard/primitives";
-import { Card, CardContent } from "@/components/ui/card";
+import { PageContainer, StatCard, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
   beforeLoad: async () => {

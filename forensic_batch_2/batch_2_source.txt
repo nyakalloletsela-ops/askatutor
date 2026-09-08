@@ -1,0 +1,3643 @@
+﻿# AskATutorLive — Batch 2 Source Evidence
+Generated: 2026-08-25 08:52:51
+
+============================================================
+FILE: src\lib\payments\webhook-actions.ts
+============================================================
+
+export type PaypalWebhookEvent = {
+  event_type?: string;
+  resource?: Record<string, unknown>;
+};
+
+export type WebhookAction =
+  | { kind: "finalize"; customId: string; providerRef: string }
+  | { kind: "refund"; intentId: string; reason: string }
+  | { kind: "mark_failed"; intentId: string; reason: string }
+  | { kind: "ignore" };
+
+function readCustomId(resource: Record<string, unknown>): string | undefined {
+  return (
+    (resource.custom_id as string | undefined) ??
+    (resource as { supplementary_data?: { related_ids?: { order_id?: string } } })
+      .supplementary_data?.related_ids?.order_id
+  );
+}
+
+/**
+ * Maps a PayPal webhook event to a single, safe database action.
+ *
+ * Money only ever moves on real capture events:
+ *  - PAYMENT.CAPTURE.COMPLETED  -> finalize (credit ledger)
+ *  - PAYMENT.CAPTURE.REFUNDED/REVERSED -> refund (reverse ledger)
+ *  - PAYMENT.CAPTURE.DENIED/DECLINED   -> mark_failed
+ *  - CHECKOUT.ORDER.APPROVED and everything else -> ignore. An approved order
+ *    is NOT a capture; finalizing on APPROVED credited the ledger before money
+ *    moved (the previous P0-3 bug).
+ */
+export function resolvePaypalWebhookAction(event: PaypalWebhookEvent): WebhookAction {
+  const type = event.event_type ?? "";
+  const resource = (event.resource ?? {}) as Record<string, unknown>;
+
+  if (type === "PAYMENT.CAPTURE.COMPLETED") {
+    const customId = readCustomId(resource);
+    const providerRef =
+      (resource.id as string | undefined) ??
+      (resource as { invoice_id?: string }).invoice_id;
+    if (customId && providerRef) return { kind: "finalize", customId, providerRef };
+    return { kind: "ignore" };
+  }
+
+  if (type === "PAYMENT.CAPTURE.REFUNDED" || type === "PAYMENT.CAPTURE.REVERSED") {
+    const customId = readCustomId(resource);
+    if (customId) return { kind: "refund", intentId: customId, reason: `PayPal: ${type}` };
+    return { kind: "ignore" };
+  }
+
+  if (type === "PAYMENT.CAPTURE.DENIED" || type === "PAYMENT.CAPTURE.DECLINED") {
+    const customId = readCustomId(resource);
+    if (customId) return { kind: "mark_failed", intentId: customId, reason: `PayPal: ${type}` };
+    return { kind: "ignore" };
+  }
+
+  return { kind: "ignore" };
+}
+
+============================================================
+FILE: src\routes\api\public\webhooks\paypal.ts
+============================================================
+
+import { createFileRoute } from "@tanstack/react-router";
+
+/**
+ * PayPal webhook receiver. Verifies the signature, then maps the event to a
+ * single safe action:
+ *  - PAYMENT.CAPTURE.COMPLETED   -> finalize_payment_succeeded (credit ledger)
+ *  - PAYMENT.CAPTURE.REFUNDED / REVERSED -> refund_payment (reverse ledger)
+ *  - PAYMENT.CAPTURE.DENIED / DECLINED   -> mark_payment_failed
+ *  - CHECKOUT.ORDER.APPROVED and anything else -> ignored (order approval is
+ *    NOT a capture; money must move before the ledger is credited).
+ *
+ * finalize_payment_succeeded and refund_payment are idempotent â€” replaying a
+ * webhook or the return-URL flow is safe.
+ *
+ * Endpoint URL (paste into PayPal Developer â†’ Webhooks):
+ *   https://<your-domain>/api/public/webhooks/paypal
+ */
+export const Route = createFileRoute("/api/public/webhooks/paypal")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const rawBody = await request.text();
+        let event: { event_type?: string; resource?: Record<string, unknown> };
+        try {
+          event = JSON.parse(rawBody);
+        } catch {
+          return new Response("Invalid JSON", { status: 400 });
+        }
+
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: provider } = await supabaseAdmin
+          .from("payment_providers")
+          .select("mode, credentials_ref")
+          .eq("slug", "paypal")
+          .maybeSingle();
+        if (!provider || !provider.credentials_ref) {
+          return new Response("PayPal not configured", { status: 503 });
+        }
+
+        const { paypalVerifyWebhook } = await import("@/lib/payments/paypal.server");
+        const ok = await paypalVerifyWebhook({
+          mode: provider.mode as "sandbox" | "live",
+          credentialsRef: provider.credentials_ref,
+          headers: request.headers,
+          rawBody,
+        });
+        if (!ok) return new Response("Invalid signature", { status: 401 });
+
+        const { resolvePaypalWebhookAction } = await import("@/lib/payments/webhook-actions");
+        const action = resolvePaypalWebhookAction(event);
+
+        try {
+          if (action.kind === "finalize") {
+            await supabaseAdmin.rpc("finalize_payment_succeeded", {
+              _intent: action.customId,
+              _provider: "paypal",
+              _provider_ref: action.providerRef,
+            });
+          } else if (action.kind === "refund") {
+            await supabaseAdmin.rpc("refund_payment", {
+              _intent: action.intentId,
+              _reason: action.reason,
+            });
+          } else if (action.kind === "mark_failed") {
+            await supabaseAdmin.rpc("mark_payment_failed", {
+              _intent: action.intentId,
+              _reason: action.reason,
+            });
+          }
+        } catch (e) {
+          // Unknown intent or already-finalized â€” log only, never crash the
+          // webhook (PayPal retries otherwise).
+          console.error("[paypal webhook] action error:", e);
+        }
+
+        return new Response("ok");
+      },
+    },
+  },
+});
+
+============================================================
+FILE: src\lib\payments\checkout.functions.ts
+============================================================
+
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+const StartSchema = z.object({
+  tutorId: z.string().uuid(),
+  sessionId: z.string().uuid().nullable().optional(),
+  amountCents: z.number().int().positive().max(10_000_000),
+  currency: z.string().trim().min(3).max(8).default("USD"),
+  subject: z.string().trim().max(120).nullable().optional(),
+  description: z.string().trim().max(240).optional(),
+  country: z.string().trim().max(4).optional(),
+});
+
+/**
+ * Student-callable: creates a payment_intent and routes through the
+ * PaymentRouter (PayPal today, more providers as admins enable them).
+ * Returns the approval URL to redirect to.
+ */
+export const startCheckout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => StartSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { getRequestHost } = await import("@tanstack/react-start/server");
+
+    // commission via existing RPC
+    const { data: commission, error: cErr } = await supabase.rpc(
+      "compute_commission_cents",
+      { _amount_cents: data.amountCents, _tutor: data.tutorId, _subject: data.subject ?? undefined },
+    );
+    if (cErr) throw new Error(cErr.message);
+    const commissionCents = Number(commission ?? 0);
+    const tutorNetCents = data.amountCents - commissionCents;
+
+    const { data: intentRow, error: iErr } = await supabase
+      .from("payment_intents")
+      .insert({
+        student_id: userId,
+        tutor_id: data.tutorId,
+        session_id: data.sessionId ?? null,
+        provider: "pending",
+        gross_cents: data.amountCents,
+        currency: data.currency.toUpperCase(),
+        commission_cents: commissionCents,
+        tutor_net_cents: tutorNetCents,
+        status: "pending",
+        metadata: { subject: data.subject ?? null },
+      })
+      .select("id")
+      .single();
+    if (iErr || !intentRow) throw new Error(iErr?.message ?? "Could not create payment intent");
+
+    const host = getRequestHost();
+    const proto = host.startsWith("localhost") ? "http" : "https";
+    const base = `${proto}://${host}`;
+    const returnUrl = `${base}/api/checkout/return?intent=${intentRow.id}`;
+    const cancelUrl = `${base}/checkout/cancelled?intent=${intentRow.id}`;
+
+    const { routeCheckoutStart } = await import("./router.server");
+    const result = await routeCheckoutStart({
+      intentId: intentRow.id,
+      amountCents: data.amountCents,
+      currency: data.currency.toUpperCase(),
+      country: data.country,
+      returnUrl,
+      cancelUrl,
+      description: data.description,
+    });
+
+    return {
+      intentId: intentRow.id,
+      approvalUrl: result.approvalUrl,
+      provider: result.providerSlug,
+    };
+  });
+
+============================================================
+FILE: src\routes\api\checkout\return.tsx
+============================================================
+
+import { createFileRoute } from "@tanstack/react-router";
+
+/**
+ * Return URL hit by PayPal after the buyer approves the payment.
+ * We capture the order, finalize the intent + ledger, then redirect the
+ * user back into the app.
+ */
+export const Route = createFileRoute("/api/checkout/return")({
+  server: {
+    handlers: {
+      GET: async ({ request }) => {
+        const url = new URL(request.url);
+        const intentId = url.searchParams.get("intent");
+        const paypalToken = url.searchParams.get("token"); // PayPal order id
+        const origin = `${url.protocol}//${url.host}`;
+
+        if (!intentId || !paypalToken) {
+          return Response.redirect(`${origin}/checkout/failed?reason=missing_params`, 302);
+        }
+
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { data: intent, error: iErr } = await supabaseAdmin
+            .from("payment_intents")
+            .select("id, provider, provider_ref, status")
+            .eq("id", intentId)
+            .maybeSingle();
+          if (iErr || !intent) {
+            return Response.redirect(`${origin}/checkout/failed?reason=intent_not_found`, 302);
+          }
+          if (intent.status === "succeeded") {
+            return Response.redirect(`${origin}/checkout/success?intent=${intentId}`, 302);
+          }
+
+          const { data: provider, error: pErr } = await supabaseAdmin
+            .from("payment_providers")
+            .select("slug, mode, credentials_ref")
+            .eq("slug", intent.provider)
+            .maybeSingle();
+          if (pErr || !provider || !provider.credentials_ref) {
+            return Response.redirect(`${origin}/checkout/failed?reason=provider_missing`, 302);
+          }
+
+          if (provider.slug === "paypal") {
+            const { paypalCaptureOrder, paypalGetOrder } = await import("@/lib/payments/paypal.server");
+            let cap;
+            try {
+              cap = await paypalCaptureOrder({
+                mode: provider.mode as "sandbox" | "live",
+                credentialsRef: provider.credentials_ref,
+                orderId: paypalToken,
+              });
+            } catch (captureErr) {
+              // Race with the webhook: if the capture was already completed
+              // (webhook finalized it first), the capture call may error with
+              // 422. Verify the order state before deciding.
+              cap = await paypalGetOrder({
+                mode: provider.mode as "sandbox" | "live",
+                credentialsRef: provider.credentials_ref,
+                orderId: paypalToken,
+              });
+              if (cap.status !== "COMPLETED") throw captureErr;
+            }
+            if (cap.status !== "COMPLETED") {
+              await supabaseAdmin.rpc("mark_payment_failed", {
+                _intent: intentId,
+                _reason: `PayPal capture status: ${cap.status}`,
+              });
+              return Response.redirect(
+                `${origin}/checkout/failed?reason=capture_${cap.status.toLowerCase()}`,
+                302,
+              );
+            }
+            await supabaseAdmin.rpc("finalize_payment_succeeded", {
+              _intent: intentId,
+              _provider: "paypal",
+              _provider_ref: cap.captureId ?? paypalToken,
+            });
+            return Response.redirect(`${origin}/checkout/success?intent=${intentId}`, 302);
+          }
+
+          return Response.redirect(`${origin}/checkout/failed?reason=unknown_provider`, 302);
+        } catch (e) {
+          const msg = encodeURIComponent(e instanceof Error ? e.message : "capture_error");
+          return Response.redirect(`${origin}/checkout/failed?reason=${msg}`, 302);
+        }
+      },
+    },
+  },
+});
+
+============================================================
+FILE: src\lib\booking-emails.functions.ts
+============================================================
+
+import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
+import { supabaseAdmin } from '@/integrations/supabase/client.server'
+import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware'
+
+async function sendOne(payload: {
+  templateName: string
+  recipientEmail: string
+  idempotencyKey: string
+  templateData: Record<string, any>
+}) {
+  const { sendTransactionalEmail } = await import('@/lib/email/provider.server')
+  await sendTransactionalEmail(payload)
+}
+
+function formatWhen(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return iso
+  }
+}
+
+export const notifyBookingEmails = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ sessionId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    // Look up the session
+    const { data: session, error } = await supabaseAdmin
+      .from('sessions')
+      .select('id, tutor_id, student_id, subject, scheduled_at, duration_min')
+      .eq('id', data.sessionId)
+      .maybeSingle()
+    if (error || !session) {
+      console.error('notifyBookingEmails: session not found', error)
+      return { ok: false }
+    }
+
+    // Authorize: only the session's tutor, student, or an admin may trigger
+    // booking emails for this session. Prevents unrelated authenticated users
+    // from spamming arbitrary participants by guessing session UUIDs.
+    const callerId = context.userId
+    const isParticipant =
+      callerId === session.tutor_id || callerId === session.student_id
+    if (!isParticipant) {
+      const { data: adminRows } = await supabaseAdmin
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', callerId)
+        .eq('role', 'admin')
+        .limit(1)
+      if (!adminRows || adminRows.length === 0) {
+        return { ok: false, error: 'Forbidden' }
+      }
+    }
+
+    // Look up names from profiles
+    const { data: profs } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', [session.tutor_id, session.student_id])
+    const nameOf = (id: string) =>
+      profs?.find((p) => p.id === id)?.full_name ?? null
+
+    // Look up emails via auth admin
+    const [tutorRes, studentRes] = await Promise.all([
+      supabaseAdmin.auth.admin.getUserById(session.tutor_id),
+      supabaseAdmin.auth.admin.getUserById(session.student_id),
+    ])
+    const tutorEmail = tutorRes.data.user?.email ?? null
+    const studentEmail = studentRes.data.user?.email ?? null
+
+    const when = formatWhen(session.scheduled_at)
+    const tutorName = nameOf(session.tutor_id)
+    const studentName = nameOf(session.student_id)
+
+    const sends: Promise<void>[] = []
+    if (studentEmail) {
+      sends.push(
+        sendOne({
+          templateName: 'booking-confirmation',
+          recipientEmail: studentEmail,
+          idempotencyKey: `booking-${session.id}-student`,
+          templateData: {
+            recipientName: studentName,
+            counterpartName: tutorName,
+            subject: session.subject,
+            scheduledAt: when,
+            durationMin: session.duration_min,
+            role: 'student',
+          },
+        }),
+      )
+    }
+    if (tutorEmail) {
+      sends.push(
+        sendOne({
+          templateName: 'booking-confirmation',
+          recipientEmail: tutorEmail,
+          idempotencyKey: `booking-${session.id}-tutor`,
+          templateData: {
+            recipientName: tutorName,
+            counterpartName: studentName,
+            subject: session.subject,
+            scheduledAt: when,
+            durationMin: session.duration_min,
+            role: 'tutor',
+          },
+        }),
+      )
+    }
+    await Promise.all(sends)
+    return { ok: true }
+  })
+
+============================================================
+FILE: src\routes\_authenticated\admin.payments.tsx
+============================================================
+
+import { useMemo, useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Wallet, CheckCircle2, Clock, XCircle, Plus, Trash2, Pencil } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { checkIsAdmin } from "@/lib/access.functions";
+import { PageContainer, StatCard } from "@/components/dashboard/primitives";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
+export const Route = createFileRoute("/_authenticated/admin/payments")({
+  beforeLoad: async () => {
+    try {
+      const { isAdmin } = await checkIsAdmin();
+      if (!isAdmin) throw redirect({ to: "/dashboard" });
+    } catch (e) {
+      if (e && typeof e === "object" && "to" in e) throw e;
+      throw redirect({ to: "/dashboard" });
+    }
+  },
+  component: PaymentsPage,
+});
+
+type Status = "pending" | "approved" | "rejected";
+type Kind = "student" | "tutor";
+type Row = {
+  id: string;
+  transaction_ref: string;
+  payment_method: "mpesa" | "ecocash";
+  amount: number;
+  status: Status;
+  submitted_at: string;
+  notes: string | null;
+  student_id?: string;
+  tutor_id?: string;
+  kind: Kind;
+};
+
+function tableFor(kind: Kind) {
+  return kind === "student" ? "student_subscriptions" : "tutor_subscriptions";
+}
+
+function PaymentsPage() {
+  const qc = useQueryClient();
+  const [tab, setTab] = useState<Status | "all">("pending");
+  const [filterKind, setFilterKind] = useState<"all" | Kind>("all");
+
+  const { data } = useQuery({
+    queryKey: ["admin-payments"],
+    queryFn: async () => {
+      const [students, tutors] = await Promise.all([
+        supabase.from("student_subscriptions").select("*").order("submitted_at", { ascending: false }).limit(200),
+        supabase.from("tutor_subscriptions").select("*").order("submitted_at", { ascending: false }).limit(200),
+      ]);
+      const sRows = ((students.data ?? []) as Record<string, unknown>[]).map(
+        (s) => ({ ...s, kind: "student" }) as unknown as Row,
+      );
+      const tRows = ((tutors.data ?? []) as Record<string, unknown>[]).map(
+        (s) => ({ ...s, kind: "tutor" }) as unknown as Row,
+      );
+      const all: Row[] = [...sRows, ...tRows].sort(
+        (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime(),
+      );
+      const totalApproved = all.filter((x) => x.status === "approved").reduce((s, x) => s + Number(x.amount), 0);
+      return {
+        all,
+        totalApproved,
+        approved: all.filter((x) => x.status === "approved").length,
+        pending: all.filter((x) => x.status === "pending").length,
+        rejected: all.filter((x) => x.status === "rejected").length,
+      };
+    },
+  });
+
+  const rows = useMemo(() => {
+    let r = data?.all ?? [];
+    if (tab !== "all") r = r.filter((x) => x.status === tab);
+    if (filterKind !== "all") r = r.filter((x) => x.kind === filterKind);
+    return r;
+  }, [data, tab, filterKind]);
+
+  const setStatus = useMutation({
+    mutationFn: async ({ row, status }: { row: Row; status: Status }) => {
+      const { error } = await supabase
+        .from(tableFor(row.kind))
+        .update({ status, approved_at: status === "approved" ? new Date().toISOString() : null })
+        .eq("id", row.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Updated");
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (row: Row) => {
+      const { error } = await supabase.from(tableFor(row.kind)).delete().eq("id", row.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <PageContainer
+      title="Payments & Subscriptions"
+      description="Full control over student and tutor subscriptions."
+      actions={<GrantDialog />}
+    >
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={Wallet} label="Total approved" value={`M ${data?.totalApproved ?? 0}`} />
+        <StatCard icon={CheckCircle2} label="Approved" value={data?.approved ?? 0} />
+        <StatCard icon={Clock} label="Pending" value={data?.pending ?? 0} />
+        <StatCard icon={XCircle} label="Rejected" value={data?.rejected ?? 0} />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as Status | "all")}>
+          <TabsList>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+          <TabsContent value={tab} />
+        </Tabs>
+
+        <Select value={filterKind} onValueChange={(v) => setFilterKind(v as "all" | Kind)}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All users</SelectItem>
+            <SelectItem value="student">Students</SelectItem>
+            <SelectItem value="tutor">Tutors</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {rows.map((row) => (
+              <div key={`${row.kind}-${row.id}`} className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{row.transaction_ref}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {row.kind} Â· {row.payment_method} Â· {new Date(row.submitted_at).toLocaleDateString()}
+                  </p>
+                  {row.notes && <p className="mt-1 text-xs italic text-muted-foreground">â€œ{row.notes}â€</p>}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="tabular-nums font-medium">M {row.amount}</span>
+                  <Badge
+                    variant={row.status === "approved" ? "default" : row.status === "pending" ? "secondary" : "destructive"}
+                    className="text-[10px]"
+                  >
+                    {row.status}
+                  </Badge>
+                  {row.status !== "approved" && (
+                    <Button size="sm" variant="default" onClick={() => setStatus.mutate({ row, status: "approved" })}>
+                      Approve
+                    </Button>
+                  )}
+                  {row.status !== "rejected" && (
+                    <Button size="sm" variant="outline" onClick={() => setStatus.mutate({ row, status: "rejected" })}>
+                      Reject
+                    </Button>
+                  )}
+                  {row.status !== "pending" && (
+                    <Button size="sm" variant="ghost" onClick={() => setStatus.mutate({ row, status: "pending" })}>
+                      Revoke
+                    </Button>
+                  )}
+                  <EditDialog row={row} />
+                  <Button size="icon" variant="ghost" onClick={() => del.mutate(row)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {rows.length === 0 && (
+              <p className="p-6 text-center text-sm text-muted-foreground">No transactions match.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </PageContainer>
+  );
+}
+
+function EditDialog({ row }: { row: Row }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState(String(row.amount));
+  const [notes, setNotes] = useState(row.notes ?? "");
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from(tableFor(row.kind))
+        .update({ amount: Number(amount), notes: notes || null })
+        .eq("id", row.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Saved");
+      setOpen(false);
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="icon" variant="ghost">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit subscription</DialogTitle>
+          <DialogDescription>Adjust amount or add an internal note.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Amount (M)</Label>
+            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button disabled={save.isPending} onClick={() => save.mutate()}>
+            {save.isPending ? "Savingâ€¦" : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function GrantDialog() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<Kind>("student");
+  const [userId, setUserId] = useState("");
+  const [amount, setAmount] = useState("0");
+  const [notes, setNotes] = useState("Manual grant");
+
+  const grant = useMutation({
+    mutationFn: async () => {
+      if (!userId) throw new Error("User ID required");
+      const ref = `ADMIN-${Date.now()}`;
+      const base = {
+        transaction_ref: ref,
+        payment_method: "mpesa" as const,
+        amount: Number(amount),
+        status: "approved" as const,
+        notes: notes || null,
+        approved_at: new Date().toISOString(),
+      };
+      const { error } =
+        kind === "student"
+          ? await supabase.from("student_subscriptions").insert({ ...base, student_id: userId })
+          : await supabase.from("tutor_subscriptions").insert({ ...base, tutor_id: userId });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Subscription granted");
+      setOpen(false);
+      setUserId("");
+      qc.invalidateQueries({ queryKey: ["admin-payments"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus className="mr-1 h-4 w-4" /> Grant subscription
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Grant subscription</DialogTitle>
+          <DialogDescription>Manually approve a subscription for a student or tutor (no transaction needed).</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>For</Label>
+            <Select value={kind} onValueChange={(v) => setKind(v as Kind)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Student</SelectItem>
+                <SelectItem value="tutor">Tutor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>User ID</Label>
+            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="auth user UUID" />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Copy from Admin â†’ {kind === "student" ? "Students" : "Tutors"}.
+            </p>
+          </div>
+          <div>
+            <Label>Amount (M)</Label>
+            <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+          <div>
+            <Label>Notes</Label>
+            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button disabled={grant.isPending} onClick={() => grant.mutate()}>
+            {grant.isPending ? "Grantingâ€¦" : "Grant"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+============================================================
+FILE: src\routes\_authenticated\admin.payouts.tsx
+============================================================
+
+import { useMemo, useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import {
+  Wallet,
+  TrendingUp,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  Play,
+  RefreshCw,
+  Download,
+  Plus,
+  Layers,
+  Settings2,
+  ShieldCheck,
+  RotateCcw,
+  Banknote,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { checkIsAdmin } from "@/lib/access.functions";
+import { PageContainer, StatCard, EmptyState } from "@/components/dashboard/primitives";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+export const Route = createFileRoute("/_authenticated/admin/payouts")({
+  beforeLoad: async () => {
+    try {
+      const { isAdmin } = await checkIsAdmin();
+      if (!isAdmin) throw redirect({ to: "/dashboard" });
+    } catch (e) {
+      if (e && typeof e === "object" && "to" in e) throw e;
+      throw redirect({ to: "/dashboard" });
+    }
+  },
+  component: AdminPayoutsPage,
+});
+
+/* ====================================================================== */
+/*  HELPERS                                                                */
+/* ====================================================================== */
+
+function fmt(cents: number | null | undefined, currency = "USD") {
+  const n = Number(cents ?? 0) / 100;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toFixed(2)}`;
+  }
+}
+
+function statusBadge(status: string) {
+  const map: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+    pending: { variant: "secondary", label: "Pending" },
+    processing: { variant: "secondary", label: "Processing" },
+    succeeded: { variant: "default", label: "Succeeded" },
+    completed: { variant: "default", label: "Completed" },
+    paid: { variant: "default", label: "Paid" },
+    failed: { variant: "destructive", label: "Failed" },
+    refunded: { variant: "outline", label: "Refunded" },
+    cancelled: { variant: "outline", label: "Cancelled" },
+  };
+  const cfg = map[status] ?? { variant: "outline" as const, label: status };
+  return (
+    <Badge variant={cfg.variant} className="text-[10px] uppercase tracking-wide">
+      {cfg.label}
+    </Badge>
+  );
+}
+
+/* ====================================================================== */
+/*  PAGE                                                                   */
+/* ====================================================================== */
+
+function AdminPayoutsPage() {
+  const initial = typeof window !== "undefined" && window.location.hash
+    ? window.location.hash.replace("#", "")
+    : "overview";
+  const [tab, setTab] = useState(initial);
+  return (
+    <PageContainer
+      title="Payments & Payouts"
+      description="Ledger-backed view of every cent â€” intakes, holds, commissions and weekly tutor payouts."
+    >
+      <Tabs value={tab} onValueChange={setTab} className="space-y-5">
+        <TabsList className="flex w-full flex-wrap gap-1 sm:w-auto">
+          <TabsTrigger value="overview"><TrendingUp className="mr-1.5 h-3.5 w-3.5" />Overview</TabsTrigger>
+          <TabsTrigger value="intents"><Wallet className="mr-1.5 h-3.5 w-3.5" />Payment Intents</TabsTrigger>
+          <TabsTrigger value="runs"><Banknote className="mr-1.5 h-3.5 w-3.5" />Payout Runs</TabsTrigger>
+          <TabsTrigger value="providers"><Settings2 className="mr-1.5 h-3.5 w-3.5" />Providers</TabsTrigger>
+          <TabsTrigger value="levels"><Layers className="mr-1.5 h-3.5 w-3.5" />Tutor Levels</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview"><OverviewTab /></TabsContent>
+        <TabsContent value="intents"><IntentsTab /></TabsContent>
+        <TabsContent value="runs"><PayoutRunsTab /></TabsContent>
+        <TabsContent value="providers"><ProvidersTab /></TabsContent>
+        <TabsContent value="levels"><TutorLevelsTab /></TabsContent>
+      </Tabs>
+    </PageContainer>
+  );
+}
+
+/* ====================================================================== */
+/*  OVERVIEW                                                               */
+/* ====================================================================== */
+
+function OverviewTab() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["payments-overview"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("payments_admin_overview");
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return row as {
+        total_volume_cents: number;
+        total_revenue_cents: number;
+        succeeded_count: number;
+        pending_payout_cents: number;
+        failed_transfers: number;
+        refunded_cents: number;
+      } | null;
+    },
+  });
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={Wallet} label="Total volume" value={isLoading ? "â€¦" : fmt(data?.total_volume_cents)} />
+        <StatCard icon={TrendingUp} label="Platform revenue" value={isLoading ? "â€¦" : fmt(data?.total_revenue_cents)} hint={`${data?.succeeded_count ?? 0} paid sessions`} />
+        <StatCard icon={Clock} label="Pending payouts" value={isLoading ? "â€¦" : fmt(data?.pending_payout_cents)} />
+        <StatCard icon={AlertCircle} label="Failed transfers" value={isLoading ? "â€¦" : data?.failed_transfers ?? 0} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4" /> Ledger integrity
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>â€¢ Every student payment writes a <span className="font-medium text-foreground">platform credit</span> and a <span className="font-medium text-foreground">tutor-earnings credit</span> to the immutable ledger.</p>
+          <p>â€¢ Funds stay in a <span className="font-medium text-foreground">hold window</span> (default 72h) before becoming payable.</p>
+          <p>â€¢ Refunds reverse the original credits and write a refunds credit â€” never delete history.</p>
+          <p>â€¢ Payouts debit tutor earnings and credit the payout balance, linking back to the originating intents.</p>
+          <p>â€¢ Commission resolution: <span className="font-mono text-xs">per-tutor â†’ tutor level â†’ subject â†’ global</span>.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">Record a manual payment</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use this until live providers are wired. Writes intent + ledger credits in one step.
+            </p>
+          </div>
+          <ManualIntentDialog />
+        </CardHeader>
+      </Card>
+
+      {(data?.refunded_cents ?? 0) > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Lifetime refunded: <span className="font-medium text-foreground">{fmt(data?.refunded_cents)}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ====================================================================== */
+/*  PAYMENT INTENTS                                                        */
+/* ====================================================================== */
+
+type Intent = {
+  id: string;
+  student_id: string;
+  tutor_id: string;
+  session_id: string | null;
+  provider: string;
+  provider_ref: string | null;
+  method: string | null;
+  gross_cents: number;
+  currency: string;
+  commission_cents: number;
+  tutor_net_cents: number;
+  status: "pending" | "succeeded" | "failed" | "refunded";
+  hold_until: string | null;
+  succeeded_at: string | null;
+  created_at: string;
+};
+
+function IntentsTab() {
+  const qc = useQueryClient();
+  const [status, setStatus] = useState<"all" | Intent["status"]>("all");
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["payment-intents", status],
+    queryFn: async () => {
+      let q = supabase.from("payment_intents").select("*").order("created_at", { ascending: false }).limit(200);
+      if (status !== "all") q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as Intent[];
+    },
+  });
+
+  const refund = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { error } = await supabase.rpc("admin_refund_intent", { _intent: id, _reason: reason });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Intent refunded");
+      qc.invalidateQueries({ queryKey: ["payment-intents"] });
+      qc.invalidateQueries({ queryKey: ["payments-overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-4">
+      <Tabs value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="succeeded">Succeeded</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="failed">Failed</TabsTrigger>
+          <TabsTrigger value="refunded">Refunded</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">Loadingâ€¦</p>
+          ) : rows.length === 0 ? (
+            <EmptyState icon={Wallet} title="No payment intents yet" description="They will appear here as soon as student payments come in." />
+          ) : (
+            <div className="divide-y divide-border/60">
+              {rows.map((r) => <IntentRow key={r.id} row={r} onRefund={(reason) => refund.mutate({ id: r.id, reason })} />)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function IntentRow({ row, onRefund }: { row: Intent; onRefund: (reason: string) => void }) {
+  const [reason, setReason] = useState("");
+  const canRefund = row.status === "succeeded";
+
+  return (
+    <div className="flex flex-col gap-3 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-medium tabular-nums">{fmt(row.gross_cents, row.currency)}</span>
+          {statusBadge(row.status)}
+          <Badge variant="outline" className="text-[10px] uppercase">{row.provider}</Badge>
+          {row.method && <Badge variant="outline" className="text-[10px]">{row.method}</Badge>}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Commission {fmt(row.commission_cents, row.currency)} Â· Tutor {fmt(row.tutor_net_cents, row.currency)} Â·{" "}
+          {new Date(row.created_at).toLocaleString()}
+        </p>
+        <p className="mt-0.5 break-all font-mono text-[10px] text-muted-foreground">
+          intent {row.id.slice(0, 8)} Â· tutor {row.tutor_id.slice(0, 8)} Â· student {row.student_id.slice(0, 8)}
+          {row.provider_ref && ` Â· ref ${row.provider_ref}`}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {canRefund && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline"><RotateCcw className="mr-1 h-3.5 w-3.5" />Refund</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Refund this payment?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Reverses {fmt(row.gross_cents, row.currency)} from platform balance and {fmt(row.tutor_net_cents, row.currency)} from tutor earnings.
+                  Cannot be undone. Refunds intents that have already been paid out must be handled offline.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-1">
+                <Label className="text-xs">Reason (optional)</Label>
+                <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => onRefund(reason)}
+                >
+                  Refund
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ====================================================================== */
+/*  PAYOUT RUNS                                                            */
+/* ====================================================================== */
+
+type PayoutRun = {
+  id: string;
+  period_start: string;
+  period_end: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  total_gross_cents: number;
+  total_commission_cents: number;
+  total_net_cents: number;
+  created_at: string;
+  completed_at: string | null;
+};
+
+type PayoutItem = {
+  id: string;
+  payout_run_id: string;
+  tutor_id: string;
+  gross_cents: number;
+  commission_cents: number;
+  net_cents: number;
+  currency: string;
+  provider: string | null;
+  provider_transfer_ref: string | null;
+  status: "pending" | "processing" | "paid" | "failed" | "cancelled";
+  failure_reason: string | null;
+  paid_at: string | null;
+};
+
+function PayoutRunsTab() {
+  const qc = useQueryClient();
+  const [openRunId, setOpenRunId] = useState<string | null>(null);
+
+  const { data: runs = [], isLoading } = useQuery({
+    queryKey: ["payout-runs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payout_runs")
+        .select("*")
+        .order("period_start", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as PayoutRun[];
+    },
+  });
+
+  const createRun = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc("admin_create_payout_run", {});
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: (id) => {
+      toast.success("Payout run opened");
+      setOpenRunId(id);
+      qc.invalidateQueries({ queryKey: ["payout-runs"] });
+      qc.invalidateQueries({ queryKey: ["payments-overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Each Monday a new run aggregates last week's settled payments. You can also open one manually.
+        </p>
+        <Button onClick={() => createRun.mutate()} disabled={createRun.isPending}>
+          <Play className="mr-1.5 h-4 w-4" /> {createRun.isPending ? "Openingâ€¦" : "Open new run"}
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">Loadingâ€¦</p>
+          ) : runs.length === 0 ? (
+            <EmptyState icon={Banknote} title="No payout runs yet" description="Open the first one with the button above." />
+          ) : (
+            <div className="divide-y divide-border/60">
+              {runs.map((r) => (
+                <div key={r.id} className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {new Date(r.period_start).toLocaleDateString()} â†’ {new Date(r.period_end).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Net {fmt(r.total_net_cents)} Â· Commission {fmt(r.total_commission_cents)} Â· Gross {fmt(r.total_gross_cents)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {statusBadge(r.status)}
+                    <Button size="sm" variant="outline" onClick={() => setOpenRunId(r.id)}>
+                      Details
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <PayoutRunDialog runId={openRunId} onClose={() => setOpenRunId(null)} />
+    </div>
+  );
+}
+
+function PayoutRunDialog({ runId, onClose }: { runId: string | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const open = !!runId;
+
+  const { data: items = [], isLoading, refetch } = useQuery({
+    queryKey: ["payout-items", runId],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payout_items")
+        .select("*")
+        .eq("payout_run_id", runId!)
+        .order("net_cents", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as PayoutItem[];
+    },
+  });
+
+  const markPaid = useMutation({
+    mutationFn: async ({ id, ref }: { id: string; ref: string }) => {
+      const { error } = await supabase.rpc("admin_mark_payout_item_paid", {
+        _item: id,
+        _provider_ref: ref || undefined,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Marked paid");
+      refetch();
+      qc.invalidateQueries({ queryKey: ["payout-runs"] });
+      qc.invalidateQueries({ queryKey: ["payments-overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const markFailed = useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { error } = await supabase.rpc("admin_mark_payout_item_failed", { _item: id, _reason: reason });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Marked failed");
+      refetch();
+      qc.invalidateQueries({ queryKey: ["payments-overview"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const exportCsv = () => {
+    if (!items.length) return;
+    const header = "tutor_id,gross_cents,commission_cents,net_cents,currency,status,paid_at,provider_transfer_ref";
+    const lines = items.map((i) =>
+      [i.tutor_id, i.gross_cents, i.commission_cents, i.net_cents, i.currency, i.status, i.paid_at ?? "", i.provider_transfer_ref ?? ""].join(","),
+    );
+    const blob = new Blob([header + "\n" + lines.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payout-run-${runId?.slice(0, 8)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Payout run details</DialogTitle>
+          <DialogDescription>Per-tutor breakdown. Mark each line paid once the transfer succeeds.</DialogDescription>
+        </DialogHeader>
+        <div className="flex items-center justify-between gap-2">
+          <Badge variant="secondary">{items.length} tutor{items.length === 1 ? "" : "s"}</Badge>
+          <Button size="sm" variant="outline" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" />Export CSV</Button>
+        </div>
+        <div className="max-h-[60vh] divide-y divide-border/60 overflow-y-auto rounded-md border">
+          {isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">Loadingâ€¦</p>
+          ) : items.length === 0 ? (
+            <p className="p-6 text-sm text-muted-foreground">No eligible payments in this period.</p>
+          ) : (
+            items.map((i) => <PayoutItemRow key={i.id} item={i} onPay={(ref) => markPaid.mutate({ id: i.id, ref })} onFail={(r) => markFailed.mutate({ id: i.id, reason: r })} />)
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PayoutItemRow({ item, onPay, onFail }: { item: PayoutItem; onPay: (ref: string) => void; onFail: (reason: string) => void }) {
+  const [ref, setRef] = useState("");
+  const [reason, setReason] = useState("");
+
+  return (
+    <div className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="font-medium tabular-nums">{fmt(item.net_cents, item.currency)}</p>
+        <p className="text-xs text-muted-foreground">
+          Gross {fmt(item.gross_cents, item.currency)} Â· Commission {fmt(item.commission_cents, item.currency)}
+        </p>
+        <p className="mt-0.5 break-all font-mono text-[10px] text-muted-foreground">
+          tutor {item.tutor_id.slice(0, 8)}
+          {item.provider_transfer_ref && ` Â· ref ${item.provider_transfer_ref}`}
+        </p>
+        {item.failure_reason && <p className="mt-1 text-xs italic text-destructive">{item.failure_reason}</p>}
+      </div>
+      <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+        {statusBadge(item.status)}
+        {item.status === "pending" || item.status === "processing" || item.status === "failed" ? (
+          <>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="default"><CheckCircle2 className="mr-1 h-3.5 w-3.5" />Mark paid</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm payout sent</DialogTitle>
+                  <DialogDescription>Add the bank / provider reference if you have one.</DialogDescription>
+                </DialogHeader>
+                <Input placeholder="Transfer reference (optional)" value={ref} onChange={(e) => setRef(e.target.value)} />
+                <DialogFooter>
+                  <Button onClick={() => onPay(ref)}>Confirm</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline"><XCircle className="mr-1 h-3.5 w-3.5" />Mark failed</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Mark transfer failed</DialogTitle>
+                  <DialogDescription>Will retry on the next payout run.</DialogDescription>
+                </DialogHeader>
+                <Textarea rows={2} placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+                <DialogFooter>
+                  <Button variant="destructive" onClick={() => onFail(reason)}>Mark failed</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/* ====================================================================== */
+/*  PROVIDERS                                                              */
+/* ====================================================================== */
+
+type Provider = {
+  id: string;
+  slug: string;
+  display_name: string;
+  is_enabled: boolean;
+  priority: number;
+  mode: "sandbox" | "live";
+  credentials_ref: string | null;
+  supported_methods: string[];
+  supported_currencies: string[];
+  supported_countries: string[];
+  supported_regions: unknown;
+  success_count: number;
+  failure_count: number;
+  last_error: string | null;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+};
+
+function ProvidersTab() {
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<Provider | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["payment-providers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payment_providers")
+        .select("*")
+        .order("priority", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Provider[];
+    },
+  });
+
+  const toggle = useMutation({
+    mutationFn: async ({ id, is_enabled }: { id: string; is_enabled: boolean }) => {
+      const { error } = await supabase.from("payment_providers").update({ is_enabled }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Provider updated");
+      qc.invalidateQueries({ queryKey: ["payment-providers"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const setPriority = useMutation({
+    mutationFn: async ({ id, priority }: { id: string; priority: number }) => {
+      const { error } = await supabase.from("payment_providers").update({ priority }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["payment-providers"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">Payment providers</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Smart router picks the best provider per request (priority weighted by recent success rate).
+              Add a provider here and paste API keys into project secrets using the credentials prefix.
+            </p>
+          </div>
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Plus className="mr-1.5 h-4 w-4" /> Add provider
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <p className="p-6 text-sm text-muted-foreground">Loadingâ€¦</p>
+          ) : rows.length === 0 ? (
+            <EmptyState
+              icon={Settings2}
+              title="No providers yet"
+              description="Add one to start accepting payments."
+            />
+          ) : (
+            <div className="divide-y divide-border/60">
+              {rows.map((p) => {
+                const total = p.success_count + p.failure_count;
+                const rate = total > 0 ? Math.round((p.success_count / total) * 100) : null;
+                const credsOk = !!p.credentials_ref;
+                return (
+                  <div key={p.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{p.display_name}</p>
+                        <Badge variant="outline" className="text-[10px] uppercase">{p.slug}</Badge>
+                        <Badge
+                          variant={p.mode === "live" ? "default" : "secondary"}
+                          className="text-[10px] uppercase"
+                        >
+                          {p.mode}
+                        </Badge>
+                        {!credsOk && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            <AlertCircle className="mr-1 h-3 w-3" /> Keys missing
+                          </Badge>
+                        )}
+                        {rate !== null && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {rate}% success Â· {total} attempts
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {(p.supported_methods?.join(", ") || "â€”")} Â·{" "}
+                        {(p.supported_currencies?.join(", ") || "â€”")}
+                        {p.supported_countries?.length
+                          ? ` Â· ${p.supported_countries.join(", ")}`
+                          : ""}
+                      </p>
+                      {p.last_error && (
+                        <p className="mt-1 truncate text-[11px] text-destructive/80">
+                          Last error: {p.last_error}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Label className="text-xs text-muted-foreground">Priority</Label>
+                        <Input
+                          type="number"
+                          defaultValue={p.priority}
+                          className="h-8 w-20"
+                          onBlur={(e) => {
+                            const v = Number(e.target.value);
+                            if (!Number.isNaN(v) && v !== p.priority)
+                              setPriority.mutate({ id: p.id, priority: v });
+                          }}
+                        />
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => setEditing(p)}>
+                        Edit
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={p.is_enabled}
+                          onCheckedChange={(v) => toggle.mutate({ id: p.id, is_enabled: v })}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {p.is_enabled ? "Enabled" : "Off"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <ProviderFormDialog
+        open={adding}
+        onOpenChange={setAdding}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["payment-providers"] })}
+      />
+      <ProviderFormDialog
+        open={!!editing}
+        onOpenChange={(v) => !v && setEditing(null)}
+        provider={editing ?? undefined}
+        onSaved={() => {
+          setEditing(null);
+          qc.invalidateQueries({ queryKey: ["payment-providers"] });
+        }}
+      />
+    </>
+  );
+}
+
+function ProviderFormDialog({
+  open,
+  onOpenChange,
+  provider,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  provider?: Provider;
+  onSaved: () => void;
+}) {
+  const isEdit = !!provider;
+  const [form, setForm] = useState(() => ({
+    slug: provider?.slug ?? "",
+    display_name: provider?.display_name ?? "",
+    mode: provider?.mode ?? "sandbox",
+    priority: provider?.priority ?? 100,
+    credentials_ref: provider?.credentials_ref ?? "",
+    supported_methods: (provider?.supported_methods ?? ["card"]).join(", "),
+    supported_currencies: (provider?.supported_currencies ?? ["USD"]).join(", "),
+    supported_countries: (provider?.supported_countries ?? ["*"]).join(", "),
+    supported_regions: Array.isArray(provider?.supported_regions)
+      ? (provider!.supported_regions as string[]).join(", ")
+      : "GLOBAL",
+  }));
+
+  // Reset when reopening with new provider
+  useMemo(() => {
+    if (open) {
+      setForm({
+        slug: provider?.slug ?? "",
+        display_name: provider?.display_name ?? "",
+        mode: provider?.mode ?? "sandbox",
+        priority: provider?.priority ?? 100,
+        credentials_ref: provider?.credentials_ref ?? "",
+        supported_methods: (provider?.supported_methods ?? ["card"]).join(", "),
+        supported_currencies: (provider?.supported_currencies ?? ["USD"]).join(", "),
+        supported_countries: (provider?.supported_countries ?? ["*"]).join(", "),
+        supported_regions: Array.isArray(provider?.supported_regions)
+          ? (provider!.supported_regions as string[]).join(", ")
+          : "GLOBAL",
+      });
+    }
+  }, [open, provider?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const split = (s: string) =>
+        s.split(",").map((x) => x.trim()).filter(Boolean);
+      const payload = {
+        slug: form.slug.trim().toLowerCase(),
+        display_name: form.display_name.trim(),
+        mode: form.mode,
+        priority: Number(form.priority) || 100,
+        credentials_ref: form.credentials_ref.trim().toUpperCase() || null,
+        supported_methods: split(form.supported_methods),
+        supported_currencies: split(form.supported_currencies).map((x) => x.toUpperCase()),
+        supported_countries: split(form.supported_countries).map((x) => x.toUpperCase()),
+        supported_regions: split(form.supported_regions).map((x) => x.toUpperCase()),
+      };
+      if (!payload.slug || !payload.display_name) throw new Error("Slug and display name required");
+      if (isEdit && provider) {
+        const { error } = await supabase
+          .from("payment_providers")
+          .update(payload)
+          .eq("id", provider.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("payment_providers").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(isEdit ? "Provider updated" : "Provider added");
+      onSaved();
+      onOpenChange(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? `Edit ${provider?.display_name}` : "Add payment provider"}</DialogTitle>
+          <DialogDescription>
+            The credentials prefix points to project secrets â€” never paste raw keys here.
+            For prefix <code className="font-mono">PAYPAL</code> the router reads{" "}
+            <code className="font-mono">PAYPAL_CLIENT_ID</code>,{" "}
+            <code className="font-mono">PAYPAL_CLIENT_SECRET</code>, and{" "}
+            <code className="font-mono">PAYPAL_WEBHOOK_ID</code>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Slug</Label>
+              <Input
+                value={form.slug}
+                disabled={isEdit}
+                onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
+                placeholder="paypal"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Display name</Label>
+              <Input
+                value={form.display_name}
+                onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
+                placeholder="PayPal"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Mode</Label>
+              <select
+                value={form.mode}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, mode: e.target.value as "sandbox" | "live" }))
+                }
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="sandbox">Sandbox (test)</option>
+                <option value="live">Live (production)</option>
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Priority (lower = first)</Label>
+              <Input
+                type="number"
+                value={form.priority}
+                onChange={(e) => setForm((f) => ({ ...f, priority: Number(e.target.value) }))}
+              />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs">Credentials prefix</Label>
+            <Input
+              value={form.credentials_ref}
+              onChange={(e) => setForm((f) => ({ ...f, credentials_ref: e.target.value }))}
+              placeholder="PAYPAL"
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Add the actual secret values (<code>{form.credentials_ref || "PREFIX"}_CLIENT_ID</code>,
+              etc.) via Backend â†’ Secrets.
+            </p>
+          </div>
+          <div>
+            <Label className="text-xs">Supported methods (comma-separated)</Label>
+            <Input
+              value={form.supported_methods}
+              onChange={(e) => setForm((f) => ({ ...f, supported_methods: e.target.value }))}
+              placeholder="card, paypal_wallet, mobile_money"
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Supported currencies</Label>
+            <Input
+              value={form.supported_currencies}
+              onChange={(e) => setForm((f) => ({ ...f, supported_currencies: e.target.value }))}
+              placeholder="USD, EUR, ZAR"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Countries (ISO, * = any)</Label>
+              <Input
+                value={form.supported_countries}
+                onChange={(e) => setForm((f) => ({ ...f, supported_countries: e.target.value }))}
+                placeholder="* or LS, ZA, KE"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Regions</Label>
+              <Input
+                value={form.supported_regions}
+                onChange={(e) => setForm((f) => ({ ...f, supported_regions: e.target.value }))}
+                placeholder="GLOBAL or AFRICA"
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            {save.isPending ? "Savingâ€¦" : isEdit ? "Save" : "Add provider"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ====================================================================== */
+/*  TUTOR LEVELS                                                           */
+/* ====================================================================== */
+
+type Level = {
+  id: string;
+  slug: string;
+  display_name: string;
+  commission_percent: number;
+  min_completed_sessions: number;
+  sort_order: number;
+};
+
+function TutorLevelsTab() {
+  const qc = useQueryClient();
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["tutor-levels"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tutor_levels")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Level[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async (l: Level) => {
+      const { error } = await supabase
+        .from("tutor_levels")
+        .update({
+          commission_percent: l.commission_percent,
+          min_completed_sessions: l.min_completed_sessions,
+          display_name: l.display_name,
+        })
+        .eq("id", l.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Level saved");
+      qc.invalidateQueries({ queryKey: ["tutor-levels"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Tutor levels & commission</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Each tutor inherits the commission % of their level. Per-tutor overrides take precedence (set in Admin â†’ Commissions).
+        </p>
+      </CardHeader>
+      <CardContent className="p-0">
+        {isLoading ? (
+          <p className="p-6 text-sm text-muted-foreground">Loadingâ€¦</p>
+        ) : (
+          <div className="divide-y divide-border/60">
+            {rows.map((l) => <LevelRow key={l.id} level={l} onSave={save.mutate} />)}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LevelRow({ level, onSave }: { level: Level; onSave: (l: Level) => void }) {
+  const [pct, setPct] = useState(level.commission_percent);
+  const [min, setMin] = useState(level.min_completed_sessions);
+  const [name, setName] = useState(level.display_name);
+  const dirty = pct !== level.commission_percent || min !== level.min_completed_sessions || name !== level.display_name;
+
+  return (
+    <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-4">
+        <div>
+          <Label className="text-[11px] uppercase text-muted-foreground">Level</Label>
+          <div className="flex items-center gap-2">
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" />
+            <Badge variant="outline" className="text-[10px] uppercase">{level.slug}</Badge>
+          </div>
+        </div>
+        <div>
+          <Label className="text-[11px] uppercase text-muted-foreground">Commission %</Label>
+          <Input type="number" step="0.5" value={pct} onChange={(e) => setPct(Number(e.target.value))} className="h-9" />
+        </div>
+        <div>
+          <Label className="text-[11px] uppercase text-muted-foreground">Min sessions</Label>
+          <Input type="number" value={min} onChange={(e) => setMin(Number(e.target.value))} className="h-9" />
+        </div>
+        <div className="flex items-end">
+          <Button
+            size="sm"
+            disabled={!dirty}
+            onClick={() => onSave({ ...level, commission_percent: pct, min_completed_sessions: min, display_name: name })}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ====================================================================== */
+/*  MANUAL INTENT DIALOG                                                   */
+/* ====================================================================== */
+
+function ManualIntentDialog() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [studentId, setStudentId] = useState("");
+  const [tutorId, setTutorId] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [method, setMethod] = useState("manual");
+
+  const create = useMutation({
+    mutationFn: async () => {
+      if (!studentId || !tutorId || !amount) throw new Error("Student, tutor and amount are required");
+      const cents = Math.round(Number(amount) * 100);
+      if (!Number.isFinite(cents) || cents <= 0) throw new Error("Invalid amount");
+      const args: {
+        _student: string;
+        _tutor: string;
+        _gross_cents: number;
+        _currency?: string;
+        _method?: string;
+        _session?: string;
+        _subject?: string;
+      } = {
+        _student: studentId,
+        _tutor: tutorId,
+        _gross_cents: cents,
+        _currency: currency || "USD",
+        _method: method || "manual",
+      };
+      if (sessionId) args._session = sessionId;
+      const { error } = await supabase.rpc("admin_record_manual_intent", args);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Recorded");
+      setOpen(false);
+      setStudentId(""); setTutorId(""); setSessionId(""); setAmount("");
+      qc.invalidateQueries({ queryKey: ["payments-overview"] });
+      qc.invalidateQueries({ queryKey: ["payment-intents"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm"><Plus className="mr-1 h-4 w-4" />Record payment</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Record a manual payment</DialogTitle>
+          <DialogDescription>
+            Writes a succeeded intent + ledger credits. Commission is computed from the tutor's level / rules.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label>Student ID</Label>
+            <Input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="auth user UUID" />
+          </div>
+          <div>
+            <Label>Tutor ID</Label>
+            <Input value={tutorId} onChange={(e) => setTutorId(e.target.value)} placeholder="auth user UUID" />
+          </div>
+          <div>
+            <Label>Session ID (optional)</Label>
+            <Input value={sessionId} onChange={(e) => setSessionId(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-2">
+              <Label>Amount</Label>
+              <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            <div>
+              <Label>Currency</Label>
+              <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
+            </div>
+          </div>
+          <div>
+            <Label>Method label</Label>
+            <Input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="manual, bank_transfer, mpesaâ€¦" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button disabled={create.isPending} onClick={() => create.mutate()}>
+            {create.isPending ? "Recordingâ€¦" : "Record"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+============================================================
+FILE: src\components\payments\PayButton.tsx
+============================================================
+
+import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { Loader2, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { startCheckout } from "@/lib/payments/checkout.functions";
+
+type Props = {
+  tutorId: string;
+  amountCents: number;
+  currency?: string;
+  sessionId?: string | null;
+  subject?: string | null;
+  description?: string;
+  label?: string;
+  className?: string;
+  disabled?: boolean;
+};
+
+/**
+ * Single unified Pay button. Calls the PaymentRouter; the user never sees
+ * which provider is used. Redirects to the provider's approval page.
+ */
+export function PayButton({
+  tutorId,
+  amountCents,
+  currency = "USD",
+  sessionId,
+  subject,
+  description,
+  label,
+  className,
+  disabled,
+}: Props) {
+  const [busy, setBusy] = useState(false);
+  const start = useServerFn(startCheckout);
+
+  const onClick = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await start({
+        data: {
+          tutorId,
+          amountCents,
+          currency,
+          sessionId: sessionId ?? null,
+          subject: subject ?? null,
+          description,
+        },
+      });
+      window.location.href = r.approvalUrl;
+    } catch (e) {
+      setBusy(false);
+      toast.error(e instanceof Error ? e.message : "Could not start checkout");
+    }
+  };
+
+  const fmt = (cents: number) => {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency,
+      }).format(cents / 100);
+    } catch {
+      return `${currency} ${(cents / 100).toFixed(2)}`;
+    }
+  };
+
+  return (
+    <Button onClick={onClick} disabled={disabled || busy} className={className}>
+      {busy ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <Lock className="mr-2 h-4 w-4" />
+      )}
+      {busy ? "Processingâ€¦" : label ?? `Pay ${fmt(amountCents)}`}
+    </Button>
+  );
+}
+
+============================================================
+FILE: src\components\classroom\useSessionTimer.ts
+============================================================
+
+import { useEffect, useState } from "react";
+
+export function useSessionTimer(startedAt?: number) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const start = startedAt ?? Date.now();
+    const id = window.setInterval(() => setElapsed(Date.now() - start), 1000);
+    return () => window.clearInterval(id);
+  }, [startedAt]);
+  return elapsed;
+}
+
+export function fmtTimer(ms: number) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+============================================================
+FILE: src\lib\payments\paypal.server.ts
+============================================================
+
+/**
+ * PayPal provider module â€” SERVER ONLY.
+ * Never import from client code. Filename ends in .server.ts to be excluded
+ * from the client bundle.
+ */
+
+type Mode = "sandbox" | "live";
+
+function baseUrl(mode: Mode) {
+  return mode === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+}
+
+function readCreds(ref: string) {
+  // credentials_ref is a prefix like "PAYPAL". Real keys live in project secrets.
+  const clientId = process.env[`${ref}_CLIENT_ID`];
+  const secret = process.env[`${ref}_CLIENT_SECRET`];
+  const webhookId = process.env[`${ref}_WEBHOOK_ID`];
+  if (!clientId || !secret) {
+    throw new Error(
+      `Missing PayPal credentials (${ref}_CLIENT_ID / ${ref}_CLIENT_SECRET)`,
+    );
+  }
+  return { clientId, secret, webhookId };
+}
+
+async function getAccessToken(mode: Mode, ref: string): Promise<string> {
+  const { clientId, secret } = readCreds(ref);
+  const basic = Buffer.from(`${clientId}:${secret}`).toString("base64");
+  const res = await fetch(`${baseUrl(mode)}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+  if (!res.ok) {
+    throw new Error(`PayPal oauth failed (${res.status}): ${await res.text()}`);
+  }
+  const j = (await res.json()) as { access_token: string };
+  return j.access_token;
+}
+
+export async function paypalCreateOrder(opts: {
+  mode: Mode;
+  credentialsRef: string;
+  amountCents: number;
+  currency: string;
+  intentId: string;
+  returnUrl: string;
+  cancelUrl: string;
+  description?: string;
+}): Promise<{ id: string; approvalUrl: string }> {
+  const token = await getAccessToken(opts.mode, opts.credentialsRef);
+  const amount = (opts.amountCents / 100).toFixed(2);
+  const res = await fetch(`${baseUrl(opts.mode)}/v2/checkout/orders`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "PayPal-Request-Id": opts.intentId, // idempotency
+    },
+    body: JSON.stringify({
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          reference_id: opts.intentId,
+          description: opts.description ?? "AskATutorLive session",
+          amount: { currency_code: opts.currency, value: amount },
+          custom_id: opts.intentId,
+        },
+      ],
+      application_context: {
+        brand_name: "AskATutorLive",
+        user_action: "PAY_NOW",
+        return_url: opts.returnUrl,
+        cancel_url: opts.cancelUrl,
+      },
+    }),
+  });
+  if (!res.ok) {
+    throw new Error(`PayPal create order failed (${res.status}): ${await res.text()}`);
+  }
+  const j = (await res.json()) as {
+    id: string;
+    links: Array<{ rel: string; href: string }>;
+  };
+  const approval = j.links.find((l) => l.rel === "approve");
+  if (!approval) throw new Error("PayPal returned no approval link");
+  return { id: j.id, approvalUrl: approval.href };
+}
+
+export async function paypalCaptureOrder(opts: {
+  mode: Mode;
+  credentialsRef: string;
+  orderId: string;
+}): Promise<{ status: string; captureId?: string }> {
+  const token = await getAccessToken(opts.mode, opts.credentialsRef);
+  const res = await fetch(
+    `${baseUrl(opts.mode)}/v2/checkout/orders/${opts.orderId}/capture`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`PayPal capture failed (${res.status}): ${await res.text()}`);
+  }
+  const j = (await res.json()) as {
+    status: string;
+    purchase_units?: Array<{
+      payments?: { captures?: Array<{ id: string; status: string }> };
+    }>;
+  };
+  const cap = j.purchase_units?.[0]?.payments?.captures?.[0];
+  return { status: j.status, captureId: cap?.id };
+}
+
+export async function paypalGetOrder(opts: {
+  mode: Mode;
+  credentialsRef: string;
+  orderId: string;
+}): Promise<{ status: string; captureId?: string }> {
+  const token = await getAccessToken(opts.mode, opts.credentialsRef);
+  const res = await fetch(
+    `${baseUrl(opts.mode)}/v2/checkout/orders/${encodeURIComponent(opts.orderId)}`,
+    {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`PayPal get order failed (${res.status}): ${await res.text()}`);
+  }
+  const j = (await res.json()) as {
+    status: string;
+    purchase_units?: Array<{
+      payments?: { captures?: Array<{ id: string; status: string }> };
+    }>;
+  };
+  const cap = j.purchase_units?.[0]?.payments?.captures?.find((c) => c.status === "COMPLETED");
+  return { status: j.status, captureId: cap?.id };
+}
+
+export async function paypalVerifyWebhook(opts: {
+  mode: Mode;
+  credentialsRef: string;
+  headers: Headers;
+  rawBody: string;
+}): Promise<boolean> {
+  const { webhookId } = readCreds(opts.credentialsRef);
+  if (!webhookId) return false;
+  const token = await getAccessToken(opts.mode, opts.credentialsRef);
+  const payload = {
+    auth_algo: opts.headers.get("paypal-auth-algo"),
+    cert_url: opts.headers.get("paypal-cert-url"),
+    transmission_id: opts.headers.get("paypal-transmission-id"),
+    transmission_sig: opts.headers.get("paypal-transmission-sig"),
+    transmission_time: opts.headers.get("paypal-transmission-time"),
+    webhook_id: webhookId,
+    webhook_event: JSON.parse(opts.rawBody),
+  };
+  const res = await fetch(
+    `${baseUrl(opts.mode)}/v1/notifications/verify-webhook-signature`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!res.ok) return false;
+  const j = (await res.json()) as { verification_status: string };
+  return j.verification_status === "SUCCESS";
+}
+
+============================================================
+FILE: src\lib\payments\router.server.ts
+============================================================
+
+/**
+ * PaymentRouter â€” SERVER ONLY.
+ * Provider-agnostic. Loads active providers from `payment_providers` ordered by
+ * priority (ASC), weighted by recent success rate (the "smart" part), and tries
+ * them sequentially. Each attempt is logged in `payment_attempts`.
+ */
+import { paypalCreateOrder } from "./paypal.server";
+
+export type ProviderRow = {
+  id: string;
+  slug: string;
+  display_name: string;
+  is_enabled: boolean;
+  priority: number;
+  mode: "sandbox" | "live";
+  credentials_ref: string | null;
+  supported_currencies: string[];
+  supported_countries: string[];
+  supported_regions: unknown;
+  success_count: number;
+  failure_count: number;
+};
+
+export type StartCheckoutResult = {
+  providerSlug: string;
+  approvalUrl: string;
+  providerRef: string; // e.g. PayPal order id
+};
+
+/**
+ * Smart score: lower is better. Combines admin-set priority with the provider's
+ * recent failure ratio so a flaky provider naturally drifts down.
+ */
+function smartScore(p: ProviderRow): number {
+  const total = p.success_count + p.failure_count;
+  const failRate = total > 0 ? p.failure_count / total : 0;
+  return p.priority * (1 + failRate);
+}
+
+function supports(p: ProviderRow, currency: string, country?: string): boolean {
+  const okCur =
+    p.supported_currencies.length === 0 ||
+    p.supported_currencies.includes("*") ||
+    p.supported_currencies.includes(currency.toUpperCase());
+  const okCountry =
+    !country ||
+    p.supported_countries.length === 0 ||
+    p.supported_countries.includes("*") ||
+    p.supported_countries.includes(country.toUpperCase());
+  return okCur && okCountry;
+}
+
+export async function selectProviders(
+  currency: string,
+  country: string | undefined,
+): Promise<ProviderRow[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("payment_providers")
+    .select("*")
+    .eq("is_enabled", true);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as unknown as ProviderRow[];
+  return rows
+    .filter((p) => p.credentials_ref && supports(p, currency, country))
+    .sort((a, b) => smartScore(a) - smartScore(b));
+}
+
+async function recordAttempt(
+  intentId: string,
+  slug: string,
+  status: "success" | "failed",
+  reason: string | null,
+  latency: number,
+  providerRef: string | null,
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  await supabaseAdmin.rpc("record_payment_attempt", {
+    _intent: intentId,
+    _provider: slug,
+    _status: status,
+    _failure_reason: reason ?? undefined,
+    _latency_ms: latency,
+    _provider_ref: providerRef ?? undefined,
+  });
+}
+
+/**
+ * Tries each provider in order. On first success returns the approval URL.
+ * The intent's `provider` column is updated to whichever provider succeeded.
+ */
+export async function routeCheckoutStart(opts: {
+  intentId: string;
+  amountCents: number;
+  currency: string;
+  country?: string;
+  returnUrl: string;
+  cancelUrl: string;
+  description?: string;
+}): Promise<StartCheckoutResult> {
+  const providers = await selectProviders(opts.currency, opts.country);
+  if (providers.length === 0) {
+    throw new Error(
+      "No payment providers are available. An administrator must enable one in Admin â†’ Payouts â†’ Providers.",
+    );
+  }
+
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const errors: string[] = [];
+
+  for (const p of providers) {
+    const start = Date.now();
+    try {
+      if (p.slug === "paypal") {
+        const order = await paypalCreateOrder({
+          mode: p.mode,
+          credentialsRef: p.credentials_ref!,
+          amountCents: opts.amountCents,
+          currency: opts.currency,
+          intentId: opts.intentId,
+          returnUrl: opts.returnUrl,
+          cancelUrl: opts.cancelUrl,
+          description: opts.description,
+        });
+        await recordAttempt(opts.intentId, p.slug, "success", null, Date.now() - start, order.id);
+        await supabaseAdmin
+          .from("payment_intents")
+          .update({ provider: p.slug, provider_ref: order.id })
+          .eq("id", opts.intentId);
+        return { providerSlug: p.slug, approvalUrl: order.approvalUrl, providerRef: order.id };
+      }
+      // Future providers (flutterwave, dpo, mpesa, stripe) plug in here.
+      throw new Error(`Provider "${p.slug}" has no server module yet`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      await recordAttempt(opts.intentId, p.slug, "failed", msg, Date.now() - start, null);
+      errors.push(`${p.slug}: ${msg}`);
+    }
+  }
+
+  await supabaseAdmin.rpc("mark_payment_failed", {
+    _intent: opts.intentId,
+    _reason: errors.join(" | ").slice(0, 500),
+  });
+  throw new Error(`All payment providers failed. ${errors.join(" | ")}`);
+}
+
+============================================================
+FILE: src\lib\ai\provider.server.ts
+============================================================
+
+/**
+ * AI Provider Adapter (server-only)
+ * ---------------------------------
+ * Single seam between the app and whichever AI API is in use.
+ *
+ * Provider resolution order (first non-empty wins):
+ *   1. process.env.AI_PROVIDER  (deploy-time override)
+ *   2. platform_config.ai_provider  (admin global switch, DB-driven)
+ *   3. "gemini"  (default)
+ *
+ * Supported providers (all OpenAI-compatible endpoints):
+ *   - gemini   -> Google Generative Language (GEMINI_API_KEY)
+ *   - groq     -> https://api.groq.com/openai (GROQ_API_KEY)
+ *   - ollama   -> self-hosted Ollama          (OLLAMA_BASE_URL, no key)
+ *
+ * Keys can also be stored per provider in the `ai_provider_keys` table via
+ * Admin -> AI; DB values win over env vars. See DEPLOYMENT.md.
+ */
+
+export type AiContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+export interface AiMessage {
+  role: "system" | "user" | "assistant";
+  content: string | AiContentPart[];
+}
+
+export interface AiChatOptions {
+  model: string;
+  messages: AiMessage[];
+  temperature?: number;
+  response_format?: { type: "json_object" };
+  /** Extra OpenAI-compatible fields (tools, tool_choice, max_tokens, etc.). */
+  extra?: Record<string, unknown>;
+}
+
+export interface AiChatResult {
+  text: string;
+  raw: any;
+}
+
+export interface AiEmbedOptions {
+  model: string;
+  input: string | string[];
+}
+
+export class AiError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+type Provider = "gemini" | "groq" | "ollama";
+
+// ---------------------------------------------------------------------------
+// Provider selection (cached, DB-backed, env override)
+// ---------------------------------------------------------------------------
+
+let _cached: { value: Provider; expires: number } | null = null;
+const CACHE_MS = 30_000;
+
+async function resolveProvider(): Promise<Provider> {
+  const envChoice = (process.env.AI_PROVIDER ?? "").toLowerCase();
+  if (envChoice === "groq" || envChoice === "gemini" || envChoice === "ollama") {
+    return envChoice as Provider;
+  }
+  const now = Date.now();
+  if (_cached && _cached.expires > now) return _cached.value;
+  let value: Provider = "gemini";
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("platform_config")
+      .select("ai_provider")
+      .eq("id", 1)
+      .maybeSingle();
+    const v = ((data as { ai_provider?: string } | null)?.ai_provider ?? "gemini").toLowerCase();
+    if (v === "groq" || v === "gemini" || v === "ollama") value = v;
+  } catch {
+    // fall through to the gemini default
+  }
+  _cached = { value, expires: now + CACHE_MS };
+  return value;
+}
+
+/** Invalidate the cached provider (call after admin updates the setting). */
+// ---------------------------------------------------------------------------
+// Per-provider credential resolver (DB overrides env)
+// ---------------------------------------------------------------------------
+const _credsCache = new Map<Provider, { creds: { api_key: string | null; base_url: string | null }; expires: number }>();
+
+export async function getProviderCreds(provider: Provider): Promise<{ api_key: string | null; base_url: string | null }> {
+  const now = Date.now();
+  const cached = _credsCache.get(provider);
+  if (cached && cached.expires > now) return cached.creds;
+  let api_key: string | null = null;
+  let base_url: string | null = null;
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any)
+      .from("ai_provider_keys")
+      .select("api_key, base_url")
+      .eq("provider", provider)
+      .maybeSingle();
+    if (data) {
+      api_key = (data as any).api_key ?? null;
+      base_url = (data as any).base_url ?? null;
+    }
+  } catch {
+    // ignore, fall back to env
+  }
+  if (!api_key) {
+    if (provider === "groq") api_key = process.env.GROQ_API_KEY ?? null;
+    else if (provider === "gemini") api_key = process.env.GEMINI_API_KEY ?? null;
+  }
+  if (!base_url && provider === "ollama") {
+    base_url = process.env.OLLAMA_BASE_URL ?? "http://localhost:11434";
+  }
+  const creds = { api_key, base_url };
+  _credsCache.set(provider, { creds, expires: now + CACHE_MS });
+  return creds;
+}
+
+export function clearAiProviderCache() {
+  _credsCache.clear();
+  _cached = null;
+}
+
+// ---------------------------------------------------------------------------
+// Model id mapping â€” app passes ids like "google/gemini-2.5-flash".
+// Each provider gets a strip/rename step to a name it understands.
+// ---------------------------------------------------------------------------
+
+function stripVendor(model: string): string {
+  const i = model.indexOf("/");
+  return i >= 0 ? model.slice(i + 1) : model;
+}
+
+function mapModel(provider: Provider, model: string): string {
+  const bare = stripVendor(model);
+  switch (provider) {
+    case "gemini":
+      // Google's OpenAI-compat endpoint expects e.g. "gemini-2.5-flash"
+      return bare.startsWith("gemini-") ? bare : "gemini-2.5-flash";
+    case "groq":
+      // Groq only serves its own model catalog; map anything else to a sane default.
+      if (bare.startsWith("llama") || bare.startsWith("mixtral") || bare.startsWith("gemma")) return bare;
+      return "llama-3.3-70b-versatile";
+    case "ollama":
+      // e.g. "llama3.1", "qwen2.5", "phi3"; strip vendor prefix if any
+      return bare;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// OpenAI-compatible transport (shared by all four providers)
+// ---------------------------------------------------------------------------
+
+interface Endpoint {
+  chat: string;
+  embed: string;
+  headers: Record<string, string>;
+}
+
+async function endpointFor(provider: Provider): Promise<Endpoint> {
+  const creds = await getProviderCreds(provider);
+  switch (provider) {
+    case "groq": {
+      const key = creds.api_key;
+      if (!key) throw new AiError("Groq is selected but no GROQ_API_KEY is configured");
+      return {
+        chat: "https://api.groq.com/openai/v1/chat/completions",
+        embed: "https://api.groq.com/openai/v1/embeddings",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      };
+    }
+    case "gemini": {
+      const key = creds.api_key;
+      if (!key) throw new AiError("Gemini is selected but no GEMINI_API_KEY is configured");
+      return {
+        chat: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+        embed: "https://generativelanguage.googleapis.com/v1beta/openai/embeddings",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      };
+    }
+    case "ollama": {
+      const base = (creds.base_url ?? "http://localhost:11434").replace(/\/+$/, "");
+      return {
+        chat: `${base}/v1/chat/completions`,
+        embed: `${base}/v1/embeddings`,
+        headers: { "Content-Type": "application/json" },
+      };
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export async function aiChat(opts: AiChatOptions): Promise<AiChatResult> {
+  const provider = await resolveProvider();
+  const ep = await endpointFor(provider);
+
+  const body: Record<string, unknown> = {
+    model: mapModel(provider, opts.model),
+    messages: opts.messages,
+    ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}),
+    ...(opts.response_format ? { response_format: opts.response_format } : {}),
+    ...(opts.extra ?? {}),
+  };
+
+  const res = await fetch(ep.chat, {
+    method: "POST",
+    headers: ep.headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    if (res.status === 429) throw new AiError("Too many requests â€” slow down.", 429);
+    if (res.status === 402) throw new AiError("AI credits exhausted.", 402);
+    if (res.status === 401 || res.status === 403)
+      throw new AiError(`AI provider "${provider}" rejected the key. Check your API key in Admin â†’ AI.`, res.status);
+    throw new AiError(`AI service error (${res.status}): ${detail.slice(0, 200)}`, res.status);
+  }
+
+  const raw = await res.json();
+  const text =
+    (raw as { choices?: { message?: { content?: string } }[] })
+      .choices?.[0]?.message?.content?.trim() ?? "";
+  return { text, raw };
+}
+
+export async function aiEmbed(opts: AiEmbedOptions): Promise<{ embedding: number[] }> {
+  const provider = await resolveProvider();
+  const ep = await endpointFor(provider);
+
+  const res = await fetch(ep.embed, {
+    method: "POST",
+    headers: ep.headers,
+    body: JSON.stringify({ model: mapModel(provider, opts.model), input: opts.input }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw new AiError("Too many requests â€” slow down.", 429);
+    if (res.status === 402) throw new AiError("AI credits exhausted.", 402);
+    throw new AiError(`AI embed error (${res.status})`, res.status);
+  }
+  const json = (await res.json()) as { data?: { embedding: number[] }[] };
+  const embedding = json.data?.[0]?.embedding;
+  if (!embedding) throw new AiError("No embedding returned");
+  return { embedding };
+}
+
+============================================================
+FILE: src\lib\agents\registry.server.ts
+============================================================
+
+/**
+ * Multi-agent registry. Each role is a self-contained AI persona with its own
+ * model, system prompt, and output contract. All agents share one rule: output
+ * MUST be markdown, math MUST be wrapped in $...$ / $$...$$ for KaTeX, and
+ * diagrams MUST be in ```mermaid fenced code blocks. The renderer
+ * (<SmartMarkdown/>) understands both, so any caller can render any agent.
+ *
+ * Adding a new model provider (e.g. self-hosted Ollama) means adding ONE entry
+ * here â€” no caller changes needed.
+ */
+
+export type AgentRole = "tutor" | "math" | "diagram" | "whiteboard" | "notes";
+
+export interface AgentDefinition {
+  id: AgentRole;
+  label: string;
+  model: string;
+  temperature?: number;
+  system: string;
+}
+
+const OUTPUT_CONTRACT = `
+OUTPUT FORMAT (strict):
+- Respond in clean GitHub-flavored Markdown.
+- ALL mathematics MUST use LaTeX delimiters: $inline$ for inline math, $$block$$ on their own line for displayed equations. Never write math as plain text like "x^2"; always render as $x^2$.
+- ALL diagrams (flowcharts, sequence, class, ER, state, mind maps, graphs, trees) MUST be returned as a fenced \`\`\`mermaid code block. Use valid Mermaid syntax. Do NOT describe a diagram in prose when a diagram block is possible.
+- Code â†’ fenced blocks with the language tag.
+- Never wrap your whole response in a code fence.
+- Be concise; prefer structure (headings, bullets, tables) over walls of text.`;
+
+export const AGENT_REGISTRY: Record<AgentRole, AgentDefinition> = {
+  tutor: {
+    id: "tutor",
+    label: "Tutor",
+    model: "google/gemini-2.5-flash",
+    temperature: 0.6,
+    system: `You are the Ask A Tutor TUTOR agent â€” a warm, encouraging explainer for K-12 and undergraduate students. Teach concepts step-by-step, use analogies, and check understanding with a short question at the end. When math or a diagram clarifies the idea, include them.${OUTPUT_CONTRACT}`,
+  },
+  math: {
+    id: "math",
+    label: "Math / LaTeX",
+    model: "google/gemini-2.5-pro",
+    temperature: 0.2,
+    system: `You are the Ask A Tutor MATH agent â€” a rigorous solver. For every problem: (1) restate the problem, (2) show each derivation step on its own $$line$$, (3) give the final boxed answer using $\\boxed{...}$. Never skip algebraic steps. Use proper LaTeX for fractions, integrals, matrices, summations, limits, vectors, and chemistry. If a graph or geometric figure helps, include a mermaid diagram or SVG-style description.${OUTPUT_CONTRACT}`,
+  },
+  diagram: {
+    id: "diagram",
+    label: "Diagram",
+    model: "google/gemini-2.5-flash",
+    temperature: 0.3,
+    system: `You are the Ask A Tutor DIAGRAM agent â€” a visual explainer. Convert the user's request into the clearest possible Mermaid diagram. Pick the right diagram type: flowchart for processes, sequenceDiagram for interactions, classDiagram for OOP/structures, erDiagram for data models, stateDiagram-v2 for state machines, mindmap for concept maps, gantt for timelines, graph TD/LR for general graphs. Add a 1-2 sentence caption above the diagram. If multiple views help, return multiple mermaid blocks.${OUTPUT_CONTRACT}`,
+  },
+  whiteboard: {
+    id: "whiteboard",
+    label: "Whiteboard",
+    model: "google/gemini-2.5-flash",
+    temperature: 0.2,
+    system: `You are the Ask A Tutor WHITEBOARD agent â€” digitise handwritten content. Convert handwriting to clean markdown: text â†’ text, equations â†’ $$LaTeX$$, sketched diagrams â†’ mermaid blocks. Preserve reading order. No commentary.${OUTPUT_CONTRACT}`,
+  },
+  notes: {
+    id: "notes",
+    label: "Notes",
+    model: "google/gemini-2.5-flash",
+    temperature: 0.4,
+    system: `You are the Ask A Tutor NOTES agent â€” produce study-ready lesson notes with: a short overview, key concepts as bullets, worked examples with $$LaTeX$$ math, and a summary mermaid mind-map.${OUTPUT_CONTRACT}`,
+  },
+};
+
+export interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+/** Call the configured AI provider with a chosen agent. Server-only. */
+export async function callAgent(
+  role: AgentRole,
+  messages: ChatMessage[],
+  opts?: { model?: string; temperature?: number },
+): Promise<string> {
+  const agent = AGENT_REGISTRY[role];
+  if (!agent) throw new Error(`Unknown agent role: ${role}`);
+
+  const { aiChat } = await import("@/lib/ai/provider.server");
+  const { text } = await aiChat({
+    model: opts?.model ?? agent.model,
+    temperature: opts?.temperature ?? agent.temperature ?? 0.4,
+    messages: [{ role: "system", content: agent.system }, ...messages],
+  });
+  if (!text) throw new Error("AI returned an empty response.");
+  return text;
+}
+
+============================================================
+FILE: src\lib\agents\run-agent.functions.ts
+============================================================
+
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAiEntitlement, supabaseEntitlementGateway } from "@/lib/ai-entitlement";
+
+const MessageSchema = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(8000),
+});
+
+const InputSchema = z.object({
+  role: z.enum(["tutor", "math", "diagram", "whiteboard", "notes"]),
+  messages: z.array(MessageSchema).min(1).max(40),
+});
+
+export const runAgent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => InputSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // Single shared server-side entitlement gate (scope 'ai').
+    await assertAiEntitlement(supabaseEntitlementGateway(supabase), userId, "ai");
+
+    const { callAgent } = await import("./registry.server");
+    const text = await callAgent(data.role, data.messages);
+    return { text };
+  });
+
+============================================================
+FILE: src\lib\ai\keys.functions.ts
+============================================================
+
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+const ProviderSchema = z.enum(["groq", "gemini", "ollama"]);
+
+async function assertAdmin(context: { supabase: any; userId: string }) {
+  const { data } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
+  if (!data) throw new Error("Forbidden");
+}
+
+export const saveAiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        provider: ProviderSchema,
+        api_key: z.string().max(500).optional().nullable(),
+        base_url: z.string().max(500).optional().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).from("ai_provider_keys").upsert(
+      {
+        provider: data.provider,
+        api_key: data.api_key ?? null,
+        base_url: data.base_url ?? null,
+        updated_by: context.userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "provider" },
+    );
+    if (error) throw new Error(error.message);
+    const { clearAiProviderCache } = await import("./provider.server");
+    clearAiProviderCache();
+    return { ok: true };
+  });
+
+export const getAiKeyStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await (supabaseAdmin as any)
+      .from("ai_provider_keys")
+      .select("provider, api_key, base_url, updated_at");
+    const rows = ((data ?? []) as unknown) as { provider: string; api_key: string | null; base_url: string | null; updated_at: string }[];
+    const byProvider = Object.fromEntries(rows.map((r) => [r.provider, r]));
+    const env = {
+      groq: !!process.env.GROQ_API_KEY,
+      gemini: !!process.env.GEMINI_API_KEY,
+      ollama: !!process.env.OLLAMA_BASE_URL,
+    };
+    return {
+      groq: {
+        hasKey: !!byProvider.groq?.api_key || env.groq,
+        fromEnv: !byProvider.groq?.api_key && env.groq,
+        updated_at: byProvider.groq?.updated_at ?? null,
+        base_url: byProvider.groq?.base_url ?? null,
+      },
+      gemini: {
+        hasKey: !!byProvider.gemini?.api_key || env.gemini,
+        fromEnv: !byProvider.gemini?.api_key && env.gemini,
+        updated_at: byProvider.gemini?.updated_at ?? null,
+        base_url: byProvider.gemini?.base_url ?? null,
+      },
+      ollama: {
+        hasKey: !!byProvider.ollama?.base_url || env.ollama,
+        fromEnv: !byProvider.ollama?.base_url && env.ollama,
+        updated_at: byProvider.ollama?.updated_at ?? null,
+        base_url: byProvider.ollama?.base_url ?? (env.ollama ? process.env.OLLAMA_BASE_URL! : null),
+      },
+    };
+  });
+
+export const testAiProvider = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ provider: ProviderSchema }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { getProviderCreds } = await import("./provider.server");
+    const creds = await getProviderCreds(data.provider);
+    try {
+      if (data.provider === "groq") {
+        if (!creds.api_key) return { ok: false, error: "No Groq API key configured" };
+        const r = await fetch("https://api.groq.com/openai/v1/models", {
+          headers: { Authorization: `Bearer ${creds.api_key}` },
+        });
+        if (!r.ok) return { ok: false, error: `Groq: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200) };
+        return { ok: true, message: "Groq reachable" };
+      }
+      if (data.provider === "gemini") {
+        if (!creds.api_key) return { ok: false, error: "No Gemini API key configured" };
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/models", {
+          headers: { Authorization: `Bearer ${creds.api_key}` },
+        });
+        if (!r.ok) return { ok: false, error: `Gemini: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200) };
+        return { ok: true, message: "Gemini reachable" };
+      }
+      // ollama
+      const base = (creds.base_url ?? "").replace(/\/+$/, "");
+      if (!base) return { ok: false, error: "No Ollama base URL configured" };
+      const r = await fetch(`${base}/api/tags`);
+      if (!r.ok) return { ok: false, error: `Ollama: ${r.status}` };
+      return { ok: true, message: "Ollama reachable" };
+    } catch (e: any) {
+      return { ok: false, error: e?.message ?? "Network error" };
+    }
+  });
+
+============================================================
+FILE: src\components\admin\AiProviderSelect.tsx
+============================================================
+
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { usePlatformConfig, type AiProvider } from "@/hooks/use-platform-config";
+
+const OPTIONS: { value: AiProvider; label: string; hint: string }[] = [
+  { value: "groq", label: "Groq", hint: "Requires GROQ_API_KEY (or a key saved below)." },
+  { value: "gemini", label: "Google Gemini (default)", hint: "Requires GEMINI_API_KEY (or a key saved below)." },
+  { value: "ollama", label: "Ollama (self-hosted)", hint: "Requires OLLAMA_BASE_URL." },
+];
+
+export function AiProviderSelect() {
+  const { config } = usePlatformConfig();
+  const qc = useQueryClient();
+  const current = config.ai_provider;
+  const currentHint = OPTIONS.find((o) => o.value === current)?.hint ?? "";
+
+  const onChange = async (v: string) => {
+    const { error } = await supabase
+      .from("platform_config")
+      .update({ ai_provider: v } as never)
+      .eq("id", 1);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("AI provider updated");
+    qc.invalidateQueries({ queryKey: ["platform-config"] });
+  };
+
+  return (
+    <div className="flex flex-col gap-2 rounded-md border bg-card/40 p-3">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <Label className="text-sm font-medium">AI provider</Label>
+          <p className="text-xs text-muted-foreground">
+            Applies to every AI feature: tutor chat, tools, sim-lab, whiteboard OCR, agents.
+          </p>
+        </div>
+        <Select value={current} onValueChange={onChange}>
+          <SelectTrigger className="w-full sm:w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <p className="text-xs text-muted-foreground">{currentHint}</p>
+    </div>
+  );
+}
+
+============================================================
+FILE: src\lib\email\enqueue.server.ts
+============================================================
+
+import * as React from 'react'
+import { render } from '@react-email/components'
+import { supabaseAdmin } from '@/integrations/supabase/client.server'
+import { TEMPLATES, type TemplateEntry } from '@/lib/email-templates/registry'
+import { deliverEmail, publicBaseUrl } from '@/lib/email/provider.server'
+
+/**
+ * Server-only transactional email sender.
+ *
+ * Renders a registered React Email template, honours the suppression list,
+ * appends an unsubscribe footer, delivers through the configured provider
+ * (see provider.server.ts) and records the outcome in `email_send_log`.
+ *
+ * Only call from trusted server code (server functions, webhooks).
+ */
+
+const FROM_DOMAIN = process.env.EMAIL_FROM_DOMAIN || 'askatutorlive.com'
+const BRAND = process.env.EMAIL_FROM_NAME || 'Ask A Tutor'
+const ALIAS_DISPLAY: Record<string, string> = {
+  noreply: BRAND,
+  admin: `${BRAND} Admin`,
+  help: `${BRAND} Help`,
+  tutors: `${BRAND} Tutors`,
+  students: `${BRAND} Students`,
+  billing: `${BRAND} Billing`,
+}
+const ALLOWED = new Set(Object.keys(ALIAS_DISPLAY))
+
+function token32() {
+  const b = new Uint8Array(32); crypto.getRandomValues(b)
+  return Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('')
+}
+
+interface EnqueueParams {
+  templateName: string
+  recipientEmail: string
+  idempotencyKey?: string
+  templateData?: Record<string, any>
+  fromAlias?: string
+}
+
+function unsubscribeFooter(token: string) {
+  const base = publicBaseUrl()
+  if (!base) return { html: '', text: '' }
+  const url = `${base}/unsubscribe?token=${token}`
+  return {
+    html:
+      `<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;` +
+      `font-family:Arial,sans-serif;font-size:12px;color:#6b7280">` +
+      `You are receiving this email because of activity on your ${BRAND} account. ` +
+      `<a href="${url}" style="color:#6b7280;text-decoration:underline">Unsubscribe</a>.` +
+      `</div>`,
+    text: `\n\n---\nUnsubscribe: ${url}\n`,
+  }
+}
+
+export async function enqueueTransactionalEmail(p: EnqueueParams) {
+  const tpl = TEMPLATES[p.templateName] as TemplateEntry & { fromAlias?: string } | undefined
+  if (!tpl) throw new Error(`Unknown template: ${p.templateName}`)
+  const recipient = tpl.to || p.recipientEmail
+  if (!recipient) throw new Error('recipientEmail required')
+  const normalized = recipient.toLowerCase()
+  const messageId = crypto.randomUUID()
+
+  // Suppression check
+  const { data: sup } = await supabaseAdmin
+    .from('suppressed_emails').select('id').eq('email', normalized).maybeSingle()
+  if (sup) return { suppressed: true }
+
+  // Unsubscribe token (one per email)
+  let unsub: string
+  const { data: existing } = await supabaseAdmin
+    .from('email_unsubscribe_tokens').select('token, used_at').eq('email', normalized).maybeSingle()
+  if (existing?.token && !existing.used_at) {
+    unsub = existing.token
+  } else {
+    unsub = token32()
+    await supabaseAdmin.from('email_unsubscribe_tokens')
+      .upsert({ token: unsub, email: normalized }, { onConflict: 'email', ignoreDuplicates: true })
+    const { data: re } = await supabaseAdmin
+      .from('email_unsubscribe_tokens').select('token').eq('email', normalized).maybeSingle()
+    unsub = re?.token ?? unsub
+  }
+
+  // Render
+  const el = React.createElement(tpl.component, p.templateData ?? {})
+  const footer = unsubscribeFooter(unsub)
+  const html = (await render(el)) + footer.html
+  const text = (await render(el, { plainText: true })) + footer.text
+  const subject = typeof tpl.subject === 'function' ? tpl.subject(p.templateData ?? {}) : tpl.subject
+
+  const aliasRaw = (p.fromAlias ?? tpl.fromAlias ?? 'noreply').toLowerCase()
+  const alias = ALLOWED.has(aliasRaw) ? aliasRaw : 'noreply'
+
+  try {
+    await deliverEmail({
+      to: recipient,
+      from: `${ALIAS_DISPLAY[alias]} <${alias}@${FROM_DOMAIN}>`,
+      subject,
+      html,
+      text,
+      label: p.templateName,
+      idempotencyKey: p.idempotencyKey ?? messageId,
+    })
+  } catch (e) {
+    await supabaseAdmin.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: p.templateName,
+      recipient_email: recipient,
+      status: 'failed',
+      error_message: (e as Error).message.slice(0, 500),
+    })
+    throw e
+  }
+
+  await supabaseAdmin.from('email_send_log').insert({
+    message_id: messageId,
+    template_name: p.templateName,
+    recipient_email: recipient,
+    status: 'sent',
+  })
+
+  return { sent: true, messageId }
+}
+
+============================================================
+FILE: src\lib\email\provider.server.ts
+============================================================
+
+/**
+ * Email Provider Adapter (server-only)
+ * ------------------------------------
+ * Single seam between the app and the transactional-email backend.
+ * Self-hosted: no platform services involved.
+ *
+ * Providers (EMAIL_PROVIDER):
+ *   resend  (default) -> Resend REST API. Needs RESEND_API_KEY.
+ *   smtp              -> HTTP-to-SMTP bridge via SMTP_RELAY_URL (optional).
+ *   none              -> sends are skipped and logged (useful for local dev).
+ *
+ * Templates live in `src/lib/email-templates/` and are rendered with
+ * @react-email/render. App code calls `sendTransactionalEmail()`.
+ * See DEPLOYMENT.md.
+ */
+
+export interface TransactionalEmail {
+  templateName: string;
+  recipientEmail: string;
+  /** Passed to the provider as a tag so retries can be de-duplicated. */
+  idempotencyKey: string;
+  templateData: Record<string, unknown>;
+  /** Optional mailbox alias (noreply, help, billing, â€¦). */
+  fromAlias?: string;
+}
+
+export type EmailProvider = "resend" | "smtp" | "none";
+
+export function emailProvider(): EmailProvider {
+  const v = (process.env.EMAIL_PROVIDER ?? "resend").toLowerCase();
+  if (v === "smtp") return "smtp";
+  if (v === "none" || v === "off" || v === "disabled") return "none";
+  return "resend";
+}
+
+export function publicBaseUrl(): string {
+  const v = process.env.PUBLIC_BASE_URL || process.env.VITE_PUBLIC_BASE_URL || "";
+  return v.replace(/\/+$/, "");
+}
+
+export interface OutgoingEmail {
+  to: string;
+  from: string;
+  subject: string;
+  html: string;
+  text: string;
+  /** Free-form label used as a provider tag (template name). */
+  label?: string;
+  idempotencyKey?: string;
+}
+
+export class EmailError extends Error {}
+
+// ---------------------------------------------------------------------------
+// Resend REST (no SDK dependency â€” plain fetch works in every runtime)
+// ---------------------------------------------------------------------------
+
+async function sendViaResend(mail: OutgoingEmail): Promise<void> {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new EmailError("RESEND_API_KEY is not configured");
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+      ...(mail.idempotencyKey ? { "Idempotency-Key": mail.idempotencyKey } : {}),
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM || mail.from,
+      to: [mail.to],
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+      ...(mail.label ? { tags: [{ name: "template", value: mail.label.slice(0, 60) }] } : {}),
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new EmailError(`Resend rejected the message (${res.status}): ${body.slice(0, 300)}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Generic SMTP bridge â€” POSTs the message to an HTTP endpoint you control
+// (e.g. a tiny nodemailer service next to the app). Optional.
+// ---------------------------------------------------------------------------
+
+async function sendViaSmtpBridge(mail: OutgoingEmail): Promise<void> {
+  const url = process.env.SMTP_RELAY_URL;
+  if (!url) throw new EmailError("EMAIL_PROVIDER=smtp but SMTP_RELAY_URL is not configured");
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(process.env.SMTP_RELAY_TOKEN
+        ? { Authorization: `Bearer ${process.env.SMTP_RELAY_TOKEN}` }
+        : {}),
+    },
+    body: JSON.stringify(mail),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new EmailError(`SMTP relay failed (${res.status}): ${body.slice(0, 300)}`);
+  }
+}
+
+/** Low-level delivery. Throws on provider failure. */
+export async function deliverEmail(mail: OutgoingEmail): Promise<void> {
+  switch (emailProvider()) {
+    case "resend":
+      return sendViaResend(mail);
+    case "smtp":
+      return sendViaSmtpBridge(mail);
+    case "none":
+      console.warn("[email] EMAIL_PROVIDER=none â€” skipping send", {
+        template: mail.label,
+        subject: mail.subject,
+      });
+      return;
+  }
+}
+
+/**
+ * Public API used by app server functions. Renders the registered template
+ * and delivers it. Never throws â€” failures are logged so a booking/help flow
+ * is not aborted by an email outage.
+ */
+export async function sendTransactionalEmail(payload: TransactionalEmail): Promise<void> {
+  try {
+    const { enqueueTransactionalEmail } = await import("./enqueue.server");
+    await enqueueTransactionalEmail({
+      templateName: payload.templateName,
+      recipientEmail: payload.recipientEmail,
+      idempotencyKey: payload.idempotencyKey,
+      templateData: payload.templateData,
+      fromAlias: payload.fromAlias,
+    });
+  } catch (e) {
+    console.error("[email] send failed", payload.templateName, e);
+  }
+}
+
+============================================================
+FILE: supabase\migrations\20260812130000_harden_rpc_grants_and_guards.sql
+============================================================
+
+
+-- ---------------------------------------------------------------------------
+-- Harden RPC grants + fix NULL-unsafe authorization guards.
+--
+-- Supabase grants EXECUTE to anon/authenticated on every function at CREATE
+-- time. This migration:
+--   1. Revokes EXECUTE from anon AND authenticated on service-role-only /
+--      trigger functions (payment settlement, email queue, prepaid helpers).
+--   2. Revokes EXECUTE from anon only on functions the browser legitimately
+--      calls as an authenticated user.
+--   3. Closes NULL-bypass guards (auth.uid() is NULL for anon, so
+--      `_uid <> x` evaluates to NULL and the guard is skipped) in the session
+--      lifecycle RPCs and the sessions immutable-columns trigger, and in
+--      consume_prepaid_lesson (defense in depth).
+--
+-- Functions that MUST keep anon/authenticated EXECUTE (used by RLS policies
+-- or by anonymous public pages and are NULL-safe) are left untouched:
+--   can_access_classroom_room, has_role, student_has_scope, list_public_tutors.
+-- ---------------------------------------------------------------------------
+
+-- 1) Service-role / trigger only: no anon, no authenticated.
+REVOKE EXECUTE ON FUNCTION public.consume_prepaid_lesson(uuid, uuid) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.delete_email(text, bigint) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.enqueue_email(text, jsonb) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.finalize_payment_succeeded(uuid, text, text) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.mark_payment_failed(uuid, text) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.move_to_dlq(text, text, bigint, jsonb) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.read_email_batch(text, integer, integer) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.record_payment_attempt(uuid, text, text, text, integer, text) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.refund_payment(uuid, text) FROM anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.sessions_consume_free_minutes() FROM anon, authenticated;
+
+-- 2) Authenticated only (browser calls these after login; remove anon surface).
+REVOKE EXECUTE ON FUNCTION public.approve_tutor_application(uuid, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.reject_tutor_application(uuid, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.log_tutor_decision(text, uuid[], text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.book_session(uuid, timestamptz, integer, text, boolean, integer) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.cancel_session(uuid, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.complete_session(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.end_session(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.reschedule_session(uuid, timestamptz) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.start_session(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.booking_conflicts_check(uuid, timestamptz, integer) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.create_bulk_lesson_intent(uuid, integer, integer, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.confirm_bulk_lesson_intent(uuid, text, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_my_scopes() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_session_participant_names() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_pricing(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_availability_public(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_holidays_public(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_busy_slots(uuid, timestamptz, timestamptz) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.match_simulations(vector, integer, double precision) FROM anon;
+
+-- 3) NULL-safe guards. auth.uid() is NULL for anon; the previous
+--    `_uid <> x` comparisons became NULL and skipped the authorization check.
+CREATE OR REPLACE FUNCTION public.consume_prepaid_lesson(_student uuid, _tutor uuid)
+RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE _row uuid;
+BEGIN
+  IF auth.uid() IS NULL OR (_student <> auth.uid() AND NOT public.has_role(auth.uid(),'admin')) THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+  SELECT id INTO _row FROM public.prepaid_lessons
+    WHERE student_id = _student AND tutor_id = _tutor AND lessons_remaining > 0
+    ORDER BY created_at ASC
+    LIMIT 1
+    FOR UPDATE;
+  IF _row IS NULL THEN RETURN false; END IF;
+  UPDATE public.prepaid_lessons SET lessons_remaining = lessons_remaining - 1
+    WHERE id = _row;
+  RETURN true;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.consume_prepaid_lesson(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.consume_prepaid_lesson(uuid, uuid) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.start_session(_session uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE _s record; _uid uuid := auth.uid();
+BEGIN
+  SELECT * INTO _s FROM public.sessions WHERE id = _session FOR UPDATE;
+  IF _s.id IS NULL THEN RAISE EXCEPTION 'Session not found'; END IF;
+  IF _uid IS NULL OR (_uid <> _s.tutor_id AND _uid <> _s.student_id AND NOT public.has_role(_uid,'admin')) THEN
+    RAISE EXCEPTION 'Only session participants can start this lesson';
+  END IF;
+  IF _s.status <> 'scheduled' THEN RAISE EXCEPTION 'Session is not in a startable state'; END IF;
+  IF now() < _s.scheduled_at - interval '15 minutes' THEN
+    RAISE EXCEPTION 'Session starts at % â€” too early to start', _s.scheduled_at;
+  END IF;
+  UPDATE public.sessions SET status = 'live' WHERE id = _session;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.start_session(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.end_session(_session uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE _s record; _uid uuid := auth.uid();
+BEGIN
+  SELECT * INTO _s FROM public.sessions WHERE id = _session FOR UPDATE;
+  IF _s.id IS NULL THEN RAISE EXCEPTION 'Session not found'; END IF;
+  IF _uid IS NULL OR (_uid <> _s.tutor_id AND NOT public.has_role(_uid,'admin')) THEN
+    RAISE EXCEPTION 'Only the tutor can end this lesson';
+  END IF;
+  IF _s.status <> 'live' THEN RAISE EXCEPTION 'Session is not in progress'; END IF;
+  UPDATE public.sessions SET status = 'completed' WHERE id = _session;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.end_session(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.reschedule_session(_session uuid, _new_start timestamptz)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE _s record; _uid uuid := auth.uid();
+BEGIN
+  SELECT * INTO _s FROM public.sessions WHERE id=_session FOR UPDATE;
+  IF _s.id IS NULL THEN RAISE EXCEPTION 'Session not found'; END IF;
+  IF _uid IS NULL OR (_uid <> _s.tutor_id AND _uid <> _s.student_id AND NOT public.has_role(_uid,'admin')) THEN
+    RAISE EXCEPTION 'Not authorized'; END IF;
+  IF _s.status <> 'scheduled' THEN RAISE EXCEPTION 'Session not reschedulable'; END IF;
+  IF NOT public.booking_conflicts_check(_s.tutor_id,_new_start,_s.duration_min) THEN
+    RAISE EXCEPTION 'New slot not available'; END IF;
+  PERFORM set_config('app.session_mutation_op','reschedule',true);
+  UPDATE public.sessions SET scheduled_at=_new_start, rescheduled_from=id WHERE id=_session;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.reschedule_session(uuid,timestamptz) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.cancel_session(_session uuid, _reason text DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE _s record; _uid uuid := auth.uid();
+BEGIN
+  SELECT * INTO _s FROM public.sessions WHERE id=_session FOR UPDATE;
+  IF _s.id IS NULL THEN RAISE EXCEPTION 'Session not found'; END IF;
+  IF _uid IS NULL OR (_uid <> _s.tutor_id AND _uid <> _s.student_id AND NOT public.has_role(_uid,'admin')) THEN
+    RAISE EXCEPTION 'Not authorized'; END IF;
+  IF _s.status <> 'scheduled' THEN RAISE EXCEPTION 'Already finalized'; END IF;
+  UPDATE public.sessions SET status='cancelled', cancelled_at=now(), cancelled_by=_uid, cancel_reason=_reason WHERE id=_session;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.cancel_session(uuid,text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.complete_session(_session uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE _s record; _uid uuid := auth.uid();
+BEGIN
+  SELECT * INTO _s FROM public.sessions WHERE id = _session FOR UPDATE;
+  IF _s.id IS NULL THEN RAISE EXCEPTION 'Session not found'; END IF;
+  IF _uid IS NULL OR (_uid <> _s.tutor_id AND NOT public.has_role(_uid,'admin')) THEN
+    RAISE EXCEPTION 'Only the tutor can complete this lesson';
+  END IF;
+  IF _s.status <> 'scheduled' THEN
+    RAISE EXCEPTION 'Session is not in a completable state';
+  END IF;
+  IF now() < _s.scheduled_at THEN
+    RAISE EXCEPTION 'Lesson has not started yet';
+  END IF;
+  UPDATE public.sessions SET status = 'completed' WHERE id = _session;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.complete_session(uuid) TO authenticated;
+
+-- Immutable-columns trigger: same NULL-safe hardening on every authorization
+-- check. (Anon has no sessions UPDATE via RLS, but this is defense in depth.)
+CREATE OR REPLACE FUNCTION public.sessions_protect_immutable_cols()
+RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
+DECLARE _op text := coalesce(current_setting('app.session_mutation_op', true), '');
+BEGIN
+  IF NEW.tutor_id IS DISTINCT FROM OLD.tutor_id THEN RAISE EXCEPTION 'tutor_id is immutable'; END IF;
+  IF NEW.student_id IS DISTINCT FROM OLD.student_id THEN RAISE EXCEPTION 'student_id is immutable'; END IF;
+  IF NEW.room_id IS DISTINCT FROM OLD.room_id THEN RAISE EXCEPTION 'room_id is immutable'; END IF;
+  IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN RAISE EXCEPTION 'created_at is immutable'; END IF;
+  IF NEW.is_free IS DISTINCT FROM OLD.is_free THEN RAISE EXCEPTION 'is_free is immutable'; END IF;
+
+  IF _op = 'reschedule' THEN
+    IF NEW.scheduled_at IS DISTINCT FROM OLD.scheduled_at THEN
+      IF auth.uid() IS NULL OR (auth.uid() <> OLD.tutor_id AND auth.uid() <> OLD.student_id AND NOT public.has_role(auth.uid(),'admin')) THEN
+        RAISE EXCEPTION 'Not authorized to reschedule';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.scheduled_at IS DISTINCT FROM OLD.scheduled_at THEN
+    RAISE EXCEPTION 'scheduled_at can only be changed via reschedule_session';
+  END IF;
+  IF NEW.subject IS DISTINCT FROM OLD.subject THEN RAISE EXCEPTION 'subject can only be changed by an admin'; END IF;
+  IF NEW.duration_min IS DISTINCT FROM OLD.duration_min THEN RAISE EXCEPTION 'duration_min can only be changed by an admin'; END IF;
+
+  IF NEW.status IS DISTINCT FROM OLD.status THEN
+    IF OLD.status = 'scheduled' AND NEW.status = 'cancelled' THEN
+      IF auth.uid() IS NULL OR (auth.uid() <> OLD.tutor_id AND auth.uid() <> OLD.student_id AND NOT public.has_role(auth.uid(),'admin')) THEN
+        RAISE EXCEPTION 'only session participants can cancel';
+      END IF;
+    ELSIF OLD.status = 'scheduled' AND NEW.status = 'live' THEN
+      IF auth.uid() IS NULL OR (auth.uid() <> OLD.tutor_id AND auth.uid() <> OLD.student_id AND NOT public.has_role(auth.uid(),'admin')) THEN
+        RAISE EXCEPTION 'only session participants can start a session';
+      END IF;
+    ELSIF OLD.status = 'live' AND NEW.status = 'completed' THEN
+      IF auth.uid() IS NULL OR (auth.uid() <> OLD.tutor_id AND NOT public.has_role(auth.uid(),'admin')) THEN
+        RAISE EXCEPTION 'only the tutor can complete a session';
+      END IF;
+    ELSIF OLD.status = 'scheduled' AND NEW.status = 'completed' THEN
+      IF auth.uid() IS NULL OR (auth.uid() <> OLD.tutor_id AND NOT public.has_role(auth.uid(),'admin')) THEN
+        RAISE EXCEPTION 'only the tutor can complete a session';
+      END IF;
+    ELSE
+      RAISE EXCEPTION 'invalid status transition';
+    END IF;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+============================================================
+FILE: supabase\migrations\20260812140000_revoke_public_execute_grants.sql
+============================================================
+
+
+-- Revoke the legacy PUBLIC EXECUTE grants that were left behind by Supabase's
+-- default privileges. `REVOKE ... FROM anon` alone was insufficient: anon (and
+-- authenticated) inherited EXECUTE through the PUBLIC (`=X`) grant, so those
+-- RPCs remained callable anonymously. Authenticated/service_role grants are
+-- preserved here. PUBLIC is intentionally kept on:
+--   - list_public_tutors            (public browse pages)
+--   - can_access_classroom_room     (used in RLS/storage/realtime policies)
+--   - pgvector extension functions  (array_*, halfvec_*, vector_*, ...)
+
+-- Session lifecycle / booking
+REVOKE EXECUTE ON FUNCTION public.book_session(uuid, timestamptz, integer, text, boolean, integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.cancel_session(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.complete_session(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.end_session(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.reschedule_session(uuid, timestamptz) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.start_session(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.booking_conflicts_check(uuid, timestamptz, integer) FROM PUBLIC;
+
+-- Bulk lesson intents
+REVOKE EXECUTE ON FUNCTION public.create_bulk_lesson_intent(uuid, integer, integer, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.confirm_bulk_lesson_intent(uuid, text, text) FROM PUBLIC;
+
+-- Entitlement / lookup
+REVOKE EXECUTE ON FUNCTION public.get_my_scopes() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.student_has_scope(text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_session_participant_names() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_availability_public(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_busy_slots(uuid, timestamptz, timestamptz) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_holidays_public(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_tutor_pricing(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.match_simulations(vector, integer, double precision) FROM PUBLIC;
+
+-- Admin actions
+REVOKE EXECUTE ON FUNCTION public.approve_tutor_application(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.reject_tutor_application(uuid, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.log_tutor_decision(text, uuid[], text) FROM PUBLIC;
+
+-- Trigger helpers (no EXECUTE grant needed for trigger invocation)
+REVOKE EXECUTE ON FUNCTION public.sessions_consume_free_minutes() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.sessions_protect_immutable_cols() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.set_updated_at() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.ledger_block_mutation() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.ledger_block_mutation() FROM anon, authenticated;
+
+============================================================
+FILE: check_sessions_columns.sql
+============================================================
+
+SELECT column_name
+FROM information_schema.columns
+WHERE table_name = 'sessions'
+ORDER BY ordinal_position;
+
+============================================================
+FILE: check_sessions_data.sql
+============================================================
+
+SELECT * FROM public.sessions LIMIT 20;
+
+============================================================
+FILE: check_tutor_subscriptions.sql
+============================================================
+
+SELECT * FROM public.tutor_subscriptions LIMIT 20;
+
+============================================================
+FILE: current_sessions_policies.sql
+============================================================
+
+SELECT policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE tablename = 'sessions';
+
+============================================================
+FILE: inspect_policies_sessions.sql
+============================================================
+
+SELECT policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE tablename = 'sessions';
+
+============================================================
+FILE: inspect_policies_tutor_subscriptions.sql
+============================================================
+
+SELECT policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE tablename = 'tutor_subscriptions';
+
+============================================================
+FILE: inspect_sessions.sql
+============================================================
+
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'sessions'
+ORDER BY ordinal_position;
+
+============================================================
+FILE: inspect_tutor_subscriptions.sql
+============================================================
+
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = 'tutor_subscriptions'
+ORDER BY ordinal_position;
+
+============================================================
+FILE: verify_sessions_policies.sql
+============================================================
+
+SELECT policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE tablename = 'sessions'
+ORDER BY policyname;
+
+============================================================
+FILE: verify_tutor_subscriptions_policies.sql
+============================================================
+
+SELECT policyname, cmd, roles, qual, with_check
+FROM pg_policies
+WHERE tablename = 'tutor_subscriptions'
+ORDER BY policyname;

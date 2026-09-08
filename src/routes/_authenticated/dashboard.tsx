@@ -1,24 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
-import { ScheduleStudentCard } from "@/components/ScheduleStudentCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { ScheduleStudentCard } from "@/presentation/domains/2-learning-journey/ScheduleStudentCard";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { Progress } from "@/presentation/domains/8-core-ux-navigation/ui/progress";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import {
   Crown,
   Calendar,
@@ -40,9 +40,9 @@ import {
   Copy,
   Link2,
 } from "lucide-react";
-import { StudentHome } from "@/components/dashboard/StudentHome";
-import { TutorHome } from "@/components/dashboard/TutorHome";
-import { AdminHome } from "@/components/dashboard/AdminHome";
+import { StudentHome } from "@/presentation/domains/2-learning-journey/StudentHome";
+import { TutorHome } from "@/presentation/domains/2-learning-journey/TutorHome";
+import { AdminHome } from "@/presentation/domains/3-personalization-role-context/AdminHome";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,

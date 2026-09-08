@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { PageContainer } from "@/components/dashboard/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { getLessonsList, cancelSession, rescheduleSession, completeSession } from "@/application/use-cases/sessions/manage-session";
+import { PageContainer } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import { Video, RefreshCw, X, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/lessons")({
@@ -32,6 +33,11 @@ type Lesson = {
 
 function LessonsPage() {
   const { user } = useAuth();
+  const fetchLessons = useServerFn(getLessonsList);
+  const doCancel = useServerFn(cancelSession);
+  const doReschedule = useServerFn(rescheduleSession);
+  const doComplete = useServerFn(completeSession);
+
   const [rows, setRows] = useState<Lesson[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [tab, setTab] = useState("upcoming");
@@ -41,21 +47,11 @@ function LessonsPage() {
   const [cancelReason, setCancelReason] = useState("");
 
   const load = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("sessions")
-      .select("id, tutor_id, student_id, subject, scheduled_at, duration_min, room_id, status, cancel_reason")
-      .order("scheduled_at", { ascending: true });
-    const list = (data as Lesson[]) ?? [];
-    setRows(list);
-    const ids = Array.from(new Set(list.flatMap((l) => [l.tutor_id, l.student_id])));
-    if (ids.length) {
-      const { data: ps } = await supabase.from("profiles").select("id, full_name").in("id", ids);
-      const map: Record<string, string> = {};
-      (ps ?? []).forEach((p: any) => { map[p.id] = p.full_name ?? "User"; });
-      setNames(map);
-    }
+    const result = await fetchLessons();
+    setRows(result?.sessions as Lesson[] ?? []);
+    setNames(result?.names ?? {});
   };
+
   useEffect(() => { load(); }, [user]);
 
   const now = Date.now();
@@ -63,30 +59,24 @@ function LessonsPage() {
   const past = rows.filter((r) => r.status === "completed" || (r.status === "scheduled" && new Date(r.scheduled_at).getTime() < now - r.duration_min * 60000));
   const cancelled = rows.filter((r) => r.status === "cancelled");
 
-  const doCancel = async () => {
+  const handleCancel = async () => {
     if (!cancel) return;
-    const { error } = await supabase.rpc("cancel_session", { _session: cancel.id, _reason: cancelReason || undefined });
-    if (error) return toast.error(error.message);
+    await doCancel({ data: { sessionId: cancel.id, reason: cancelReason || undefined } });
     toast.success("Lesson cancelled");
     setCancel(null); setCancelReason("");
     load();
   };
 
-  const doReschedule = async () => {
+  const handleReschedule = async () => {
     if (!resched || !newWhen) return;
-    const { error } = await supabase.rpc("reschedule_session", {
-      _session: resched.id,
-      _new_start: new Date(newWhen).toISOString(),
-    });
-    if (error) return toast.error(error.message);
+    await doReschedule({ data: { sessionId: resched.id, newStart: newWhen } });
     toast.success("Lesson rescheduled");
     setResched(null); setNewWhen("");
     load();
   };
 
-  const doComplete = async (l: Lesson) => {
-    const { error } = await supabase.rpc("complete_session", { _session: l.id });
-    if (error) return toast.error(error.message);
+  const handleComplete = async (l: Lesson) => {
+    await doComplete({ data: { sessionId: l.id } });
     toast.success("Lesson marked complete");
     load();
   };
@@ -127,7 +117,7 @@ function LessonsPage() {
                       </Link>
                     </Button>
                     {canComplete && (
-                      <Button size="sm" variant="secondary" onClick={() => doComplete(l)}>
+                      <Button size="sm" variant="secondary" onClick={() => handleComplete(l)}>
                         <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Complete
                       </Button>
                     )}
@@ -169,7 +159,7 @@ function LessonsPage() {
           <Input type="datetime-local" value={newWhen} onChange={(e) => setNewWhen(e.target.value)} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setResched(null)}>Back</Button>
-            <Button onClick={doReschedule}>Confirm</Button>
+            <Button onClick={handleReschedule}>Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -183,7 +173,7 @@ function LessonsPage() {
           <Input value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="Reason (optional)" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancel(null)}>Back</Button>
-            <Button variant="destructive" onClick={doCancel}>Cancel lesson</Button>
+            <Button variant="destructive" onClick={handleCancel}>Cancel lesson</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

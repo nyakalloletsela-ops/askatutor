@@ -1,11 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { adminListUsers, adminDeleteUser } from "@/lib/admin.functions";
-import { PageContainer, SectionHeader } from "@/components/dashboard/primitives";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { adminListUsers, adminDeleteUser } from "@/application/use-cases/admin/user-management";
+import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,7 +39,7 @@ function StudentsAdmin() {
   const remove = async (id: string) => {
     if (!confirm("Suspend (delete) this account? This cannot be undone.")) return;
     try {
-      await adminDeleteUser({ data: { userId: id } });
+      await adminDeleteUser({ data: { user_id: id } });
       toast.success("Account removed");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     } catch (e) {

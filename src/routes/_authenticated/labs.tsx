@@ -1,16 +1,16 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Navbar } from "@/components/Navbar";
-import { LorddaLab } from "@/components/LorddaLab";
-import { WebGLLab } from "@/components/WebGLLab";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { LorddaLab } from "@/presentation/domains/5-classroom-live-workspace/LorddaLab";
+import { WebGLLab } from "@/presentation/domains/5-classroom-live-workspace/WebGLLab";
 import { FlaskConical, Boxes, ExternalLink, Sparkles } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import {
   STUDENT_LAB_LIMIT,
   readViewedSlugs,
   recordViewedSlug,
 } from "@/lib/lab-modules";
-import { ScopeGate } from "@/components/ScopeGate";
+import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/labs")({
   component: () => (<ScopeGate scope="labs"><LabsPage /></ScopeGate>),

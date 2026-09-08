@@ -2,11 +2,11 @@ import { useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { PageContainer, StatCard, EmptyState } from "@/components/dashboard/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { PageContainer, StatCard, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Wallet, Clock, CheckCircle2, TrendingUp, Banknote, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/wallet")({

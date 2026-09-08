@@ -1,5 +1,5 @@
-import { SmartMarkdown } from "@/components/ai/SmartMarkdown";
-import { SaveToNotes } from "@/components/ai/SaveToNotes";
+import { SmartMarkdown } from "@/presentation/domains/2-learning-journey/ai/SmartMarkdown";
+import { SaveToNotes } from "@/presentation/domains/2-learning-journey/ai/SaveToNotes";
 
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -10,13 +10,13 @@ import {
   Sparkles, BookOpen, Layers, ListChecks, FileText, ScrollText,
   Code, FlaskConical, Briefcase, Languages, CalendarDays, Loader2, Send,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { aiToolRun } from "@/lib/ai-tools.functions";
-import { ScopeGate } from "@/components/ScopeGate";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { aiToolRun } from "@/application/use-cases/ai/tool-run";
+import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/ai-tools")({
   component: () => (<ScopeGate scope="ai"><AiToolsPage /></ScopeGate>),

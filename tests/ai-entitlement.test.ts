@@ -1,10 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import {
-  assertAiEntitlement,
-  premiumMessage,
-  type EntitlementGateway,
-  type UserRole,
-} from "../src/lib/ai-entitlement";
+import { assertAiEntitlement, premiumMessage } from "../src/application/services/entitlement-guard";
+import type { EntitlementGateway, UserRole } from "../src/application/contracts/entitlements";
 
 type Handler = (...args: unknown[]) => Promise<{ data: unknown; error: { message: string } | null }>;
 

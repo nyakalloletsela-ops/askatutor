@@ -1,8 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { getClassroomContext } from "@/lib/access.functions";
-import { ClassroomShell } from "@/components/classroom/ClassroomShell";
+import { ClassroomShell } from "@/presentation/domains/5-classroom-live-workspace/classroom/ClassroomShell";
 
 export const Route = createFileRoute("/_authenticated/classroom/$roomId")({
   beforeLoad: async ({ params }) => {

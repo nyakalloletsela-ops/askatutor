@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 
 export const Route = createFileRoute("/_authenticated/whiteboard-review/$sessionId")({
   component: ReviewPage,

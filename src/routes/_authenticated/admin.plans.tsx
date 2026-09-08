@@ -3,18 +3,18 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/presentation/domains/8-core-ux-navigation/ui/select";
+import { Switch } from "@/presentation/domains/8-core-ux-navigation/ui/switch";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Trash2, Plus, UserPlus } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/plans")({
   beforeLoad: async () => {
@@ -108,7 +108,7 @@ function AdminPlans() {
       .from("profiles")
       .select("id, full_name");
     // We don't have profiles.email; use the admin function to find by email
-    const users = await (await import("@/lib/admin.functions")).adminListUsers();
+    const users = await (await import("@/application/use-cases/admin/user-management")).adminListUsers();
     const u = (users as any[])?.find((x) => x.email?.toLowerCase() === assignEmail.trim().toLowerCase());
     if (!u) return toast.error("User not found");
     const { error } = await supabase.from("subscription_assignments").insert({

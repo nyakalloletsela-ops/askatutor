@@ -21,15 +21,15 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, StatCard, EmptyState } from "@/components/dashboard/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PageContainer, StatCard, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Switch } from "@/presentation/domains/8-core-ux-navigation/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,7 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,7 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/payouts")({
   beforeLoad: async () => {

@@ -3,20 +3,20 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { PageContainer, SectionHeader } from "@/components/dashboard/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 

@@ -2,20 +2,20 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { notifyBookingEmails } from "@/lib/booking-emails.functions";
-import { Navbar } from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { notifyBookingEmails } from "@/application/use-cases/communication/notifications";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { useAuth } from "@/hooks/use-auth";
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { Search, Crown, Star, CalendarPlus, Gift } from "lucide-react";
 
 export const Route = createFileRoute("/tutors")({

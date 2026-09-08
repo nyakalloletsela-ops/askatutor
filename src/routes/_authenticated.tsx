@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { AppShell } from "@/components/dashboard/AppShell";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { AppShell } from "@/presentation/domains/8-core-ux-navigation/AppShell";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthGate,

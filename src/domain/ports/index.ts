@@ -1,0 +1,15 @@
+export type { UserRepository, RoleName, ManagedUser, CreateUserInput } from "./user-repository";
+export type { SessionRepository, LessonRow, LessonsListResult, BookingInput, WaitlistInput, SessionAccessRow, SessionBrief, SessionNotificationView } from "./session-repository";
+export type { TutorRepository, TutorProfile, TutorAvailability, AvailabilityWindow, Holiday, BusySlot, TutorListingRow } from "./tutor-repository";
+export type { CourseMaterialRepository, CourseMaterial } from "./course-material-repository";
+export type { ClassroomRepository, ClassroomFile, WhiteboardSnapshot, ChatMessageInput } from "./classroom-repository";
+export type { MessageRepository, DirectMessageInput } from "./message-repository";
+export type { NoteRepository, NoteRow, CreateNoteInput } from "./note-repository";
+export type { SimulationRepository, SimulationRow, SaveSimulationInput } from "./simulation-repository";
+export type { ModerationRepository, ForumPostInput } from "./moderation-repository";
+export type { HelpRepository, HelpMessageInput } from "./help-repository";
+export type { PlatformConfigRepository } from "./platform-config-repository";
+export type { AiKeyRepository, AiProvider, AiKeyRow, EnvKeyPresence, AiKeyUpsertInput } from "./ai-key-repository";
+export type { AdminRepository, DashboardData, TutorApplicationRow, AuditLogRow } from "./admin-repository";
+export type { EmailSuppressionRepository, UnsubscribeTokenStatus, UnsubscribeResult } from "./email-suppression-repository";
+export type { LearningStage, LearningStageEvidence, LearningRecordRepository } from "./learning";

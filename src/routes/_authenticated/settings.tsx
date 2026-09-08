@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { AppShell } from "@/components/dashboard/AppShell";
+import { AppShell } from "@/presentation/domains/8-core-ux-navigation/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { useTheme } from "@/hooks/use-theme";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { useTheme } from "@/presentation/domains/8-core-ux-navigation/hooks/use-theme";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
+import { Switch } from "@/presentation/domains/8-core-ux-navigation/ui/switch";
+import { Separator } from "@/presentation/domains/8-core-ux-navigation/ui/separator";
 import { User, Bell, CreditCard, Shield, Palette, LogOut, Save } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({

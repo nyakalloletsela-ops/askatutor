@@ -1,23 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { notifyBookingEmails } from "@/lib/booking-emails.functions";
-import { PageContainer } from "@/components/dashboard/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { getTutorProfile, getTutorAvailability, bookSession, joinWaitlist as joinWaitlistFn } from "@/application/use-cases/discovery/book-session";
+import { notifyBookingEmails } from "@/application/use-cases/communication/notifications";
+import { PageContainer } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import { ChevronLeft, ChevronRight, Repeat, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ScopeGate } from "@/components/ScopeGate";
+import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/book/$tutorId")({
   component: () => (<ScopeGate scope="find_tutors"><BookTutorPage /></ScopeGate>),
@@ -55,31 +56,27 @@ function BookTutorPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const fetchTutorProfile = useServerFn(getTutorProfile);
+  const fetchTutorAvailability = useServerFn(getTutorAvailability);
+  const bookSessionFn = useServerFn(bookSession);
+
   useEffect(() => {
     (async () => {
-      const { data: t } = await supabase
-        .from("profiles")
-        .select("full_name, hourly_rate, subjects")
-        .eq("id", tutorId)
-        .maybeSingle();
+      const t = await fetchTutorProfile({ data: { tutorId } });
       setTutor(t as any);
       if (t?.subjects?.[0]) setSubject(t.subjects[0]);
-
-      const [a, h] = await Promise.all([
-        supabase.rpc("get_tutor_availability_public", { _tutor: tutorId }),
-        supabase.rpc("get_tutor_holidays_public", { _tutor: tutorId }),
-      ]);
-      setAvail((a.data as Avail[]) ?? []);
-      setHolidays((h.data as Holiday[]) ?? []);
     })();
   }, [tutorId]);
 
   useEffect(() => {
-    const from = weekStart.toISOString();
-    const to = new Date(weekStart.getTime() + 7 * 86400000).toISOString();
-    supabase
-      .rpc("get_tutor_busy_slots", { _tutor: tutorId, _from: from, _to: to })
-      .then(({ data }) => setBusy((data as Busy[]) ?? []));
+    (async () => {
+      const from = weekStart.toISOString();
+      const to = new Date(weekStart.getTime() + 7 * 86400000).toISOString();
+      const result = await fetchTutorAvailability({ data: { tutorId, from, to } });
+      setAvail(result.availability ?? []);
+      setHolidays(result.holidays ?? []);
+      setBusy(result.busySlots ?? []);
+    })();
   }, [tutorId, weekStart]);
 
   const tutorTz = avail[0]?.timezone ?? "UTC";
@@ -127,25 +124,26 @@ function BookTutorPage() {
   const onConfirm = async () => {
     if (!picked || !user) return;
     setSubmitting(true);
-    const { data, error } = await supabase.rpc("book_session", {
-      _tutor: tutorId,
-      _start: picked.toISOString(),
-      _duration_min: duration,
-      _subject: subject || (tutor?.subjects?.[0] ?? "General"),
-      _is_free: false,
-      _recurrence_weeks: recurrence,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const result = await bookSessionFn({
+        data: {
+          tutorId,
+          start: picked.toISOString(),
+          durationMin: duration,
+          subject: subject || (tutor?.subjects?.[0] ?? "General"),
+          isFree: false,
+          recurrenceWeeks: recurrence,
+        },
+      });
+      const ids = result.sessionIds;
+      toast.success(`Booked ${ids.length} session${ids.length > 1 ? "s" : ""}`);
+      ids.forEach((id: string) => notifyBookingEmails({ data: { sessionId: id } }).catch(() => {}));
+      setConfirmOpen(false);
+      navigate({ to: "/lessons" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Booking failed");
     }
-    const ids = (data as string[]) ?? [];
-    toast.success(`Booked ${ids.length} session${ids.length > 1 ? "s" : ""}`);
-    // fire emails (best-effort)
-    ids.forEach((id) => notifyBookingEmails({ data: { sessionId: id } }).catch(() => {}));
-    setConfirmOpen(false);
-    navigate({ to: "/lessons" });
+    setSubmitting(false);
   };
 
   return (
@@ -353,14 +351,10 @@ function zonedTimeToUtc(wall: string, tz: string): Date {
 }
 
 async function joinWaitlist(tutorId: string, subject: string, duration: number) {
-  const { data: u } = await supabase.auth.getUser();
-  if (!u.user) return;
-  const { error } = await supabase.from("session_waitlist").insert({
-    tutor_id: tutorId,
-    student_id: u.user.id,
-    subject: subject || null,
-    duration_min: duration,
-  });
-  if (error) toast.error(error.message);
-  else toast.success("Added to waitlist — we'll notify you when a slot opens.");
+  try {
+    await joinWaitlistFn({ data: { tutorId, subject: subject || undefined, durationMin: duration } });
+    toast.success("Added to waitlist — we'll notify you when a slot opens.");
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : "Failed to join waitlist");
+  }
 }

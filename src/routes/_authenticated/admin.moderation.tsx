@@ -1,12 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Flag, Trash2 } from "lucide-react";
+import { Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, EmptyState } from "@/components/dashboard/primitives";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { PageContainer, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { ModerationPostCard } from "@/presentation/domains/4-trust-safety-compliance/moderation/ModerationPostCard";
 
 export const Route = createFileRoute("/_authenticated/admin/moderation")({
   beforeLoad: async () => {
@@ -55,20 +54,11 @@ function ModerationPage() {
       ) : (
         <div className="space-y-2">
           {posts.map((p) => (
-            <Card key={p.id}>
-              <CardContent className="flex items-start justify-between gap-3 p-3">
-                <div className="min-w-0 flex-1">
-                  {p.title && <p className="text-sm font-semibold">{p.title}</p>}
-                  <p className="line-clamp-3 text-xs text-muted-foreground">{p.body}</p>
-                  <p className="mt-1 text-[10px] text-muted-foreground">
-                    {new Date(p.created_at).toLocaleString()}
-                  </p>
-                </div>
-                <Button size="icon" variant="ghost" onClick={() => del.mutate(p.id)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
+            <ModerationPostCard
+              key={p.id}
+              post={p}
+              onDelete={(id) => del.mutate(id)}
+            />
           ))}
         </div>
       )}

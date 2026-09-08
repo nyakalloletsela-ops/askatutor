@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Navbar } from "@/components/Navbar";
-import { ScopeGate } from "@/components/ScopeGate";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
 import { toast } from "sonner";
 import {
   Play, Pause, RotateCcw, Sparkles, Trash2, Maximize2, Loader2, Search, X, BookOpen, GraduationCap,
@@ -13,16 +13,16 @@ import {
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
 import {
   embedPrompt, findSimilarSimulation, generateSimulationSchema,
   saveSimulation, listSimulations, deleteSimulation,
   type SimulationSchemaT,
 } from "@/lib/sim-lab.functions";
-import { SimDispatch } from "@/components/lab3d/SimDispatch";
-import { SimChat } from "@/components/lab3d/SimChat";
-import { AmbientEmpty } from "@/components/lab3d/AmbientEmpty";
+import { SimDispatch } from "@/presentation/domains/5-classroom-live-workspace/lab3d/SimDispatch";
+import { SimChat } from "@/presentation/domains/5-classroom-live-workspace/lab3d/SimChat";
+import { AmbientEmpty } from "@/presentation/domains/5-classroom-live-workspace/lab3d/AmbientEmpty";
 import type * as THREE from "three";
 
 type LearningMode = "guided" | "explore" | "tutor" | "assessment";

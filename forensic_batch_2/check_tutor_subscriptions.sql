@@ -1,0 +1,1 @@
+SELECT * FROM public.tutor_subscriptions LIMIT 20;

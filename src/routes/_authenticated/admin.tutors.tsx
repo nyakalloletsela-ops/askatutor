@@ -3,10 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, SectionHeader } from "@/components/dashboard/primitives";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/tutors")({

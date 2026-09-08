@@ -9,6 +9,9 @@ export const Route = createFileRoute("/api/checkout/return")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        const { buildPublicDependencies } = await import("@/infrastructure/di");
+        const paymentGateway = buildPublicDependencies().paymentGateway;
+
         const url = new URL(request.url);
         const intentId = url.searchParams.get("intent");
         const paypalToken = url.searchParams.get("token"); // PayPal order id
@@ -19,62 +22,48 @@ export const Route = createFileRoute("/api/checkout/return")({
         }
 
         try {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { data: intent, error: iErr } = await supabaseAdmin
-            .from("payment_intents")
-            .select("id, provider, provider_ref, status")
-            .eq("id", intentId)
-            .maybeSingle();
-          if (iErr || !intent) {
+          const intent = await paymentGateway.getIntent(intentId);
+          if (!intent) {
             return Response.redirect(`${origin}/checkout/failed?reason=intent_not_found`, 302);
           }
           if (intent.status === "succeeded") {
             return Response.redirect(`${origin}/checkout/success?intent=${intentId}`, 302);
           }
-
-          const { data: provider, error: pErr } = await supabaseAdmin
-            .from("payment_providers")
-            .select("slug, mode, credentials_ref")
-            .eq("slug", intent.provider)
-            .maybeSingle();
-          if (pErr || !provider || !provider.credentials_ref) {
+          if (!intent.provider) {
             return Response.redirect(`${origin}/checkout/failed?reason=provider_missing`, 302);
           }
 
-          if (provider.slug === "paypal") {
-            const { paypalCaptureOrder, paypalGetOrder } = await import("@/lib/payments/paypal.server");
+          if (intent.provider === "paypal") {
             let cap;
             try {
-              cap = await paypalCaptureOrder({
-                mode: provider.mode as "sandbox" | "live",
-                credentialsRef: provider.credentials_ref,
+              cap = await paymentGateway.captureOrder({
+                provider: "paypal",
                 orderId: paypalToken,
               });
             } catch (captureErr) {
               // Race with the webhook: if the capture was already completed
               // (webhook finalized it first), the capture call may error with
               // 422. Verify the order state before deciding.
-              cap = await paypalGetOrder({
-                mode: provider.mode as "sandbox" | "live",
-                credentialsRef: provider.credentials_ref,
+              cap = await paymentGateway.getOrder({
+                provider: "paypal",
                 orderId: paypalToken,
               });
               if (cap.status !== "COMPLETED") throw captureErr;
             }
             if (cap.status !== "COMPLETED") {
-              await supabaseAdmin.rpc("mark_payment_failed", {
-                _intent: intentId,
-                _reason: `PayPal capture status: ${cap.status}`,
+              await paymentGateway.markPaymentFailed({
+                intentId,
+                reason: `PayPal capture status: ${cap.status}`,
               });
               return Response.redirect(
                 `${origin}/checkout/failed?reason=capture_${cap.status.toLowerCase()}`,
                 302,
               );
             }
-            await supabaseAdmin.rpc("finalize_payment_succeeded", {
-              _intent: intentId,
-              _provider: "paypal",
-              _provider_ref: cap.captureId ?? paypalToken,
+            await paymentGateway.finalizeCapture({
+              intentId,
+              provider: "paypal",
+              providerRef: cap.captureId ?? paypalToken,
             });
             return Response.redirect(`${origin}/checkout/success?intent=${intentId}`, 302);
           }

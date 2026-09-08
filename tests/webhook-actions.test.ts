@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolvePaypalWebhookAction } from "../src/lib/payments/webhook-actions";
+import { resolvePaypalWebhookAction } from "../src/infrastructure/adapters/paypal-webhook-action";
 
 const custom = (extra: Record<string, unknown> = {}) => ({
   event_type: "PAYMENT.CAPTURE.COMPLETED",

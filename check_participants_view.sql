@@ -1,0 +1,1 @@
+SELECT qual FROM pg_policies WHERE tablename = 'sessions' AND policyname = 'participants view session';

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Users, Calendar, FileText, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/parent")({

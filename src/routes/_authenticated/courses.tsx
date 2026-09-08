@@ -15,16 +15,16 @@ import {
   Play,
   Check,
 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, EmptyState } from "@/components/dashboard/primitives";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { PageContainer, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { Checkbox } from "@/presentation/domains/8-core-ux-navigation/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -33,15 +33,15 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { getCourseMaterialUrl } from "@/lib/course-materials.functions";
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
+import { getCourseMaterialUrl } from "@/application/use-cases/courses/material-url";
 
 export const Route = createFileRoute("/_authenticated/courses")({
   component: CoursesPage,

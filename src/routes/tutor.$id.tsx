@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Star, Crown, BookOpen, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 
 export const Route = createFileRoute("/tutor/$id")({
   head: ({ params }) => ({

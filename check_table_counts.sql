@@ -1,0 +1,1 @@
+SELECT 'profiles' as tbl, COUNT(*) as cnt FROM public.profiles UNION ALL SELECT 'user_roles', COUNT(*) FROM public.user_roles UNION ALL SELECT 'tutor_subscriptions', COUNT(*) FROM public.tutor_subscriptions UNION ALL SELECT 'tutor_courses', COUNT(*) FROM public.tutor_courses UNION ALL SELECT 'sessions', COUNT(*) FROM public.sessions;

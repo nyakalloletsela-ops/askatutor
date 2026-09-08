@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { GraduationCap, Upload, FileText, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/become-tutor")({

@@ -1,0 +1,1 @@
+SELECT COUNT(*) as cnt FROM public.forum_posts;

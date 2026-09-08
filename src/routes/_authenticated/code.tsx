@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useRef, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
+import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
+import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Code, Play, Sparkles, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { aiToolRun } from "@/lib/ai-tools.functions";
+import { aiToolRun } from "@/application/use-cases/ai/tool-run";
 
 export const Route = createFileRoute("/_authenticated/code")({
   component: CodePlayground,

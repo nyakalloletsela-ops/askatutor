@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { PageContainer, SectionHeader, EmptyState } from "@/components/dashboard/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
+import { PageContainer, SectionHeader, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { FolderOpen, Video, FileText, ExternalLink, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/records")({
