@@ -26,7 +26,7 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 ## AT-0002 — Live Database Verification & RLS Isolation Confirmation
 
 - **Category:** Security / Verification
-- **Status:** `PARTIALLY VERIFIED` (resume, session 3). The **applied schema, RLS policy definitions, helper functions, `app_role` enum, row/data-presence, and source↔applied reconciliation for the 5 learner tables are VERIFIED live** (current-session production, via authenticated Management API over HTTPS — read-only). The **definitive cross-learner (A vs B) runtime isolation test remains NOT VERIFIED / not executable** (production DB empty: `auth.users`=0; all 5 learner tables have 0 rows; no learner identities/records; creating test data is out-of-scope). **Not** COMPLETED, **not** fully VERIFIED. See Session History below.
+- **Status:** `PARTIALLY VERIFIED` (resume, session 3). **Table-set definition:** the AT-0002 learner tables are Set A (`assignments`, `assignment_submissions`, `notes`, `session_records`, `simulations`) — Set B is the Category-2 / GAP-001..005 tracked set (`profiles`, `user_roles`, `tutor_subscriptions`, `tutor_courses`, `sessions`) and is NOT called "the 5 learner tables". The **applied schema, RLS policy definitions, helper functions, `app_role` enum, row/data-presence, and source↔applied reconciliation for the 5 learner tables (Set A) are recorded as VERIFIED live** (current-session production narrative, via authenticated Management API over HTTPS — read-only; **historical narrative evidence, no captured query-result artifacts stored in the repo**). The **definitive cross-learner (A vs B) runtime isolation test remains NOT VERIFIED / not executable** (production DB empty: `auth.users`=0; all 5 learner tables have 0 rows; no learner identities/records; creating test data is out-of-scope). Static/applied RLS model = PARTIALLY VERIFIED; current reproducible live evidence = NOT VERIFIED (no captured outputs); runtime cross-learner isolation = NOT VERIFIED / BLOCKED. **Not** COMPLETED, **not** fully VERIFIED. See Session History below.
 - **Description:** Verify the live production Supabase state: whether migrations are applied, live table existence and row counts (especially `assignments`, `assignment_submissions`), and that RLS policies actually enforce the intended ownership boundary. Confirm Learner-A-vs-Learner-B isolation with cross-user checks.
 - **Reason:** Live database/applied-migration/RLS state could not be verified from the repository alone (no DB connection string in the repo). This is the single largest unresolved security/isolation verification boundary identified in AT-0001.
 - **Affected domain:** Database schema, RLS, identity/isolation.
@@ -34,7 +34,7 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 - **Architectural impact:** Informational/verification only; expected to confirm or adjust current-state understanding. Does not itself change architecture.
 - **Risk:** MEDIUM–residual — applied RLS policy *definitions* are verified owner/participant/admin-scoped, so the definition-level risk is largely retired; however **runtime** cross-learner enforcement is unexercised (empty DB), the primary remaining verification gap.
 - **Priority:** P1 (recommended next work item; sole remaining segment is runtime cross-learner isolation pending a populated/authorized environment with two learner identities).
-- **Source/evidence:** AT-0001 baseline audit (live-DB `UNKNOWN — REQUIRES VERIFICATION`); AT-0002 session 1 probes (BLOCKED); session 2 probes — REST data plane reachable, anon-denial on 5 learner tables → HTTP 200 `[]`; session 3 (this) — Management-API live queries verify: all 5 tables exist + RLS enabled; exact owner/participant/admin-scoped policies for SELECT/INSERT/UPDATE/DELETE; helpers `has_role`/`is_parent_of`/`can_access_classroom_room` + `app_role` enum `{admin,tutor,student,parent}` present; all 5 tables = 0 rows; `auth.users`=0, `user_roles`=0; source↔applied MATCH (`20260530152504`,`20260601045818`,`20260605061006`,`20260622125739`,`20260623113448`, helpers `20260518180453`/`20260522073549`/`20260622125739`). Raw pooler 5432 still unreachable; direct `db.*.supabase.co` does not resolve; no DB connection string/password in repo (Management API used instead). Keys legacy format (`sb_publishable_...` anon, `sb_secret_...` service role).
+- **Source/evidence:** AT-0001 baseline audit (live-DB `UNKNOWN — REQUIRES VERIFICATION`); AT-0002 session 1 probes (BLOCKED); session 2 probes — REST data plane reachable, anon-denial on 5 learner tables → HTTP 200 `[]`; session 3 (this) — Management-API live queries recorded to verify: all 5 tables exist + RLS enabled; exact owner/participant/admin-scoped policies for SELECT/INSERT/UPDATE/DELETE; helpers `has_role`/`is_parent_of`/`can_access_classroom_room` + `app_role` enum `{admin,tutor,student,parent}` present; all 5 tables = 0 rows; `auth.users`=0, `user_roles`=0; source↔applied MATCH (`20260530152504`,`20260601045818`,`20260605061006`,`20260622125739`,`20260623113448`, helpers `20260518180453`/`20260522073549`/`20260622125739`). **Evidence classification:** the `docs/evidence/queries/*.sql` files are query definitions only (no captured output); `supabase_schema.json`/`supabase_schema.txt` are failed/error captures (`LegacyDeclarativeNotEnabledError`), NOT schema dumps; the session-3 claims above are historical live-verification narrative recorded in `docs/CURRENT_STATE.md`, not currently reproducible captured evidence. Raw pooler 5432 still unreachable; direct `db.*.supabase.co` does not resolve; no DB connection string/password in repo (Management API used instead). Keys legacy format (`sb_publishable_...` anon, `sb_secret_...` service role).
 - **Session history:** (1) BLOCKED — no usable database/REST/local access; REST host unresolvable, pooler 5432 timed out. (2) PARTIAL — REST data plane reachable; anon-denial on learner-owned tables (empty `[]`, ambiguity unresolved); applied-schema/RLS/row-count BLOCKED (no DB path). (3) PARTIAL — applied-DB/RLS/row-count/reconciliation VERIFIED live via Management API; cross-learner A/B runtime isolation still NOT VERIFIED (empty DB, `auth.users`=0, no two identities).
 - **Decision status:** `PARTIALLY VERIFIED`. To finish, operator must provide an authorized, populated test environment with two learner identities (+ controlled records) for the runtime cross-learner isolation, then re-authorize resume.
 
@@ -44,14 +44,14 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 
 - **Category:** Security / Financial Integrity (LATENT)
 - **Status:** RECORDED — **not fixed** in AT-0001.
-- **Description:** `PaymentGateway.startCheckout` → `routeCheckoutStart` → `paypalCreateOrder` accepts caller-supplied `amountCents` with no server-side re-derivation. The dangerous client-amount path currently has **no caller in `src/`** and the `checkout.functions.ts` client-amount server function exists only in historical/forensic code (`forensic_batch_2/`). The live main-repo flow (`create_bulk_lesson_intent`) re-derives gross/commission/net server-side and is server-authoritative.
+- **Description:** `PaymentGateway.startCheckout` → `routeCheckoutStart` → `paypalCreateOrder` accepts caller-supplied `amountCents` with no server-side re-derivation. The dangerous client-amount path currently has **no caller in `src/`** and the `checkout.functions.ts` client-amount server function exists only in historical/forensic code (`docs/evidence/forensic/forensic_batch_2/`). The live main-repo flow (`create_bulk_lesson_intent`) re-derives gross/commission/net server-side and is server-authoritative.
 - **Reason:** If this path were ever wired into `src/` unguarded, a client could set `amountCents` arbitrarily (client-authoritative price → payment under-charge). It is a latent risk, **not** an active exploit claim.
 - **Affected domain:** Commerce / payments.
 - **Dependencies:** None for recording. Fix would require server-side amount derivation before any activation.
 - **Architectural impact:** Would need the amount to be derived server-side before activating this path.
 - **Risk:** Latent — high if activated unguarded; currently not active.
 - **Priority:** P2 (record; do not fix now).
-- **Source/evidence:** Payment gateway adapter/router (`src/infrastructure/adapters/payment-gateway-adapter.ts`, `src/lib/payments/router.server.ts`); `forensic_batch_2/src/lib/payments/checkout.functions.ts`; commerce audit (AT-0001).
+- **Source/evidence:** Payment gateway adapter/router (`src/infrastructure/adapters/payment-gateway-adapter.ts`, `src/lib/payments/router.server.ts`); `docs/evidence/forensic/forensic_batch_2/src/lib/payments/checkout.functions.ts`; commerce audit (AT-0001).
 
 ---
 
@@ -77,7 +77,7 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 - **Affected domain:** AI.
 - **Risk:** Medium (abuse/cost control absent).
 - **Priority:** P3.
-- **Source/evidence:** AI audit (AT-0001); `AUDITS_AI_QUOTA_DESIGN.md`.
+- **Source/evidence:** AI audit (AT-0001); `docs/audits/AUDITS_AI_QUOTA_DESIGN.md`.
 
 ---
 
@@ -176,7 +176,7 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 
 - **Category:** DISCOVERY (documentation)
 - **Status:** RECORDED — not deleted, not silently rewritten.
-- **Description:** Several root architecture-inventory documents are stale (reference deleted `src/components/`, `src/hooks/`, 9 deleted `*.functions.ts` shims; wrong file counts). `AUDITS_*` and `GAP_REGISTER` are substantially current. `README.md` is generic boilerplate.
+- **Description:** Several root-inventory/planning documents under `docs/archive/` are stale (reference deleted `src/components/`, `src/hooks/`, 9 deleted `*.functions.ts` shims; wrong file counts). `docs/audits/AUDITS_*` and `docs/audits/GAP_REGISTER.md` are substantially current. `README.md` was generic boilerplate (rewritten as an evidence-based entry document during the documentation restructuring — see `docs/CHANGE_LOG.md`).
 - **Reason:** Stale documentation must not be treated as fact. Recorded in `CURRENT_STATE.md`/audit; existing files preserved as historical snapshots.
 - **Affected domain:** Documentation.
 - **Risk:** Low (misleading if treated as current).
@@ -205,6 +205,6 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 - **Description:** RLS policies exist at source, but there is no automated RLS/authorization test suite and no IDOR/assessment-data RLS coverage. Only ad-hoc `.sql` audit scripts exist.
 - **Reason:** Quality/security testing incomplete.
 - **Affected domain:** Security / quality.
-- **Risk:** Medium (no automated re-verification; applied RLS policy *definitions* now verified live via AT-0002, but runtime cross-learner isolation still unexercised).
+- **Risk:** Medium (no automated re-verification; applied RLS policy *definitions* verified live via AT-0002 as recorded session-3 narrative — current reproducible live evidence NOT VERIFIED — and runtime cross-learner isolation still unexercised).
 - **Priority:** P2 (tie to AT-0002 live verification).
 - **Source/evidence:** Quality/security audit (AT-0001); test suite (only 3 files).
