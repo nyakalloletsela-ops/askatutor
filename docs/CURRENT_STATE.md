@@ -44,8 +44,10 @@ BLOCKERS:
 DECISIONS:
 - No new application architecture was accepted during AT-0001 or AT-0002.
 - Assessment / learning architecture = `PROPOSED / UNACCEPTED` (see `docs/DECISION_LOG.md`).
+- **ATD-0011 — Authentication provider: Supabase Auth = `ACCEPTED`** (explicit human decision; see `docs/DECISION_LOG.md` → D-0003). **Authentication provider production configuration = `NOT VERIFIED`**; current Google/email login = `FAILING / NOT VERIFIED`. Reason: provider configuration (provider enablement, Site URL, OAuth redirect allow-list) is outside repository evidence and requires project-level verification — separate operational follow-ups, not closed by this decision.
 - AT-0002 = `PARTIALLY VERIFIED` — the applied-DB/RLS/schema/row-count/reconciliation segments are now **VERIFIED live** (session 3); the definitive cross-learner (A vs B) runtime isolation test remains **NOT VERIFIED** (no identities/records in an empty production DB; creating them is out of scope). Not COMPLETED, not fully VERIFIED. Prior blocked-session evidence is preserved below.
 - No application/schema/migration/config/data change was made during AT-0002 (verification-only read-only; not authorized to modify). All live queries were read-only (SELECT/catalog/COUNT); no data was written.
+- Historical Phase-0 architecture/requirement decisions (AT-0000) are recorded as **provenance only** in the "Historical Phase-0 Decisions (Provenance Record)" section below and in `docs/DECISION_LOG.md` → D-0002 — **not** re-accepted and do **not** authorize implementation.
 
 RISKS:
 - Unverified **runtime** cross-learner (A vs B) RLS/isolation behavior — the primary remaining open security concern (target of AT-0002). Applied RLS policy *definitions* are verified owner/participant/admin-scoped, but live cross-learner enforcement has not been executed (empty production DB; no learner identities). Do not claim complete runtime isolation without a live cross-user test (requires a populated/authorized test environment).
@@ -146,6 +148,19 @@ FUTURE:
 - Server-authoritative bulk-lesson intent flow; gross/commission/net re-derived server-side.
 - Ledger append-only/service-role-constrained/idempotent (source evidence).
 - Reconciliation missing. `startCheckout`/`routeCheckoutStart` caller-supplied `amountCents` path exists in audited historical/forensic code and is currently unused in `src/` — latent risk, not an active exploit claim. PayPal disabled by default/manual flow only.
+- **Financial-safety rules (Phase-0 historical):** the Phase-0 Tax API / SACU currency (ZAR, NAD, BWP, SLE, SZL) / data-residency (EU GDPR, US CCPA, SACU local storage) components are historical requirements recorded as provenance (see "Historical Phase-0 Decisions" below + `docs/DECISION_LOG.md` → D-0002). They are **NOT implemented** and are `PROPOSED / REQUIRES HUMAN DECISION`, not claims of current Commerce capability.
+
+## Historical Phase-0 Decisions (Provenance Record)
+
+- **Sources:** `docs/archive/CURRENT_STATE (2).md` and `docs/archive/DECISION_LOG (2).md` (Work ID AT-0000, Phase 0, dated 2026-09-04) — the first-generation governance record, superseded by the AT-0001 control system (D-0001) and preserved **unchanged**. Entries below are provenance only — **NOT** current decisions and **NOT** verified present-state capability.
+- Cross-recorded with individual current statuses in `docs/DECISION_LOG.md` → **D-0002** (HISTORICAL / PROPOSED). Nothing historical was re-accepted.
+- **Financial Safety Rules** (Phase-0 ACCEPTED → **PROPOSED / REQUIRES HUMAN DECISION — NOT ACCEPTED**), three required components from the Phase-0 record:
+  1. Tax API (Stripe/Avalara institution-configurable).
+  2. Currency conversion with SACU region overrides (ZAR, NAD, BWP, SLE, SZL special handling).
+  3. Data residency/sovereignty compliance logging (EU GDPR, US CCPA, SACU local storage).
+  - Per-country rules configuration-driven; audit-trail requirements mandatory per law (per the Phase-0 record).
+- **Current-state classification:** the three components above are requirements/recommendations — there is NO verified payment/tax/currency/residency implementation in the current repository. Current Commerce is `PARTIAL` (server-authoritative bulk-lesson intent flow; **reconciliation missing**; latent unused `startCheckout` client-amount path; see Commerce Findings and `docs/AUDIT_BASELINE_AT-0001.md`). SACU/currency/tax/residency content exists nowhere else in the current control docs.
+- **Phase-0 architecture decisions requiring current human decision:** Virtual Lab Domain, Confusion/Fear Step hybrid model, External Simulations approval module, Identity Matching hybrid model, and the postponed stack items ATD-0009 (testing framework), ATD-0010 (deployment platform) — see `docs/DECISION_LOG.md` → D-0002. **ATD-0011 (authentication provider) is no longer unresolved: `ACCEPTED` — Supabase Auth** (`docs/DECISION_LOG.md` → D-0003; authentication provider production configuration remains `NOT VERIFIED`).
 
 ## Quality / Security / Deployment Findings
 
@@ -155,8 +170,8 @@ FUTURE:
 
 ## Documentation Contradictions
 
-- Several architecture-inventory documents are stale (`architecture-inventory.md`, `architecture-inventory-v2.md`, `architecture-inventory-v3-arena.md`, `askatutorlive-arena-final.md`): they reference deleted paths/components/hooks/functions and have wrong file counts.
-- `AUDITS_*` and `GAP_REGISTER` were substantially more current. `README.md` is generic/boilerplate.
+- Several architecture-inventory documents under `docs/archive/` are stale (`architecture-inventory.md`, `architecture-inventory-v2.md`, `architecture-inventory-v3-arena.md`, `askatutorlive-arena-final.md`): they reference deleted paths/components/hooks/functions and have wrong file counts.
+- `docs/audits/AUDITS_*` and `docs/audits/GAP_REGISTER.md` were substantially more current. `README.md` was generic/boilerplate (rewritten as an evidence-based entry document in RESTRUCTURE-0001).
 - Phantom resources: `assignment_submissions`, `LearningRecordRepository`.
 - Shim retirement incomplete: 3 shims plus `room-access.ts` remain per audit evidence (`src/lib/{access,entitlements,sim-lab}.functions.ts` + `src/lib/room-access.ts`).
 - These stale/dead resources are recorded here and in `docs/BACKLOG.md`; they are NOT deleted or fixed during AT-0001.

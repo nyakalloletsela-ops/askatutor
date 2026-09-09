@@ -102,6 +102,80 @@ This document records meaningful changes chronologically. Every work item record
 
 ---
 
+### RESTRUCTURE-0001: Controlled Documentation Restructuring & Evidence Cleanup
+
+| Field | Value |
+|-------|-------|
+| Work ID | RESTRUCTURE-0001 (documentation-only) |
+| Date | 2026-09-08 |
+| Phase | 0 (documentation organization) |
+| Purpose | Reorganize documentation/evidence into a navigable structure while preserving all historical, forensic and audit provenance. No source, migration, database, or configuration changes. |
+
+#### FILES MOVED
+- `docs/{ARCHITECTURE,APPLICATION_ARCHITECTURE,DOMAIN_MAP,DOMAIN_ARCHITECTURE,DATA_ARCHITECTURE,PRESENTATION_ARCHITECTURE,COMMERCE_ARCHITECTURE,COMMUNITY_ARCHITECTURE,INSTITUTION_ARCHITECTURE,VIRTUAL_LAB_ARCHITECTURE,SECURITY_ARCHITECTURE,AI_ARCHITECTURE,DEPENDENCY_GRAPH,FAILURE_MODEL}.md` → `docs/architecture/`
+- `AUDITS_AI_QUOTA_DESIGN.md`, `AUDITS_AI_SERVER_BOUNDARY.md`, `AUDITS_ARCHITECTURAL_RECONCILIATION.md`, `GAP_REGISTER.md`, `CATEGORY2_PRODUCTION_VERIFICATION_RESULT.md`, `ZERO_META.json` → `docs/audits/`
+- `askatutorlive-source.txt`, `askatutorlive-supabase.txt` → `docs/evidence/bundles/`
+- `forensic_batch_2/` → `docs/evidence/forensic/forensic_batch_2/` (preserved intact)
+- 36 root `*.sql` inspection queries + `supabase_schema.json` + `supabase_schema.txt` → `docs/evidence/queries/`
+- `architecture-inventory.md`, `architecture-inventory-v2.md`, `architecture-inventory-v3-arena.md`, `askatutorlive-arena-final.md`, `askatutor-tree.txt`, `src-tree.txt`, `architecture-file-inventory.csv` → `docs/archive/`
+- `docs/MASTER_PLAN (2).md`, `docs/WORK_PROTOCOL (2).md`, `docs/BACKLOG (2).md`, `docs/DECISION_LOG (2).md`, `docs/CURRENT_STATE (2).md` → `docs/archive/` (superseded Phase-0 governance, content unchanged)
+
+#### FILES MODIFIED
+- `README.md` — rewritten from boilerplate scaffold to an evidence-based entry document.
+- 14 files under `docs/architecture/` — prepended `STATUS: HISTORICAL / PLANNING / ASPIRATIONAL` banner (content otherwise unchanged).
+- `docs/CHANGE_LOG.md` — this entry.
+- `docs/DECISION_LOG.md`, `docs/CURRENT_STATE.md`, `docs/AUDIT_BASELINE_AT-0001.md`, `docs/BACKLOG.md` — path references updated to the new locations (substantive meaning unchanged).
+
+#### FILES DELETED
+- (none)
+
+#### VERIFICATION
+- All moves performed with `git mv` (history traceable). SHA-256 unchanged for all moved files except the intent: status-banner prepend on the 14 architecture docs.
+- `supabase_schema.json`/`.txt` confirmed byte-identical (same SHA-256), UTF-16 Supabase CLI `{
+  "error": ... }` failure records, not schemas; preserved (not deleted) under `docs/evidence/queries/`.
+- No duplicate current governance content was created; no historical decision was re-accepted.
+
+---
+
+### ATD-0011-CLOSURE: Authentication Provider Decision — Supabase Auth (ACCEPTED)
+
+| Field | Value |
+|-------|-------|
+| Work ID | ATD-0011-CLOSURE (documentation-only) |
+| Date | 2026-09-09 |
+| Phase | Governance (decision closure) |
+| Purpose | Record the current ATD-0011 authentication-provider decision as `ACCEPTED` in the authoritative governance documents. No source, migration, database, Supabase, or deployment changes. |
+
+#### FILES MODIFIED
+- `docs/DECISION_LOG.md` — ATD-0011 status changed `PROPOSED / PENDING` → `ACCEPTED`; new D-0003 entry (decision, scope, rationale, provenance); D-0002 provenance row updated to reference D-0003.
+- `docs/CURRENT_STATE.md` — ATD-0011 removed from the unresolved Phase-0 decisions list; accepted decision + `NOT VERIFIED` operational status recorded in DECISIONS.
+- `docs/CHANGE_LOG.md` — this entry.
+
+#### FILES DELETED
+- (none)
+
+#### DATABASE CHANGES
+- (none)
+
+#### API CHANGES
+- (none)
+
+#### SECURITY CHANGES
+- (none)
+
+#### TESTS
+- (none)
+
+#### DECISIONS
+- ATD-0011: Authentication provider = **Supabase Auth** — `ACCEPTED` (current, explicit human approval; historical provenance preserved unchanged in `docs/archive/DECISION_LOG (2).md`).
+
+#### KNOWN ISSUES / REMAINING OPEN
+- Authentication provider production configuration = `NOT VERIFIED` (Supabase Email provider enablement, Google provider enablement, Site URL, OAuth redirect allow-list, production authentication retest) — separate operational follow-ups, not closed by this decision.
+- Current Google/email login failure (`Unsupported provider: provider is not enabled`) is a project-level provider-configuration matter, NOT evidence against the accepted provider.
+- Open follow-ups retained: `getClaims()` vs `getUser()` session-hardening decision, explicit admin assertion hardening, authentication/RLS test coverage, authentication gap-register re-baselining.
+
+---
+
 ## 3. CHANGE RULES
 
 1. Never silently remove previous negative evidence
