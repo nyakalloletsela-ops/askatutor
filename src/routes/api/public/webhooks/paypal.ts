@@ -58,9 +58,12 @@ export const Route = createFileRoute("/api/public/webhooks/paypal")({
             });
           }
         } catch (e) {
-          // Unknown intent or already-finalized — log only, never crash the
-          // webhook (PayPal retries otherwise).
+          // Do not acknowledge downstream processing failures. A 2xx response
+          // tells PayPal the event was handled and can suppress provider retry.
+          // The payment operations are designed to be idempotent, so transient
+          // failures should be retried by the provider instead.
           console.error("[paypal webhook] action error:", e);
+          return new Response("Webhook processing failed", { status: 500 });
         }
 
         return new Response("ok");
