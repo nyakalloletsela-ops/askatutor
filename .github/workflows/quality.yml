@@ -1,0 +1,38 @@
+name: Quality
+
+on:
+  push:
+    branches: [main, opencode/phase0-work]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Unit and integration tests
+        run: bun test
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Production build
+        run: bun run build
