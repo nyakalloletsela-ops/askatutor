@@ -228,8 +228,8 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 
 | ID | Item | Type | Owner / phase | Status |
 |---|---|---|---|---|
-| CF-001 | ATD-0009 — testing framework decision (UN-001; TR-008) | Product/engineering decision | Phase 1 **gate** | OPEN — blocks Phase 1 start |
-| CF-002 | ATD-0010 — deployment platform decision (UN-002; TR-009) | Product/engineering decision | Phase 1 **gate** | OPEN — blocks Phase 1 start |
+| CF-001 | ATD-0009 — testing framework decision (UN-001; TR-008) | Product/engineering decision | Phase 1 **gate** | CLOSED — `ACCEPTED` (D-0007, 2026-09-10): `bun:test`; no Vitest |
+| CF-002 | ATD-0010 — deployment platform decision (UN-002; TR-009) | Product/engineering decision | Phase 1 **gate** | CLOSED — `ACCEPTED` (D-0008, 2026-09-10): Cloudflare Workers primary; provider-neutral external integrations |
 | CF-003 | Learning-design §21 acceptance list (vocabulary, item sets, affective signal set, diagnosis mapping, mastery semantics, decision-autonomy) + INST-DEC-6/7/8/9 | Product/learning + legal decisions | Phase 4–6 backbone prep | OPEN |
 | CF-004 | INST-DEC-2/3 acceptance (product); INST-DEC-4/10 resolve at engineering time | Architecture decisions | Design follow-up | OPEN |
 | CF-005 | UN-003 PhET scope (Phase 6); UN-004/UN-005 video/voice recording limits (Phase 3); UN-006 institution link flow (Phase 8) | Future implementation | Phase-locked | OPEN — NOT before its phase |
@@ -238,3 +238,26 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 | CF-008 | ATD-0011 auth-provider **production configuration** (D-0003 scope); AT-0002 residuals (production `anon` over-grant `arwdDxtm`, optional production runtime matrix once populated); affective retention/legal posture | Production verification | operational / legal | OPEN |
 | CF-009 | `session_records.ai_summary` writer | Evidence-resolvable | verification | OPEN (see P2 entry above) |
 | CF-010 | MASTER_PLAN §1 vs D-0005 alignment; stale archive preservation | Doc reconciliation | this exercise / P4 | CLOSED (aligned here) / PRESERVED |
+
+### Phase 1 carried-forward registers (from AT-0004 — separately owned; execution details in `docs/PHASE1_PROGRESS.md`)
+
+| ID | Item | Type | Owner / phase | Status |
+|---|---|---|---|---|
+| CF-011 | Lint baseline enforceability: prettier single/double-quote drift (4755 problems, 4719 errors — pre-existing) + `docs/evidence/forensic/**` ignore decision; then gate lint in CI | Engineering / quality | Phase 1 | OPEN |
+| CF-012 | Playwright E2E setup: authorize `@playwright/test` devDep + browser install + non-auth E2E target/seed path; then run headless | Engineering / quality | Phase 1 | OPEN — requires separate authorization |
+| CF-013 | CI EXECUTION: run `.github/workflows/quality.yml` on GitHub and record green/red | Engineering / verification | Phase 1 | OPEN — requires GitHub runner access |
+
+---
+
+## AT-0004 — Phase 1 Quality Foundation (deterministic testing foundation)
+
+- **Category:** Engineering / Process + Quality
+- **Description:** Establish the deterministic quality foundation authorized by the Phase-1 gating decisions: wire `"test": "bun test"`, execute the existing suite, verify typecheck, record the lint baseline, add a minimal CI workflow, and persist Phase 1 progress + external-integration policy docs. Recorded in `docs/PHASE1_PROGRESS.md`.
+- **Reason:** Phase 1 start requires ATD-0009/ATD-0010 resolution (both accepted 2026-09-10 — D-0007/D-0008) and a deterministic, CI-verifiable test command the repo previously lacked (no `test` script; no CI workflow existed).
+- **Affected domain:** Repository-wide (testing/quality/policy docs); no production source code changed in this slice.
+- **Dependencies:** Phase 0 gates G-01..G-10 (G-10 resolved by D-0007/D-0008).
+- **Architectural impact:** None in this slice (no application architecture changed). Later slices will exercise per-integration verification.
+- **Risk:** Low.
+- **Priority:** P0 (Phase 1 start).
+- **Source/evidence:** `docs/PHASE1_PROGRESS.md` (35 pass/0 fail `bun test`; `tsc` exit 0; lint baseline 4755 problems; CI workflow file; statuses); `docs/DECISION_LOG.md` D-0007/D-0008; `docs/EXTERNAL_INTEGRATION_POLICY.md`.
+- **Status:** IN PROGRESS — this slice completed and committed on `opencode/phase0-work`; follow-ups CF-011 (lint), CF-012 (Playwright), CF-013 (CI execution) remain OPEN. Not VERIFIED (no independent re-check; CI not executed).

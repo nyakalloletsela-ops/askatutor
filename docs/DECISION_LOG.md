@@ -73,8 +73,8 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
 | ATD-0006 | 3D / lab rendering: Three.js | ACCEPTED | HISTORICAL — no 3D lab in verified present state; REQUIRES CURRENT CONFIRMATION |
 | ATD-0007 | Whiteboard assessment requirement: CONFIRMED (Product Constitution §5) | ACCEPTED | HISTORICAL — requirement confirmation, NOT architecture; current status REQUIRES CURRENT CONFIRMATION |
 | ATD-0008 | Mandatory initial assessment: CONFIRMED (Product Constitution §4) | ACCEPTED | HISTORICAL — requirement confirmation, NOT architecture; current status REQUIRES CURRENT CONFIRMATION |
-| ATD-0009 | Testing framework: Vitest (unit/integration) + Playwright (E2E) recommended | PROPOSED / PENDING | HISTORICAL — current verified test framework is `bun:test`; any framework decision REQUIRES CURRENT HUMAN DECISION |
-| ATD-0010 | Deployment platform: Vercel + Railway/Supabase recommended | PROPOSED / PENDING | HISTORICAL — current verified deployment is Cloudflare Workers default (Node/Vercel options); REQUIRES CURRENT HUMAN DECISION |
+| ATD-0009 | Testing framework: Vitest (unit/integration) + Playwright (E2E) recommended | PROPOSED / PENDING | HISTORICAL — current verified test framework is `bun:test`; **Vitest NOT adopted**; `bun:test` + Playwright (future E2E) = current `ACCEPTED` decision (D-0007, 2026-09-10) |
+| ATD-0010 | Deployment platform: Vercel + Railway/Supabase recommended | PROPOSED / PENDING | HISTORICAL — current verified deployment is Cloudflare Workers default; Cloudflare Workers primary + provider-neutral external integrations = current `ACCEPTED` decision (D-0008, 2026-09-10) |
 | ATD-0011 | Authentication provider: Supabase Auth recommended | PROPOSED / PENDING | `ACCEPTED` as current decision (D-0003, 2026-09-09) — re-confirmed from present-state evidence + explicit human approval; historical record preserved for provenance |
 
 ### Phase-0 architecture decisions (`docs/archive/CURRENT_STATE (2).md`)
@@ -140,8 +140,8 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
 
 - **Reference:** `docs/archive/MASTER_PLAN (2).md` (Phase 0 Definition of COMPLETE / VERIFIED; status `COMPLETE-PENDING-REVIEW`), `docs/archive/CURRENT_STATE (2).md` (17 acceptance checks), D-0001 (control system supersede), D-0002 (provenance record), AT-0003 (closure work item).
 - **Kind:** Engineering-process / governance closure assessment (NOT an application-architecture decision).
-- **Date:** 2026-09-10 (recorded by AT-0003; verdict is a **recommendation pending human acceptance**).
-- **Status:** `ASSESSMENT RECORDED — VERDICT RECOMMENDED (PENDING HUMAN ACCEPTANCE)`.
+- **Date:** 2026-09-10 (recorded by AT-0003; verdict initially a **recommendation pending human acceptance**).
+- **Status:** `ACCEPTED (2026-09-10, recorded via docs/PHASE0_ACCEPTANCE.md)` — the reviewer formally accepted `CLOSED WITH EXPLICIT FOLLOW-UPS`; recorded recommendation resolved to acceptance. Acceptance is a governance act, not production-readiness evidence.
 - **Recommended verdict:** `CLOSED WITH EXPLICIT FOLLOW-UPS`.
 - **Basis:** Phase 0's own Definition of COMPLETE ("All Phase 0 documentation created, internally reconciled, consistent") is evidenced as satisfied; its 17 acceptance checks all PASS and are re-checkable; the AT-0003 exit-gate table is 9/10 VERIFIED, with the sole NOT-VERIFIED gate being the Phase-1 gating decisions ATD-0009/ATD-0010 (which block Phase 1 start, not Phase 0 completeness).
 - **Carried-forward follow-ups (separately owned; none blocks Phase 0 completeness):**
@@ -152,6 +152,32 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
   - **Evidence-resolvable:** `session_records.ai_summary` writer (UNKNOWN — REQUIRES VERIFICATION; `docs/BACKLOG.md` P2).
   - **Doc reconciliation:** MASTER_PLAN §1 vs D-0005 bounded acceptance (aligned in this exercise); stale archive docs preserved-not-rewritten (`docs/BACKLOG.md` P4).
 - **Scope:** This entry does **not** accept, change, or re-classify any application architecture; it does **not** authorise Phase 1 or any implementation. Acceptance of this closure recommendation is the reviewer's act; the historical `COMPLETE-PENDING-REVIEW` status is resolved to this recorded recommendation pending that acceptance.
+
+---
+
+## D-0007 — ATD-0009 — Testing framework: `bun:test` + Playwright (current accepted decision)
+
+- **Reference:** `docs/BACKLOG.md` CF-001 (ATD-0009, Phase 1 gate); `docs/PHASE1_ACCEPTANCE.md` / `docs/PHASE1_ENTRY_GATE.md` (combined foundation acceptance record); verified testing stack (`bun.lock`, `bunfig.toml`, `bun test` -> `package.json` scripts); historical `docs/archive/DECISION_LOG (2).md` → ATD-0009 (Vitest + Playwright recommendation, `PROPOSED / PENDING`).
+- **Kind:** Engineering-process / tooling decision (current).
+- **Date:** 2026-09-10 (explicit human approval, Phase 1 start).
+- **Status:** `ACCEPTED`
+- **Decision:** Unit/integration tests use the **Bun test runner** (`bun:test`) as the verified deterministic framework — `bun test`, runnable to exit-code 0. **Playwright** is the accepted future E2E framework (setup separately authorized — CF-012). **Vitest is explicitly not adopted** (a historical recommendation only). CI quality verification gates on `bun test` + `bunx tsc --noEmit` (green locally).
+- **Scope:** Accepts the framework choices and the `"test": "bun test"` command. Does NOT accept: any production code change, Playwright installation/e2e scripts (pending CF-012), lint enforcement (pre-existing red baseline — CF-011), or CI execution verification (CF-013).
+- **Rationale (current evidence):** `bun test` executes the existing suite deterministically (35 pass / 0 fail / exit 0, 2026-09-10); Bun v1.3.14 + `bun.lock` are the verified package manager; no Vitest dependency exists.
+- **Remaining:** Playwright E2E setup (CF-012), lint baseline enforcement (CF-011), CI execution (CF-013) — `docs/PHASE1_PROGRESS.md`.
+
+---
+
+## D-0008 — ATD-0010 — Deployment platform: Cloudflare Workers primary + provider-neutral external integrations (current accepted decision)
+
+- **Reference:** `docs/BACKLOG.md` CF-002 (ATD-0010, Phase 1 gate); `docs/PHASE1_ACCEPTANCE.md` / `docs/PHASE1_ENTRY_GATE.md` (combined foundation acceptance record); verified present state (Cloudflare Workers default: `wrangler.jsonc`, `src/server.ts` fetch shim, `@cloudflare/vite-plugin`, `nodejs_compat`); historical `docs/archive/DECISION_LOG (2).md` → ATD-0010 (Vercel + Railway/Supabase recommendation, `PROPOSED / PENDING`).
+- **Kind:** Application-architecture / deployment decision (current).
+- **Date:** 2026-09-10 (explicit human approval, Phase 1 start).
+- **Status:** `ACCEPTED`
+- **Decision:** **Cloudflare Workers** is the primary deployment target (existing default verified present). **Supabase** provides Postgres + Auth (existing verified stack, D-0003). **External integrations are provider-neutral**, configured via secure **Admin/server-side config** (not hard-coded per-provider branches): AI providers via `AI_PROVIDER` env → `platform_config.ai_provider` Admin switch → default, with keys via env or `ai_provider_keys` (Admin → AI); email via `EMAIL_PROVIDER` (resend/smtp/none); payments via server-side PayPal with webhook signature verification. Contract recorded in `docs/EXTERNAL_INTEGRATION_POLICY.md`.
+- **Scope:** Accepts the deployment platform and the provider-neutral integration policy direction. Does NOT accept: any deployment/infrastructure change, provider configuration, or production verification (all remain `NOT VERIFIED` / separate operational work).
+- **Rationale (current evidence):** Cloudflare Workers is the verified default deployment (Node/Vercel presets remain as options); provider seams already resolve at server/Admin boundary (`src/lib/ai/provider.server.ts`, `src/lib/email/provider.server.ts`, `src/integrations/supabase`).
+- **Remaining:** per-integration verification and production deployment posture — future slices / operational (`docs/PHASE1_PROGRESS.md`).
 
 ---
 

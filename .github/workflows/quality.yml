@@ -23,16 +23,21 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: "1.3.14"
 
-      - name: Install dependencies
+      - name: Install dependencies (frozen lockfile)
         run: bun install --frozen-lockfile
 
       - name: Unit and integration tests
         run: bun test
 
-      - name: Lint
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      - name: Lint (diagnostic, baseline red - CF-011)
+        continue-on-error: true
         run: bun run lint
 
-      - name: Production build
+      - name: Production build (diagnostic, needs env/secrets)
+        continue-on-error: true
         run: bun run build
