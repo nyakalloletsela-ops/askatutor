@@ -208,3 +208,33 @@ Backlog entry fields: ID, title, category, description, reason, affected domain,
 - **Risk:** Medium (no automated re-verification; applied RLS policy *definitions* verified live via AT-0002 as recorded session-3 narrative — current reproducible live evidence NOT VERIFIED — though the non-prod RUNTIME cross-learner harness (session 5) now provides captured behavioral evidence; the harness itself is Temp-dir, not committed/automated).
 - **Priority:** P2 (tie to AT-0002 live verification).
 - **Source/evidence:** Quality/security audit (AT-0001); test suite (only 3 files).
+
+---
+
+## AT-0003 — Phase 0 (AT-0000) Exit-Gate Closure Assessment
+
+- **Category:** Governance / Process (documentation-only)
+- **Description:** Evidence-based exit-gate assessment of the historical Phase 0 exercise (AT-0000). Produced a 10-gate closure table (9 VERIFIED; the sole NOT-VERIFIED gate = Phase-1 gating decisions ATD-0009/ATD-0010), classified every unresolved Phase-0 item into A/B/C/D/E categories, and recorded the recommended verdict `CLOSED WITH EXPLICIT FOLLOW-UPS` (`docs/DECISION_LOG.md` → D-0006, **pending human acceptance**).
+- **Reason:** The archived Phase 0 record carried status `COMPLETE-PENDING-REVIEW` (awaiting reviewer approval for COMPLETE); this exercise supplies the evidence and the recommendation for that review. Phase 1 must not start until ATD-0009/ATD-0010 resolve (archive phase dependency).
+- **Affected domain:** Engineering process / governance (docs only).
+- **Dependencies:** None (uses present-state evidence from AT-0001/AT-0002).
+- **Architectural impact:** None (no application architecture changed or accepted).
+- **Risk:** Low.
+- **Priority:** P0 (closure).
+- **Source/evidence:** `docs/archive/MASTER_PLAN (2).md`, `docs/archive/CURRENT_STATE (2).md`, repo git history, AT-0001 baseline audit, AT-0002 sessions 4–6, `docs/architecture/INSTITUTIONAL_LEARNER_DESIGN.md` (§14), `docs/architecture/LEARNING_ASSESSMENT_DESIGN.md` (§21).
+- **Status:** COMPLETED (as an assessment — the verdict remains PENDING HUMAN ACCEPTANCE; acceptance is the reviewer's act, not auto-applied). Not VERIFIED (no independent re-check performed).
+
+### Phase 0 carried-forward registers (from AT-0003 — separately owned; none blocks Phase 0 completeness)
+
+| ID | Item | Type | Owner / phase | Status |
+|---|---|---|---|---|
+| CF-001 | ATD-0009 — testing framework decision (UN-001; TR-008) | Product/engineering decision | Phase 1 **gate** | OPEN — blocks Phase 1 start |
+| CF-002 | ATD-0010 — deployment platform decision (UN-002; TR-009) | Product/engineering decision | Phase 1 **gate** | OPEN — blocks Phase 1 start |
+| CF-003 | Learning-design §21 acceptance list (vocabulary, item sets, affective signal set, diagnosis mapping, mastery semantics, decision-autonomy) + INST-DEC-6/7/8/9 | Product/learning + legal decisions | Phase 4–6 backbone prep | OPEN |
+| CF-004 | INST-DEC-2/3 acceptance (product); INST-DEC-4/10 resolve at engineering time | Architecture decisions | Design follow-up | OPEN |
+| CF-005 | UN-003 PhET scope (Phase 6); UN-004/UN-005 video/voice recording limits (Phase 3); UN-006 institution link flow (Phase 8) | Future implementation | Phase-locked | OPEN — NOT before its phase |
+| CF-006 | AI Gateway / Model Router (Phase 5) | Future implementation | Phase 5 | OPEN (centralised `AiGateway` verified present; router component not built) |
+| CF-007 | N-instructor (multiple-instructor) support | Future implementation | unassigned | OPEN (zero `instructor` matches in `src/`; HISTORICAL/PLANNED) |
+| CF-008 | ATD-0011 auth-provider **production configuration** (D-0003 scope); AT-0002 residuals (production `anon` over-grant `arwdDxtm`, optional production runtime matrix once populated); affective retention/legal posture | Production verification | operational / legal | OPEN |
+| CF-009 | `session_records.ai_summary` writer | Evidence-resolvable | verification | OPEN (see P2 entry above) |
+| CF-010 | MASTER_PLAN §1 vs D-0005 alignment; stale archive preservation | Doc reconciliation | this exercise / P4 | CLOSED (aligned here) / PRESERVED |

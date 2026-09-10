@@ -37,9 +37,9 @@ Any specific architectural stance must be either:
 
 **In particular:**
 
-> **Assessment architecture is `PROPOSED / UNACCEPTED`.**
+> **Assessment architecture is `PROPOSED / UNACCEPTED` (bounded exception: D-0005).**
 >
-> The "dedicated assessment outcome consumed by Learning" direction discussed during the audit is a *proposed* architectural direction. It has **not** been accepted by explicit human decision and is **not** permission to implement. Only an explicit `ACCEPTED` entry in `docs/DECISION_LOG.md` authorizes implementation.
+> The "dedicated assessment outcome consumed by Learning" direction discussed during the audit is a *proposed* architectural direction. It has **not** been accepted by explicit human decision and is **not** permission to implement. Only an explicit `ACCEPTED` entry in `docs/DECISION_LOG.md` authorizes implementation. **Superseded in part (2026-09-10):** D-0005 explicitly accepted the **bounded** learning/assessment target model (`topic_prerequisites`, typed `learner_assessments`, `learner_affective_reports`, `mastery_snapshots`, `learning_decisions`) as a design target; the remainder of the prior proposal (scoring service, learning-state heuristics, AI-graded mastery) stays `PROPOSED / UNACCEPTED`. Acceptance as a design target does **not** authorize implementation.
 
 No roadmap phase implies authorization to implement.
 
@@ -72,7 +72,7 @@ The phases below are the programme map supplied with the task. They are **progra
 
 Phases 0–19 (as supplied):
 
-- **0** — Governance & baseline establishment (this work; AT-0001).
+- **0** — Governance & baseline establishment (this work; AT-0001). The historical Phase 0 documentation exercise (AT-0000) was closed by exit-gate assessment via AT-0003 (`docs/DECISION_LOG.md` → D-0006: verdict `CLOSED WITH EXPLICIT FOLLOW-UPS`, pending human acceptance); the archived 0–19 roadmap (`docs/archive/MASTER_PLAN (2).md`) remains provenance.
 - **1** — Foundations & repository consolidation.
 - **2** — Identity, authentication & authorization baseline.
 - **3** — Learner isolation & multi-user security.
@@ -105,6 +105,8 @@ Permanent work IDs use the format `AT-####`.
 - **`AT-0002` — Live Database Verification & RLS Isolation Confirmation** (`VERIFIED WITH ACTIONABLE FINDINGS`. Production applied-state: PARTIALLY VERIFIED via source/migration RLS evidence + recorded session-3 live narrative (historical, no captured in-repo artifacts). Session 4: **non-production migration reproduction VERIFIED** — the repository's 73 migrations applied 73/73 to dedicated hosted non-prod `askatutorlive-at0002-nonprod` (ref `rwpxaejhouunxlcibpou`), schema/RLS reconciled with captured evidence (see capability entry). **Session 5: cross-learner (A vs B) RUNTIME isolation EXECUTED and VERIFIED on non-prod (588 PASS / 40 BLOCKED / 0 FAIL)** — no cross-learner read/write/IDOR succeeded via REST; DB-state verified after every attack. **Session 6: grant-gap remediation EXECUTED on non-prod `rwpxaejhouunxlcibpou`** — minimal intended `public.sessions` GRANTs restored (`authenticated` = arwd, `service_role` = ALL, `anon` untouched), RLS unchanged (before/after diff: policies/functions/schema_usage/default_acl identical; only `sessions.relacl` changed); previously blocked 40 re-run = **40/40 PASS**; full 628-case regression = **628/628 PASS**; `session_records` SELECT and representation-INSERT rep paths restored (201). **Remaining actionable findings:** `profiles`/`user_roles` and ~20 sibling tables stay empty-`relacl` in non-prod (`42501` on direct `sessions` INSERT / `book_session` RPC via `profiles`), and the production anchor over-grants `anon` arwdDxtm on learner tables — both require separate authorized remediation. See capability entry below).
 
 IDs are never casually reused. Each new meaningful piece of work receives a new permanent ID assigned in `docs/BACKLOG.md` and tracked in `docs/CURRENT_STATE.md`.
+
+- **`AT-0003` — Phase 0 (AT-0000) Exit-Gate Closure Assessment** (documentation-only; assessment COMPLETED — the recommended verdict `CLOSED WITH EXPLICIT FOLLOW-UPS` is recorded in `docs/DECISION_LOG.md` → D-0006, **pending human acceptance**). Exit gates: 9/10 VERIFIED; the sole NOT-VERIFIED gate = the Phase-1 gating decisions ATD-0009 (testing framework) / ATD-0010 (deployment platform), which block Phase 1 start only. Carried-forward registers recorded in `docs/BACKLOG.md` (CF-001..CF-010: product-owner decisions, phase-locked implementation, production verification). Does **not** authorise Phase 1 or any implementation.
 
 ---
 

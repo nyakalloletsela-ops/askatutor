@@ -260,6 +260,47 @@ This document records meaningful changes chronologically. Every work item record
 
 ---
 
+### PHASE0-CLOSURE-0001: Phase 0 (AT-0000) Exit-Gate Closure Assessment (AT-0003)
+
+| Field | Value |
+|-------|-------|
+| Work ID | PHASE0-CLOSURE-0001 → registers permanent work ID AT-0003 (documentation-only) |
+| Date | 2026-09-10 |
+| Phase | Governance (Phase 0 exit-gate closure) |
+| Purpose | Record the evidence-based exit-gate assessment and recommended verdict for the historical Phase 0 exercise (AT-0000): 10-gate closure table (9 VERIFIED, 1 NOT VERIFIED), A/B/C/D/E classification of every unresolved item, and reconciliation of the dual Phase-0 roadmap views. No source, migration, database, Supabase, API, or deployment changes. |
+
+#### FILES MODIFIED
+- `docs/CURRENT_STATE.md` — added "Phase 0 (AT-0000) — Exit-Gate Closure Assessment" section (gate table 9/10 VERIFIED; recommended verdict `CLOSED WITH EXPLICIT FOLLOW-UPS`; classification summary; carried-forward pointer).
+- `docs/DECISION_LOG.md` — added **D-0006** (governance closure assessment; verdict `CLOSED WITH EXPLICIT FOLLOW-UPS` **recommended**, pending human acceptance; full carried-forward follow-up list; explicitly NOT an application-architecture decision).
+- `docs/MASTER_PLAN.md` — §1 governance rule reconciled with D-0005 (bounded acceptance carve-out, remainder stays PROPOSED/UNACCEPTED); Phase-0 roadmap line annotated (historical AT-0000 closed via AT-0003); Work Item Register gained **AT-0003**.
+- `docs/BACKLOG.md` — registered **AT-0003** (COMPLETED assessment, verdict pending human acceptance) and the **CF-001..CF-010** carried-forward registers (item / type / owner-phase / status).
+- `docs/CHANGE_LOG.md` — this entry.
+
+#### FILES DELETED / CREATED
+- (none)
+
+#### DATABASE CHANGES
+- (none)
+
+#### API CHANGES
+- (none)
+
+#### SECURITY CHANGES
+- (none)
+
+#### TESTS
+- (none)
+
+#### DECISIONS
+- D-0006: Phase 0 exit-gate closure assessment — recommended verdict `CLOSED WITH EXPLICIT FOLLOW-UPS`, **PENDING HUMAN ACCEPTANCE** (governance/process kind; not an application-architecture decision).
+
+#### KNOWN ISSUES / REMAINING OPEN
+- Verdict is a recommendation until the reviewer formally accepts it (DECISION_LOG D-0006).
+- Phase 1 remains blocked on ATD-0009 (testing framework) and ATD-0010 (deployment platform) — CF-001/CF-002.
+- All other carried-forward items are separately owned per CF-001..CF-010; none blocks Phase 0 completeness.
+
+---
+
 ## 3. CHANGE RULES
 
 1. Never silently remove previous negative evidence

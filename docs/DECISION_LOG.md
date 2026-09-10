@@ -136,4 +136,23 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
 
 ---
 
+## D-0006 — Phase 0 (AT-0000) exit-gate closure assessment (governance — recommended verdict)
+
+- **Reference:** `docs/archive/MASTER_PLAN (2).md` (Phase 0 Definition of COMPLETE / VERIFIED; status `COMPLETE-PENDING-REVIEW`), `docs/archive/CURRENT_STATE (2).md` (17 acceptance checks), D-0001 (control system supersede), D-0002 (provenance record), AT-0003 (closure work item).
+- **Kind:** Engineering-process / governance closure assessment (NOT an application-architecture decision).
+- **Date:** 2026-09-10 (recorded by AT-0003; verdict is a **recommendation pending human acceptance**).
+- **Status:** `ASSESSMENT RECORDED — VERDICT RECOMMENDED (PENDING HUMAN ACCEPTANCE)`.
+- **Recommended verdict:** `CLOSED WITH EXPLICIT FOLLOW-UPS`.
+- **Basis:** Phase 0's own Definition of COMPLETE ("All Phase 0 documentation created, internally reconciled, consistent") is evidenced as satisfied; its 17 acceptance checks all PASS and are re-checkable; the AT-0003 exit-gate table is 9/10 VERIFIED, with the sole NOT-VERIFIED gate being the Phase-1 gating decisions ATD-0009/ATD-0010 (which block Phase 1 start, not Phase 0 completeness).
+- **Carried-forward follow-ups (separately owned; none blocks Phase 0 completeness):**
+  - **Phase-1 gating decisions:** ATD-0009 (testing framework; current verified state `bun:test`) and ATD-0010 (deployment platform; current verified state Cloudflare Workers default) — both `PROPOSED / PENDING`, REQUIRES CURRENT HUMAN DECISION (phase lock: Phase 1 depends on both).
+  - **Product-owner decisions:** learning-design §21 acceptance list (`docs/architecture/LEARNING_ASSESSMENT_DESIGN.md` — vocabulary, item sets, affective signal set, diagnosis mapping, mastery semantics, decision-autonomy boundary); INST-DEC-6/7/8/9 (product/legal); INST-DEC-2/3; payment-provider details and refund policy (future commerce).
+  - **Future implementation (phase-locked; no code exists):** UN-003 (PhET scope, Phase 6); UN-004/UN-005 (video/voice recording limits, Phase 3); UN-006 (institution link flow, Phase 8); AI Gateway / Model Router (Phase 5 — the centralised `AiGateway` is verified present, roadmap model-router component not yet built); N-instructor (multiple-instructor) support (zero `instructor` matches in `src/`; HISTORICAL/PLANNED).
+  - **Production verification:** ATD-0011 authentication-provider **production configuration** `NOT VERIFIED` (D-0003 scope: provider enablement, Site URL, OAuth redirect allow-list); AT-0002 residuals (production `anon` over-grant `arwdDxtm`; optional production runtime matrix once populated); affective retention/legal posture `REQUIRES VERIFICATION`.
+  - **Evidence-resolvable:** `session_records.ai_summary` writer (UNKNOWN — REQUIRES VERIFICATION; `docs/BACKLOG.md` P2).
+  - **Doc reconciliation:** MASTER_PLAN §1 vs D-0005 bounded acceptance (aligned in this exercise); stale archive docs preserved-not-rewritten (`docs/BACKLOG.md` P4).
+- **Scope:** This entry does **not** accept, change, or re-classify any application architecture; it does **not** authorise Phase 1 or any implementation. Acceptance of this closure recommendation is the reviewer's act; the historical `COMPLETE-PENDING-REVIEW` status is resolved to this recorded recommendation pending that acceptance.
+
+---
+
 If an explicit human architecture decision is discovered later, it must be recorded here as `ACCEPTED` with its source.

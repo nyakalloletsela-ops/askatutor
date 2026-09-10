@@ -10,6 +10,29 @@
   - **Net:** AT-0002 = `VERIFIED WITH ACTIONABLE FINDINGS` — production applied-state `PARTIALLY VERIFIED` (narrative); non-prod migration reproduction of the 73-file set `VERIFIED` (captured evidence); **cross-learner runtime isolation `VERIFIED` on the non-prod populated environment** for all grant-bearing learner tables (`assignments`, `assignment_submissions`, `notes`, `simulations`); **`sessions` grant gap REMEDIATED on non-prod (session 6, separately authorized) and VERIFIED** (blocked 40 → 40/40 PASS; 628-case regression → 628/628 PASS; `session_records` read + rep-INSERT paths restored). Remaining actionable findings: `profiles`/`user_roles` + ~18 sibling tables still empty-`relacl` in non-prod (`42501` on session INSERT/`book_session`), and the production anchor over-grants `anon` `arwdDxtm` on learner tables. See Isolation Findings → Sessions 5–6 and AT-0002 Evidence Classification below.
 - **Table sets (explicit):** Set **A — AT-0002 learner-isolation tables** = `assignments`, `assignment_submissions`, `notes`, `session_records`, `simulations`. Set **B — Category-2 / GAP-001..005 tracked tables** = `profiles`, `user_roles`, `tutor_subscriptions`, `tutor_courses`, `sessions`. **B is NOT the "5 learner tables".** The query files under `docs/evidence/queries/` (e.g. `check_table_counts.sql`, `check_rls_status.sql`, `verify_*_policies.sql`) target **B**, not the AT-0002 learner tables.
 
+## Phase 0 (AT-0000) — Exit-Gate Closure Assessment (AT-0003, documentation-only)
+
+- **Reconciled fact:** The historical Phase 0 exercise (AT-0000, 2026-09-04, Product Constitution / requirements / architecture / engineering-control documentation set) is preserved in `docs/archive/` (`MASTER_PLAN (2).md`, `CURRENT_STATE (2).md`, `DECISION_LOG (2).md`, `WORK_PROTOCOL (2).md`, `BACKLOG (2).md`) and remains **superseded** by the AT-0001 control system (D-0001); archive content is unchanged (`docs/CHANGE_LOG.md` → RESTRUCTURE-0001). The current `docs/MASTER_PLAN.md` Phase 0 ("Governance & baseline establishment; AT-0001") is the AT-0001 programme view; the archived 0–19 roadmap's Phase 0 Definition of COMPLETE / VERIFIED governs this closure assessment.
+- **Phase 0 Definition of COMPLETE (archive):** "All Phase 0 documentation created, internally reconciled, consistent" — **VERIFIED** (docs present in git history; reconciliation + provenance recorded in CHANGE_LOG/DECISION_LOG; design docs carry NOT-IMPLEMENTED banners; lifecycle state machine per `docs/MASTER_PLAN.md` §2).
+- **Phase 0 Definition of VERIFIED (archive):** "Documentation independently checked against Phase 0 acceptance criteria" — the 17 acceptance checks in `docs/archive/CURRENT_STATE (2).md` all PASS and are re-checkable against the Constitution, CONFIRMED_REQUIREMENTS, and the present-state verification record. — **VERIFIED**.
+- **Exit-gate table (10 gates):**
+
+| Gate | Definition | Verdict |
+|---|---|---|
+| G-01 | Phase 0 documentation created | VERIFIED |
+| G-02 | Internally reconciled (provenance preserved; no duplicate current governance) | VERIFIED |
+| G-03 | Consistent — 17/17 Phase 0 acceptance checks PASS | VERIFIED |
+| G-04 | COMPLETE vs VERIFIED distinct (lifecycle model §2) | VERIFIED |
+| G-05 | PRODUCTION-VERIFIED distinct (never claimed without production evidence) | VERIFIED |
+| G-06 | File/component/change tracking mandatory (WORK_PROTOCOL, CHANGE_LOG) | VERIFIED |
+| G-07 | No future phase falsely marked complete (phases 1–19 NOT STARTED) | VERIFIED |
+| G-08 | Phase 1 follows Phase 0 (dependency documented) | VERIFIED |
+| G-09 | Status formally closed (this assessment; reviewer acceptance pending) | VERIFIED (documented) |
+| G-10 | Phase-1 gating decisions: ATD-0009 testing framework, ATD-0010 deployment platform | **NOT VERIFIED — open decisions; block Phase 1 start only** |
+
+- **Unresolved-item classification (A/B/C/D/E) and carried-forward registers are recorded in `docs/BACKLOG.md` (AT-0003, CF-001..CF-010); no item blocks Phase 0's own completeness.** Summary: A (evidence-resolvable) — `session_records.ai_summary` writer; B (doc reconciliation) — MASTER_PLAN §1 vs D-0005 (aligned), stale archives preserved-not-rewritten; C (product-owner decisions) — ATD-0009/10, INST-DEC-6/7/8/9, learning-design §21 list, INST-DEC-2/3, payment/refund; D (future, phase-locked implementation) — UN-003/004/005/006, AI Gateway / Model Router, N-instructor; E (production verification) — ATD-0011 provider configuration, AT-0002 residuals, affective retention/legal posture.
+- **Recommended verdict (pending human acceptance — `docs/DECISION_LOG.md` → D-0006):** `CLOSED WITH EXPLICIT FOLLOW-UPS` — Phase 0 (AT-0000) is complete per its own definition; carried-forward registers are separately owned; Phase 1 must not start until ATD-0009/ATD-0010 are resolved. This closure does NOT authorise Phase 1 or any implementation.
+
 ---
 
 CURRENT STATE:
