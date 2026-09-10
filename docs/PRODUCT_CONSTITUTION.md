@@ -234,6 +234,8 @@ Different participants have different visibility:
 
 ## 11. INSTITUTION MODEL
 
+> **AMENDMENT NOTE (2026-09-10, `docs/DECISION_LOG.md` → D-0004):** Explicit human approval accepted that first-class institutional memberships (M:N `institution_memberships` with context roles) **coexist with** this §11 account-less link-based model — institutions may use either path. This section remains the normative baseline for link-based distribution; the coexistence design is recorded in `docs/architecture/INSTITUTIONAL_LEARNER_DESIGN.md` (INST-DEC-1). A formal rewrite of this section is deferred, and this note does **not** authorize any implementation.
+
 Institutions are supported but are NOT the primary target market.
 
 An institution may distribute a lesson/class/session link to learners.

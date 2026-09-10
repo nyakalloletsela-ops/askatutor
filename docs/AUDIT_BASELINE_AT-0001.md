@@ -113,9 +113,9 @@ Commerce's live bulk-lesson flow is server-authoritative (amounts re-derived ser
 
 ## 8. Contradictions
 
-- `architecture-inventory.md`, `architecture-inventory-v2.md`, `architecture-inventory-v3-arena.md`, `askatutorlive-arena-final.md`: STALE — reference deleted `src/components/*`, `src/hooks/*`, 9 deleted `*.functions.ts` shims; wrong file counts (184 `.tsx`/117 `.ts` actual vs 161/66 claimed; 73 `.sql` vs 109 claimed).
+- `docs/archive/architecture-inventory.md`, `docs/archive/architecture-inventory-v2.md`, `docs/archive/architecture-inventory-v3-arena.md`, `docs/archive/askatutorlive-arena-final.md`: STALE — reference deleted `src/components/*`, `src/hooks/*`, 9 deleted `*.functions.ts` shims; wrong file counts (184 `.tsx`/117 `.ts` actual vs 161/66 claimed; 73 `.sql` vs 109 claimed).
 - `README.md`: generic boilerplate, no project-specific content.
-- `AUDITS_AI_QUOTA_DESIGN.md`, `AUDITS_AI_SERVER_BOUNDARY.md`, `AUDITS_ARCHITECTURAL_RECONCILIATION.md`, `GAP_REGISTER.md`, `CATEGORY2_PRODUCTION_VERIFICATION_RESULT.md`: substantially current / accurately flagged (incl. production DB blocked).
+- `docs/audits/AUDITS_AI_QUOTA_DESIGN.md`, `docs/audits/AUDITS_AI_SERVER_BOUNDARY.md`, `docs/audits/AUDITS_ARCHITECTURAL_RECONCILIATION.md`, `docs/audits/GAP_REGISTER.md`, `docs/audits/CATEGORY2_PRODUCTION_VERIFICATION_RESULT.md`: substantially current / accurately flagged (incl. production DB blocked).
 - Phantom resources: `assignment_submissions` table (schema+RLS+triggers, zero app consumers), `LearningRecordRepository` port (interface-unwired).
 - Shim retirement incomplete: 3 `*.functions.ts` remaining (`access`, `entitlements`, `sim-lab`) + `room-access.ts`, per audit evidence.
 - Dead DB functions in `20260814140000_*.sql` reference nonexistent `tutor_subscriptions.user_id` and a `user_metadata` table.
@@ -163,7 +163,7 @@ These are recorded, not "fixed" during AT-0001. Do not treat stale docs as fact.
 
 ## 14. Dead / Ghost / Phantom / Duplicate Systems
 
-- `assignment_submissions` table (phantom). `LearningRecordRepository` port (unwired). Dead DB funcs (`20260814140000_*.sql`). Stale architecture-inventory docs. `simulation_assets` table (no app consumers found). Latent `startCheckout`/`checkout.functions.ts` (historical/forensic). None deleted nor fixed during AT-0001.
+- `assignment_submissions` table (phantom). `LearningRecordRepository` port (unwired). Dead DB funcs (`20260814140000_*.sql`). Stale architecture-inventory docs (relocated to `docs/archive/`). `simulation_assets` table (no app consumers found). Latent `startCheckout`/`checkout.functions.ts` (historical/forensic, in `docs/evidence/forensic/`). None deleted nor fixed during AT-0001.
 
 ---
 
@@ -194,4 +194,4 @@ Foundation (identity/auth/layering/deployment) substantially exists. Assessment/
 - Remote PRs beyond `origin/main` not inspected.
 - `session_records.ai_summary` writer and the `AI OUTPUT != EVIDENCE` question not fully resolved.
 - No CI/automation observed; test/build observations are from prior runs, not re-run this session.
-- `forensic_batch_2/` is a historical/forensic snapshot; its presence does not mean its code is live in `src/`.
+- `docs/evidence/forensic/forensic_batch_2/` is a historical/forensic snapshot; its presence does not mean its code is live in `src/`.
