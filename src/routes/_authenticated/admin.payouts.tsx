@@ -623,10 +623,7 @@ function ProvidersTab() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["payment-providers"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payment_providers")
-        .select("*")
-        .order("priority", { ascending: true });
+      const { data, error } = await supabase.rpc("admin_list_payment_providers");
       if (error) throw error;
       return (data ?? []) as Provider[];
     },

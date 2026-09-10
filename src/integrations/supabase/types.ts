@@ -2472,6 +2472,29 @@ export type Database = {
         Args: { _period_end?: string; _period_start?: string }
         Returns: string
       }
+      admin_list_payment_providers: {
+        Args: never
+        Returns: {
+          created_at: string
+          credentials_ref: string | null
+          display_name: string
+          failure_count: number
+          id: string
+          is_enabled: boolean
+          last_error: string | null
+          last_failure_at: string | null
+          last_success_at: string | null
+          mode: string
+          priority: number
+          slug: string
+          success_count: number
+          supported_countries: string[]
+          supported_currencies: string[]
+          supported_methods: string[]
+          supported_regions: Json
+          updated_at: string
+        }[]
+      }
       admin_mark_payout_item_failed: {
         Args: { _item: string; _reason: string }
         Returns: undefined
