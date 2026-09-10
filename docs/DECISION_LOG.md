@@ -41,6 +41,8 @@
 
 This entry does **not** authorize implementation.
 
+**Superseded in part (2026-09-10):** INST-DEC-5 explicitly accepted the **bounded** scope of this proposal (see D-0005) — `topic_prerequisites`, typed `learner_assessments`, `learner_affective_reports`, `mastery_snapshots`, `learning_decisions` — as the target model (`docs/architecture/INSTITUTIONAL_LEARNER_DESIGN.md`). The remainder of the prior proposal (scoring service, learning-state heuristics, AI-graded mastery) remains **NOT ACCEPTED**. This entry is retained as history.
+
 ---
 
 ## Existing human decisions found in the repository
@@ -105,5 +107,33 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
 - **Rationale (current evidence):** Supabase Auth is already implemented (browser `@supabase/supabase-js` client; server bearer-token middleware `requireSupabaseAuth`, token `sub` → `userId`); `auth.users.id` is the identity root for `profiles`/`user_roles`; RLS and server-side authorization depend on the Supabase identity model; no alternative provider is implemented; and explicit human approval confirms the existing implementation as the architectural choice.
 - **Provenance:** The historical ATD-0011 record (recommendation: Supabase Auth; status `PROPOSED / PENDING`; `docs/archive/DECISION_LOG (2).md`) is preserved unchanged (see D-0002). This entry is a **current** confirmation based on present repository evidence and explicit human approval — not a rewrite of history.
 - **Separate operational status:** Authentication provider configuration is `NOT VERIFIED` in the deployed Supabase project (provider enablement, OAuth/email configuration, Site URL, redirect allow-list, production retest — see `docs/CURRENT_STATE.md`). The observed login failure (`validation_failed — "Unsupported provider: provider is not enabled"`) is a project-level provider-configuration matter and is **not** evidence against this accepted provider decision.
+
+## D-0004 — INST-DEC-1 — Institution path: first-class M:N memberships coexisting with the §11 link model (current accepted decision)
+
+- **Reference:** Institutional Learner Architecture design (`docs/architecture/INSTITUTIONAL_LEARNER_DESIGN.md`, INST-DEC-1); `docs/PRODUCT_CONSTITUTION.md` §11.
+- **Kind:** Application-architecture decision (current).
+- **Date:** 2026-09-10 (explicit human approval).
+- **Status:** `ACCEPTED`
+- **Decision:** Institutions participate through **first-class M:N memberships** (`institution_memberships` with context roles separate from `app_role`) **coexisting with** the Constitution §11 account-less link-based distribution model. Institutions may opt into either path. A Constitution §11 amendment note recording this coexistence was added to `docs/PRODUCT_CONSTITUTION.md`.
+- **Scope:** Accepts the institutional domain direction (entities, journeys, M:N model, §13 parts 1 and the institution parts of 3–9) as the target model. Does **NOT** authorize: any schema/migration, RLS/GRANT change, API/UI, or membership implementation. It does not amend Constitution §11 outside the amendment note; the note does not itself authorize implementation.
+- **Architectural consequence:** No single `institution_id` FK on learner-owned data; context roles are not `app_role` values; multi-institution is expressed through one join table.
+- **Rationale (current evidence):** Verified present state has no institution schema; Constitution §11 mandates link distribution; institutional usage is a Constitution §14 funding pillar; explicit human acceptance of the two-path coexistence (INST-DEC-1 option A, 2026-09-10).
+- **Remaining:** INST-DEC-2..10 remain `PROPOSED / PENDING` (see design §14).
+
+---
+
+## D-0005 — INST-DEC-5 — Bounded learning/assessment framework as the target model (current accepted decision)
+
+- **Reference:** Institutional Learner Architecture design (`docs/architecture/INSTITUTIONAL_LEARNER_DESIGN.md`, INST-DEC-5); prior proposal `DECISION_LOG` "Assessment / Learning Architecture — PROPOSED / UNACCEPTED" (superseded in part above).
+- **Kind:** Application-architecture decision (current).
+- **Date:** 2026-09-10 (explicit human approval).
+- **Status:** `ACCEPTED`
+- **Decision:** The bounded learning/assessment framework is the accepted **target model**: `topics` + `topic_prerequisites` (relational, cycle-validated; catalog default + authorized overrides; assess only unproven prerequisites), typed `learner_assessments` (`prerequisite`|`topic`) with versioned `assessment_instruments`/`attempts`/`results`, learner-private `learner_affective_reports` (5-value §3.2 resolution; consent-gated; institution-facing aggregates only), `mastery_snapshots` (validity-window policy pending INST-DEC-6), and `learning_decisions` (AI never independently decides).
+- **Scope:** Accepts the **model direction** recorded in design §6–§8 and §13 (parts 2, and learning parts of 3–9). Does **NOT** authorize: any schema/migration, RLS/GRANT, API/UI, wiring of `LearningRecordRepository`, a scoring service, or AI-graded "mastery". The prior proposal's non-bounded remainder stays NOT ACCEPTED.
+- **UNKNOWN required before implementation:** assessment-instrument **content** (product/learning design per Constitution §3/§3.2/§4/§4.1/§5/§12), affective instrument/frequency/retention (product + legal), mastery validity policy (INST-DEC-6). Results-only-typed persistence; no client-computed mastery path.
+- **Rationale (current evidence):** Constitution §2–§4/§12 require the difficulty→intervention→evidence→outcome loop and evidence preservation; verified present state has no machine-readable assessment/mastery persistence; explicit human acceptance (2026-09-10).
+- **Remaining:** INST-DEC-6..10 `PROPOSED / PENDING` (design §14); each implementation phase requires its own authorized work item (design §16, §18).
+
+---
 
 If an explicit human architecture decision is discovered later, it must be recorded here as `ACCEPTED` with its source.

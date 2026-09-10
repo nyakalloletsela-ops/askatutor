@@ -176,6 +176,90 @@ This document records meaningful changes chronologically. Every work item record
 
 ---
 
+### INSTITUTIONAL-LEARNER-DESIGN-0001: Institutional Learner Architecture — Design Acceptance (INST-DEC-1, INST-DEC-5)
+
+| Field | Value |
+|-------|-------|
+| Work ID | INSTITUTIONAL-LEARNER-DESIGN-0001 (design + decision closure; documentation-only) |
+| Date | 2026-09-10 |
+| Phase | Governance (architecture design + decision closure) |
+| Purpose | Persist the accepted institutional/learning architecture design and record the two explicit product-owner decisions (INST-DEC-1, INST-DEC-5). No source, migration, database, Supabase, API, or deployment changes. |
+
+#### FILES CREATED
+- `docs/architecture/INSTITUTIONAL_LEARNER_DESIGN.md` — full 18-section design (evidence, domain model, journeys, prerequisite/assessment/affective architecture, authorization matrix, multi-institution, options, recommended architecture, decision register, risks, migration impact, next action). Status: `ACCEPTED DESIGN — NOT IMPLEMENTED`.
+
+#### FILES MODIFIED
+- `docs/DECISION_LOG.md` — prior "Assessment / Learning Architecture — PROPOSED / UNACCEPTED" entry marked superseded in part (bounded scope only); added **D-0004** (INST-DEC-1: M:N memberships + §11 links coexistence) and **D-0005** (INST-DEC-5: bounded learning/assessment target model), both `ACCEPTED`.
+- `docs/PRODUCT_CONSTITUTION.md` — §11 amendment note (records INST-DEC-1 coexistence; does not authorize implementation).
+- `docs/CURRENT_STATE.md` — DECISIONS and FUTURE updated for the accepted design target (implementation still requires separately authorized work items).
+- `docs/CHANGE_LOG.md` — this entry.
+
+#### FILES DELETED
+- (none)
+
+#### DATABASE CHANGES
+- (none)
+
+#### API CHANGES
+- (none)
+
+#### SECURITY CHANGES
+- (none)
+
+#### TESTS
+- (none)
+
+#### DECISIONS
+- INST-DEC-1: Institution path = **Both: first-class M:N memberships + Constitution §11 links** — `ACCEPTED` (2026-09-10, D-0004).
+- INST-DEC-5: Bounded learning/assessment framework = **accepted target model** — `ACCEPTED` (2026-09-10, D-0005).
+
+#### KNOWN ISSUES / REMAINING OPEN
+- Design acceptance does **NOT** authorize implementation; each of design §16 phases 1–5 requires its own authorized engineering work item (Phase 1 spike recommended: `topics` + `topic_prerequisites` cycle validator).
+- Assessment-instrument **content**, affective instrument/frequency/retention, and mastery-validity policy = UNKNOWN (INST-DEC-6/7/9, product + legal).
+- INST-DEC-2..10 remain `PROPOSED / PENDING` (`docs/architecture/INSTITUTIONAL_LEARNER_DESIGN.md` §14).
+- AT-0002 residual grant gaps (`profiles`/`user_roles` + ~18 sibling tables) still block new-table REST integration until separately remediated (BACKLOG).
+
+---
+
+### LEARNING-ASSESSMENT-DESIGN-0001: Learning & Assessment Design Spike (PROPOSED — documentation-only)
+
+| Field | Value |
+|-------|-------|
+| Work ID | LEARNING-ASSESSMENT-DESIGN-0001 (product/learning-design spike) |
+| Date | 2026-09-10 |
+| Phase | Governance (design spike; targets Phase 4–6 learning backbone) |
+| Purpose | Repository-first product/learning-design analysis resolving the semantics and assessment-instrument design needed before engineering. No source, migration, database, SQL, API, UI, seed, RLS, or production changes. |
+
+#### FILES CREATED
+- `docs/architecture/LEARNING_ASSESSMENT_DESIGN.md` — statements: `STATUS: PROPOSED DESIGN — NOT IMPLEMENTED`. Contents: evidence inventory, current-state assessment, domain terminology, learning architecture, prerequisite-graph design, assessment model (target types × lifecycle purposes, item categories), affective-learning model, diagnosis scenarios, intervention model, evidence, mastery semantics, learning decisions, tutor/instructor authority, institutional boundaries, AI boundaries, MVP learning model, INST-DEC-2..10 mapping (all remain PROPOSED/PENDING), engineering contract, risks/gaps/unknowns, next action.
+
+#### FILES MODIFIED
+- `docs/CHANGE_LOG.md` — this entry.
+- `docs/CURRENT_STATE.md` — pointer to the PROPOSED design document added (no state claim changed).
+
+#### FILES DELETED
+- (none)
+
+#### DATABASE CHANGES
+- (none)
+
+#### API CHANGES
+- (none)
+
+#### SECURITY CHANGES
+- (none)
+
+#### TESTS
+- (none)
+
+#### DECISIONS
+- NONE — no decision was accepted, changed, or re-classified. D-0004/D-0005 untouched; INST-DEC-2..10 remain PENDING (`docs/DECISION_LOG.md` rules).
+
+#### KNOWN ISSUES / REMAINING OPEN
+- Verdict: `READY WITH PRODUCT DECISIONS REQUIRED` — product/learning acceptance list is in design §21 (vocabulary, item sets, affective signal set, diagnosis mapping, mastery semantics, decision autonomy); INST-DEC-6/7/8/9 and UN-007 remain open for acceptance; instrument content and affective retention/legal posture = UNKNOWN — REQUIRES VERIFICATION.
+
+---
+
 ## 3. CHANGE RULES
 
 1. Never silently remove previous negative evidence
