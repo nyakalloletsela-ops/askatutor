@@ -2,81 +2,65 @@
 
 - **Date:** 2026-09-10
 - **Phase 0:** CLOSED WITH EXPLICIT FOLLOW-UPS (D-0006 accepted)
-- **Status:** `PENDING HUMAN ACCEPTANCE`
+- **Status:** `ACCEPTED — PHASE 1 UNLOCKED`
 
 ## Purpose
 
-Convert the two remaining Phase 1 entry decisions carried from ATD-0009 and ATD-0010 into explicit current decisions without silently promoting historical recommendations.
+Record the accepted Phase 1 foundation strategy carried from ATD-0009 and ATD-0010. The two recommendations are intentionally treated as one coherent foundation decision: **test deterministically, deploy on one explicit primary runtime, and preserve portability without allowing secondary tooling to define architecture.**
 
-## Gate A — ATD-0009 Testing Strategy
+## Accepted Phase 1 Foundation Strategy
 
-### Current evidence
+### Testing
 
-The repository currently uses Bun as its package manager/runtime and `bun:test` in the existing test suite. There is no `test` script in `package.json`. The historical ATD-0009 recommendation was Vitest for unit/integration and Playwright for E2E, but that recommendation is historical and was never accepted.
+**Accepted:**
+- Bun's existing `bun:test` runner is the unit/integration test runner for the current stack.
+- Playwright is the browser E2E framework.
+- A deterministic `test` command and CI execution are required.
+- Vitest is not adopted at this time; migration requires evidence-based justification.
 
-### Recommendation
+### Deployment
 
-**Adopt Bun's test runner as the unit/integration test runner for the current stack, and adopt Playwright for browser E2E testing.**
+**Accepted:**
+- Cloudflare Workers is the primary production application runtime.
+- Supabase remains the managed PostgreSQL/Auth/data platform.
+- Vercel remains an alternative deployment target only and does not define the production architecture unless separately accepted later.
 
-Rationale:
-- preserves the already-implemented test runner instead of creating an unnecessary migration;
-- aligns with the repository's existing Bun toolchain;
-- gives the project a real browser E2E layer where one does not currently exist;
-- permits a later migration if measured requirements justify it.
+### Why these decisions are combined
 
-### Decision required
+Both decisions establish the Phase 1 delivery foundation around the repository's verified present state rather than introducing avoidable migrations or platform ambiguity. The testing strategy protects the existing Bun implementation while adding missing browser verification. The deployment strategy formalizes the already-present Cloudflare Workers runtime configuration while keeping Supabase as the data/auth boundary and Vercel as optional portability.
 
-Human acceptance is required before this becomes an accepted architecture/tooling decision.
+## Phase 1 Acceptance Criteria
 
-### Minimum Phase 1 acceptance criteria
+The decisions are accepted, but acceptance does **not** mean the criteria below are already implemented or verified.
 
-- `package.json` exposes a deterministic `test` command;
-- unit/integration tests run in CI;
-- Playwright is installed/configured for E2E;
-- at least one authenticated critical-path E2E test exists before the first production release;
-- test commands and environments are documented;
-- no claim of comprehensive coverage is made without measured evidence.
+### Testing foundation
 
-## Gate B — ATD-0010 Deployment Platform
+- [ ] `package.json` exposes a deterministic `test` command.
+- [ ] Existing unit/integration tests run in CI.
+- [ ] Playwright is installed/configured for E2E.
+- [ ] At least one authenticated critical-path E2E test exists before the first production release.
+- [ ] Test commands and environments are documented.
+- [ ] Coverage claims are based on measured evidence.
 
-### Current evidence
+### Deployment foundation
 
-The repository contains a Cloudflare Workers deployment configuration (`wrangler.jsonc`) with `src/server.ts` as the Worker entry point. The application also contains Node/Vercel build options. Current GitHub/Vercel integration has produced deployment status checks, but a successful/pending deployment check does not establish that Vercel is the accepted production platform.
+- [ ] Production Cloudflare account/project configuration is established.
+- [ ] Environment/secrets are configured without committing secrets.
+- [ ] Build/deploy pipeline is deterministic.
+- [ ] Authentication provider/redirect configuration is production-verified.
+- [ ] Database migrations and applied state are verified.
+- [ ] Health/smoke checks exist.
+- [ ] Rollback procedure is documented and tested.
+- [ ] Production verification is recorded separately from deployment success.
 
-### Recommendation
+## Boundaries
 
-**Adopt Cloudflare Workers as the primary production application runtime, with Supabase remaining the managed PostgreSQL/Auth/data platform.**
+These decisions do not authorize unrelated implementation. Learning, institutional membership, commerce reconciliation, financial-safety rules, authentication hardening, AI provider/model-router expansion, and other backlog items remain governed by their own decisions and work items.
 
-Vercel should remain an explicitly supported alternative/deployment target only if later verified and deliberately accepted; it should not become the production target merely because a Vercel integration exists.
+## Status semantics
 
-Rationale:
-- Cloudflare Workers is already the repository's explicit default runtime configuration;
-- the server entry point and Wrangler configuration already express this deployment model;
-- it avoids making CI/deployment status determine architecture;
-- Supabase remains appropriately separated as the data/auth platform;
-- a single primary production runtime reduces operational ambiguity.
+**DECISION STATUS:** ACCEPTED  
+**IMPLEMENTATION STATUS:** NOT YET VERIFIED  
+**PRODUCTION STATUS:** NOT VERIFIED
 
-### Decision required
-
-Human acceptance is required before this becomes the current production deployment decision.
-
-### Minimum Phase 1 acceptance criteria
-
-- production Cloudflare account/project configuration is established;
-- environment/secrets are configured without committing secrets;
-- build/deploy pipeline is deterministic;
-- authentication redirect/provider configuration is production-verified;
-- database migrations and applied state are verified;
-- health/smoke checks exist;
-- rollback procedure is documented and tested;
-- production verification is recorded separately from deployment success.
-
-## Entry decision
-
-Phase 1 remains **GATED** until both Gate A and Gate B receive explicit human acceptance.
-
-The recommendations above do not constitute acceptance.
-
-## Prohibited inference
-
-Neither decision authorizes unrelated implementation. Learning, institutional membership, commerce reconciliation, financial-safety rules, authentication hardening, and other backlog items remain governed by their own decisions and work items.
+The next work must proceed as controlled Phase 1 slices: INSPECT → IMPLEMENT → TEST → VERIFY → UPDATE STATE → NEXT.
