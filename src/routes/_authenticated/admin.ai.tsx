@@ -1,6 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  PageContainer,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { ConfigToggle } from "@/presentation/domains/3-personalization-role-context/admin/ConfigToggle";
 import { AiProviderSelect } from "@/presentation/domains/3-personalization-role-context/admin/AiProviderSelect";
 import { AiKeyManager } from "@/presentation/domains/3-personalization-role-context/admin/AiKeyManager";

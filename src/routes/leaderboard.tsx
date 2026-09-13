@@ -11,9 +11,15 @@ export const Route = createFileRoute("/leaderboard")({
   head: () => ({
     meta: [
       { title: "Top Tutors Leaderboard — Ask A Tutor Live" },
-      { name: "description", content: "See the highest-rated and most-active tutors on Ask A Tutor Live." },
+      {
+        name: "description",
+        content: "See the highest-rated and most-active tutors on Ask A Tutor Live.",
+      },
       { property: "og:title", content: "Top Tutors Leaderboard — Ask A Tutor Live" },
-      { property: "og:description", content: "Lesotho's top-rated tutors, ranked by student reviews." },
+      {
+        property: "og:description",
+        content: "Lesotho's top-rated tutors, ranked by student reviews.",
+      },
     ],
   }),
 });
@@ -63,19 +69,28 @@ function LeaderboardPage() {
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : tutors.length === 0 ? (
-          <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No reviewed tutors yet — be the first to leave a review.</CardContent></Card>
+          <Card>
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
+              No reviewed tutors yet — be the first to leave a review.
+            </CardContent>
+          </Card>
         ) : (
           <ol className="space-y-2">
             {tutors.map((t, i) => (
               <li key={t.id}>
                 <Card className={i < 3 ? "border-gold/60" : ""}>
                   <CardContent className="flex items-center gap-3 p-4">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                      i === 0 ? "bg-gold text-gold-foreground" :
-                      i === 1 ? "bg-muted-foreground/30 text-foreground" :
-                      i === 2 ? "bg-amber-700/40 text-amber-100" :
-                      "bg-muted text-muted-foreground"
-                    }`}>
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                        i === 0
+                          ? "bg-gold text-gold-foreground"
+                          : i === 1
+                            ? "bg-muted-foreground/30 text-foreground"
+                            : i === 2
+                              ? "bg-amber-700/40 text-amber-100"
+                              : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       #{i + 1}
                     </div>
                     <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
@@ -100,7 +115,9 @@ function LeaderboardPage() {
                         <Star className="h-4 w-4 fill-gold text-gold" />
                         {Number(t.avg_rating).toFixed(1)}
                       </div>
-                      <Badge variant="secondary" className="text-[10px]">{t.review_count} reviews</Badge>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {t.review_count} reviews
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>

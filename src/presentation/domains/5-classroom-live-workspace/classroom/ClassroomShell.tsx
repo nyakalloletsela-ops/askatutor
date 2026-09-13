@@ -26,7 +26,15 @@ interface Props {
   studentName?: string;
 }
 
-export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, tutorName, studentName }: Props) {
+export function ClassroomShell({
+  roomId,
+  userId,
+  displayName,
+  isTutor,
+  isAdmin,
+  tutorName,
+  studentName,
+}: Props) {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [panel, setPanel] = useState<PanelKey>(null);
@@ -52,7 +60,9 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
     if (!el) return;
     if (rtc.remoteStream && el.srcObject !== rtc.remoteStream) {
       el.srcObject = rtc.remoteStream;
-      el.play().catch(() => { /* autoplay may be blocked until user gesture */ });
+      el.play().catch(() => {
+        /* autoplay may be blocked until user gesture */
+      });
     } else if (!rtc.remoteStream) {
       el.srcObject = null;
     }
@@ -61,8 +71,12 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
   // Apply speaker device changes to the hidden audio sink.
   useEffect(() => {
     const off = rtc.service.on("speaker-change", (deviceId) => {
-      const el = remoteAudioRef.current as (HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> }) | null;
-      if (el?.setSinkId) el.setSinkId(deviceId).catch(() => { /* unsupported */ });
+      const el = remoteAudioRef.current as
+        (HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> }) | null;
+      if (el?.setSinkId)
+        el.setSinkId(deviceId).catch(() => {
+          /* unsupported */
+        });
     });
     return off;
   }, [rtc.service]);
@@ -156,7 +170,10 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
           {/* Floating "show video" pill — only visible when user hid the strip */}
           {rtc.joined && isTopStrip && stripHidden && (
             <button
-              onClick={() => { setStripHidden(false); setStripCollapsed(false); }}
+              onClick={() => {
+                setStripHidden(false);
+                setStripCollapsed(false);
+              }}
               className="absolute right-3 top-16 z-40 flex items-center gap-1 rounded-full bg-zinc-900/90 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-zinc-900"
               title="Show video"
             >
@@ -178,7 +195,6 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
               isTeacher={isTutor || isAdmin}
               onLabOpen={onLabOpen}
             />
-
           </motion.div>
 
           {/* Action bar */}
@@ -195,7 +211,9 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
               onToggleMic={() => void rtc.service.toggleMic()}
               onToggleCamera={() => void rtc.service.toggleCamera()}
               onToggleScreen={() =>
-                rtc.screenSharing ? void rtc.service.stopScreenShare() : void rtc.service.startScreenShare()
+                rtc.screenSharing
+                  ? void rtc.service.stopScreenShare()
+                  : void rtc.service.startScreenShare()
               }
               onTogglePanel={togglePanel}
               onOpenSettings={() => setSettingsOpen(true)}
@@ -248,14 +266,27 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
               </div>
               <h2 className="text-lg font-semibold">Ready to join the classroom?</h2>
               <p className="text-xs text-muted-foreground">
-                Your browser will ask for camera and microphone access. You can change devices any time from the settings cog.
+                Your browser will ask for camera and microphone access. You can change devices any
+                time from the settings cog.
               </p>
               {rtc.error && <p className="text-xs text-destructive">{rtc.error}</p>}
-              <Button size="lg" onClick={() => void rtc.join()} disabled={rtc.joining} className="w-full">
-                {rtc.joining ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+              <Button
+                size="lg"
+                onClick={() => void rtc.join()}
+                disabled={rtc.joining}
+                className="w-full"
+              >
+                {rtc.joining ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Video className="mr-2 h-4 w-4" />
+                )}
                 {rtc.joining ? "Joining…" : "Join classroom"}
               </Button>
-              <button onClick={onLeave} className="text-xs text-muted-foreground hover:text-foreground">
+              <button
+                onClick={onLeave}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
                 Cancel and go back
               </button>
             </div>
@@ -263,7 +294,11 @@ export function ClassroomShell({ roomId, userId, displayName, isTutor, isAdmin, 
         )}
       </main>
 
-      <DeviceSettingsDialog service={rtc.service} open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <DeviceSettingsDialog
+        service={rtc.service}
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+      />
     </div>
   );
 }

@@ -1,8 +1,8 @@
-import * as React from 'react'
-import { render } from '@react-email/components'
-import { supabaseAdmin } from '@/integrations/supabase/client.server'
-import { TEMPLATES, type TemplateEntry } from '@/lib/email-templates/registry'
-import { deliverEmail, publicBaseUrl } from '@/lib/email/provider.server'
+import * as React from "react";
+import { render } from "@react-email/components";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { TEMPLATES, type TemplateEntry } from "@/lib/email-templates/registry";
+import { deliverEmail, publicBaseUrl } from "@/lib/email/provider.server";
 
 /**
  * Server-only transactional email sender.
@@ -14,8 +14,8 @@ import { deliverEmail, publicBaseUrl } from '@/lib/email/provider.server'
  * Only call from trusted server code (server functions, webhooks).
  */
 
-const FROM_DOMAIN = process.env.EMAIL_FROM_DOMAIN || 'askatutorlive.com'
-const BRAND = process.env.EMAIL_FROM_NAME || 'Ask A Tutor'
+const FROM_DOMAIN = process.env.EMAIL_FROM_DOMAIN || "askatutorlive.com";
+const BRAND = process.env.EMAIL_FROM_NAME || "Ask A Tutor";
 const ALIAS_DISPLAY: Record<string, string> = {
   noreply: BRAND,
   admin: `${BRAND} Admin`,
@@ -23,26 +23,29 @@ const ALIAS_DISPLAY: Record<string, string> = {
   tutors: `${BRAND} Tutors`,
   students: `${BRAND} Students`,
   billing: `${BRAND} Billing`,
-}
-const ALLOWED = new Set(Object.keys(ALIAS_DISPLAY))
+};
+const ALLOWED = new Set(Object.keys(ALIAS_DISPLAY));
 
 function token32() {
-  const b = new Uint8Array(32); crypto.getRandomValues(b)
-  return Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('')
+  const b = new Uint8Array(32);
+  crypto.getRandomValues(b);
+  return Array.from(b)
+    .map((x) => x.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 interface EnqueueParams {
-  templateName: string
-  recipientEmail: string
-  idempotencyKey?: string
-  templateData?: Record<string, any>
-  fromAlias?: string
+  templateName: string;
+  recipientEmail: string;
+  idempotencyKey?: string;
+  templateData?: Record<string, any>;
+  fromAlias?: string;
 }
 
 function unsubscribeFooter(token: string) {
-  const base = publicBaseUrl()
-  if (!base) return { html: '', text: '' }
-  const url = `${base}/unsubscribe?token=${token}`
+  const base = publicBaseUrl();
+  if (!base) return { html: "", text: "" };
+  const url = `${base}/unsubscribe?token=${token}`;
   return {
     html:
       `<div style="margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;` +
@@ -51,46 +54,57 @@ function unsubscribeFooter(token: string) {
       `<a href="${url}" style="color:#6b7280;text-decoration:underline">Unsubscribe</a>.` +
       `</div>`,
     text: `\n\n---\nUnsubscribe: ${url}\n`,
-  }
+  };
 }
 
 export async function enqueueTransactionalEmail(p: EnqueueParams) {
-  const tpl = TEMPLATES[p.templateName] as TemplateEntry & { fromAlias?: string } | undefined
-  if (!tpl) throw new Error(`Unknown template: ${p.templateName}`)
-  const recipient = tpl.to || p.recipientEmail
-  if (!recipient) throw new Error('recipientEmail required')
-  const normalized = recipient.toLowerCase()
-  const messageId = crypto.randomUUID()
+  const tpl = TEMPLATES[p.templateName] as (TemplateEntry & { fromAlias?: string }) | undefined;
+  if (!tpl) throw new Error(`Unknown template: ${p.templateName}`);
+  const recipient = tpl.to || p.recipientEmail;
+  if (!recipient) throw new Error("recipientEmail required");
+  const normalized = recipient.toLowerCase();
+  const messageId = crypto.randomUUID();
 
   // Suppression check
   const { data: sup } = await supabaseAdmin
-    .from('suppressed_emails').select('id').eq('email', normalized).maybeSingle()
-  if (sup) return { suppressed: true }
+    .from("suppressed_emails")
+    .select("id")
+    .eq("email", normalized)
+    .maybeSingle();
+  if (sup) return { suppressed: true };
 
   // Unsubscribe token (one per email)
-  let unsub: string
+  let unsub: string;
   const { data: existing } = await supabaseAdmin
-    .from('email_unsubscribe_tokens').select('token, used_at').eq('email', normalized).maybeSingle()
+    .from("email_unsubscribe_tokens")
+    .select("token, used_at")
+    .eq("email", normalized)
+    .maybeSingle();
   if (existing?.token && !existing.used_at) {
-    unsub = existing.token
+    unsub = existing.token;
   } else {
-    unsub = token32()
-    await supabaseAdmin.from('email_unsubscribe_tokens')
-      .upsert({ token: unsub, email: normalized }, { onConflict: 'email', ignoreDuplicates: true })
+    unsub = token32();
+    await supabaseAdmin
+      .from("email_unsubscribe_tokens")
+      .upsert({ token: unsub, email: normalized }, { onConflict: "email", ignoreDuplicates: true });
     const { data: re } = await supabaseAdmin
-      .from('email_unsubscribe_tokens').select('token').eq('email', normalized).maybeSingle()
-    unsub = re?.token ?? unsub
+      .from("email_unsubscribe_tokens")
+      .select("token")
+      .eq("email", normalized)
+      .maybeSingle();
+    unsub = re?.token ?? unsub;
   }
 
   // Render
-  const el = React.createElement(tpl.component, p.templateData ?? {})
-  const footer = unsubscribeFooter(unsub)
-  const html = (await render(el)) + footer.html
-  const text = (await render(el, { plainText: true })) + footer.text
-  const subject = typeof tpl.subject === 'function' ? tpl.subject(p.templateData ?? {}) : tpl.subject
+  const el = React.createElement(tpl.component, p.templateData ?? {});
+  const footer = unsubscribeFooter(unsub);
+  const html = (await render(el)) + footer.html;
+  const text = (await render(el, { plainText: true })) + footer.text;
+  const subject =
+    typeof tpl.subject === "function" ? tpl.subject(p.templateData ?? {}) : tpl.subject;
 
-  const aliasRaw = (p.fromAlias ?? tpl.fromAlias ?? 'noreply').toLowerCase()
-  const alias = ALLOWED.has(aliasRaw) ? aliasRaw : 'noreply'
+  const aliasRaw = (p.fromAlias ?? tpl.fromAlias ?? "noreply").toLowerCase();
+  const alias = ALLOWED.has(aliasRaw) ? aliasRaw : "noreply";
 
   try {
     await deliverEmail({
@@ -101,24 +115,24 @@ export async function enqueueTransactionalEmail(p: EnqueueParams) {
       text,
       label: p.templateName,
       idempotencyKey: p.idempotencyKey ?? messageId,
-    })
+    });
   } catch (e) {
-    await supabaseAdmin.from('email_send_log').insert({
+    await supabaseAdmin.from("email_send_log").insert({
       message_id: messageId,
       template_name: p.templateName,
       recipient_email: recipient,
-      status: 'failed',
+      status: "failed",
       error_message: (e as Error).message.slice(0, 500),
-    })
-    throw e
+    });
+    throw e;
   }
 
-  await supabaseAdmin.from('email_send_log').insert({
+  await supabaseAdmin.from("email_send_log").insert({
     message_id: messageId,
     template_name: p.templateName,
     recipient_email: recipient,
-    status: 'sent',
-  })
+    status: "sent",
+  });
 
-  return { sent: true, messageId }
+  return { sent: true, messageId };
 }

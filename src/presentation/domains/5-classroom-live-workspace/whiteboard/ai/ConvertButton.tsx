@@ -10,7 +10,10 @@ import { shapeBounds, type Shape } from "../canvas/engine";
 
 function boundsOf(list: Shape[]): { x: number; y: number; w: number; h: number } | null {
   if (!list.length) return null;
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  let x0 = Infinity,
+    y0 = Infinity,
+    x1 = -Infinity,
+    y1 = -Infinity;
   for (const s of list) {
     const b = shapeBounds(s);
     if (b.x < x0) x0 = b.x;
@@ -93,7 +96,11 @@ export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
       disabled={busy}
       title="Convert handwriting → clean digital text, equations and diagrams"
     >
-      {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
+      {busy ? (
+        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <Sparkles className="mr-1 h-3.5 w-3.5" />
+      )}
       <span className="hidden xs:inline">{busy ? "Converting…" : "AI Convert"}</span>
     </Button>
   );

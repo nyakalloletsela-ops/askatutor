@@ -1,5 +1,8 @@
 import type { UserDataClient } from "./helpers";
-import type { CourseMaterial, CourseMaterialRepository } from "@/domain/ports/course-material-repository";
+import type {
+  CourseMaterial,
+  CourseMaterialRepository,
+} from "@/domain/ports/course-material-repository";
 
 /**
  * Supabase-backed CourseMaterialRepository. Access checks run through the RLS

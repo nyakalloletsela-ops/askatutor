@@ -4,12 +4,21 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { PageContainer } from "@/presentation/domains/8-core-ux-navigation/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import { Trash2, Copy, CalendarOff } from "lucide-react";
 
@@ -17,12 +26,24 @@ export const Route = createFileRoute("/_authenticated/tutor/availability")({
   component: AvailabilityPage,
 });
 
-type Slot = { id: string; weekday: number; start_min: number; end_min: number; timezone: string; buffer_minutes: number };
+type Slot = {
+  id: string;
+  weekday: number;
+  start_min: number;
+  end_min: number;
+  timezone: string;
+  buffer_minutes: number;
+};
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function mins(t: string) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
-function hhmm(min: number) { return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`; }
+function mins(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+function hhmm(min: number) {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+}
 
 function AvailabilityPage() {
   const { user, isTutor } = useAuth();
@@ -40,17 +61,24 @@ function AvailabilityPage() {
       .from("tutor_availability")
       .select("id, weekday, start_min, end_min, timezone, buffer_minutes")
       .eq("tutor_id", user.id)
-      .order("weekday").order("start_min");
+      .order("weekday")
+      .order("start_min");
     const rows = (data as Slot[]) ?? [];
     setSlots(rows);
-    if (rows[0]) { setTz(rows[0].timezone); setBuffer(rows[0].buffer_minutes); }
+    if (rows[0]) {
+      setTz(rows[0].timezone);
+      setBuffer(rows[0].buffer_minutes);
+    }
   };
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => {
+    load();
+  }, [user]);
 
   const add = async () => {
     if (!user) return;
-    const s = mins(start), e = mins(end);
+    const s = mins(start),
+      e = mins(end);
     if (e <= s) return toast.error("End must be after start");
     const { error } = await supabase.from("tutor_availability").insert({
       tutor_id: user.id,
@@ -87,15 +115,23 @@ function AvailabilityPage() {
     await supabase.from("tutor_availability").delete().eq("tutor_id", user.id).eq("weekday", to);
     await supabase.from("tutor_availability").insert(
       rows.map((r) => ({
-        tutor_id: user.id, weekday: to, start_min: r.start_min, end_min: r.end_min,
-        timezone: tz, buffer_minutes: buffer,
+        tutor_id: user.id,
+        weekday: to,
+        start_min: r.start_min,
+        end_min: r.end_min,
+        timezone: tz,
+        buffer_minutes: buffer,
       })),
     );
     load();
   };
 
   if (!isTutor) {
-    return <PageContainer title="Availability"><p className="text-sm text-muted-foreground">Tutors only.</p></PageContainer>;
+    return (
+      <PageContainer title="Availability">
+        <p className="text-sm text-muted-foreground">Tutors only.</p>
+      </PageContainer>
+    );
   }
 
   return (
@@ -104,49 +140,81 @@ function AvailabilityPage() {
       description="Set the hours students can book. Times saved in the timezone you choose."
       actions={
         <Button asChild variant="outline" size="sm">
-          <Link to="/tutor/holidays"><CalendarOff className="mr-2 h-4 w-4" /> Holidays</Link>
+          <Link to="/tutor/holidays">
+            <CalendarOff className="mr-2 h-4 w-4" /> Holidays
+          </Link>
         </Button>
       }
     >
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-2">
-          <CardHeader><CardTitle>Add a window</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Add a window</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>Day</Label>
                 <Select value={weekday} onValueChange={setWeekday}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {WEEKDAYS.map((d, i) => <SelectItem key={i} value={String(i)}>{d}</SelectItem>)}
+                    {WEEKDAYS.map((d, i) => (
+                      <SelectItem key={i} value={String(i)}>
+                        {d}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Start</Label><Input type="time" value={start} onChange={(e) => setStart(e.target.value)} /></div>
-              <div><Label>End</Label><Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+              <div>
+                <Label>Start</Label>
+                <Input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
+              </div>
+              <div>
+                <Label>End</Label>
+                <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
+              </div>
             </div>
             <Button onClick={add}>Add window</Button>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Settings</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Settings</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <div>
               <Label>Timezone</Label>
-              <Input value={tz} onChange={(e) => setTz(e.target.value)} placeholder="Africa/Harare" />
+              <Input
+                value={tz}
+                onChange={(e) => setTz(e.target.value)}
+                placeholder="Africa/Harare"
+              />
             </div>
             <div>
               <Label>Buffer between lessons (minutes)</Label>
-              <Input type="number" min={0} max={120} value={buffer} onChange={(e) => setBuffer(Number(e.target.value))} />
+              <Input
+                type="number"
+                min={0}
+                max={120}
+                value={buffer}
+                onChange={(e) => setBuffer(Number(e.target.value))}
+              />
             </div>
-            <Button variant="outline" size="sm" onClick={updateAll}>Save settings</Button>
+            <Button variant="outline" size="sm" onClick={updateAll}>
+              Save settings
+            </Button>
           </CardContent>
         </Card>
       </div>
 
       <Card className="mt-4">
-        <CardHeader><CardTitle>Schedule</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Schedule</CardTitle>
+        </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
             {WEEKDAYS.map((d, i) => {
@@ -156,9 +224,20 @@ function AvailabilityPage() {
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-semibold uppercase">{d}</p>
                     <Select onValueChange={(v) => copyDay(i, Number(v))}>
-                      <SelectTrigger className="h-6 w-6 border-none p-0"><Copy className="h-3 w-3" /></SelectTrigger>
+                      <SelectTrigger className="h-6 w-6 border-none p-0">
+                        <Copy className="h-3 w-3" />
+                      </SelectTrigger>
                       <SelectContent>
-                        {WEEKDAYS.map((t, j) => j !== i && <SelectItem key={j} value={String(j)}>Copy → {t}</SelectItem>).filter(Boolean) as any}
+                        {
+                          WEEKDAYS.map(
+                            (t, j) =>
+                              j !== i && (
+                                <SelectItem key={j} value={String(j)}>
+                                  Copy → {t}
+                                </SelectItem>
+                              ),
+                          ).filter(Boolean) as any
+                        }
                       </SelectContent>
                     </Select>
                   </div>
@@ -167,9 +246,17 @@ function AvailabilityPage() {
                   ) : (
                     <ul className="space-y-1">
                       {day.map((s) => (
-                        <li key={s.id} className="flex items-center justify-between rounded bg-muted px-2 py-1 text-[11px]">
-                          <span>{hhmm(s.start_min)}–{hhmm(s.end_min)}</span>
-                          <button onClick={() => del(s.id)} className="text-muted-foreground hover:text-destructive">
+                        <li
+                          key={s.id}
+                          className="flex items-center justify-between rounded bg-muted px-2 py-1 text-[11px]"
+                        >
+                          <span>
+                            {hhmm(s.start_min)}–{hhmm(s.end_min)}
+                          </span>
+                          <button
+                            onClick={() => del(s.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
                             <Trash2 className="h-3 w-3" />
                           </button>
                         </li>

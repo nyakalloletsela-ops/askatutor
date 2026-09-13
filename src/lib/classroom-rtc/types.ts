@@ -31,13 +31,13 @@ export type RTCEventMap = {
   "local-stream": MediaStream | null;
   "remote-stream": MediaStream | null;
   "remote-participant": RemoteParticipant | null;
-  "stats": ConnectionStats;
+  stats: ConnectionStats;
   "mic-state": boolean;
   "camera-state": boolean;
   "screen-share": boolean;
   "speaker-change": string;
-  "error": string;
-  "joined": void;
+  error: string;
+  joined: void;
 };
 
 export type RTCListener<K extends keyof RTCEventMap> = (payload: RTCEventMap[K]) => void;

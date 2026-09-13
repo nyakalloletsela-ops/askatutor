@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../8-core-ux-navigation/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "../8-core-ux-navigation/ui/select";
 import { Button } from "../8-core-ux-navigation/ui/button";
 import { Input } from "../8-core-ux-navigation/ui/input";
 import { FlaskConical, RotateCw, ExternalLink, Search, Lock, Users } from "lucide-react";
@@ -38,7 +46,9 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
   const selectedRef = useRef<LabModule | null>(selected);
   const lastAppliedSlugRef = useRef<string | null>(selected?.slug ?? null);
   const pendingBroadcastRef = useRef<string | null>(null);
-  useEffect(() => { selectedRef.current = selected; }, [selected]);
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
 
   const applyRemoteSlug = (slug: string, ts?: number) => {
     if (!slug || lastAppliedSlugRef.current === slug) return;
@@ -51,7 +61,6 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
     if (!enforceLimit) onOpen(slug);
     void ts;
   };
-
 
   // Sync the active experiment between classroom participants.
   useEffect(() => {
@@ -83,13 +92,17 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
       })
       .on("presence", { event: "sync" }, () => {
         // Pick the presence entry with the highest ts and adopt its slug.
-        const state = channel.presenceState() as Record<string, Array<{ slug?: string; ts?: number }>>;
+        const state = channel.presenceState() as Record<
+          string,
+          Array<{ slug?: string; ts?: number }>
+        >;
         let bestSlug: string | null = null;
         let bestTs = latestTs;
         for (const entries of Object.values(state)) {
           for (const e of entries) {
             if (e?.slug && typeof e.ts === "number" && e.ts > bestTs) {
-              bestTs = e.ts; bestSlug = e.slug;
+              bestTs = e.ts;
+              bestSlug = e.slug;
             }
           }
         }
@@ -172,7 +185,6 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
     }
   };
 
-
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 p-2">
@@ -199,17 +211,29 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
             />
           </div>
           <Select value={filter} onValueChange={(v) => setFilter(v as LabSubject | "All")}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All subjects</SelectItem>
-              {LAB_SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              {LAB_SUBJECTS.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={levelFilter} onValueChange={(v) => setLevelFilter(v as LabLevel | "All")}>
-            <SelectTrigger className="h-9 w-[130px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All levels</SelectItem>
-              {LAB_LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              {LAB_LEVELS.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select
@@ -219,13 +243,16 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
               if (m) tryOpen(m);
             }}
           >
-            <SelectTrigger className="h-9 w-[260px]"><SelectValue placeholder="Choose an experiment" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[260px]">
+              <SelectValue placeholder="Choose an experiment" />
+            </SelectTrigger>
             <SelectContent className="max-h-[60vh]">
               {Object.entries(grouped).map(([subject, mods]) => (
                 <SelectGroup key={subject}>
                   <SelectLabel>{subject}</SelectLabel>
                   {mods.map((m) => {
-                    const locked = enforceLimit && !viewedSlugs.includes(m.slug) && usedCount >= limit;
+                    const locked =
+                      enforceLimit && !viewedSlugs.includes(m.slug) && usedCount >= limit;
                     return (
                       <SelectItem key={m.id} value={m.id}>
                         {locked && <Lock className="mr-1 inline h-3 w-3" />}
@@ -240,12 +267,19 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
               )}
             </SelectContent>
           </Select>
-          <Button size="icon" variant="outline" onClick={() => setKey((k) => k + 1)} aria-label="Reload">
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={() => setKey((k) => k + 1)}
+            aria-label="Reload"
+          >
             <RotateCw className="h-4 w-4" />
           </Button>
           {selected && (
             <Button asChild size="icon" variant="outline" aria-label="Open in new tab">
-              <a href={phetUrl(selected.slug)} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+              <a href={phetUrl(selected.slug)} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </a>
             </Button>
           )}
         </div>
@@ -256,8 +290,8 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
           <Lock className="h-10 w-10 text-primary" />
           <h3 className="text-lg font-semibold">Free lab quota reached</h3>
           <p className="max-w-md text-sm text-muted-foreground">
-            You've opened {limit} experiments on the free student tier. Book a session with a
-            tutor to unlock unlimited access to all {LAB_MODULES.length}+ simulations.
+            You've opened {limit} experiments on the free student tier. Book a session with a tutor
+            to unlock unlimited access to all {LAB_MODULES.length}+ simulations.
           </p>
         </div>
       ) : selected ? (
@@ -274,7 +308,10 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
       )}
       {selected && !quotaReached && (
         <p className="border-t bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{selected.subject} · {selected.name}</span> — {selected.description}
+          <span className="font-medium text-foreground">
+            {selected.subject} · {selected.name}
+          </span>{" "}
+          — {selected.description}
         </p>
       )}
     </div>

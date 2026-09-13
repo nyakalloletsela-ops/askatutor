@@ -3,7 +3,13 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "../3-personalization-role-context/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../8-core-ux-navigation/ui/card";
 import { Button } from "../8-core-ux-navigation/ui/button";
 import { Badge } from "../8-core-ux-navigation/ui/badge";
 import {
@@ -25,15 +31,7 @@ import {
   ArrowRight,
   Plus,
 } from "lucide-react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 type SessionRow = {
   id: string;
@@ -46,7 +44,13 @@ type SessionRow = {
 };
 
 type NoteRow = { id: string; title: string; kind: string; created_at: string; body: string | null };
-type AssignmentRow = { id: string; title: string; due_at: string | null; created_at: string; status?: string | null };
+type AssignmentRow = {
+  id: string;
+  title: string;
+  due_at: string | null;
+  created_at: string;
+  status?: string | null;
+};
 type RecordRow = { id: string; room_id: string; title: string | null; created_at: string };
 
 const dayKey = (d: Date) => d.toISOString().slice(0, 10);
@@ -191,13 +195,16 @@ export function StudentHome({
         id: `n-${n.id}`,
         icon: StickyNote,
         label: `Saved note · ${n.title}`,
-        sub: n.kind === "ai-coach" ? "AI Coach" : n.kind.startsWith("ai-tool:") ? "AI Toolkit" : "Notes",
+        sub:
+          n.kind === "ai-coach"
+            ? "AI Coach"
+            : n.kind.startsWith("ai-tool:")
+              ? "AI Toolkit"
+              : "Notes",
         at: n.created_at,
       });
     }
-    return items
-      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-      .slice(0, 8);
+    return items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 8);
   }, [sessions, recentNotes, participantNames]);
 
   return (
@@ -311,7 +318,10 @@ export function StudentHome({
                           <p className="flex items-center gap-2 truncate text-sm font-medium">
                             <span className="truncate">{s.subject ?? "Tutoring session"}</span>
                             {isLive && (
-                              <Badge className="bg-green-500/15 text-green-600 hover:bg-green-500/15" variant="secondary">
+                              <Badge
+                                className="bg-green-500/15 text-green-600 hover:bg-green-500/15"
+                                variant="secondary"
+                              >
                                 Live
                               </Badge>
                             )}
@@ -350,7 +360,9 @@ export function StudentHome({
               <ContinueTile
                 icon={Video}
                 title="Last recording"
-                subtitle={lastRecording?.title ?? (lastRecording ? "Untitled" : "No recordings yet")}
+                subtitle={
+                  lastRecording?.title ?? (lastRecording ? "Untitled" : "No recordings yet")
+                }
                 to={lastRecording ? "/records" : "/records"}
                 empty={!lastRecording}
               />
@@ -389,7 +401,11 @@ export function StudentHome({
                 <div className="h-56 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={progressData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                        vertical={false}
+                      />
                       <XAxis
                         dataKey="subject"
                         stroke="hsl(var(--muted-foreground))"
@@ -540,15 +556,7 @@ function ContinueTile({
   );
 }
 
-function AiAction({
-  icon: Icon,
-  label,
-  to,
-}: {
-  icon: typeof Sparkles;
-  label: string;
-  to: string;
-}) {
+function AiAction({ icon: Icon, label, to }: { icon: typeof Sparkles; label: string; to: string }) {
   return (
     <Link
       to={to as never}

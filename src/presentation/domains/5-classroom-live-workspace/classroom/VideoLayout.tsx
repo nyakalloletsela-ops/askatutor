@@ -36,7 +36,15 @@ interface Props {
  */
 export function VideoLayout({ tutor, student, mode, collapsed, onCollapseToggle, onHide }: Props) {
   if (mode === "TOP_STRIP") {
-    return <TopStrip tutor={tutor} student={student} collapsed={!!collapsed} onCollapseToggle={onCollapseToggle} onHide={onHide} />;
+    return (
+      <TopStrip
+        tutor={tutor}
+        student={student}
+        collapsed={!!collapsed}
+        onCollapseToggle={onCollapseToggle}
+        onHide={onHide}
+      />
+    );
   }
   if (mode === "DOCKED") {
     return (
@@ -47,9 +55,7 @@ export function VideoLayout({ tutor, student, mode, collapsed, onCollapseToggle,
     );
   }
   if (mode === "FOCUS") {
-    return (
-      <FocusBubble tutor={tutor} student={student} />
-    );
+    return <FocusBubble tutor={tutor} student={student} />;
   }
   return (
     <>
@@ -61,8 +67,18 @@ export function VideoLayout({ tutor, student, mode, collapsed, onCollapseToggle,
 
 /* ---------- Mobile/top horizontal strip (in-flow, never covers whiteboard) ---------- */
 function TopStrip({
-  tutor, student, collapsed, onCollapseToggle, onHide,
-}: { tutor: VideoSlot; student: VideoSlot; collapsed: boolean; onCollapseToggle?: () => void; onHide?: () => void }) {
+  tutor,
+  student,
+  collapsed,
+  onCollapseToggle,
+  onHide,
+}: {
+  tutor: VideoSlot;
+  student: VideoSlot;
+  collapsed: boolean;
+  onCollapseToggle?: () => void;
+  onHide?: () => void;
+}) {
   return (
     <motion.div
       layout
@@ -74,13 +90,23 @@ function TopStrip({
     >
       {collapsed ? (
         <div className="flex h-full w-full items-center justify-between gap-2 px-3 text-xs">
-          <span className="truncate opacity-80">📹 {tutor.name} · {student.name}</span>
+          <span className="truncate opacity-80">
+            📹 {tutor.name} · {student.name}
+          </span>
           <div className="flex shrink-0 items-center gap-1">
-            <button onClick={onCollapseToggle} className="grid h-6 w-6 place-items-center rounded-full bg-white/10 hover:bg-white/20" aria-label="Expand video">
+            <button
+              onClick={onCollapseToggle}
+              className="grid h-6 w-6 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+              aria-label="Expand video"
+            >
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
             {onHide && (
-              <button onClick={onHide} className="grid h-6 w-6 place-items-center rounded-full bg-white/10 hover:bg-white/20" aria-label="Hide video">
+              <button
+                onClick={onHide}
+                className="grid h-6 w-6 place-items-center rounded-full bg-white/10 hover:bg-white/20"
+                aria-label="Hide video"
+              >
                 <EyeOff className="h-3.5 w-3.5" />
               </button>
             )}
@@ -91,11 +117,19 @@ function TopStrip({
           <VideoCard {...tutor} compact className="min-w-0 flex-1" />
           <VideoCard {...student} compact className="min-w-0 flex-1" />
           <div className="absolute right-1.5 top-1.5 z-10 flex gap-1">
-            <button onClick={onCollapseToggle} className="grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white hover:bg-black" aria-label="Collapse video">
+            <button
+              onClick={onCollapseToggle}
+              className="grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white hover:bg-black"
+              aria-label="Collapse video"
+            >
               <ChevronUp className="h-3.5 w-3.5" />
             </button>
             {onHide && (
-              <button onClick={onHide} className="grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white hover:bg-black" aria-label="Hide video">
+              <button
+                onClick={onHide}
+                className="grid h-6 w-6 place-items-center rounded-full bg-black/70 text-white hover:bg-black"
+                aria-label="Hide video"
+              >
                 <EyeOff className="h-3.5 w-3.5" />
               </button>
             )}
@@ -135,7 +169,8 @@ function FloatingTile({
       if (!dragRef.current) return;
       dragRef.current = null;
       setPos((p) => {
-        const W = window.innerWidth, H = window.innerHeight;
+        const W = window.innerWidth,
+          H = window.innerHeight;
         const nearLeft = p.x + TILE_W / 2 < W / 2;
         const nearTop = p.y + TILE_H / 2 < H / 2;
         return {

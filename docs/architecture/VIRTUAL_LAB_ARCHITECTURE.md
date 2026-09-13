@@ -73,14 +73,14 @@ Virtual laboratories are AI-generated, controlled learning environments. The arc
 
 ```typescript
 interface LabSpec {
-  id: string
-  creator_id: string
-  scenario: ScenarioDefinition
-  component_set: PermittedComponents
-  physics_rules: PhysicsRules
-  domain_rules: DomainRules
-  status: 'draft' | 'active' | 'saved' | 'shared'
-  version: number
+  id: string;
+  creator_id: string;
+  scenario: ScenarioDefinition;
+  component_set: PermittedComponents;
+  physics_rules: PhysicsRules;
+  domain_rules: DomainRules;
+  status: "draft" | "active" | "saved" | "shared";
+  version: number;
 }
 ```
 
@@ -88,13 +88,13 @@ interface LabSpec {
 
 ```typescript
 interface ScenarioDefinition {
-  name: string
-  description: string
-  subject: string // Initially STEM only
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-  learning_objectives: string[]
-  parameters: Record<string, any>
-  constraints: string[]
+  name: string;
+  description: string;
+  subject: string; // Initially STEM only
+  difficulty: "beginner" | "intermediate" | "advanced";
+  learning_objectives: string[];
+  parameters: Record<string, any>;
+  constraints: string[];
 }
 ```
 
@@ -102,24 +102,24 @@ interface ScenarioDefinition {
 
 Each lab scenario has a defined set of permitted components:
 
-| Category | Initial Components |
-|----------|-------------------|
-| Mechanics | Mass, Spring, Pulley, Incline, Force Vector |
-| Thermodynamics | Temperature, Pressure, Volume, Heat Source |
-| Circuits | Resistor, Capacitor, Battery, Wire, Switch |
-| Optics | Lens, Mirror, Light Source, Screen |
-| Chemistry | Molecule, Reaction, Catalyst, Solution |
-| Math | Function Plot, Coordinate System, Data Points |
+| Category       | Initial Components                            |
+| -------------- | --------------------------------------------- |
+| Mechanics      | Mass, Spring, Pulley, Incline, Force Vector   |
+| Thermodynamics | Temperature, Pressure, Volume, Heat Source    |
+| Circuits       | Resistor, Capacitor, Battery, Wire, Switch    |
+| Optics         | Lens, Mirror, Light Source, Screen            |
+| Chemistry      | Molecule, Reaction, Catalyst, Solution        |
+| Math           | Function Plot, Coordinate System, Data Points |
 
 ### 4.4 Simulation State
 
 ```typescript
 interface SimulationState {
-  timestamp: number
-  variables: Record<string, number>
-  objects: LabObject[]
-  interactions: Interaction[]
-  is_paused: boolean
+  timestamp: number;
+  variables: Record<string, number>;
+  objects: LabObject[];
+  interactions: Interaction[];
+  is_paused: boolean;
 }
 ```
 
@@ -201,27 +201,28 @@ AI does NOT:
 
 ## 8. LAB PERSISTENCE
 
-| Storage Type | Description | Retention |
-|-------------|-------------|-----------|
-| Active Lab | Currently executing | Session only |
-| Saved Lab | Learner-saved lab spec | Until deleted |
-| Shared Lab | Community-shared lab | Subject to moderation |
-| Lab Record | Execution history | Per evidence retention |
-| Lab Template | Approved reusable lab | Permanent |
+| Storage Type | Description            | Retention              |
+| ------------ | ---------------------- | ---------------------- |
+| Active Lab   | Currently executing    | Session only           |
+| Saved Lab    | Learner-saved lab spec | Until deleted          |
+| Shared Lab   | Community-shared lab   | Subject to moderation  |
+| Lab Record   | Execution history      | Per evidence retention |
+| Lab Template | Approved reusable lab  | Permanent              |
 
 ---
 
 ## 9. LAB SHARING
 
-| Sharing Level | Description |
-|--------------|-------------|
-| Private | Only the learner |
-| Tutor | Learner + assigned tutor |
-| Group | Learning group members |
-| Community | All platform users (subject to moderation) |
-| Institution | Institution class members |
+| Sharing Level | Description                                |
+| ------------- | ------------------------------------------ |
+| Private       | Only the learner                           |
+| Tutor         | Learner + assigned tutor                   |
+| Group         | Learning group members                     |
+| Community     | All platform users (subject to moderation) |
+| Institution   | Institution class members                  |
 
 Sharing requires:
+
 - Learner consent
 - Safety review (for community sharing)
 - Attribution to original creator
@@ -233,12 +234,12 @@ Sharing requires:
 
 Lab interactions produce evidence:
 
-| Evidence Type | Description |
-|--------------|-------------|
-| Lab Session Recording | Full interaction timeline |
-| Lab Results | Final state and measurements |
-| Lab Screenshots | Visual captures at key moments |
-| Lab Reflection | Learner's reflection on lab experience |
+| Evidence Type         | Description                            |
+| --------------------- | -------------------------------------- |
+| Lab Session Recording | Full interaction timeline              |
+| Lab Results           | Final state and measurements           |
+| Lab Screenshots       | Visual captures at key moments         |
+| Lab Reflection        | Learner's reflection on lab experience |
 
 ---
 
@@ -256,6 +257,7 @@ Phase 7 implements:
 - Save functionality
 
 Phase 7 does NOT implement:
+
 - Community sharing
 - Advanced physics
 - Non-STEM labs
@@ -266,12 +268,12 @@ Phase 7 does NOT implement:
 
 ## 12. FUTURE EXPANSION
 
-| Expansion | Phase |
-|-----------|-------|
-| Additional STEM lab types | 7-8 |
-| Non-STEM lab types | 12+ |
-| Community lab sharing | 11 |
-| Institution lab assignments | 8 |
-| Advanced physics engine | 8+ |
-| Collaborative labs | 12+ |
-| Lab templates library | 10+ |
+| Expansion                   | Phase |
+| --------------------------- | ----- |
+| Additional STEM lab types   | 7-8   |
+| Non-STEM lab types          | 12+   |
+| Community lab sharing       | 11    |
+| Institution lab assignments | 8     |
+| Advanced physics engine     | 8+    |
+| Collaborative labs          | 12+   |
+| Lab templates library       | 10+   |

@@ -10,10 +10,20 @@ import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { Search, Crown, Star, CalendarPlus, Gift } from "lucide-react";
@@ -22,7 +32,11 @@ export const Route = createFileRoute("/tutors")({
   head: () => ({
     meta: [
       { title: "All Tutors — Ask A Tutor Live" },
-      { name: "description", content: "Browse all verified tutors on Ask A Tutor Live. Filter by subject and book a live one-on-one session." },
+      {
+        name: "description",
+        content:
+          "Browse all verified tutors on Ask A Tutor Live. Filter by subject and book a live one-on-one session.",
+      },
     ],
   }),
   component: AllTutorsPage,
@@ -49,7 +63,10 @@ function AllTutorsPage() {
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.rpc("list_public_tutors");
-      if (error) { console.error(error); return; }
+      if (error) {
+        console.error(error);
+        return;
+      }
       setTutors((data as TutorRow[]) ?? []);
     })();
   }, []);
@@ -74,7 +91,12 @@ function AllTutorsPage() {
           </div>
           <div className="relative w-full md:w-72">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search tutors…" value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" />
+            <Input
+              placeholder="Search tutors…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="pl-9"
+            />
           </div>
         </div>
 
@@ -100,12 +122,16 @@ function AllTutorsPage() {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((t) => <TutorCard key={t.id} t={t} />)}
+            {filtered.map((t) => (
+              <TutorCard key={t.id} t={t} />
+            ))}
           </div>
         )}
 
         <div className="mt-10 text-center">
-          <Button asChild variant="outline"><Link to="/">Back to home</Link></Button>
+          <Button asChild variant="outline">
+            <Link to="/">Back to home</Link>
+          </Button>
         </div>
       </section>
     </div>
@@ -119,7 +145,11 @@ function TutorCard({ t }: { t: TutorRow }) {
         <div className="flex items-start gap-4">
           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-muted">
             {t.avatar_url ? (
-              <img src={t.avatar_url} alt={t.full_name ?? ""} className="h-full w-full object-cover" />
+              <img
+                src={t.avatar_url}
+                alt={t.full_name ?? ""}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-muted-foreground">
                 {(t.full_name ?? "?").charAt(0).toUpperCase()}
@@ -134,14 +164,20 @@ function TutorCard({ t }: { t: TutorRow }) {
               {(t.review_count ?? 0) > 0 ? (
                 <>
                   <Star className="h-3.5 w-3.5 fill-gold text-gold" />
-                  <span className="font-medium text-foreground">{Number(t.avg_rating ?? 0).toFixed(1)}</span>
-                  <span>· {t.review_count} review{t.review_count === 1 ? "" : "s"}</span>
+                  <span className="font-medium text-foreground">
+                    {Number(t.avg_rating ?? 0).toFixed(1)}
+                  </span>
+                  <span>
+                    · {t.review_count} review{t.review_count === 1 ? "" : "s"}
+                  </span>
                 </>
               ) : (
                 <span className="italic">New tutor</span>
               )}
               {(t.session_count ?? 0) > 0 && (
-                <span className="ml-2">· {t.session_count} session{t.session_count === 1 ? "" : "s"}</span>
+                <span className="ml-2">
+                  · {t.session_count} session{t.session_count === 1 ? "" : "s"}
+                </span>
               )}
             </div>
             <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
@@ -149,7 +185,9 @@ function TutorCard({ t }: { t: TutorRow }) {
             </p>
             <div className="mt-3 flex flex-wrap gap-1">
               {(t.subjects ?? []).slice(0, 4).map((s) => (
-                <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+                <Badge key={s} variant="secondary" className="text-xs">
+                  {s}
+                </Badge>
               ))}
             </div>
             {t.hourly_rate != null && (
@@ -165,7 +203,9 @@ function TutorCard({ t }: { t: TutorRow }) {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm">
-                <Link to="/tutor/$id" params={{ id: t.id }}>View profile</Link>
+                <Link to="/tutor/$id" params={{ id: t.id }}>
+                  View profile
+                </Link>
               </Button>
             </div>
           </div>
@@ -190,13 +230,28 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
 
   useEffect(() => {
     if (!open || !user) return;
-    supabase.from("profiles").select("free_minutes_remaining").eq("id", user.id).single()
-      .then(({ data }) => setFreeMinutes((data as { free_minutes_remaining?: number } | null)?.free_minutes_remaining ?? 0));
+    supabase
+      .from("profiles")
+      .select("free_minutes_remaining")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) =>
+        setFreeMinutes(
+          (data as { free_minutes_remaining?: number } | null)?.free_minutes_remaining ?? 0,
+        ),
+      );
   }, [open, user]);
 
   if (!user) {
     return (
-      <Button size="sm" className="w-full bg-aurora text-white" onClick={() => { toast.info("Please sign in to book"); navigate({ to: "/auth" }); }}>
+      <Button
+        size="sm"
+        className="w-full bg-aurora text-white"
+        onClick={() => {
+          toast.info("Please sign in to book");
+          navigate({ to: "/auth" });
+        }}
+      >
         <CalendarPlus className="mr-1 h-4 w-4" /> Book session
       </Button>
     );
@@ -217,8 +272,14 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
     setLoading(true);
     try {
       const scheduledAt = new Date(`${date}T${time}`);
-      if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) { toast.error("Pick a future date and time"); return; }
-      if (user.id === tutor.id) { toast.error("You can't book a session with yourself"); return; }
+      if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) {
+        toast.error("Pick a future date and time");
+        return;
+      }
+      if (user.id === tutor.id) {
+        toast.error("You can't book a session with yourself");
+        return;
+      }
       const { data, error } = await supabase.rpc("book_session", {
         _tutor: tutor.id,
         _start: scheduledAt.toISOString(),
@@ -229,9 +290,12 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
       });
       const insertedId = (data as string[] | null)?.[0];
       if (error) {
-        const msg = /Not authenticated|Not authorized|Not enough free minutes|subscription or prepaid lessons/i.test(error.message)
-          ? "You can't book this session. Make sure you're signed in as a student and entitled to book paid lessons."
-          : error.message;
+        const msg =
+          /Not authenticated|Not authorized|Not enough free minutes|subscription or prepaid lessons/i.test(
+            error.message,
+          )
+            ? "You can't book this session. Make sure you're signed in as a student and entitled to book paid lessons."
+            : error.message;
         throw new Error(msg);
       }
       if (insertedId) {
@@ -240,7 +304,11 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
       toast.success("Session booked!");
       setOpen(false);
       navigate({ to: "/dashboard" });
-    } catch (e) { toast.error((e as Error).message); } finally { setLoading(false); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -260,21 +328,41 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
             <div className="space-y-1.5">
               <Label>Subject</Label>
               <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger><SelectValue placeholder="Choose subject" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose subject" />
+                </SelectTrigger>
                 <SelectContent>
-                  {subjects.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {subjects.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5"><Label>Date</Label><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Time</Label><Input type="time" value={time} onChange={(e) => setTime(e.target.value)} /></div>
+            <div className="space-y-1.5">
+              <Label>Date</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Time</Label>
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label>Duration</Label>
-            <Select value={duration} onValueChange={(v) => { setDuration(v); if (Number(v) > freeMinutes) setUseFree(false); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={duration}
+              onValueChange={(v) => {
+                setDuration(v);
+                if (Number(v) > freeMinutes) setUseFree(false);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="30">30 min</SelectItem>
                 <SelectItem value="60">1 hour</SelectItem>
@@ -284,18 +372,36 @@ function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
             </Select>
           </div>
           {freeMinutes > 0 && (
-            <label className={`flex items-start gap-3 rounded-md border p-3 text-sm ${canUseFree ? "cursor-pointer hover:bg-muted/40" : "opacity-60"}`}>
-              <input type="checkbox" className="mt-1" checked={useFree} disabled={!canUseFree} onChange={(e) => setUseFree(e.target.checked)} />
+            <label
+              className={`flex items-start gap-3 rounded-md border p-3 text-sm ${canUseFree ? "cursor-pointer hover:bg-muted/40" : "opacity-60"}`}
+            >
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={useFree}
+                disabled={!canUseFree}
+                onChange={(e) => setUseFree(e.target.checked)}
+              />
               <div className="flex-1">
-                <div className="flex items-center gap-1.5 font-medium"><Gift className="h-4 w-4 text-gold" /> Use a free welcome lesson</div>
-                <p className="text-xs text-muted-foreground">You have <strong>{freeMinutes} minutes</strong> remaining.</p>
+                <div className="flex items-center gap-1.5 font-medium">
+                  <Gift className="h-4 w-4 text-gold" /> Use a free welcome lesson
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  You have <strong>{freeMinutes} minutes</strong> remaining.
+                </p>
               </div>
             </label>
           )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={submit} disabled={loading || !date || !time} className="bg-aurora text-white">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={submit}
+            disabled={loading || !date || !time}
+            className="bg-aurora text-white"
+          >
             {loading ? "Booking…" : "Confirm booking"}
           </Button>
         </DialogFooter>

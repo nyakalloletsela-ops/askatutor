@@ -15,13 +15,13 @@ cp .env.example .env # then fill in the values
 
 ## 2. Required environment variables
 
-| Variable | Needed for |
-| --- | --- |
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` | browser Supabase client |
-| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | server functions, webhooks, email |
-| `PUBLIC_BASE_URL`, `VITE_PUBLIC_BASE_URL` | absolute links in emails, PayPal returns |
-| `AI_PROVIDER` + `GEMINI_API_KEY` / `GROQ_API_KEY` / `OLLAMA_BASE_URL` | AI tutor, tools, simulation lab, whiteboard OCR |
-| `EMAIL_PROVIDER=resend` + `RESEND_API_KEY`, `EMAIL_FROM_DOMAIN` | booking / help / welcome emails |
+| Variable                                                                         | Needed for                                      |
+| -------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` | browser Supabase client                         |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`          | server functions, webhooks, email               |
+| `PUBLIC_BASE_URL`, `VITE_PUBLIC_BASE_URL`                                        | absolute links in emails, PayPal returns        |
+| `AI_PROVIDER` + `GEMINI_API_KEY` / `GROQ_API_KEY` / `OLLAMA_BASE_URL`            | AI tutor, tools, simulation lab, whiteboard OCR |
+| `EMAIL_PROVIDER=resend` + `RESEND_API_KEY`, `EMAIL_FROM_DOMAIN`                  | booking / help / welcome emails                 |
 
 Full list with comments: `.env.example`.
 
@@ -97,14 +97,14 @@ bun run build && bunx wrangler deploy
 
 ## 6. Architecture notes
 
-| Concern | File |
-| --- | --- |
-| Request handler (host-neutral) | `src/lib/server/platform.ts` |
-| Worker/edge entry | `src/server.ts` |
-| Node entry | `scripts/start-node.mjs` |
-| AI provider adapter | `src/lib/ai/provider.server.ts` |
-| Email provider adapter | `src/lib/email/provider.server.ts` (+ `enqueue.server.ts`) |
-| Email templates | `src/lib/email-templates/` |
+| Concern                        | File                                                       |
+| ------------------------------ | ---------------------------------------------------------- |
+| Request handler (host-neutral) | `src/lib/server/platform.ts`                               |
+| Worker/edge entry              | `src/server.ts`                                            |
+| Node entry                     | `scripts/start-node.mjs`                                   |
+| AI provider adapter            | `src/lib/ai/provider.server.ts`                            |
+| Email provider adapter         | `src/lib/email/provider.server.ts` (+ `enqueue.server.ts`) |
+| Email templates                | `src/lib/email-templates/`                                 |
 
 Adding another AI or email provider means one new branch in the matching
 adapter — no other code changes.

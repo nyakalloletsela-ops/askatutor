@@ -1,19 +1,64 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+} from "react";
 import { Button } from "../../../8-core-ux-navigation/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../../../8-core-ux-navigation/ui/popover";
 import { useIsMobile } from "../../../../capabilities/b-multi-device-adaptation/hooks/use-mobile";
 import { toast } from "sonner";
 import {
-  MousePointer2, Pencil, Highlighter, Eraser, Minus, ArrowUpRight,
-  Square, Circle, Triangle, Type, StickyNote, ImagePlus, Hand,
-  Undo2, Redo2, Trash2, Download, Lock, Unlock, Maximize2, Grid3x3, CircleDot, Eye, LineChart, ZoomIn, ZoomOut,
-  Copy, ChevronUp, ChevronDown, MoreHorizontal,
+  MousePointer2,
+  Pencil,
+  Highlighter,
+  Eraser,
+  Minus,
+  ArrowUpRight,
+  Square,
+  Circle,
+  Triangle,
+  Type,
+  StickyNote,
+  ImagePlus,
+  Hand,
+  Undo2,
+  Redo2,
+  Trash2,
+  Download,
+  Lock,
+  Unlock,
+  Maximize2,
+  Grid3x3,
+  CircleDot,
+  Eye,
+  LineChart,
+  ZoomIn,
+  ZoomOut,
+  Copy,
+  ChevronUp,
+  ChevronDown,
+  MoreHorizontal,
 } from "lucide-react";
-import { loadWhiteboard, saveWhiteboard } from "@/application/use-cases/classroom/whiteboard-persistence";
+import {
+  loadWhiteboard,
+  saveWhiteboard,
+} from "@/application/use-cases/classroom/whiteboard-persistence";
 
 import {
-  type Shape, type ToolId, type Camera, nextId, tick, observeTs, hitTest, translateShape, shapeBounds,
+  type Shape,
+  type ToolId,
+  type Camera,
+  nextId,
+  tick,
+  observeTs,
+  hitTest,
+  translateShape,
+  shapeBounds,
 } from "./engine";
 import { render } from "./renderer";
 import { simplifyPoints } from "./smooth";
@@ -39,11 +84,21 @@ interface Props {
   isTeacher?: boolean;
 }
 
-const COLORS = ["#0f172a", "#ef4444", "#f59e0b", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#ffffff"];
+const COLORS = [
+  "#0f172a",
+  "#ef4444",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#ffffff",
+];
 const SIZES = [2, 4, 6, 10, 16];
 
 export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboard(
-  { roomId, userId, userName, isTeacher = false }, ref,
+  { roomId, userId, userName, isTeacher = false },
+  ref,
 ) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -61,7 +116,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     | { kind: "translate"; lastPage: { x: number; y: number } }
     | { kind: "draw" }
     | { kind: "marquee"; sx: number; sy: number }
-    | { kind: "resize"; corner: "nw" | "ne" | "sw" | "se"; shapeId: string; start: { x: number; y: number; w: number; h: number } }
+    | {
+        kind: "resize";
+        corner: "nw" | "ne" | "sw" | "se";
+        shapeId: string;
+        start: { x: number; y: number; w: number; h: number };
+      }
     | { kind: "endpoint"; which: 1 | 2; shapeId: string };
   const dragRef = useRef<Drag | null>(null);
   const marqueeRef = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
@@ -71,7 +131,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   // Multi-touch (pinch-zoom + two-finger pan).
   const activeTouchesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinchRef = useRef<{
-    startDist: number; startZ: number;
+    startDist: number;
+    startZ: number;
     startMid: { x: number; y: number };
     startCam: { x: number; y: number };
   } | null>(null);
@@ -84,10 +145,22 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const [filled, setFilled] = useState<boolean>(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [grid, setGrid] = useState<"off" | "grid" | "dots" | "graph">("off");
-  const [graphAxes, setGraphAxes] = useState<{ xMin: number; xMax: number; yMin: number; yMax: number }>({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
+  const [graphAxes, setGraphAxes] = useState<{
+    xMin: number;
+    xMax: number;
+    yMin: number;
+    yMax: number;
+  }>({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
   const [locked, setLocked] = useState<boolean>(false);
   const [fullscreen, setFullscreen] = useState<boolean>(false);
-  const [textEdit, setTextEdit] = useState<{ shapeId: string; screenX: number; screenY: number; w: number; h: number; value: string } | null>(null);
+  const [textEdit, setTextEdit] = useState<{
+    shapeId: string;
+    screenX: number;
+    screenY: number;
+    w: number;
+    h: number;
+    value: string;
+  } | null>(null);
   const [, force] = useState(0);
   const repaint = useCallback(() => force((n) => n + 1), []);
 
@@ -95,7 +168,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
 
   // ----- realtime -----
   const { sendOp, sendCursor } = useWhiteboardRealtime({
-    roomId, selfId: userId,
+    roomId,
+    selfId: userId,
     onOp: (op) => {
       if (op.kind === "upsert") {
         observeTs(op.shape.ts);
@@ -120,7 +194,10 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       peersRef.current.set(c.senderId, { ...c, lastSeen: Date.now() });
       repaint();
     },
-    onPeerLeave: (id) => { peersRef.current.delete(id); repaint(); },
+    onPeerLeave: (id) => {
+      peersRef.current.delete(id);
+      repaint();
+    },
   });
 
   // ----- load snapshot -----
@@ -130,17 +207,27 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       try {
         const snap = await loadWhiteboard({ data: { roomId } });
         if (cancelled || !snap) return;
-        const d = snap.snapshot_data as { version?: number; shapes?: Shape[]; locked?: boolean } | null;
+        const d = snap.snapshot_data as {
+          version?: number;
+          shapes?: Shape[];
+          locked?: boolean;
+        } | null;
         if (d && d.version === 1 && Array.isArray(d.shapes)) {
           shapesRef.current = d.shapes;
           d.shapes.forEach((s) => observeTs(s.ts));
-          d.shapes.forEach((s) => { if (s.type === "image") cacheImage(s.src); });
+          d.shapes.forEach((s) => {
+            if (s.type === "image") cacheImage(s.src);
+          });
           if (typeof d.locked === "boolean") setLocked(d.locked);
           scheduleRender();
         }
-      } catch { /* noop */ }
+      } catch {
+        /* noop */
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [roomId]);
 
   // ----- autosave -----
@@ -156,7 +243,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             snapshotData: { version: 1, room: roomId, shapes: shapesRef.current, locked },
           },
         });
-      } catch { /* noop */ }
+      } catch {
+        /* noop */
+      }
     }, 8000);
     return () => clearInterval(id);
   }, [roomId, locked]);
@@ -167,12 +256,21 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     if (scheduleRenderRef.current !== null) return;
     scheduleRenderRef.current = requestAnimationFrame(() => {
       scheduleRenderRef.current = null;
-      const canvas = canvasRef.current; if (!canvas) return;
-      const ctx = canvas.getContext("2d"); if (!ctx) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
       render({
-        ctx, shapes: shapesRef.current.concat(drawingRef.current ? [drawingRef.current] : []),
-        camera: cameraRef.current, width: sizeRef.current.w, height: sizeRef.current.h,
-        dpr: dprRef.current, grid, selection, marquee: marqueeRef.current, imageCache: imageCacheRef.current,
+        ctx,
+        shapes: shapesRef.current.concat(drawingRef.current ? [drawingRef.current] : []),
+        camera: cameraRef.current,
+        width: sizeRef.current.w,
+        height: sizeRef.current.h,
+        dpr: dprRef.current,
+        grid,
+        selection,
+        marquee: marqueeRef.current,
+        imageCache: imageCacheRef.current,
         graphAxes,
       });
     });
@@ -196,7 +294,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     return () => ro.disconnect();
   }, [scheduleRender]);
 
-  useEffect(() => { scheduleRender(); }, [grid, selection, graphAxes, scheduleRender]);
+  useEffect(() => {
+    scheduleRender();
+  }, [grid, selection, graphAxes, scheduleRender]);
 
   // ----- coordinate helpers -----
   const screenToPage = (sx: number, sy: number) => {
@@ -215,14 +315,18 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     historyRef.current.future = [];
   };
   const undo = () => {
-    const h = historyRef.current; const prev = h.past.pop(); if (!prev) return;
+    const h = historyRef.current;
+    const prev = h.past.pop();
+    if (!prev) return;
     h.future.push(shapesRef.current);
     shapesRef.current = prev;
     setSelection(new Set());
     scheduleRender();
   };
   const redo = () => {
-    const h = historyRef.current; const nxt = h.future.pop(); if (!nxt) return;
+    const h = historyRef.current;
+    const nxt = h.future.pop();
+    if (!nxt) return;
     h.past.push(shapesRef.current);
     shapesRef.current = nxt;
     setSelection(new Set());
@@ -231,8 +335,10 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
 
   // ----- shape ops with broadcast -----
   const upsertShape = (s: Shape, broadcast = true) => {
-    const arr = shapesRef.current; const idx = arr.findIndex((x) => x.id === s.id);
-    if (idx >= 0) arr[idx] = s; else arr.push(s);
+    const arr = shapesRef.current;
+    const idx = arr.findIndex((x) => x.id === s.id);
+    if (idx >= 0) arr[idx] = s;
+    else arr.push(s);
     if (broadcast) sendOp({ kind: "upsert", shape: s });
     scheduleRender();
   };
@@ -264,7 +370,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             snapshotData: { version: 1, room: roomId, shapes: shapesRef.current, locked: next },
           },
         });
-      } catch { /* noop */ }
+      } catch {
+        /* noop */
+      }
     })();
   };
 
@@ -274,7 +382,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => scheduleRender();
-    img.onerror = () => { /* noop */ };
+    img.onerror = () => {
+      /* noop */
+    };
     img.src = src;
     imageCacheRef.current.set(src, img);
   };
@@ -294,7 +404,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const onPointerDown = (e: React.PointerEvent) => {
     if (textEdit) return;
     const rect = wrapperRef.current!.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const sx = e.clientX - rect.left,
+      sy = e.clientY - rect.top;
     (e.target as Element).setPointerCapture?.(e.pointerId);
 
     // Multi-touch → pinch/pan and abort any current single-finger draw.
@@ -303,11 +414,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       if (activeTouchesRef.current.size >= 2) {
         cancelCurrentDraw();
         const pts = Array.from(activeTouchesRef.current.values()).slice(0, 2);
-        const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+        const dx = pts[1].x - pts[0].x,
+          dy = pts[1].y - pts[0].y;
         const dist = Math.max(1, Math.hypot(dx, dy));
         const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
         pinchRef.current = {
-          startDist: dist, startZ: cameraRef.current.z,
+          startDist: dist,
+          startZ: cameraRef.current.z,
           startMid: mid,
           startCam: { x: cameraRef.current.x, y: cameraRef.current.y },
         };
@@ -319,7 +432,13 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
 
     // Pan: middle button, space, or hand tool.
     if (e.button === 1 || spaceDownRef.current || tool === "hand") {
-      dragRef.current = { kind: "pan", sx, sy, camX: cameraRef.current.x, camY: cameraRef.current.y };
+      dragRef.current = {
+        kind: "pan",
+        sx,
+        sy,
+        camX: cameraRef.current.x,
+        camY: cameraRef.current.y,
+      };
       return;
     }
     if (isReadOnly) return;
@@ -354,13 +473,48 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     if (tool === "text" || tool === "sticky") {
       pushHistory();
       const id = nextId();
-      const w = 220, h = tool === "sticky" ? 140 : 60;
-      const shape: Shape = tool === "sticky"
-        ? { id, type: "sticky", x: pg.x, y: pg.y, w, h, text: "", bg: "#fde68a", color: "#1f2937", z: topZ() + 1, page: 1, ts: tick() }
-        : { id, type: "text", x: pg.x, y: pg.y, w, h, text: "", color, size: Math.max(14, size * 4), z: topZ() + 1, page: 1, ts: tick() };
+      const w = 220,
+        h = tool === "sticky" ? 140 : 60;
+      const shape: Shape =
+        tool === "sticky"
+          ? {
+              id,
+              type: "sticky",
+              x: pg.x,
+              y: pg.y,
+              w,
+              h,
+              text: "",
+              bg: "#fde68a",
+              color: "#1f2937",
+              z: topZ() + 1,
+              page: 1,
+              ts: tick(),
+            }
+          : {
+              id,
+              type: "text",
+              x: pg.x,
+              y: pg.y,
+              w,
+              h,
+              text: "",
+              color,
+              size: Math.max(14, size * 4),
+              z: topZ() + 1,
+              page: 1,
+              ts: tick(),
+            };
       upsertShape(shape);
       const s = pageToScreen(pg.x, pg.y);
-      setTextEdit({ shapeId: id, screenX: s.x, screenY: s.y, w: w * cameraRef.current.z, h: h * cameraRef.current.z, value: "" });
+      setTextEdit({
+        shapeId: id,
+        screenX: s.x,
+        screenY: s.y,
+        w: w * cameraRef.current.z,
+        h: h * cameraRef.current.z,
+        value: "",
+      });
       setTimeout(() => textareaRef.current?.focus(), 0);
       return;
     }
@@ -368,9 +522,11 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     if (tool === "image") {
       // Trigger file picker
       const inp = document.createElement("input");
-      inp.type = "file"; inp.accept = "image/*";
+      inp.type = "file";
+      inp.accept = "image/*";
       inp.onchange = () => {
-        const f = inp.files?.[0]; if (!f) return;
+        const f = inp.files?.[0];
+        if (!f) return;
         const r = new FileReader();
         r.onload = () => {
           const src = r.result as string;
@@ -382,7 +538,18 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
             const h = ratio >= 1 ? max / ratio : max;
             cacheImage(src);
             pushHistory();
-            upsertShape({ id: nextId(), type: "image", x: pg.x, y: pg.y, w, h, src, z: topZ() + 1, page: 1, ts: tick() });
+            upsertShape({
+              id: nextId(),
+              type: "image",
+              x: pg.x,
+              y: pg.y,
+              w,
+              h,
+              src,
+              z: topZ() + 1,
+              page: 1,
+              ts: tick(),
+            });
           };
           img.src = src;
         };
@@ -396,13 +563,101 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     pushHistory();
     const id = nextId();
     let shape: Shape;
-    if (tool === "pencil") shape = { id, type: "pencil", points: [pg.x, pg.y], color, size, z: topZ() + 1, page: 1, ts: tick() };
-    else if (tool === "highlighter") shape = { id, type: "highlighter", points: [pg.x, pg.y], color, size, z: topZ() + 1, page: 1, ts: tick() };
-    else if (tool === "line") shape = { id, type: "line", x1: pg.x, y1: pg.y, x2: pg.x, y2: pg.y, color, size, z: topZ() + 1, page: 1, ts: tick() };
-    else if (tool === "arrow") shape = { id, type: "arrow", x1: pg.x, y1: pg.y, x2: pg.x, y2: pg.y, color, size, z: topZ() + 1, page: 1, ts: tick() };
-    else if (tool === "rect") shape = { id, type: "rect", x: pg.x, y: pg.y, w: 0, h: 0, color, size, fill: filled ? color + "33" : null, z: topZ() + 1, page: 1, ts: tick() };
-    else if (tool === "ellipse") shape = { id, type: "ellipse", x: pg.x, y: pg.y, w: 0, h: 0, color, size, fill: filled ? color + "33" : null, z: topZ() + 1, page: 1, ts: tick() };
-    else if (tool === "triangle") shape = { id, type: "triangle", x: pg.x, y: pg.y, w: 0, h: 0, color, size, fill: filled ? color + "33" : null, z: topZ() + 1, page: 1, ts: tick() };
+    if (tool === "pencil")
+      shape = {
+        id,
+        type: "pencil",
+        points: [pg.x, pg.y],
+        color,
+        size,
+        z: topZ() + 1,
+        page: 1,
+        ts: tick(),
+      };
+    else if (tool === "highlighter")
+      shape = {
+        id,
+        type: "highlighter",
+        points: [pg.x, pg.y],
+        color,
+        size,
+        z: topZ() + 1,
+        page: 1,
+        ts: tick(),
+      };
+    else if (tool === "line")
+      shape = {
+        id,
+        type: "line",
+        x1: pg.x,
+        y1: pg.y,
+        x2: pg.x,
+        y2: pg.y,
+        color,
+        size,
+        z: topZ() + 1,
+        page: 1,
+        ts: tick(),
+      };
+    else if (tool === "arrow")
+      shape = {
+        id,
+        type: "arrow",
+        x1: pg.x,
+        y1: pg.y,
+        x2: pg.x,
+        y2: pg.y,
+        color,
+        size,
+        z: topZ() + 1,
+        page: 1,
+        ts: tick(),
+      };
+    else if (tool === "rect")
+      shape = {
+        id,
+        type: "rect",
+        x: pg.x,
+        y: pg.y,
+        w: 0,
+        h: 0,
+        color,
+        size,
+        fill: filled ? color + "33" : null,
+        z: topZ() + 1,
+        page: 1,
+        ts: tick(),
+      };
+    else if (tool === "ellipse")
+      shape = {
+        id,
+        type: "ellipse",
+        x: pg.x,
+        y: pg.y,
+        w: 0,
+        h: 0,
+        color,
+        size,
+        fill: filled ? color + "33" : null,
+        z: topZ() + 1,
+        page: 1,
+        ts: tick(),
+      };
+    else if (tool === "triangle")
+      shape = {
+        id,
+        type: "triangle",
+        x: pg.x,
+        y: pg.y,
+        w: 0,
+        h: 0,
+        color,
+        size,
+        fill: filled ? color + "33" : null,
+        z: topZ() + 1,
+        page: 1,
+        ts: tick(),
+      };
     else return;
     drawingRef.current = shape;
     dragRef.current = { kind: "draw" };
@@ -411,7 +666,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
 
   const onPointerMove = (e: React.PointerEvent) => {
     const rect = wrapperRef.current!.getBoundingClientRect();
-    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const sx = e.clientX - rect.left,
+      sy = e.clientY - rect.top;
 
     // Update touch tracker and, if pinching, drive camera from the two-finger gesture.
     if (e.pointerType === "touch" && activeTouchesRef.current.has(e.pointerId)) {
@@ -419,7 +675,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     }
     if (pinchRef.current && activeTouchesRef.current.size >= 2) {
       const pts = Array.from(activeTouchesRef.current.values()).slice(0, 2);
-      const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+      const dx = pts[1].x - pts[0].x,
+        dy = pts[1].y - pts[0].y;
       const dist = Math.max(1, Math.hypot(dx, dy));
       const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
       const p = pinchRef.current;
@@ -427,8 +684,10 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       const k = newZ / p.startZ;
       // Zoom about the initial midpoint, then translate by midpoint delta for two-finger pan.
       cameraRef.current.z = newZ;
-      cameraRef.current.x = p.startMid.x - (p.startMid.x - p.startCam.x) * k + (mid.x - p.startMid.x);
-      cameraRef.current.y = p.startMid.y - (p.startMid.y - p.startCam.y) * k + (mid.y - p.startMid.y);
+      cameraRef.current.x =
+        p.startMid.x - (p.startMid.x - p.startCam.x) * k + (mid.x - p.startMid.x);
+      cameraRef.current.y =
+        p.startMid.y - (p.startMid.y - p.startCam.y) * k + (mid.y - p.startMid.y);
       scheduleRender();
       return;
     }
@@ -448,7 +707,8 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       return;
     }
     if (d.kind === "translate") {
-      const dx = pg.x - d.lastPage.x, dy = pg.y - d.lastPage.y;
+      const dx = pg.x - d.lastPage.x,
+        dy = pg.y - d.lastPage.y;
       d.lastPage = pg;
       const sel = selection;
       const arr = shapesRef.current;
@@ -461,29 +721,51 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       return;
     }
     if (d.kind === "marquee") {
-      marqueeRef.current = { x: Math.min(d.sx, sx), y: Math.min(d.sy, sy), w: Math.abs(sx - d.sx), h: Math.abs(sy - d.sy) };
+      marqueeRef.current = {
+        x: Math.min(d.sx, sx),
+        y: Math.min(d.sy, sy),
+        w: Math.abs(sx - d.sx),
+        h: Math.abs(sy - d.sy),
+      };
       scheduleRender();
       return;
     }
     if (d.kind === "resize") {
-      const arr = shapesRef.current; const idx = arr.findIndex((s) => s.id === d.shapeId);
+      const arr = shapesRef.current;
+      const idx = arr.findIndex((s) => s.id === d.shapeId);
       if (idx < 0) return;
       const s = arr[idx] as any;
       const st = d.start;
-      let nx = st.x, ny = st.y, nw = st.w, nh = st.h;
+      let nx = st.x,
+        ny = st.y,
+        nw = st.w,
+        nh = st.h;
       if (d.corner.includes("e")) nw = Math.max(8, pg.x - st.x);
       if (d.corner.includes("s")) nh = Math.max(8, pg.y - st.y);
-      if (d.corner.includes("w")) { nw = Math.max(8, st.x + st.w - pg.x); nx = st.x + st.w - nw; }
-      if (d.corner.includes("n")) { nh = Math.max(8, st.y + st.h - pg.y); ny = st.y + st.h - nh; }
+      if (d.corner.includes("w")) {
+        nw = Math.max(8, st.x + st.w - pg.x);
+        nx = st.x + st.w - nw;
+      }
+      if (d.corner.includes("n")) {
+        nh = Math.max(8, st.y + st.h - pg.y);
+        ny = st.y + st.h - nh;
+      }
       arr[idx] = { ...s, x: nx, y: ny, w: nw, h: nh, ts: tick() };
       scheduleRender();
       return;
     }
     if (d.kind === "endpoint") {
-      const arr = shapesRef.current; const idx = arr.findIndex((s) => s.id === d.shapeId);
+      const arr = shapesRef.current;
+      const idx = arr.findIndex((s) => s.id === d.shapeId);
       if (idx < 0) return;
       const s = arr[idx] as any;
-      if (d.which === 1) { s.x1 = pg.x; s.y1 = pg.y; } else { s.x2 = pg.x; s.y2 = pg.y; }
+      if (d.which === 1) {
+        s.x1 = pg.x;
+        s.y1 = pg.y;
+      } else {
+        s.x2 = pg.x;
+        s.y2 = pg.y;
+      }
       s.ts = tick();
       scheduleRender();
       return;
@@ -495,13 +777,16 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         if (hit) deleteShapes([hit.id]);
         return;
       }
-      const cur = drawingRef.current; if (!cur) return;
+      const cur = drawingRef.current;
+      if (!cur) return;
       if (cur.type === "pencil" || cur.type === "highlighter") {
         cur.points.push(pg.x, pg.y);
       } else if (cur.type === "line" || cur.type === "arrow") {
-        cur.x2 = pg.x; cur.y2 = pg.y;
+        cur.x2 = pg.x;
+        cur.y2 = pg.y;
       } else if (cur.type === "rect" || cur.type === "ellipse" || cur.type === "triangle") {
-        cur.w = pg.x - cur.x; cur.h = pg.y - cur.y;
+        cur.w = pg.x - cur.x;
+        cur.h = pg.y - cur.y;
       }
       cur.ts = tick();
       scheduleRender();
@@ -544,10 +829,16 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       const cur = drawingRef.current;
       if (cur) {
         // Normalise negative w/h for rectangles etc.
-        if ((cur.type === "rect" || cur.type === "ellipse" || cur.type === "triangle") && (cur.w < 0 || cur.h < 0)) {
-          const x = Math.min(cur.x, cur.x + cur.w), y = Math.min(cur.y, cur.y + cur.h);
-          (cur as any).w = Math.abs(cur.w); (cur as any).h = Math.abs(cur.h);
-          (cur as any).x = x; (cur as any).y = y;
+        if (
+          (cur.type === "rect" || cur.type === "ellipse" || cur.type === "triangle") &&
+          (cur.w < 0 || cur.h < 0)
+        ) {
+          const x = Math.min(cur.x, cur.x + cur.w),
+            y = Math.min(cur.y, cur.y + cur.h);
+          (cur as any).w = Math.abs(cur.w);
+          (cur as any).h = Math.abs(cur.h);
+          (cur as any).x = x;
+          (cur as any).y = y;
         }
         // Smooth freehand strokes by removing redundant points (RDP).
         if (cur.type === "pencil" || cur.type === "highlighter") {
@@ -571,14 +862,16 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const rect = wrap.getBoundingClientRect();
-      const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+      const sx = e.clientX - rect.left,
+        sy = e.clientY - rect.top;
       const cam = cameraRef.current;
       if (e.ctrlKey || e.metaKey) {
         // pinch-zoom
         const factor = Math.exp(-e.deltaY * 0.01);
         zoomAt(sx, sy, factor);
       } else {
-        cam.x -= e.deltaX; cam.y -= e.deltaY;
+        cam.x -= e.deltaX;
+        cam.y -= e.deltaY;
         scheduleRender();
       }
     };
@@ -600,78 +893,163 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const spaceDownRef = useRef(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (textEdit || (e.target as Element)?.tagName === "TEXTAREA" || (e.target as Element)?.tagName === "INPUT") return;
+      if (
+        textEdit ||
+        (e.target as Element)?.tagName === "TEXTAREA" ||
+        (e.target as Element)?.tagName === "INPUT"
+      )
+        return;
       const meta = e.ctrlKey || e.metaKey;
       // Non-mutating shortcuts always available
-      if (meta && e.key.toLowerCase() === "c") { e.preventDefault(); copySel(); return; }
-      if (e.key === " " && !spaceDownRef.current) { spaceDownRef.current = true; e.preventDefault(); return; }
-      if (e.key === "+") { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.2); return; }
-      if (e.key === "-") { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); return; }
+      if (meta && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        copySel();
+        return;
+      }
+      if (e.key === " " && !spaceDownRef.current) {
+        spaceDownRef.current = true;
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "+") {
+        zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.2);
+        return;
+      }
+      if (e.key === "-") {
+        zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8);
+        return;
+      }
       // Block all mutating shortcuts when the board is locked for this user
       if (isReadOnly) {
         if (e.key.toLowerCase() === "v") setTool("select");
         return;
       }
-      if (meta && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); undo(); return; }
-      if (meta && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) { e.preventDefault(); redo(); return; }
-      if (meta && e.key.toLowerCase() === "v") { e.preventDefault(); pasteSel(); return; }
-      if (meta && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateSel(); return; }
-      if (meta && e.key === "]") { e.preventDefault(); bringForward(); return; }
-      if (meta && e.key === "[") { e.preventDefault(); sendBackward(); return; }
-      if (e.key === "Delete" || e.key === "Backspace") { if (selection.size) { e.preventDefault(); deleteShapes([...selection]); } return; }
+      if (meta && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+      if (meta && (e.key.toLowerCase() === "y" || (e.shiftKey && e.key.toLowerCase() === "z"))) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        pasteSel();
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        duplicateSel();
+        return;
+      }
+      if (meta && e.key === "]") {
+        e.preventDefault();
+        bringForward();
+        return;
+      }
+      if (meta && e.key === "[") {
+        e.preventDefault();
+        sendBackward();
+        return;
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selection.size) {
+          e.preventDefault();
+          deleteShapes([...selection]);
+        }
+        return;
+      }
       const map: Record<string, ToolId> = {
-        v: "select", p: "pencil", h: "highlighter", e: "eraser", l: "line", a: "arrow",
-        r: "rect", o: "ellipse", t: "text", s: "sticky",
+        v: "select",
+        p: "pencil",
+        h: "highlighter",
+        e: "eraser",
+        l: "line",
+        a: "arrow",
+        r: "rect",
+        o: "ellipse",
+        t: "text",
+        s: "sticky",
       };
       if (map[e.key.toLowerCase()]) setTool(map[e.key.toLowerCase()]);
     };
-    const onUp = (e: KeyboardEvent) => { if (e.key === " ") spaceDownRef.current = false; };
+    const onUp = (e: KeyboardEvent) => {
+      if (e.key === " ") spaceDownRef.current = false;
+    };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onUp);
-    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("keyup", onUp); };
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onUp);
+    };
   }, [selection, textEdit, isReadOnly]);
 
   // ----- clipboard ops -----
   const clipRef = useRef<Shape[]>([]);
-  const copySel = () => { clipRef.current = shapesRef.current.filter((s) => selection.has(s.id)).map((s) => ({ ...s })); };
+  const copySel = () => {
+    clipRef.current = shapesRef.current.filter((s) => selection.has(s.id)).map((s) => ({ ...s }));
+  };
   const pasteSel = () => {
     if (!clipRef.current.length) return;
     pushHistory();
     const cam = cameraRef.current;
     const ids = new Set<string>();
     for (const s of clipRef.current) {
-      const ns = { ...translateShape(s, 24 / cam.z, 24 / cam.z), id: nextId(), z: topZ() + 1, ts: tick() } as Shape;
-      shapesRef.current.push(ns); ids.add(ns.id);
+      const ns = {
+        ...translateShape(s, 24 / cam.z, 24 / cam.z),
+        id: nextId(),
+        z: topZ() + 1,
+        ts: tick(),
+      } as Shape;
+      shapesRef.current.push(ns);
+      ids.add(ns.id);
       sendOp({ kind: "upsert", shape: ns });
     }
     setSelection(ids);
     scheduleRender();
   };
-  const duplicateSel = () => { copySel(); pasteSel(); };
+  const duplicateSel = () => {
+    copySel();
+    pasteSel();
+  };
 
   const topZ = () => shapesRef.current.reduce((m, s) => Math.max(m, s.z), 0);
   const bringForward = () => {
     pushHistory();
     const max = topZ();
-    for (const s of shapesRef.current) if (selection.has(s.id)) { s.z = max + 1; s.ts = tick(); sendOp({ kind: "upsert", shape: s }); }
+    for (const s of shapesRef.current)
+      if (selection.has(s.id)) {
+        s.z = max + 1;
+        s.ts = tick();
+        sendOp({ kind: "upsert", shape: s });
+      }
     scheduleRender();
   };
   const sendBackward = () => {
     pushHistory();
     const min = shapesRef.current.reduce((m, s) => Math.min(m, s.z), 0);
-    for (const s of shapesRef.current) if (selection.has(s.id)) { s.z = min - 1; s.ts = tick(); sendOp({ kind: "upsert", shape: s }); }
+    for (const s of shapesRef.current)
+      if (selection.has(s.id)) {
+        s.z = min - 1;
+        s.ts = tick();
+        sendOp({ kind: "upsert", shape: s });
+      }
     scheduleRender();
   };
 
   // ----- text-edit commit -----
   const commitTextEdit = () => {
     if (!textEdit) return;
-    const arr = shapesRef.current; const idx = arr.findIndex((s) => s.id === textEdit.shapeId);
+    const arr = shapesRef.current;
+    const idx = arr.findIndex((s) => s.id === textEdit.shapeId);
     if (idx >= 0) {
       const s = arr[idx];
       if (s.type === "text" || s.type === "sticky") {
         const next = { ...s, text: textEdit.value, ts: tick() } as Shape;
-        arr[idx] = next; sendOp({ kind: "upsert", shape: next });
+        arr[idx] = next;
+        sendOp({ kind: "upsert", shape: next });
       }
     }
     setTextEdit(null);
@@ -682,65 +1060,107 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   const cursorLast = useRef(0);
   const cursorThrottle = (fn: () => void) => {
     const now = performance.now();
-    if (now - cursorLast.current > 40) { cursorLast.current = now; fn(); }
+    if (now - cursorLast.current > 40) {
+      cursorLast.current = now;
+      fn();
+    }
   };
   const userColor = useMemo(() => hashColor(userId), [userId]);
 
   // ----- fullscreen -----
   const toggleFullscreen = async () => {
-    const el = wrapperRef.current; if (!el) return;
+    const el = wrapperRef.current;
+    if (!el) return;
     try {
-      if (!document.fullscreenElement) { await el.requestFullscreen(); setFullscreen(true); }
-      else { await document.exitFullscreen(); setFullscreen(false); }
-    } catch { /* noop */ }
+      if (!document.fullscreenElement) {
+        await el.requestFullscreen();
+        setFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setFullscreen(false);
+      }
+    } catch {
+      /* noop */
+    }
   };
 
   // ----- imperative handle (also exposed locally for in-component children like ConvertButton) -----
-  const handle = useMemo<WhiteboardHandle>(() => ({
-    async exportPng(opts) {
-      const list = opts?.onlyHandwriting
-        ? shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter")
-        : shapesRef.current;
-      if (!list.length) return "";
-      let xmn = Infinity, ymn = Infinity, xmx = -Infinity, ymx = -Infinity;
-      for (const s of list) {
-        const b = shapeBounds(s);
-        if (b.x < xmn) xmn = b.x; if (b.y < ymn) ymn = b.y;
-        if (b.x + b.w > xmx) xmx = b.x + b.w; if (b.y + b.h > ymx) ymx = b.y + b.h;
-      }
-      if (!isFinite(xmn)) return "";
-      const pad = opts?.padding ?? 24;
-      const scale = 1.5;
-      const w = Math.ceil((xmx - xmn + pad * 2) * scale), h = Math.ceil((ymx - ymn + pad * 2) * scale);
-      const c = document.createElement("canvas"); c.width = w; c.height = h;
-      const cx = c.getContext("2d")!;
-      cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h);
-      render({
-        ctx: cx, shapes: list,
-        camera: { x: (-xmn + pad) * scale, y: (-ymn + pad) * scale, z: scale },
-        width: w, height: h, dpr: 1, grid: "off", imageCache: imageCacheRef.current,
-      });
-      return c.toDataURL("image/png");
-    },
-    getShapes: () => shapesRef.current.slice(),
-    setShapes: (next) => { shapesRef.current = next.map((s) => ({ ...s })); scheduleRender(); },
-    deleteShapes,
-    addShapes: (shapes) => {
-      pushHistory();
-      for (const s of shapes) {
-        if (s.type === "image") cacheImage(s.src);
-        shapesRef.current.push(s);
-        sendOp({ kind: "upsert", shape: s });
-      }
-      scheduleRender();
-    },
-  }), []);
+  const handle = useMemo<WhiteboardHandle>(
+    () => ({
+      async exportPng(opts) {
+        const list = opts?.onlyHandwriting
+          ? shapesRef.current.filter((s) => s.type === "pencil" || s.type === "highlighter")
+          : shapesRef.current;
+        if (!list.length) return "";
+        let xmn = Infinity,
+          ymn = Infinity,
+          xmx = -Infinity,
+          ymx = -Infinity;
+        for (const s of list) {
+          const b = shapeBounds(s);
+          if (b.x < xmn) xmn = b.x;
+          if (b.y < ymn) ymn = b.y;
+          if (b.x + b.w > xmx) xmx = b.x + b.w;
+          if (b.y + b.h > ymx) ymx = b.y + b.h;
+        }
+        if (!isFinite(xmn)) return "";
+        const pad = opts?.padding ?? 24;
+        const scale = 1.5;
+        const w = Math.ceil((xmx - xmn + pad * 2) * scale),
+          h = Math.ceil((ymx - ymn + pad * 2) * scale);
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const cx = c.getContext("2d")!;
+        cx.fillStyle = "#fff";
+        cx.fillRect(0, 0, w, h);
+        render({
+          ctx: cx,
+          shapes: list,
+          camera: { x: (-xmn + pad) * scale, y: (-ymn + pad) * scale, z: scale },
+          width: w,
+          height: h,
+          dpr: 1,
+          grid: "off",
+          imageCache: imageCacheRef.current,
+        });
+        return c.toDataURL("image/png");
+      },
+      getShapes: () => shapesRef.current.slice(),
+      setShapes: (next) => {
+        shapesRef.current = next.map((s) => ({ ...s }));
+        scheduleRender();
+      },
+      deleteShapes,
+      addShapes: (shapes) => {
+        pushHistory();
+        for (const s of shapes) {
+          if (s.type === "image") cacheImage(s.src);
+          shapesRef.current.push(s);
+          sendOp({ kind: "upsert", shape: s });
+        }
+        scheduleRender();
+      },
+    }),
+    [],
+  );
   useImperativeHandle(ref, () => handle, [handle]);
 
   // ----- toolbar -----
-  const ToolBtn = ({ id, icon: Icon, label, shortcut }: { id: ToolId; icon: typeof Pencil; label: string; shortcut?: string }) => (
+  const ToolBtn = ({
+    id,
+    icon: Icon,
+    label,
+    shortcut,
+  }: {
+    id: ToolId;
+    icon: typeof Pencil;
+    label: string;
+    shortcut?: string;
+  }) => (
     <Button
-      size="icon" variant={tool === id ? "default" : "ghost"}
+      size="icon"
+      variant={tool === id ? "default" : "ghost"}
       className="h-9 w-9 shrink-0"
       onClick={() => setTool(id)}
       title={shortcut ? `${label} (${shortcut})` : label}
@@ -750,7 +1170,15 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       <Icon className="h-4 w-4" />
     </Button>
   );
-  const IconTile = ({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) => (
+  const IconTile = ({
+    onClick,
+    label,
+    children,
+  }: {
+    onClick: () => void;
+    label: string;
+    children: React.ReactNode;
+  }) => (
     <button
       type="button"
       onClick={onClick}
@@ -783,14 +1211,22 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         onDoubleClick={(e) => {
           if (isReadOnly) return;
           const rect = wrapperRef.current!.getBoundingClientRect();
-          const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+          const sx = e.clientX - rect.left,
+            sy = e.clientY - rect.top;
           const pg = screenToPage(sx, sy);
           const sorted = [...shapesRef.current].sort((a, b) => b.z - a.z);
           const hit = sorted.find((s) => hitTest(s, pg.x, pg.y));
           if (hit && (hit.type === "text" || hit.type === "sticky")) {
             const sc = pageToScreen(hit.x, hit.y);
             setSelection(new Set([hit.id]));
-            setTextEdit({ shapeId: hit.id, screenX: sc.x, screenY: sc.y, w: hit.w * cameraRef.current.z, h: hit.h * cameraRef.current.z, value: hit.text });
+            setTextEdit({
+              shapeId: hit.id,
+              screenX: sc.x,
+              screenY: sc.y,
+              w: hit.w * cameraRef.current.z,
+              h: hit.h * cameraRef.current.z,
+              value: hit.text,
+            });
             setTimeout(() => textareaRef.current?.focus(), 0);
           }
         }}
@@ -806,7 +1242,12 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           (e.target as Element).setPointerCapture?.(e.pointerId);
           pushHistory();
           const b = shapeBounds(s);
-          dragRef.current = { kind: "resize", corner, shapeId: s.id, start: { x: b.x, y: b.y, w: b.w, h: b.h } };
+          dragRef.current = {
+            kind: "resize",
+            corner,
+            shapeId: s.id,
+            start: { x: b.x, y: b.y, w: b.w, h: b.h },
+          };
         };
         const startEndpoint = (which: 1 | 2, e: React.PointerEvent) => {
           e.stopPropagation();
@@ -819,30 +1260,56 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           onPointerUp: onPointerUp as unknown as React.PointerEventHandler,
         };
         if (s.type === "line" || s.type === "arrow") {
-          const a = pageToScreen(s.x1, s.y1), b = pageToScreen(s.x2, s.y2);
+          const a = pageToScreen(s.x1, s.y1),
+            b = pageToScreen(s.x2, s.y2);
           return (
             <>
-              <div {...handleProps} onPointerDown={(e) => startEndpoint(1, e)} style={handleStyle(a.x, a.y, "move")} />
-              <div {...handleProps} onPointerDown={(e) => startEndpoint(2, e)} style={handleStyle(b.x, b.y, "move")} />
+              <div
+                {...handleProps}
+                onPointerDown={(e) => startEndpoint(1, e)}
+                style={handleStyle(a.x, a.y, "move")}
+              />
+              <div
+                {...handleProps}
+                onPointerDown={(e) => startEndpoint(2, e)}
+                style={handleStyle(b.x, b.y, "move")}
+              />
             </>
           );
         }
         if (["rect", "ellipse", "triangle", "text", "sticky", "image"].includes(s.type)) {
           const b = shapeBounds(s);
-          const tl = pageToScreen(b.x, b.y), br = pageToScreen(b.x + b.w, b.y + b.h);
-          const tr = { x: br.x, y: tl.y }, bl = { x: tl.x, y: br.y };
+          const tl = pageToScreen(b.x, b.y),
+            br = pageToScreen(b.x + b.w, b.y + b.h);
+          const tr = { x: br.x, y: tl.y },
+            bl = { x: tl.x, y: br.y };
           return (
             <>
-              <div {...handleProps} onPointerDown={(e) => startResize("nw", e)} style={handleStyle(tl.x, tl.y, "nwse-resize")} />
-              <div {...handleProps} onPointerDown={(e) => startResize("ne", e)} style={handleStyle(tr.x, tr.y, "nesw-resize")} />
-              <div {...handleProps} onPointerDown={(e) => startResize("sw", e)} style={handleStyle(bl.x, bl.y, "nesw-resize")} />
-              <div {...handleProps} onPointerDown={(e) => startResize("se", e)} style={handleStyle(br.x, br.y, "nwse-resize")} />
+              <div
+                {...handleProps}
+                onPointerDown={(e) => startResize("nw", e)}
+                style={handleStyle(tl.x, tl.y, "nwse-resize")}
+              />
+              <div
+                {...handleProps}
+                onPointerDown={(e) => startResize("ne", e)}
+                style={handleStyle(tr.x, tr.y, "nesw-resize")}
+              />
+              <div
+                {...handleProps}
+                onPointerDown={(e) => startResize("sw", e)}
+                style={handleStyle(bl.x, bl.y, "nesw-resize")}
+              />
+              <div
+                {...handleProps}
+                onPointerDown={(e) => startResize("se", e)}
+                style={handleStyle(br.x, br.y, "nwse-resize")}
+              />
             </>
           );
         }
         return null;
       })()}
-
 
       {/* Live cursors */}
       <LiveCursors peers={peers} project={pageToScreen} />
@@ -853,36 +1320,97 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         {!isMobile && (
           <>
             <span className="h-4 w-px shrink-0 bg-border" />
-            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); force((n) => n + 1); }} title="Zoom out">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 shrink-0 p-0"
+              onClick={() => {
+                zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8);
+                force((n) => n + 1);
+              }}
+              title="Zoom out"
+            >
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
             <button
               type="button"
-              onClick={() => { const c = cameraRef.current; c.x = 0; c.y = 0; c.z = 1; scheduleRender(); force((n) => n + 1); }}
+              onClick={() => {
+                const c = cameraRef.current;
+                c.x = 0;
+                c.y = 0;
+                c.z = 1;
+                scheduleRender();
+                force((n) => n + 1);
+              }}
               className="min-w-[3.25rem] shrink-0 rounded px-1 text-center font-mono text-[11px] tabular-nums text-muted-foreground hover:bg-muted hover:text-foreground"
               title="Reset zoom & pan"
             >
               {Math.round(cameraRef.current.z * 100)}%
             </button>
-            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.25); force((n) => n + 1); }} title="Zoom in">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 shrink-0 p-0"
+              onClick={() => {
+                zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.25);
+                force((n) => n + 1);
+              }}
+              title="Zoom in"
+            >
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
             <span className="h-4 w-px shrink-0 bg-border" />
-            <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off")} title={`Grid: ${grid}`}>
-              {grid === "graph" ? <LineChart className="h-3.5 w-3.5" /> : grid === "dots" ? <CircleDot className="h-3.5 w-3.5" /> : grid === "grid" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 shrink-0 px-2 text-xs"
+              onClick={() =>
+                setGrid((g) =>
+                  g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off",
+                )
+              }
+              title={`Grid: ${grid}`}
+            >
+              {grid === "graph" ? (
+                <LineChart className="h-3.5 w-3.5" />
+              ) : grid === "dots" ? (
+                <CircleDot className="h-3.5 w-3.5" />
+              ) : grid === "grid" ? (
+                <Grid3x3 className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
             </Button>
             <span className="h-4 w-px shrink-0 bg-border" />
             <ExportMenu shapesRef={shapesRef} imageCacheRef={imageCacheRef} />
-            <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={toggleFullscreen} title="Fullscreen">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 shrink-0 p-0"
+              onClick={toggleFullscreen}
+              title="Fullscreen"
+            >
               <Maximize2 className="h-3.5 w-3.5" />
             </Button>
             {isTeacher && (
               <>
                 <span className="h-4 w-px shrink-0 bg-border" />
-                <Button size="sm" variant={locked ? "destructive" : "ghost"} className="h-7 w-7 shrink-0 p-0" onClick={() => setLockBroadcast(!locked)} title="Lock board for students">
+                <Button
+                  size="sm"
+                  variant={locked ? "destructive" : "ghost"}
+                  className="h-7 w-7 shrink-0 p-0"
+                  onClick={() => setLockBroadcast(!locked)}
+                  title="Lock board for students"
+                >
                   {locked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
                 </Button>
-                <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" onClick={clearBoard} title="Clear board">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 shrink-0 p-0"
+                  onClick={clearBoard}
+                  title="Clear board"
+                >
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
               </>
@@ -892,26 +1420,86 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
         {isMobile && (
           <Popover>
             <PopoverTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-7 w-7 shrink-0 p-0" title="More" aria-label="More board options">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 shrink-0 p-0"
+                title="More"
+                aria-label="More board options"
+              >
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </PopoverTrigger>
             <PopoverContent side="bottom" align="end" className="w-56 p-2">
               <div className="grid grid-cols-3 gap-1">
-                <IconTile onClick={() => setGrid((g) => g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off")} label={`Grid`}>
-                  {grid === "graph" ? <LineChart className="h-4 w-4" /> : grid === "dots" ? <CircleDot className="h-4 w-4" /> : grid === "grid" ? <Grid3x3 className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <IconTile
+                  onClick={() =>
+                    setGrid((g) =>
+                      g === "off" ? "grid" : g === "grid" ? "dots" : g === "dots" ? "graph" : "off",
+                    )
+                  }
+                  label={`Grid`}
+                >
+                  {grid === "graph" ? (
+                    <LineChart className="h-4 w-4" />
+                  ) : grid === "dots" ? (
+                    <CircleDot className="h-4 w-4" />
+                  ) : grid === "grid" ? (
+                    <Grid3x3 className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </IconTile>
-                <IconTile onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8); force((n) => n + 1); }} label="Zoom −"><ZoomOut className="h-4 w-4" /></IconTile>
-                <IconTile onClick={() => { zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.25); force((n) => n + 1); }} label="Zoom +"><ZoomIn className="h-4 w-4" /></IconTile>
-                <IconTile onClick={() => { const c = cameraRef.current; c.x = 0; c.y = 0; c.z = 1; scheduleRender(); force((n) => n + 1); }} label={`${Math.round(cameraRef.current.z * 100)}%`}><Eye className="h-4 w-4" /></IconTile>
-                <IconTile onClick={toggleFullscreen} label="Full"><Maximize2 className="h-4 w-4" /></IconTile>
+                <IconTile
+                  onClick={() => {
+                    zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 0.8);
+                    force((n) => n + 1);
+                  }}
+                  label="Zoom −"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </IconTile>
+                <IconTile
+                  onClick={() => {
+                    zoomAt(sizeRef.current.w / 2, sizeRef.current.h / 2, 1.25);
+                    force((n) => n + 1);
+                  }}
+                  label="Zoom +"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </IconTile>
+                <IconTile
+                  onClick={() => {
+                    const c = cameraRef.current;
+                    c.x = 0;
+                    c.y = 0;
+                    c.z = 1;
+                    scheduleRender();
+                    force((n) => n + 1);
+                  }}
+                  label={`${Math.round(cameraRef.current.z * 100)}%`}
+                >
+                  <Eye className="h-4 w-4" />
+                </IconTile>
+                <IconTile onClick={toggleFullscreen} label="Full">
+                  <Maximize2 className="h-4 w-4" />
+                </IconTile>
                 {isTeacher && (
-                  <IconTile onClick={() => setLockBroadcast(!locked)} label={locked ? "Locked" : "Lock"}>
-                    {locked ? <Lock className="h-4 w-4 text-destructive" /> : <Unlock className="h-4 w-4" />}
+                  <IconTile
+                    onClick={() => setLockBroadcast(!locked)}
+                    label={locked ? "Locked" : "Lock"}
+                  >
+                    {locked ? (
+                      <Lock className="h-4 w-4 text-destructive" />
+                    ) : (
+                      <Unlock className="h-4 w-4" />
+                    )}
                   </IconTile>
                 )}
                 {isTeacher && (
-                  <IconTile onClick={clearBoard} label="Clear"><Trash2 className="h-4 w-4 text-destructive" /></IconTile>
+                  <IconTile onClick={clearBoard} label="Clear">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </IconTile>
                 )}
               </div>
               <div className="mt-2 border-t pt-2">
@@ -925,47 +1513,81 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
       {/* Graph axes editor — visible only when the graph grid is on */}
       {grid === "graph" && (
         <div className="pointer-events-auto absolute bottom-3 right-3 z-30 flex flex-col gap-1.5 rounded-xl border bg-background/95 p-2 shadow-md backdrop-blur">
-          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Graph axes</div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Graph axes
+          </div>
           <div className="grid grid-cols-[auto_1fr_auto_1fr] items-center gap-1.5">
             <label className="text-[11px] text-muted-foreground">x min</label>
-            <input type="number" value={graphAxes.xMin}
+            <input
+              type="number"
+              value={graphAxes.xMin}
               onChange={(e) => setGraphAxes((a) => ({ ...a, xMin: Number(e.target.value) }))}
-              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums"
+            />
             <label className="text-[11px] text-muted-foreground">x max</label>
-            <input type="number" value={graphAxes.xMax}
+            <input
+              type="number"
+              value={graphAxes.xMax}
               onChange={(e) => setGraphAxes((a) => ({ ...a, xMax: Number(e.target.value) }))}
-              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums"
+            />
             <label className="text-[11px] text-muted-foreground">y min</label>
-            <input type="number" value={graphAxes.yMin}
+            <input
+              type="number"
+              value={graphAxes.yMin}
               onChange={(e) => setGraphAxes((a) => ({ ...a, yMin: Number(e.target.value) }))}
-              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums"
+            />
             <label className="text-[11px] text-muted-foreground">y max</label>
-            <input type="number" value={graphAxes.yMax}
+            <input
+              type="number"
+              value={graphAxes.yMax}
               onChange={(e) => setGraphAxes((a) => ({ ...a, yMax: Number(e.target.value) }))}
-              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums" />
+              className="h-7 w-16 rounded border bg-background px-1.5 text-xs tabular-nums"
+            />
           </div>
           <div className="flex items-center justify-between gap-1 pt-0.5">
-            <button type="button"
+            <button
+              type="button"
               onClick={() => setGraphAxes({ xMin: -10, xMax: 10, yMin: -10, yMax: 10 })}
               className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-              title="Reset axes">Reset</button>
+              title="Reset axes"
+            >
+              Reset
+            </button>
             <div className="flex gap-0.5">
-              <button type="button"
-                onClick={() => setGraphAxes((a) => {
-                  const cx = (a.xMin + a.xMax) / 2, cy = (a.yMin + a.yMax) / 2;
-                  const rx = (a.xMax - a.xMin) / 2 * 0.8, ry = (a.yMax - a.yMin) / 2 * 0.8;
-                  return { xMin: cx - rx, xMax: cx + rx, yMin: cy - ry, yMax: cy + ry };
-                })}
+              <button
+                type="button"
+                onClick={() =>
+                  setGraphAxes((a) => {
+                    const cx = (a.xMin + a.xMax) / 2,
+                      cy = (a.yMin + a.yMax) / 2;
+                    const rx = ((a.xMax - a.xMin) / 2) * 0.8,
+                      ry = ((a.yMax - a.yMin) / 2) * 0.8;
+                    return { xMin: cx - rx, xMax: cx + rx, yMin: cy - ry, yMax: cy + ry };
+                  })
+                }
                 className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Zoom in axes">−</button>
-              <button type="button"
-                onClick={() => setGraphAxes((a) => {
-                  const cx = (a.xMin + a.xMax) / 2, cy = (a.yMin + a.yMax) / 2;
-                  const rx = (a.xMax - a.xMin) / 2 * 1.25, ry = (a.yMax - a.yMin) / 2 * 1.25;
-                  return { xMin: cx - rx, xMax: cx + rx, yMin: cy - ry, yMax: cy + ry };
-                })}
+                title="Zoom in axes"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setGraphAxes((a) => {
+                    const cx = (a.xMin + a.xMax) / 2,
+                      cy = (a.yMin + a.yMax) / 2;
+                    const rx = ((a.xMax - a.xMin) / 2) * 1.25,
+                      ry = ((a.yMax - a.yMin) / 2) * 1.25;
+                    return { xMin: cx - rx, xMax: cx + rx, yMin: cy - ry, yMax: cy + ry };
+                  })
+                }
                 className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
-                title="Zoom out axes">+</button>
+                title="Zoom out axes"
+              >
+                +
+              </button>
             </div>
           </div>
         </div>
@@ -1009,7 +1631,10 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
                       className={`grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${size === s ? "bg-muted" : ""}`}
                       title={`Size ${s}`}
                     >
-                      <span className="rounded-full bg-foreground" style={{ width: Math.max(3, s / 1.5), height: Math.max(3, s / 1.5) }} />
+                      <span
+                        className="rounded-full bg-foreground"
+                        style={{ width: Math.max(3, s / 1.5), height: Math.max(3, s / 1.5) }}
+                      />
                     </button>
                   ))}
                   <button
@@ -1017,24 +1642,51 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
                     className={`ml-1 grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${filled ? "bg-muted" : ""}`}
                     title="Toggle fill"
                   >
-                    <span className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`} style={{ borderColor: "currentColor" }} />
+                    <span
+                      className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`}
+                      style={{ borderColor: "currentColor" }}
+                    />
                   </button>
                 </div>
               </PopoverContent>
             </Popover>
             <span className="mx-0.5 h-6 w-px shrink-0 bg-border" />
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={undo} title="Undo"><Undo2 className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={redo} title="Redo"><Redo2 className="h-4 w-4" /></Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              onClick={undo}
+              title="Undo"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              onClick={redo}
+              title="Redo"
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
 
             {/* Overflow: shapes, text, sticky, image, pan, highlighter */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" title="More tools" aria-label="More tools">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 shrink-0"
+                  title="More tools"
+                  aria-label="More tools"
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent side="bottom" align="center" className="w-60 p-2">
-                <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Draw</div>
+                <div className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Draw
+                </div>
                 <div className="grid grid-cols-5 gap-1">
                   <ToolBtn id="hand" icon={Hand} label="Pan" />
                   <ToolBtn id="highlighter" icon={Highlighter} label="Highlighter" />
@@ -1042,7 +1694,9 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
                   <ToolBtn id="sticky" icon={StickyNote} label="Sticky" />
                   <ToolBtn id="image" icon={ImagePlus} label="Image" />
                 </div>
-                <div className="mb-1 mt-2 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Shapes</div>
+                <div className="mb-1 mt-2 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Shapes
+                </div>
                 <div className="grid grid-cols-5 gap-1">
                   <ToolBtn id="line" icon={Minus} label="Line" />
                   <ToolBtn id="arrow" icon={ArrowUpRight} label="Arrow" />
@@ -1052,12 +1706,22 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
                 </div>
                 {selection.size > 0 && (
                   <>
-                    <div className="mb-1 mt-2 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Selection</div>
+                    <div className="mb-1 mt-2 px-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      Selection
+                    </div>
                     <div className="grid grid-cols-4 gap-1">
-                      <IconTile onClick={duplicateSel} label="Copy"><Copy className="h-4 w-4" /></IconTile>
-                      <IconTile onClick={bringForward} label="Up"><ChevronUp className="h-4 w-4" /></IconTile>
-                      <IconTile onClick={sendBackward} label="Down"><ChevronDown className="h-4 w-4" /></IconTile>
-                      <IconTile onClick={() => deleteShapes([...selection])} label="Delete"><Trash2 className="h-4 w-4 text-destructive" /></IconTile>
+                      <IconTile onClick={duplicateSel} label="Copy">
+                        <Copy className="h-4 w-4" />
+                      </IconTile>
+                      <IconTile onClick={bringForward} label="Up">
+                        <ChevronUp className="h-4 w-4" />
+                      </IconTile>
+                      <IconTile onClick={sendBackward} label="Down">
+                        <ChevronDown className="h-4 w-4" />
+                      </IconTile>
+                      <IconTile onClick={() => deleteShapes([...selection])} label="Delete">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </IconTile>
                     </div>
                   </>
                 )}
@@ -1103,7 +1767,10 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
                   className={`grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${size === s ? "bg-muted" : ""}`}
                   title={`Size ${s}`}
                 >
-                  <span className="rounded-full bg-foreground" style={{ width: Math.max(3, s / 1.5), height: Math.max(3, s / 1.5) }} />
+                  <span
+                    className="rounded-full bg-foreground"
+                    style={{ width: Math.max(3, s / 1.5), height: Math.max(3, s / 1.5) }}
+                  />
                 </button>
               ))}
             </div>
@@ -1112,24 +1779,74 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
               className={`ml-1 grid h-7 w-7 place-items-center rounded-md hover:bg-muted ${filled ? "bg-muted" : ""}`}
               title="Toggle fill for shapes"
             >
-              <span className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`} style={{ borderColor: "currentColor" }} />
+              <span
+                className={`block h-3.5 w-3.5 rounded-sm border-2 ${filled ? "bg-foreground/30" : ""}`}
+                style={{ borderColor: "currentColor" }}
+              />
             </button>
             <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={undo} title="Undo (Ctrl+Z)"><Undo2 className="h-4 w-4" /></Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={redo} title="Redo (Ctrl+Y)"><Redo2 className="h-4 w-4" /></Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              onClick={undo}
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 shrink-0"
+              onClick={redo}
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo2 className="h-4 w-4" />
+            </Button>
             {selection.size > 0 && (
               <>
                 <span className="mx-1 h-6 w-px shrink-0 bg-border" />
-                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={duplicateSel} title="Duplicate"><Copy className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={bringForward} title="Bring forward"><ChevronUp className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={sendBackward} title="Send backward"><ChevronDown className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0 text-destructive" onClick={() => deleteShapes([...selection])} title="Delete"><Trash2 className="h-4 w-4" /></Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 shrink-0"
+                  onClick={duplicateSel}
+                  title="Duplicate"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 shrink-0"
+                  onClick={bringForward}
+                  title="Bring forward"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 shrink-0"
+                  onClick={sendBackward}
+                  title="Send backward"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 shrink-0 text-destructive"
+                  onClick={() => deleteShapes([...selection])}
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </>
             )}
           </>
         )}
       </div>
-
 
       {/* Inline text edit overlay */}
       {textEdit && (
@@ -1138,13 +1855,22 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
           value={textEdit.value}
           onChange={(e) => setTextEdit({ ...textEdit, value: e.target.value })}
           onBlur={commitTextEdit}
-          onKeyDown={(e) => { if (e.key === "Escape") commitTextEdit(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") commitTextEdit();
+          }}
           style={{
-            position: "absolute", left: textEdit.screenX, top: textEdit.screenY,
-            width: textEdit.w, height: textEdit.h,
-            border: "1px dashed #3b82f6", background: "rgba(255,255,255,0.95)",
-            padding: 6, font: `${Math.max(14, size * 4) * cameraRef.current.z}px ui-sans-serif, system-ui, sans-serif`,
-            outline: "none", resize: "both", zIndex: 40,
+            position: "absolute",
+            left: textEdit.screenX,
+            top: textEdit.screenY,
+            width: textEdit.w,
+            height: textEdit.h,
+            border: "1px dashed #3b82f6",
+            background: "rgba(255,255,255,0.95)",
+            padding: 6,
+            font: `${Math.max(14, size * 4) * cameraRef.current.z}px ui-sans-serif, system-ui, sans-serif`,
+            outline: "none",
+            resize: "both",
+            zIndex: 40,
           }}
           placeholder="Type here…"
         />
@@ -1167,19 +1893,66 @@ export const Whiteboard = forwardRef<WhiteboardHandle, Props>(function Whiteboar
   );
 });
 
-function ExportMenu({ shapesRef, imageCacheRef }: { shapesRef: React.MutableRefObject<Shape[]>; imageCacheRef: React.MutableRefObject<Map<string, HTMLImageElement>> }) {
+function ExportMenu({
+  shapesRef,
+  imageCacheRef,
+}: {
+  shapesRef: React.MutableRefObject<Shape[]>;
+  imageCacheRef: React.MutableRefObject<Map<string, HTMLImageElement>>;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
-      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setOpen((o) => !o)} title="Export">
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 px-2 text-xs"
+        onClick={() => setOpen((o) => !o)}
+        title="Export"
+      >
         <Download className="mr-1 h-3.5 w-3.5" /> Export
       </Button>
       {open && (
         <div className="absolute right-0 top-9 z-40 w-40 overflow-hidden rounded-lg border bg-popover py-1 text-xs shadow-lg">
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={async () => { setOpen(false); await exportPNG(shapesRef.current, imageCacheRef.current); toast.success("PNG exported"); }}>PNG image</button>
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={async () => { setOpen(false); await exportJPG(shapesRef.current, imageCacheRef.current); toast.success("JPG exported"); }}>JPG image</button>
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={async () => { setOpen(false); await exportPDF(shapesRef.current, imageCacheRef.current); toast.success("PDF exported"); }}>PDF document</button>
-          <button className="block w-full px-3 py-1.5 text-left hover:bg-muted" onClick={() => { setOpen(false); exportJSON(shapesRef.current); }}>JSON file</button>
+          <button
+            className="block w-full px-3 py-1.5 text-left hover:bg-muted"
+            onClick={async () => {
+              setOpen(false);
+              await exportPNG(shapesRef.current, imageCacheRef.current);
+              toast.success("PNG exported");
+            }}
+          >
+            PNG image
+          </button>
+          <button
+            className="block w-full px-3 py-1.5 text-left hover:bg-muted"
+            onClick={async () => {
+              setOpen(false);
+              await exportJPG(shapesRef.current, imageCacheRef.current);
+              toast.success("JPG exported");
+            }}
+          >
+            JPG image
+          </button>
+          <button
+            className="block w-full px-3 py-1.5 text-left hover:bg-muted"
+            onClick={async () => {
+              setOpen(false);
+              await exportPDF(shapesRef.current, imageCacheRef.current);
+              toast.success("PDF exported");
+            }}
+          >
+            PDF document
+          </button>
+          <button
+            className="block w-full px-3 py-1.5 text-left hover:bg-muted"
+            onClick={() => {
+              setOpen(false);
+              exportJSON(shapesRef.current);
+            }}
+          >
+            JSON file
+          </button>
         </div>
       )}
     </div>
@@ -1201,8 +1974,17 @@ export function hashColor(id: string): string {
 
 function handleStyle(x: number, y: number, cursor: string): React.CSSProperties {
   return {
-    position: "absolute", left: x - 6, top: y - 6, width: 12, height: 12,
-    background: "#ffffff", border: "1.5px solid #3b82f6", borderRadius: 3,
-    cursor, zIndex: 35, touchAction: "none", boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
+    position: "absolute",
+    left: x - 6,
+    top: y - 6,
+    width: 12,
+    height: 12,
+    background: "#ffffff",
+    border: "1.5px solid #3b82f6",
+    borderRadius: 3,
+    cursor,
+    zIndex: 35,
+    touchAction: "none",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
   };
 }

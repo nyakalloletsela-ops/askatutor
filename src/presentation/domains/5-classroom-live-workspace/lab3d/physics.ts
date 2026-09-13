@@ -36,11 +36,24 @@ export function buildInitialState(schema: SimulationSchemaT): SimObjectState[] {
     return {
       index: i,
       type,
-      basePosition: toVec3((o as any).position, [i * 2 - schema.objects.length, type === "plane" || type === "axis" ? 0 : 1, 0]),
-      position: toVec3((o as any).position, [i * 2 - schema.objects.length, type === "plane" || type === "axis" ? 0 : 1, 0]),
+      basePosition: toVec3((o as any).position, [
+        i * 2 - schema.objects.length,
+        type === "plane" || type === "axis" ? 0 : 1,
+        0,
+      ]),
+      position: toVec3((o as any).position, [
+        i * 2 - schema.objects.length,
+        type === "plane" || type === "axis" ? 0 : 1,
+        0,
+      ]),
       velocity: toVec3((o as any).velocity, [0, 0, 0]),
       mass: typeof (o as any).mass === "number" ? (o as any).mass : 1,
-      radius: typeof (o as any).radius === "number" ? (o as any).radius : type === "particle" || type === "flow" || type === "curve" ? 0.35 : 0.7,
+      radius:
+        typeof (o as any).radius === "number"
+          ? (o as any).radius
+          : type === "particle" || type === "flow" || type === "curve"
+            ? 0.35
+            : 0.7,
       size: toSize(
         (o as any).size,
         type === "wall"
@@ -49,11 +62,11 @@ export function buildInitialState(schema: SimulationSchemaT): SimObjectState[] {
             ? [40, 0.1, 40]
             : type === "axis"
               ? [10, 0.06, 10]
-            : type === "car"
-              ? [2, 1, 1]
-              : type === "graph"
-                ? [7, 0.08, 5]
-              : [1, 1, 1],
+              : type === "car"
+                ? [2, 1, 1]
+                : type === "graph"
+                  ? [7, 0.08, 5]
+                  : [1, 1, 1],
       ),
       color: (o as any).color || PALETTE[i % PALETTE.length],
       label: (o as any).label,
@@ -65,7 +78,10 @@ export function buildInitialState(schema: SimulationSchemaT): SimObjectState[] {
 export function stepSim(state: SimObjectState[], rules: string[], dt: number) {
   const hasGravity = rules.includes("gravity");
   const hasCollision = rules.includes("collision_response");
-  const hasFlow = rules.includes("flow_dynamics") || rules.includes("market_flow") || rules.includes("semantic_flow");
+  const hasFlow =
+    rules.includes("flow_dynamics") ||
+    rules.includes("market_flow") ||
+    rules.includes("semantic_flow");
   const hasOrbit = rules.includes("orbital_motion") || rules.includes("chemical_bonding");
   const hasGrowth = rules.includes("growth_cycle");
   const hasGraph = rules.includes("graph_transform");
@@ -119,7 +135,9 @@ export function stepSim(state: SimObjectState[], rules: string[], dt: number) {
         const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         const minD = (a.radius + b.radius) * 0.9;
         if (dist > 0 && dist < minD) {
-          const nx = dx / dist, ny = dy / dist, nz = dz / dist;
+          const nx = dx / dist,
+            ny = dy / dist,
+            nz = dz / dist;
           const overlap = minD - dist;
           if (!a.fixed) {
             a.position[0] -= nx * overlap * 0.5;

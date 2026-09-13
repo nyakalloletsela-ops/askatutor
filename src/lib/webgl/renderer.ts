@@ -123,7 +123,7 @@ export class Renderer {
   render(width: number, height: number, camera: Vec3, target: Vec3, calls: DrawCall[]) {
     const gl = this.gl;
     gl.viewport(0, 0, width, height);
-    gl.clearColor(0.04, 0.05, 0.10, 1);
+    gl.clearColor(0.04, 0.05, 0.1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(this.program);
     const proj = m4.perspective(Math.PI / 4, width / height, 0.1, 100);

@@ -3,7 +3,13 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "../3-personalization-role-context/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../8-core-ux-navigation/ui/card";
 import { Button } from "../8-core-ux-navigation/ui/button";
 import { Badge } from "../8-core-ux-navigation/ui/badge";
 import { Progress } from "../8-core-ux-navigation/ui/progress";
@@ -98,7 +104,12 @@ export function TutorHome({
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const rate = profile.hourly_rate ?? 0;
     return sessions
-      .filter((s) => s.tutor_id === user?.id && s.status === "completed" && new Date(s.scheduled_at).getTime() >= cutoff)
+      .filter(
+        (s) =>
+          s.tutor_id === user?.id &&
+          s.status === "completed" &&
+          new Date(s.scheduled_at).getTime() >= cutoff,
+      )
       .reduce((sum) => sum + rate, 0);
   }, [sessions, user, profile.hourly_rate]);
 
@@ -432,10 +443,7 @@ export function TutorHome({
               {profileTodos.length > 0 && (
                 <ul className="mt-2 space-y-1.5">
                   {profileTodos.map((t) => (
-                    <li
-                      key={t}
-                      className="flex items-center gap-2 text-xs text-muted-foreground"
-                    >
+                    <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                       {t}
                     </li>
@@ -542,15 +550,7 @@ function StatTile({
   );
 }
 
-function AiAction({
-  icon: Icon,
-  label,
-  to,
-}: {
-  icon: typeof Sparkles;
-  label: string;
-  to: string;
-}) {
+function AiAction({ icon: Icon, label, to }: { icon: typeof Sparkles; label: string; to: string }) {
   return (
     <Link
       to={to as never}

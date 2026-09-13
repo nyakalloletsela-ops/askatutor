@@ -9,12 +9,32 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { saveAiKey, getAiKeyStatus, testAiProvider } from "@/application/use-cases/admin/ai-keys";
 
 type Provider = "groq" | "gemini" | "ollama";
-type Status = { hasKey: boolean; fromEnv: boolean; updated_at: string | null; base_url: string | null };
+type Status = {
+  hasKey: boolean;
+  fromEnv: boolean;
+  updated_at: string | null;
+  base_url: string | null;
+};
 
-const META: Record<Provider, { label: string; keyLabel: string; placeholder: string; needsBaseUrl?: boolean; keyless?: boolean }> = {
+const META: Record<
+  Provider,
+  {
+    label: string;
+    keyLabel: string;
+    placeholder: string;
+    needsBaseUrl?: boolean;
+    keyless?: boolean;
+  }
+> = {
   groq: { label: "Groq", keyLabel: "GROQ_API_KEY", placeholder: "gsk_..." },
   gemini: { label: "Google Gemini", keyLabel: "GEMINI_API_KEY", placeholder: "AIza..." },
-  ollama: { label: "Ollama (self-hosted)", keyLabel: "OLLAMA_BASE_URL", placeholder: "http://localhost:11434", needsBaseUrl: true, keyless: true },
+  ollama: {
+    label: "Ollama (self-hosted)",
+    keyLabel: "OLLAMA_BASE_URL",
+    placeholder: "http://localhost:11434",
+    needsBaseUrl: true,
+    keyless: true,
+  },
 };
 
 export function AiKeyManager() {
@@ -66,7 +86,11 @@ export function AiKeyManager() {
   const onTest = async (p: Provider) => {
     setBusy((b) => ({ ...b, [`test-${p}`]: true }));
     try {
-      const r = (await test({ data: { provider: p } })) as { ok: boolean; message?: string; error?: string };
+      const r = (await test({ data: { provider: p } })) as {
+        ok: boolean;
+        message?: string;
+        error?: string;
+      };
       if (r.ok) toast.success(r.message ?? "Connection OK");
       else toast.error(r.error ?? "Connection failed");
     } catch (e: any) {
@@ -81,7 +105,8 @@ export function AiKeyManager() {
       <div>
         <h3 className="text-sm font-semibold">Provider API keys</h3>
         <p className="text-xs text-muted-foreground">
-          Values saved here override environment secrets and take effect within ~30 seconds. Keys are stored in an admin-only database table.
+          Values saved here override environment secrets and take effect within ~30 seconds. Keys
+          are stored in an admin-only database table.
         </p>
       </div>
 
@@ -109,7 +134,11 @@ export function AiKeyManager() {
                 onClick={() => onTest(p)}
                 disabled={busy[`test-${p}`]}
               >
-                {busy[`test-${p}`] ? <Loader2 className="h-3 w-3 animate-spin" /> : "Test connection"}
+                {busy[`test-${p}`] ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Test connection"
+                )}
               </Button>
             </div>
 
@@ -121,7 +150,9 @@ export function AiKeyManager() {
                   autoComplete="off"
                   placeholder={st?.hasKey ? "•••••••• (leave blank to keep)" : meta.placeholder}
                   value={values[p].api_key}
-                  onChange={(e) => setValues((v) => ({ ...v, [p]: { ...v[p], api_key: e.target.value } }))}
+                  onChange={(e) =>
+                    setValues((v) => ({ ...v, [p]: { ...v[p], api_key: e.target.value } }))
+                  }
                 />
               </div>
             )}
@@ -131,7 +162,9 @@ export function AiKeyManager() {
                 <Input
                   placeholder={st?.base_url ?? meta.placeholder}
                   value={values[p].base_url}
-                  onChange={(e) => setValues((v) => ({ ...v, [p]: { ...v[p], base_url: e.target.value } }))}
+                  onChange={(e) =>
+                    setValues((v) => ({ ...v, [p]: { ...v[p], base_url: e.target.value } }))
+                  }
                 />
               </div>
             )}

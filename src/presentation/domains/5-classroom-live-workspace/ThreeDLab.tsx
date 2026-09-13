@@ -46,7 +46,10 @@ export function ThreeDLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
           <Button
             size="icon"
             variant="outline"
-            onClick={() => { setKey((k) => k + 1); trackVisit(); }}
+            onClick={() => {
+              setKey((k) => k + 1);
+              trackVisit();
+            }}
             aria-label="Reload"
           >
             <RotateCw className="h-4 w-4" />
@@ -63,7 +66,8 @@ export function ThreeDLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
           <Lock className="h-10 w-10 text-primary" />
           <h3 className="text-lg font-semibold">Free lab quota reached</h3>
           <p className="max-w-md text-sm text-muted-foreground">
-            You've used your {limit} free experiments. Book a tutor session to keep exploring all 70 3D modules.
+            You've used your {limit} free experiments. Book a tutor session to keep exploring all 70
+            3D modules.
           </p>
         </div>
       ) : (

@@ -17,31 +17,31 @@ This document defines the engineering work protocol for AskATutorLive. Every mea
 
 Every work item must record:
 
-| Field | Description |
-|-------|-------------|
-| WORK ID | Unique identifier (AT-XXXX format) |
-| PHASE | Phase number |
-| PHASE NAME | Phase description |
-| OBJECTIVE | What this work item achieves |
-| STATUS | NOT STARTED / IN PROGRESS / COMPLETE / VERIFIED / BLOCKED |
-| FILES INSPECTED | Files read before making changes |
-| FILES CREATED | New files created |
-| FILES MODIFIED | Existing files changed |
-| FILES DELETED | Files removed |
-| COMPONENTS CHANGED | Components affected |
-| DATABASE CHANGES | Schema/migration changes |
-| API CHANGES | API endpoint changes |
-| SECURITY CHANGES | Security-relevant changes |
-| TESTS EXECUTED | Tests run |
-| TEST RESULTS | Pass/fail results |
-| VERIFICATION LEVEL | None / Local Test / Integration Test / Production |
-| KNOWN FAILURES | Tests that failed |
-| KNOWN LIMITATIONS | Constraints or limitations |
-| UNRESOLVED ISSUES | Open issues |
-| DECISIONS MADE | Decisions taken during work |
-| DECISIONS PENDING | Decisions deferred |
-| DEPENDENCIES AFFECTED | Other work items or phases affected |
-| NEXT ACTION | What should happen next |
+| Field                 | Description                                               |
+| --------------------- | --------------------------------------------------------- |
+| WORK ID               | Unique identifier (AT-XXXX format)                        |
+| PHASE                 | Phase number                                              |
+| PHASE NAME            | Phase description                                         |
+| OBJECTIVE             | What this work item achieves                              |
+| STATUS                | NOT STARTED / IN PROGRESS / COMPLETE / VERIFIED / BLOCKED |
+| FILES INSPECTED       | Files read before making changes                          |
+| FILES CREATED         | New files created                                         |
+| FILES MODIFIED        | Existing files changed                                    |
+| FILES DELETED         | Files removed                                             |
+| COMPONENTS CHANGED    | Components affected                                       |
+| DATABASE CHANGES      | Schema/migration changes                                  |
+| API CHANGES           | API endpoint changes                                      |
+| SECURITY CHANGES      | Security-relevant changes                                 |
+| TESTS EXECUTED        | Tests run                                                 |
+| TEST RESULTS          | Pass/fail results                                         |
+| VERIFICATION LEVEL    | None / Local Test / Integration Test / Production         |
+| KNOWN FAILURES        | Tests that failed                                         |
+| KNOWN LIMITATIONS     | Constraints or limitations                                |
+| UNRESOLVED ISSUES     | Open issues                                               |
+| DECISIONS MADE        | Decisions taken during work                               |
+| DECISIONS PENDING     | Decisions deferred                                        |
+| DEPENDENCIES AFFECTED | Other work items or phases affected                       |
+| NEXT ACTION           | What should happen next                                   |
 
 ---
 
@@ -56,63 +56,83 @@ WORK ID: AT-XXXX
 DATE: YYYY-MM-DD
 
 ## OBJECTIVE
+
 [What this work item achieves]
 
 ## STATUS
+
 [NOT STARTED / IN PROGRESS / COMPLETE / VERIFIED / BLOCKED]
 
 ## FILES INSPECTED
+
 - [list of files read]
 
 ## FILES CREATED
+
 - [new files]
 
 ## FILES MODIFIED
+
 - [changed files with summary of changes]
 
 ## FILES DELETED
+
 - [deleted files]
 
 ## COMPONENTS CHANGED
+
 - [components affected]
 
 ## DATABASE CHANGES
+
 - [schema/migration changes, if any]
 
 ## API CHANGES
+
 - [API changes, if any]
 
 ## SECURITY CHANGES
+
 - [security-relevant changes, if any]
 
 ## TESTS EXECUTED
+
 - [tests run]
 
 ## TEST RESULTS
+
 - [pass/fail]
 
 ## VERIFICATION LEVEL
+
 - [None / Local Test / Integration Test / Production]
 
 ## KNOWN FAILURES
+
 - [failed tests or issues]
 
 ## KNOWN LIMITATIONS
+
 - [constraints]
 
 ## UNRESOLVED ISSUES
+
 - [open issues]
 
 ## DECISIONS MADE
+
 - [decisions taken]
 
 ## DECISIONS PENDING
+
 - [deferred decisions]
 
 ## DEPENDENCIES AFFECTED
+
 - [affected dependencies]
 
 ## NEXT ACTION
+
 - [what should happen next]
 ```
 
@@ -134,6 +154,7 @@ DATE: YYYY-MM-DD
 ### 5.1 When to Record
 
 Record file changes when:
+
 - Creating a new file
 - Modifying an existing file
 - Deleting a file
@@ -143,6 +164,7 @@ Record file changes when:
 ### 5.2 What to Record
 
 For each file change:
+
 - File path
 - Type of change (create/modify/delete)
 - Summary of what changed
@@ -155,13 +177,13 @@ For each file change:
 
 The following files must be updated after every meaningful work item:
 
-| File | Purpose | Update Frequency |
-|------|---------|-----------------|
-| CURRENT_STATE.md | Fast state lookup | After every work item |
-| CHANGE_LOG.md | Chronological change record | After every work item |
-| BACKLOG.md | Remaining work | When work items added/completed |
-| DECISION_LOG.md | Architecture decisions | When decisions made |
-| MASTER_PLAN.md | Phase roadmap | When phases change status |
+| File             | Purpose                     | Update Frequency                |
+| ---------------- | --------------------------- | ------------------------------- |
+| CURRENT_STATE.md | Fast state lookup           | After every work item           |
+| CHANGE_LOG.md    | Chronological change record | After every work item           |
+| BACKLOG.md       | Remaining work              | When work items added/completed |
+| DECISION_LOG.md  | Architecture decisions      | When decisions made             |
+| MASTER_PLAN.md   | Phase roadmap               | When phases change status       |
 
 ---
 
@@ -203,6 +225,7 @@ Before marking a phase PRODUCTION-VERIFIED:
 ### 8.1 When to Record a Decision
 
 Record a decision when:
+
 - Choosing between multiple technical approaches
 - Defining architecture boundaries
 - Setting policy or rules
@@ -218,26 +241,33 @@ DATE: YYYY-MM-DD
 STATUS: [PROPOSED / ACCEPTED / REJECTED / SUPERSEDED]
 
 ## QUESTION
+
 [What is being decided]
 
 ## OPTIONS
+
 1. [Option A]
 2. [Option B]
 3. [Option C]
 
 ## TRADE-OFFS
+
 [Pros and cons of each option]
 
 ## RECOMMENDATION
+
 [What is recommended and why]
 
 ## DECISION
+
 [What was actually decided]
 
 ## RATIONALE
+
 [Why this decision was made]
 
 ## IMPACT
+
 [What this decision affects]
 ```
 
@@ -248,6 +278,7 @@ STATUS: [PROPOSED / ACCEPTED / REJECTED / SUPERSEDED]
 Unknowns are tracked in CONFIRMED_REQUIREMENTS.md under "UNKNOWN REQUIREMENTS".
 
 When an unknown is resolved:
+
 1. Update CONFIRMED_REQUIREMENTS.md
 2. Record the decision in DECISION_LOG.md
 3. Update affected architecture documents

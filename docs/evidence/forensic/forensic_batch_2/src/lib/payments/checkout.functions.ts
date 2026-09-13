@@ -25,10 +25,11 @@ export const startCheckout = createServerFn({ method: "POST" })
     const { getRequestHost } = await import("@tanstack/react-start/server");
 
     // commission via existing RPC
-    const { data: commission, error: cErr } = await supabase.rpc(
-      "compute_commission_cents",
-      { _amount_cents: data.amountCents, _tutor: data.tutorId, _subject: data.subject ?? undefined },
-    );
+    const { data: commission, error: cErr } = await supabase.rpc("compute_commission_cents", {
+      _amount_cents: data.amountCents,
+      _tutor: data.tutorId,
+      _subject: data.subject ?? undefined,
+    });
     if (cErr) throw new Error(cErr.message);
     const commissionCents = Number(commission ?? 0);
     const tutorNetCents = data.amountCents - commissionCents;

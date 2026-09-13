@@ -60,22 +60,32 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
     }
 
     // Camera controls.
-    let yaw = 0.6, pitch = 0.35, dist = 6;
+    let yaw = 0.6,
+      pitch = 0.35,
+      dist = 6;
     let dragging = false;
-    let lastX = 0, lastY = 0;
+    let lastX = 0,
+      lastY = 0;
     const onDown = (e: PointerEvent) => {
-      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
       canvas.setPointerCapture(e.pointerId);
     };
     const onMove = (e: PointerEvent) => {
       if (!dragging) return;
       yaw += (e.clientX - lastX) * 0.01;
       pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - lastY) * 0.01));
-      lastX = e.clientX; lastY = e.clientY;
+      lastX = e.clientX;
+      lastY = e.clientY;
     };
     const onUp = (e: PointerEvent) => {
       dragging = false;
-      try { canvas.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* noop */
+      }
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -96,7 +106,8 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
       const w = Math.max(1, Math.floor(rect.width * dpr));
       const h = Math.max(1, Math.floor(rect.height * dpr));
       if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w; canvas.height = h;
+        canvas.width = w;
+        canvas.height = h;
       }
     };
 
@@ -155,10 +166,17 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
             aria-label="Choose scene"
           >
             {SCENES.map((s) => (
-              <option key={s.id} value={s.id}>{s.subject} · {s.label}</option>
+              <option key={s.id} value={s.id}>
+                {s.subject} · {s.label}
+              </option>
             ))}
           </select>
-          <Button size="icon" variant="outline" onClick={() => setSceneId((s) => s)} aria-label="Reload">
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={() => setSceneId((s) => s)}
+            aria-label="Reload"
+          >
             <RotateCw className="h-4 w-4" />
           </Button>
           <Button size="icon" variant="outline" onClick={goFullscreen} aria-label="Fullscreen">
@@ -172,7 +190,8 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
           <Lock className="h-10 w-10 text-primary" />
           <h3 className="text-lg font-semibold text-foreground">Free lab quota reached</h3>
           <p className="max-w-md text-sm text-muted-foreground">
-            You've opened {limit} scenes. Book a tutor session to keep exploring the full WebGL library.
+            You've opened {limit} scenes. Book a tutor session to keep exploring the full WebGL
+            library.
           </p>
         </div>
       ) : unsupported ? (
@@ -187,7 +206,9 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
             className="absolute inset-0 h-full w-full cursor-grab touch-none active:cursor-grabbing"
           />
           <div className="pointer-events-none absolute bottom-2 left-2 max-w-md rounded-md bg-background/70 px-3 py-2 text-xs text-foreground backdrop-blur">
-            <div className="font-semibold">{scene.subject} · {scene.label}</div>
+            <div className="font-semibold">
+              {scene.subject} · {scene.label}
+            </div>
             <div className="text-muted-foreground">{scene.description}</div>
           </div>
         </div>

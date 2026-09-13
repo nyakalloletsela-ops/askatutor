@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { FileText, Plus, Trash2, CheckCircle2, Clock } from "lucide-react";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, EmptyState, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  PageContainer,
+  EmptyState,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
@@ -100,11 +104,7 @@ function AssignmentsPage() {
     <PageContainer
       title="Assignments"
       description="Homework and tasks shared between tutors and students."
-      actions={
-        isTutor ? (
-          <CreateAssignmentDialog students={students} />
-        ) : undefined
-      }
+      actions={isTutor ? <CreateAssignmentDialog students={students} /> : undefined}
     >
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -156,20 +156,12 @@ function AssignmentsPage() {
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   {a.status !== "completed" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => markDone.mutate(a.id)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => markDone.mutate(a.id)}>
                       Mark done
                     </Button>
                   )}
                   {a.tutor_id === user?.id && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => del.mutate(a.id)}
-                    >
+                    <Button size="icon" variant="ghost" onClick={() => del.mutate(a.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
@@ -183,11 +175,7 @@ function AssignmentsPage() {
   );
 }
 
-function CreateAssignmentDialog({
-  students,
-}: {
-  students: { id: string; full_name: string }[];
-}) {
+function CreateAssignmentDialog({ students }: { students: { id: string; full_name: string }[] }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -268,11 +256,7 @@ function CreateAssignmentDialog({
           </div>
           <div>
             <Label>Due date</Label>
-            <Input
-              type="datetime-local"
-              value={dueAt}
-              onChange={(e) => setDueAt(e.target.value)}
-            />
+            <Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

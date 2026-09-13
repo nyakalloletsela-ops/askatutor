@@ -1,12 +1,15 @@
 # AskATutorLive — Master GAP REGISTER
 
 ## Category 1: Authentication & Account Lifecycle
+
 **Status: YELLOW** — authentication foundation exists but critical gaps (password reset flow, account deletion, self-serve registration, OAuth completion, password change, suspension mechanism)
 
 ## Category 2: Roles, Permissions & Administration
+
 **Status: 🔴 RED — PRODUCTION VERIFICATION BLOCKED**
 
 ### GAP-001: Incomplete role hierarchy coverage (P0)
+
 - **Original finding**: Role checks exist for admin/tutor/student/parent but coverage is incomplete; some routes use direct DB queries instead of useAuth hook roles; RLS policies may not enforce all role boundaries
 - **Evidence**: useAuth hook provides isAdmin/isTutor/isParent; but some route-level checks bypass the hook; RLS policies on profiles/sessions may have gaps
 - **Remediation**: Added RLS policies for `profiles` and `user_roles` tables (migration `20260813090000_add_rls_profiles_user_roles_policies.sql`)
@@ -20,6 +23,7 @@
 - **Final status**: **REMEDIATED — PRODUCTION UNVERIFIED**
 
 ### GAP-002: Admin-only actions lack RLS enforcement (P1)
+
 - **Original finding**: Admin-mediated actions (tutor creation, application approval) rely on service role or explicit admin checks; no RLS policy enforces admin-only at DB level for critical operations
 - **Evidence**: tutor creation via admin API uses service role; no RLS policy restricting tutor_availability or user_roles to admins only
 - **Remediation**: Added RLS policies for `tutor_subscriptions`, `tutor_courses`, `payment_intents`, `ledger_entries`, `site_content` tables (migration `20260814090000_add_rls_admin_operations_policies.sql`)
@@ -32,6 +36,7 @@
 - **Final status**: **REMEDIATED — PRODUCTION UNVERIFIED**
 
 ### GAP-003: No role-based API rate limiting or entitlement gates (P2)
+
 - **Original finding**: No rate limiting or entitlement gates at API level beyond the book_session entitlement check; no per-role quota tracking visible
 - **Evidence**: book_session has entitlement gate for 'find_tutors' scope; no other rate limiting or per-role quotas found
 - **Remediation**: Added entitlement gates to `ensure_whiteboard`, `get_tutor_pricing`, `match_simulations`, `get_my_scopes` RPC functions (migration `20260814140000_add_rls_entitlement_gates_beyond_book_session.sql`)
@@ -44,6 +49,7 @@
 - **Final status**: **REMEDIATED — PRODUCTION UNVERIFIED**
 
 ### GAP-004: Tutor application role promotion missing validation (P2)
+
 - **Original finding**: `approve_tutor_application` RPC promotes user to tutor role but no RLS policy or validation ensures the caller is actually an admin; no audit trail of role promotions
 - **Evidence**: `approve_tutor_application` RPC exists; no visible RLS policy or admin check on the RPC itself
 - **Remediation**: Added admin validation to `approve_tutor_application`, `reject_tutor_application`, `log_tutor_decision` RPC functions (migration `20260815090000_add_rls_tutor_app_promotion_validation.sql`)
@@ -56,6 +62,7 @@
 - **Final status**: **REMEDIATED — PRODUCTION UNVERIFIED**
 
 ### GAP-005: Parent role visibility incomplete (P3)
+
 - **Original finding**: Parent role is referenced in useAuth hook and handle_new_user trigger but no dedicated parent-specific RLS policies or UI paths visible; parent capabilities ambiguous
 - **Evidence**: handle_new_user assigns role='student' when _chosen != 'parent'; parent role mentioned but no parent-specific policies found
 - **Remediation**: Added RLS policies for parent role (migration `20260815140000_add_rls_parent_role_policies.sql`)
@@ -69,6 +76,7 @@
 - **Final status**: **REMEDIATED — PRODUCTION UNVERIFIED**
 
 ### Category 2 Summary
+
 - **Gaps**: 5 (GAP-001 through GAP-005)
 - **Code remediations**: 6 migration files created
 - **TypeScript verification**: PASS (no errors)
@@ -80,15 +88,17 @@
 - **Overall status**: **🔴 RED — PRODUCTION VERIFICATION BLOCKED**
 
 ### Migration Files
-| Gap | Migration File | Size | Local Status | Production Status |
-|-----|---------------|------|--------------|-------------------|
-| GAP-001 | `20260813090000_add_rls_profiles_user_roles_policies.sql` | 2,609 bytes | **PRESENT** | **UNVERIFIED** |
-| GAP-002 | `20260814090000_add_rls_admin_operations_policies.sql` | 5,925 bytes | **PRESENT** | **UNVERIFIED** |
-| GAP-003 | `20260814140000_add_rls_entitlement_gates_beyond_book_session.sql` | 7,895 bytes | **PRESENT** | **UNVERIFIED** |
-| GAP-004 | `20260815090000_add_rls_tutor_app_promotion_validation.sql` | 5,959 bytes | **PRESENT** | **UNVERIFIED** |
-| GAP-005 | `20260815140000_add_rls_parent_role_policies.sql` | 5,787 bytes | **PRESENT** | **UNVERIFIED** |
+
+| Gap     | Migration File                                                     | Size        | Local Status | Production Status |
+| ------- | ------------------------------------------------------------------ | ----------- | ------------ | ----------------- |
+| GAP-001 | `20260813090000_add_rls_profiles_user_roles_policies.sql`          | 2,609 bytes | **PRESENT**  | **UNVERIFIED**    |
+| GAP-002 | `20260814090000_add_rls_admin_operations_policies.sql`             | 5,925 bytes | **PRESENT**  | **UNVERIFIED**    |
+| GAP-003 | `20260814140000_add_rls_entitlement_gates_beyond_book_session.sql` | 7,895 bytes | **PRESENT**  | **UNVERIFIED**    |
+| GAP-004 | `20260815090000_add_rls_tutor_app_promotion_validation.sql`        | 5,959 bytes | **PRESENT**  | **UNVERIFIED**    |
+| GAP-005 | `20260815140000_add_rls_parent_role_policies.sql`                  | 5,787 bytes | **PRESENT**  | **UNVERIFIED**    |
 
 ### Production Target
+
 - **Supabase Project**: `bzjlhxmiwdkteqkzqasi` (from AskATutorLive `.env`)
 - **URL**: `https://bzjlhxmiwdkteqkzqasi.supabase.co`
 - **Configuration**: `.env` file with SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, SUPABASE_SERVICE_ROLE_KEY
@@ -96,6 +106,7 @@
 - **Frontend**: Local development at `C:\Users\User\Documents\Projects\askatutor`
 
 ### Verification Method
+
 - **TypeScript/typecheck**: `npx tsc --noEmit` — **PASS** (no errors)
 - **Production build**: Vite build — **compiles successfully**
 - **Migration files**: **6/6** present in `supabase/migrations/` (local)
@@ -106,6 +117,7 @@
 - **Network connectivity**: Endpoint `https://bzjlhxmiwdkteqkzqasi.supabase.co` unreachable from this network environment
 
 ### Notes
+
 - All original GAP REGISTER findings preserved
 - No historical evidence deleted or overwritten
 - Remediations follow existing migration conventions

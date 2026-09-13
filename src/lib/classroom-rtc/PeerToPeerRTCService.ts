@@ -86,7 +86,11 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     const set = this.listeners[event] as Set<RTCListener<K>> | undefined;
     if (!set) return;
     set.forEach((fn) => {
-      try { fn(payload); } catch (e) { console.error(e); }
+      try {
+        fn(payload);
+      } catch (e) {
+        console.error(e);
+      }
     });
   }
 
@@ -134,13 +138,19 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
   }
 
   async leave(): Promise<void> {
-    if (this.statsTimer) { clearInterval(this.statsTimer); this.statsTimer = null; }
+    if (this.statsTimer) {
+      clearInterval(this.statsTimer);
+      this.statsTimer = null;
+    }
     this.sendSignal({ kind: "leave", targetId: this.remoteUserId });
     this.localStream?.getTracks().forEach((t) => t.stop());
     this.screenStream?.getTracks().forEach((t) => t.stop());
     this.pc?.close();
     this.pc = null;
-    if (this.channel) { await supabase.removeChannel(this.channel); this.channel = null; }
+    if (this.channel) {
+      await supabase.removeChannel(this.channel);
+      this.channel = null;
+    }
     this.localStream = null;
     this.screenStream = null;
     this.remoteStream = null;
@@ -178,16 +188,15 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     // local preview swap
     if (this.localStream) {
       this.cameraTrack?.stop?.call?.(this.cameraTrack);
-      const newLocal = new MediaStream([
-        ...this.localStream.getAudioTracks(),
-        screenTrack,
-      ]);
+      const newLocal = new MediaStream([...this.localStream.getAudioTracks(), screenTrack]);
       this.localStream = newLocal;
       this.emit("local-stream", newLocal);
     }
     this.emit("screen-share", true);
     this.sendSignal({ kind: "screen-share", targetId: this.remoteUserId, screenSharing: true });
-    screenTrack.onended = () => { void this.stopScreenShare(); };
+    screenTrack.onended = () => {
+      void this.stopScreenShare();
+    };
   }
 
   async stopScreenShare(): Promise<void> {
@@ -250,12 +259,24 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     };
   }
 
-  getLocalStream() { return this.localStream; }
-  getRemoteStream() { return this.remoteStream; }
-  getRemoteParticipant() { return this.remoteParticipant; }
-  getMicEnabled() { return this.localStream?.getAudioTracks()[0]?.enabled ?? false; }
-  getCameraEnabled() { return this.localStream?.getVideoTracks()[0]?.enabled ?? false; }
-  getScreenSharing() { return !!this.screenStream; }
+  getLocalStream() {
+    return this.localStream;
+  }
+  getRemoteStream() {
+    return this.remoteStream;
+  }
+  getRemoteParticipant() {
+    return this.remoteParticipant;
+  }
+  getMicEnabled() {
+    return this.localStream?.getAudioTracks()[0]?.enabled ?? false;
+  }
+  getCameraEnabled() {
+    return this.localStream?.getVideoTracks()[0]?.enabled ?? false;
+  }
+  getScreenSharing() {
+    return !!this.screenStream;
+  }
 
   // ---------- internals ----------
   private ensurePc(): RTCPeerConnection {
@@ -264,7 +285,12 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     this.pc = pc;
     this.localStream?.getTracks().forEach((t) => pc.addTrack(t, this.localStream!));
     pc.onicecandidate = (e) => {
-      if (e.candidate) this.sendSignal({ kind: "candidate", targetId: this.remoteUserId, candidate: e.candidate.toJSON() });
+      if (e.candidate)
+        this.sendSignal({
+          kind: "candidate",
+          targetId: this.remoteUserId,
+          candidate: e.candidate.toJSON(),
+        });
     };
     pc.ontrack = (e) => {
       const [stream] = e.streams;
@@ -283,7 +309,10 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
       } else if (st === "disconnected") {
         // Transient drop — give it a few seconds, then force ICE restart.
         setTimeout(() => {
-          if (this.pc && (this.pc.connectionState === "disconnected" || this.pc.connectionState === "failed")) {
+          if (
+            this.pc &&
+            (this.pc.connectionState === "disconnected" || this.pc.connectionState === "failed")
+          ) {
             void this.restartIce();
           }
         }, 4000);
@@ -303,7 +332,11 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     try {
       const offer = await pc.createOffer({ iceRestart: true });
       await pc.setLocalDescription(offer);
-      this.sendSignal({ kind: "offer", targetId: this.remoteUserId, description: pc.localDescription?.toJSON() });
+      this.sendSignal({
+        kind: "offer",
+        targetId: this.remoteUserId,
+        description: pc.localDescription?.toJSON(),
+      });
     } catch (err) {
       this.emit("error", err instanceof Error ? err.message : "Reconnect failed");
     } finally {
@@ -311,13 +344,16 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     }
   }
 
-
   private sendSignal(s: Omit<SignalPayload, "senderId" | "senderName">) {
     if (!this.channel) return;
     void this.channel.send({
       type: "broadcast",
       event: "signal",
-      payload: { ...s, senderId: this.cfg.userId, senderName: this.cfg.displayName } satisfies SignalPayload,
+      payload: {
+        ...s,
+        senderId: this.cfg.userId,
+        senderName: this.cfg.displayName,
+      } satisfies SignalPayload,
     });
   }
 
@@ -334,7 +370,9 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
 
     channel.on("presence", { event: "sync" }, () => {
       const state = channel.presenceState<PresencePayload>();
-      const remote = Object.values(state).flat().find((p) => p.userId !== this.cfg.userId);
+      const remote = Object.values(state)
+        .flat()
+        .find((p) => p.userId !== this.cfg.userId);
       if (remote) {
         this.remoteUserId = remote.userId;
         this.isPolite = this.cfg.userId > remote.userId;
@@ -359,7 +397,10 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
     await new Promise<void>((resolve) => {
       channel.subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await channel.track({ userId: this.cfg.userId, displayName: this.cfg.displayName } satisfies PresencePayload);
+          await channel.track({
+            userId: this.cfg.userId,
+            displayName: this.cfg.displayName,
+          } satisfies PresencePayload);
           resolve();
         }
       });
@@ -390,7 +431,11 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
         await pc.setRemoteDescription(payload.description);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        this.sendSignal({ kind: "answer", targetId: payload.senderId, description: pc.localDescription?.toJSON() });
+        this.sendSignal({
+          kind: "answer",
+          targetId: payload.senderId,
+          description: pc.localDescription?.toJSON(),
+        });
       } else if (payload.kind === "answer" && payload.description) {
         await pc.setRemoteDescription(payload.description);
       } else if (payload.kind === "candidate" && payload.candidate) {
@@ -403,7 +448,10 @@ export class PeerToPeerRTCService implements ClassroomRTCService {
         this.emit("remote-participant", null);
       } else if (payload.kind === "screen-share") {
         if (this.remoteParticipant) {
-          this.remoteParticipant = { ...this.remoteParticipant, isScreenSharing: !!payload.screenSharing };
+          this.remoteParticipant = {
+            ...this.remoteParticipant,
+            isScreenSharing: !!payload.screenSharing,
+          };
           this.emit("remote-participant", this.remoteParticipant);
         }
       }

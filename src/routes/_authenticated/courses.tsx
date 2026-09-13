@@ -169,7 +169,9 @@ function CoursesPage() {
             <div key={c.id} className="space-y-2">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-semibold">{c.name}</h2>
-                <Badge variant="outline" className="text-[10px]">{c.level}</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {c.level}
+                </Badge>
                 <Badge
                   variant={c.status === "approved" ? "default" : "secondary"}
                   className="text-[10px]"
@@ -183,7 +185,9 @@ function CoursesPage() {
                     key={m.id}
                     material={m}
                     students={students}
-                    accessFor={accessRows.filter((a) => a.material_id === m.id).map((a) => a.student_id)}
+                    accessFor={accessRows
+                      .filter((a) => a.material_id === m.id)
+                      .map((a) => a.student_id)}
                     onDelete={() => del.mutate(m)}
                   />
                 ))}
@@ -238,7 +242,9 @@ function MaterialCard({
               <p className="truncate text-sm font-medium">{material.title}</p>
             </div>
             {material.description && (
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{material.description}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                {material.description}
+              </p>
             )}
             <p className="mt-1 text-[10px] text-muted-foreground">
               Shared with {sharedCount} {sharedCount === 1 ? "student" : "students"}
@@ -279,9 +285,9 @@ function ManageAccessDialog({
       const toAdd = [...want].filter((id) => !have.has(id));
       const toRemove = [...have].filter((id) => !want.has(id));
       if (toAdd.length) {
-        const { error } = await supabase.from("course_material_access").insert(
-          toAdd.map((student_id) => ({ material_id: material.id, student_id })),
-        );
+        const { error } = await supabase
+          .from("course_material_access")
+          .insert(toAdd.map((student_id) => ({ material_id: material.id, student_id })));
         if (error) throw new Error(error.message);
       }
       if (toRemove.length) {
@@ -324,7 +330,8 @@ function ManageAccessDialog({
         <div className="space-y-2">
           {students.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              You don’t have any students yet. They’ll appear here after their first session with you.
+              You don’t have any students yet. They’ll appear here after their first session with
+              you.
             </p>
           )}
           {students.map((s) => {
@@ -495,11 +502,7 @@ function NewMaterialDialog({ courses }: { courses: Course[] }) {
               <Input
                 type="file"
                 accept={
-                  kind === "video"
-                    ? "video/*"
-                    : kind === "pdf"
-                      ? "application/pdf"
-                      : undefined
+                  kind === "video" ? "video/*" : kind === "pdf" ? "application/pdf" : undefined
                 }
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />

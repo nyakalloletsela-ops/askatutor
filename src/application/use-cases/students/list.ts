@@ -10,9 +10,7 @@ export const listSchedulableStudents = createServerFn({ method: "GET" })
     if (!isScheduler) throw new Error("Only tutors can schedule students");
 
     const studentIds = await deps.user.listRoleUserIds("student");
-    const ids = Array.from(
-      new Set(studentIds.filter((id) => id !== userId)),
-    );
+    const ids = Array.from(new Set(studentIds.filter((id) => id !== userId)));
 
     if (ids.length === 0) return [];
 

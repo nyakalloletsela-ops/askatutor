@@ -33,15 +33,10 @@ export function MessageThread({
         {messages.map((m) => {
           const mine = m.sender_id === currentUserId;
           return (
-            <div
-              key={m.id}
-              className={`flex ${mine ? "justify-end" : "justify-start"}`}
-            >
+            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
-                  mine
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
+                  mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
                 }`}
               >
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>

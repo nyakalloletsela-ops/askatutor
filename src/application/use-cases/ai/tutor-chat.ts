@@ -74,7 +74,6 @@ Style:
 - Flag any assumption you had to make.
 - If the request is ambiguous, ask one clarifying question before producing a long answer.`;
 
-
 export const aiTutorChat = createServerFn({ method: "POST" })
   .middleware([requireAppDependencies])
   .inputValidator((input) => InputSchema.parse(input))
@@ -97,10 +96,7 @@ export const aiTutorChat = createServerFn({ method: "POST" })
 
     const { text: reply } = await deps.aiGateway.chat({
       model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...data.messages,
-      ],
+      messages: [{ role: "system", content: systemPrompt }, ...data.messages],
     });
     return { reply, mode };
   });

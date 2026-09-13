@@ -15,7 +15,10 @@ export const Route = createFileRoute("/_authenticated/pay-tutor")({
   head: () => ({
     meta: [
       { title: "Pay a tutor — Ask A Tutor Live" },
-      { name: "description", content: "Pay your tutor in bulk for one or many lessons using their tutor ID." },
+      {
+        name: "description",
+        content: "Pay your tutor in bulk for one or many lessons using their tutor ID.",
+      },
     ],
   }),
 });

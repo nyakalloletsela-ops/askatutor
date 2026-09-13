@@ -19,7 +19,8 @@ export interface CursorMsg {
   senderId: string;
   name: string;
   color: string;
-  x: number; y: number;
+  x: number;
+  y: number;
 }
 
 interface UseRealtimeOpts {
@@ -30,7 +31,13 @@ interface UseRealtimeOpts {
   onPeerLeave: (id: string) => void;
 }
 
-export function useWhiteboardRealtime({ roomId, selfId, onOp, onCursor, onPeerLeave }: UseRealtimeOpts) {
+export function useWhiteboardRealtime({
+  roomId,
+  selfId,
+  onOp,
+  onCursor,
+  onPeerLeave,
+}: UseRealtimeOpts) {
   const chanRef = useRef<RealtimeChannel | null>(null);
   const handlersRef = useRef({ onOp, onCursor, onPeerLeave });
   handlersRef.current = { onOp, onCursor, onPeerLeave };
@@ -52,18 +59,24 @@ export function useWhiteboardRealtime({ roomId, selfId, onOp, onCursor, onPeerLe
       .subscribe();
     chanRef.current = channel;
     return () => {
-      try { channel.send({ type: "broadcast", event: "leave", payload: { senderId: selfId } }); } catch { /* noop */ }
+      try {
+        channel.send({ type: "broadcast", event: "leave", payload: { senderId: selfId } });
+      } catch {
+        /* noop */
+      }
       supabase.removeChannel(channel);
       chanRef.current = null;
     };
   }, [roomId, selfId]);
 
   const sendOp = (op: WbOpInput) => {
-    const chan = chanRef.current; if (!chan) return;
+    const chan = chanRef.current;
+    if (!chan) return;
     chan.send({ type: "broadcast", event: "op", payload: { ...op, senderId: selfId } });
   };
   const sendCursor = (msg: Omit<CursorMsg, "senderId">) => {
-    const chan = chanRef.current; if (!chan) return;
+    const chan = chanRef.current;
+    if (!chan) return;
     chan.send({ type: "broadcast", event: "cursor", payload: { ...msg, senderId: selfId } });
   };
   return { sendOp, sendCursor };

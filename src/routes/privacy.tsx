@@ -42,25 +42,25 @@ function PrivacyPage() {
 
           <h2>2. Google sign-in</h2>
           <p>
-            If you choose Google sign-in, Google provides authentication information to AskATutorLive
-            so that we can create and maintain your account and authenticate you. We use Google
-            account information only for the purposes described in this policy and the service's
-            user-facing functionality. AskATutorLive does not sell Google user data.
+            If you choose Google sign-in, Google provides authentication information to
+            AskATutorLive so that we can create and maintain your account and authenticate you. We
+            use Google account information only for the purposes described in this policy and the
+            service's user-facing functionality. AskATutorLive does not sell Google user data.
           </p>
 
           <h2>3. How information is used</h2>
           <p>
             Information is used to authenticate users, provide tutoring and learning features,
-            maintain profiles and sessions, respond to support requests, protect the platform, prevent
-            abuse, maintain service reliability, and improve the user experience.
+            maintain profiles and sessions, respond to support requests, protect the platform,
+            prevent abuse, maintain service reliability, and improve the user experience.
           </p>
 
           <h2>4. Service providers</h2>
           <p>
             AskATutorLive uses third-party infrastructure and service providers where necessary to
             operate features such as authentication, data storage, communications, hosting, payments
-            and other platform functionality. Information shared with a provider is limited to what is
-            reasonably necessary for that provider to perform its service.
+            and other platform functionality. Information shared with a provider is limited to what
+            is reasonably necessary for that provider to perform its service.
           </p>
 
           <h2>5. AI features</h2>
@@ -80,25 +80,25 @@ function PrivacyPage() {
           <h2>7. Retention and deletion</h2>
           <p>
             Information is retained for as long as reasonably necessary to provide the service, meet
-            operational and legal requirements, resolve disputes, prevent abuse and maintain security.
-            If you want to request account or personal-data deletion, contact
-            <a href="mailto:help@askatutorlive.com"> help@askatutorlive.com</a> with enough information
-            for us to identify the relevant account.
+            operational and legal requirements, resolve disputes, prevent abuse and maintain
+            security. If you want to request account or personal-data deletion, contact
+            <a href="mailto:help@askatutorlive.com"> help@askatutorlive.com</a> with enough
+            information for us to identify the relevant account.
           </p>
 
           <h2>8. Your choices</h2>
           <p>
-            You may contact us about access, correction or deletion requests concerning your personal
-            information. Some information may need to be retained where required for security, fraud
-            prevention, legal compliance or legitimate operational purposes.
+            You may contact us about access, correction or deletion requests concerning your
+            personal information. Some information may need to be retained where required for
+            security, fraud prevention, legal compliance or legitimate operational purposes.
           </p>
 
           <h2>9. Children and learners</h2>
           <p>
             AskATutorLive is an education platform. Where a learner is a child or otherwise needs a
             parent, guardian or institution to provide consent, the applicable account and
-            authorization process should be followed. We do not knowingly request unnecessary personal
-            information from children.
+            authorization process should be followed. We do not knowingly request unnecessary
+            personal information from children.
           </p>
 
           <h2>10. Changes to this policy</h2>
@@ -114,7 +114,11 @@ function PrivacyPage() {
           </p>
 
           <p className="not-prose pt-4 text-sm text-muted-foreground">
-            See also <Link to="/terms" className="underline underline-offset-4">Terms of Service</Link>.
+            See also{" "}
+            <Link to="/terms" className="underline underline-offset-4">
+              Terms of Service
+            </Link>
+            .
           </p>
         </article>
       </main>

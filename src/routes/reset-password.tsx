@@ -5,7 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { GraduationCap } from "lucide-react";
 
 export const Route = createFileRoute("/reset-password")({
@@ -48,10 +53,14 @@ function ResetPasswordPage() {
         const hashParams = new URLSearchParams(hash);
         const accessToken = hashParams.get("access_token");
         const refreshToken = hashParams.get("refresh_token");
-        const errDesc = hashParams.get("error_description") ?? url.searchParams.get("error_description");
+        const errDesc =
+          hashParams.get("error_description") ?? url.searchParams.get("error_description");
         if (errDesc) throw new Error(errDesc);
         if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
           if (error) throw error;
           window.history.replaceState({}, "", url.pathname + url.search);
           if (!cancelled) setReady(true);
@@ -72,7 +81,6 @@ function ResetPasswordPage() {
       sub.subscription.unsubscribe();
     };
   }, []);
-
 
   const handleSubmit = async () => {
     if (password.length < 6) return toast.error("Password must be at least 6 characters.");

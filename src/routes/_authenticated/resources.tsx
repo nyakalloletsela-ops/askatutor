@@ -74,7 +74,11 @@ function ResourcesPage() {
       actions={<NewResourceDialog />}
     >
       {resources.length === 0 ? (
-        <EmptyState icon={FolderOpen} title="No resources yet" description="Tutors can share files and links here." />
+        <EmptyState
+          icon={FolderOpen}
+          title="No resources yet"
+          description="Tutors can share files and links here."
+        />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {resources.map((r) => (

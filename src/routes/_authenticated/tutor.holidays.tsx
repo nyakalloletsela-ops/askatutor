@@ -3,7 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
@@ -31,7 +36,9 @@ function Holidays() {
     setList((data as H[]) ?? []);
   };
 
-  useEffect(() => { if (user) load(); }, [user]);
+  useEffect(() => {
+    if (user) load();
+  }, [user]);
 
   const add = async () => {
     if (!start || !end) return toast.error("Pick start and end");
@@ -42,7 +49,9 @@ function Holidays() {
       reason: reason || null,
     });
     if (error) return toast.error(error.message);
-    setStart(""); setEnd(""); setReason("");
+    setStart("");
+    setEnd("");
+    setReason("");
     load();
   };
 
@@ -76,7 +85,9 @@ function Holidays() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Add a holiday</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Add a holiday</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -90,14 +101,20 @@ function Holidays() {
           </div>
           <div>
             <Label>Reason (optional)</Label>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Vacation" />
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Vacation"
+            />
           </div>
           <Button onClick={add}>Add holiday</Button>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Upcoming &amp; past holidays</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Upcoming &amp; past holidays</CardTitle>
+        </CardHeader>
         <CardContent>
           {list.length === 0 ? (
             <p className="text-sm text-muted-foreground">No holidays scheduled.</p>
@@ -107,7 +124,8 @@ function Holidays() {
                 <li key={h.id} className="flex items-center justify-between py-3">
                   <div>
                     <p className="font-medium">
-                      {new Date(h.start_date).toLocaleDateString()} → {new Date(h.end_date).toLocaleDateString()}
+                      {new Date(h.start_date).toLocaleDateString()} →{" "}
+                      {new Date(h.end_date).toLocaleDateString()}
                     </p>
                     {h.reason && <p className="text-xs text-muted-foreground">{h.reason}</p>}
                   </div>

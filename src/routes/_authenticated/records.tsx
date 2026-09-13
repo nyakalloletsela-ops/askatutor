@@ -2,8 +2,17 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { PageContainer, SectionHeader, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  PageContainer,
+  SectionHeader,
+  EmptyState,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { FolderOpen, Video, FileText, ExternalLink, Sparkles } from "lucide-react";
 
@@ -31,7 +40,9 @@ function RecordsPage() {
     queryFn: async (): Promise<Record[]> => {
       const { data, error } = await supabase
         .from("session_records")
-        .select("id, room_id, title, meeting_recording_url, chat_transcript, ai_summary, created_at, session_files(id, filename, storage_path, file_type)")
+        .select(
+          "id, room_id, title, meeting_recording_url, chat_transcript, ai_summary, created_at, session_files(id, filename, storage_path, file_type)",
+        )
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
@@ -84,7 +95,8 @@ function RecordsPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-md border bg-card/40 p-2 text-sm hover:bg-accent/40"
                 >
-                  <Video className="h-4 w-4" /> Recording <ExternalLink className="ml-auto h-3.5 w-3.5" />
+                  <Video className="h-4 w-4" /> Recording{" "}
+                  <ExternalLink className="ml-auto h-3.5 w-3.5" />
                 </a>
               )}
               {r.ai_summary && (

@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../8-core-ux-navigation/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../8-core-ux-navigation/ui/dialog";
 import { Label } from "../../8-core-ux-navigation/ui/label";
 import type { ClassroomRTCService, MediaDeviceLists } from "@/lib/classroom-rtc";
 
@@ -35,19 +40,49 @@ export function DeviceSettingsDialog({ service, open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>Audio & video</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Audio & video</DialogTitle>
+        </DialogHeader>
         <div className="grid gap-3">
-          <Row label="Camera" value={cam} options={devices.cameras} onChange={(v) => onChange("camera", v)} />
-          <Row label="Microphone" value={mic} options={devices.mics} onChange={(v) => onChange("mic", v)} />
-          <Row label="Speakers" value={spk} options={devices.speakers} onChange={(v) => onChange("speaker", v)} />
-          <p className="text-[11px] text-muted-foreground">If a device is missing, allow camera & mic in your browser's address-bar lock, then reopen this dialog.</p>
+          <Row
+            label="Camera"
+            value={cam}
+            options={devices.cameras}
+            onChange={(v) => onChange("camera", v)}
+          />
+          <Row
+            label="Microphone"
+            value={mic}
+            options={devices.mics}
+            onChange={(v) => onChange("mic", v)}
+          />
+          <Row
+            label="Speakers"
+            value={spk}
+            options={devices.speakers}
+            onChange={(v) => onChange("speaker", v)}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            If a device is missing, allow camera & mic in your browser's address-bar lock, then
+            reopen this dialog.
+          </p>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Row({ label, value, options, onChange }: { label: string; value: string; options: MediaDeviceInfo[]; onChange: (v: string) => void }) {
+function Row({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: MediaDeviceInfo[];
+  onChange: (v: string) => void;
+}) {
   return (
     <div className="grid gap-1.5">
       <Label className="text-xs">{label}</Label>
@@ -58,7 +93,9 @@ function Row({ label, value, options, onChange }: { label: string; value: string
       >
         {options.length === 0 && <option value="">No devices</option>}
         {options.map((d) => (
-          <option key={d.deviceId} value={d.deviceId}>{d.label || `Device ${d.deviceId.slice(0, 6)}`}</option>
+          <option key={d.deviceId} value={d.deviceId}>
+            {d.label || `Device ${d.deviceId.slice(0, 6)}`}
+          </option>
         ))}
       </select>
     </div>

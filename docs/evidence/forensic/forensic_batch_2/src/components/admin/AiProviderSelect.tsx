@@ -13,7 +13,11 @@ import { usePlatformConfig, type AiProvider } from "@/hooks/use-platform-config"
 
 const OPTIONS: { value: AiProvider; label: string; hint: string }[] = [
   { value: "groq", label: "Groq", hint: "Requires GROQ_API_KEY (or a key saved below)." },
-  { value: "gemini", label: "Google Gemini (default)", hint: "Requires GEMINI_API_KEY (or a key saved below)." },
+  {
+    value: "gemini",
+    label: "Google Gemini (default)",
+    hint: "Requires GEMINI_API_KEY (or a key saved below).",
+  },
   { value: "ollama", label: "Ollama (self-hosted)", hint: "Requires OLLAMA_BASE_URL." },
 ];
 

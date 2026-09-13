@@ -3,7 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  PageContainer,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
@@ -67,9 +70,14 @@ function TutorsAdmin() {
       />
       <Card>
         <CardContent className="space-y-2 p-4">
-          {apps.length === 0 && <p className="text-sm text-muted-foreground">No tutor applications yet.</p>}
+          {apps.length === 0 && (
+            <p className="text-sm text-muted-foreground">No tutor applications yet.</p>
+          )}
           {apps.map((a) => (
-            <div key={a.id} className="flex flex-wrap items-center gap-3 rounded-md border bg-card/40 p-3 text-sm">
+            <div
+              key={a.id}
+              className="flex flex-wrap items-center gap-3 rounded-md border bg-card/40 p-3 text-sm"
+            >
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{a.full_name}</p>
                 <p className="truncate text-xs text-muted-foreground">{a.email}</p>
@@ -85,7 +93,11 @@ function TutorsAdmin() {
               </div>
               <Badge
                 variant={
-                  a.status === "approved" ? "default" : a.status === "rejected" ? "destructive" : "secondary"
+                  a.status === "approved"
+                    ? "default"
+                    : a.status === "rejected"
+                      ? "destructive"
+                      : "secondary"
                 }
               >
                 {a.status}

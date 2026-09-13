@@ -1,7 +1,4 @@
-import type {
-  PaymentWebhookEvent,
-  PaymentWebhookAction,
-} from "@/application/contracts/payments";
+import type { PaymentWebhookEvent, PaymentWebhookAction } from "@/application/contracts/payments";
 
 function readCustomId(resource: Record<string, unknown>): string | undefined {
   return (
@@ -29,8 +26,7 @@ export function resolvePaypalWebhookAction(event: PaymentWebhookEvent): PaymentW
   if (type === "PAYMENT.CAPTURE.COMPLETED") {
     const customId = readCustomId(resource);
     const providerRef =
-      (resource.id as string | undefined) ??
-      (resource as { invoice_id?: string }).invoice_id;
+      (resource.id as string | undefined) ?? (resource as { invoice_id?: string }).invoice_id;
     if (customId && providerRef) return { kind: "finalize", customId, providerRef };
     return { kind: "ignore" };
   }

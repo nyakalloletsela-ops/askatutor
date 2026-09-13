@@ -42,7 +42,8 @@ export const Route = createFileRoute("/api/checkout/return")({
           }
 
           if (provider.slug === "paypal") {
-            const { paypalCaptureOrder, paypalGetOrder } = await import("@/lib/payments/paypal.server");
+            const { paypalCaptureOrder, paypalGetOrder } =
+              await import("@/lib/payments/paypal.server");
             let cap;
             try {
               cap = await paypalCaptureOrder({

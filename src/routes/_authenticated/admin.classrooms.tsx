@@ -1,6 +1,9 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  PageContainer,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { ConfigToggle } from "@/presentation/domains/3-personalization-role-context/admin/ConfigToggle";
 
 export const Route = createFileRoute("/_authenticated/admin/classrooms")({
@@ -20,7 +23,11 @@ export const Route = createFileRoute("/_authenticated/admin/classrooms")({
         description="Enable live classrooms and manage recording permissions."
       />
       <div className="space-y-3">
-        <ConfigToggle k="classrooms_enabled" label="Live classrooms enabled" description="When off, students and tutors cannot join classrooms." />
+        <ConfigToggle
+          k="classrooms_enabled"
+          label="Live classrooms enabled"
+          description="When off, students and tutors cannot join classrooms."
+        />
       </div>
     </PageContainer>
   ),

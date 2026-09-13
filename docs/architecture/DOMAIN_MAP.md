@@ -160,24 +160,24 @@ IDENTITY & ACCESS
 
 ## 3. DOMAIN RESPONSIBILITIES
 
-| Domain | Primary Responsibility | Key Entities |
-|--------|----------------------|--------------|
-| DISCOVERY | Help users find and start learning | Topic, Category, Search |
-| IDENTITY & ACCESS | AuthN, AuthZ, sessions, roles | Account, Session, Role, Permission |
-| LEARNING | Manage learning journey and difficulty identification | Topic, Lesson, LearnerConcern, Difficulty, Intervention |
-| ASSESSMENT | Evaluate understanding and progress | Assessment, Mastery, Reflection, Progress |
-| TUTORING | Connect learners with tutors, manage tutoring sessions | Tutor, TutorSession, PreparationReport |
-| CLASSROOM/SESSIONS | Manage real-time learning sessions | Session, Participant, SessionRecord |
-| AI | Route AI requests, ensure safety, control costs | AIRequest, ModelSelection, AIGateway |
-| VIRTUAL LABS | Create, store, execute virtual laboratories | LabSpec, Scenario, LabExecution, LabRecord |
-| SIMULATIONS | Integrate external simulations | ExternalSim, SimulationContext |
-| EVIDENCE | Preserve and manage learning artifacts | WhiteboardPDF, Recording, EvidenceRecord |
-| NOTES | Manage learner annotations and references | Note, Annotation, Reference |
-| COMMUNICATION | Notifications and messaging | Notification, Message, Alert |
-| COMMUNITY | Forums, groups, peer interaction | Forum, Group, Discussion, Post |
-| INSTITUTIONS | Institution accounts and class distribution | Institution, InstitutionClass, InstitutionLink |
-| TRUST & SAFETY | Abuse prevention, content moderation, privacy | ModerationAction, Report, PrivacyRule |
-| COMMERCE | Plans, payments, billing | Plan, Subscription, Payment, Invoice |
-| ENTITLEMENTS | Feature access and usage limits | Entitlement, UsageRecord, Limit |
-| REPORTING | Generate learner/tutor/institution reports | Report, ReportTemplate |
-| OPERATIONS | Logging, monitoring, deployment | LogEntry, Metric, HealthCheck |
+| Domain             | Primary Responsibility                                 | Key Entities                                            |
+| ------------------ | ------------------------------------------------------ | ------------------------------------------------------- |
+| DISCOVERY          | Help users find and start learning                     | Topic, Category, Search                                 |
+| IDENTITY & ACCESS  | AuthN, AuthZ, sessions, roles                          | Account, Session, Role, Permission                      |
+| LEARNING           | Manage learning journey and difficulty identification  | Topic, Lesson, LearnerConcern, Difficulty, Intervention |
+| ASSESSMENT         | Evaluate understanding and progress                    | Assessment, Mastery, Reflection, Progress               |
+| TUTORING           | Connect learners with tutors, manage tutoring sessions | Tutor, TutorSession, PreparationReport                  |
+| CLASSROOM/SESSIONS | Manage real-time learning sessions                     | Session, Participant, SessionRecord                     |
+| AI                 | Route AI requests, ensure safety, control costs        | AIRequest, ModelSelection, AIGateway                    |
+| VIRTUAL LABS       | Create, store, execute virtual laboratories            | LabSpec, Scenario, LabExecution, LabRecord              |
+| SIMULATIONS        | Integrate external simulations                         | ExternalSim, SimulationContext                          |
+| EVIDENCE           | Preserve and manage learning artifacts                 | WhiteboardPDF, Recording, EvidenceRecord                |
+| NOTES              | Manage learner annotations and references              | Note, Annotation, Reference                             |
+| COMMUNICATION      | Notifications and messaging                            | Notification, Message, Alert                            |
+| COMMUNITY          | Forums, groups, peer interaction                       | Forum, Group, Discussion, Post                          |
+| INSTITUTIONS       | Institution accounts and class distribution            | Institution, InstitutionClass, InstitutionLink          |
+| TRUST & SAFETY     | Abuse prevention, content moderation, privacy          | ModerationAction, Report, PrivacyRule                   |
+| COMMERCE           | Plans, payments, billing                               | Plan, Subscription, Payment, Invoice                    |
+| ENTITLEMENTS       | Feature access and usage limits                        | Entitlement, UsageRecord, Limit                         |
+| REPORTING          | Generate learner/tutor/institution reports             | Report, ReportTemplate                                  |
+| OPERATIONS         | Logging, monitoring, deployment                        | LogEntry, Metric, HealthCheck                           |

@@ -6,7 +6,10 @@ import { useAuth } from "@/presentation/domains/3-personalization-role-context/h
 import { supabase } from "@/integrations/supabase/client";
 import { PageContainer, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
-import { NotificationCard, Notification } from "@/presentation/domains/6-communication-support/notifications/NotificationCard";
+import {
+  NotificationCard,
+  Notification,
+} from "@/presentation/domains/6-communication-support/notifications/NotificationCard";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
   component: NotificationsPage,
@@ -40,7 +43,9 @@ function NotificationsPage() {
         () => qc.invalidateQueries({ queryKey: ["notifications"] }),
       )
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [user, qc]);
 
   const markAll = useMutation({

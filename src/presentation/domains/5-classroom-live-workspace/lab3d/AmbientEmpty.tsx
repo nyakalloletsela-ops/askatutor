@@ -14,7 +14,14 @@ export function AmbientEmpty({ onPick }: { onPick: (text: string) => void }) {
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* ambient gradient + grid + particles */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.18),transparent_60%),radial-gradient(circle_at_70%_80%,rgba(34,211,238,0.15),transparent_60%)]" />
-      <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)", backgroundSize: "44px 44px" }} />
+      <div
+        className="absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+        }}
+      />
       <div className="absolute inset-0">
         {Array.from({ length: 24 }).map((_, i) => (
           <span
@@ -39,7 +46,8 @@ export function AmbientEmpty({ onPick }: { onPick: (text: string) => void }) {
             Universal AI Simulation Lab
           </h2>
           <p className="mt-1 text-sm text-white/60">
-            Turn any question, scenario, or concept — from any subject — into a live, interactive visualization.
+            Turn any question, scenario, or concept — from any subject — into a live, interactive
+            visualization.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
             {samples.map((s) => (
@@ -51,7 +59,9 @@ export function AmbientEmpty({ onPick }: { onPick: (text: string) => void }) {
                 <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-white/40">
                   <s.icon className="h-3 w-3" /> {s.label}
                 </div>
-                <div className="text-xs leading-snug text-white/80 group-hover:text-white">{s.text}</div>
+                <div className="text-xs leading-snug text-white/80 group-hover:text-white">
+                  {s.text}
+                </div>
               </button>
             ))}
           </div>

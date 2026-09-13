@@ -50,7 +50,12 @@ export const getAiKeyStatus = createServerFn({ method: "GET" })
     const { data } = await (supabaseAdmin as any)
       .from("ai_provider_keys")
       .select("provider, api_key, base_url, updated_at");
-    const rows = ((data ?? []) as unknown) as { provider: string; api_key: string | null; base_url: string | null; updated_at: string }[];
+    const rows = (data ?? []) as unknown as {
+      provider: string;
+      api_key: string | null;
+      base_url: string | null;
+      updated_at: string;
+    }[];
     const byProvider = Object.fromEntries(rows.map((r) => [r.provider, r]));
     const env = {
       groq: !!process.env.GROQ_API_KEY,
@@ -92,7 +97,11 @@ export const testAiProvider = createServerFn({ method: "POST" })
         const r = await fetch("https://api.groq.com/openai/v1/models", {
           headers: { Authorization: `Bearer ${creds.api_key}` },
         });
-        if (!r.ok) return { ok: false, error: `Groq: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200) };
+        if (!r.ok)
+          return {
+            ok: false,
+            error: `Groq: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200),
+          };
         return { ok: true, message: "Groq reachable" };
       }
       if (data.provider === "gemini") {
@@ -100,7 +109,11 @@ export const testAiProvider = createServerFn({ method: "POST" })
         const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/models", {
           headers: { Authorization: `Bearer ${creds.api_key}` },
         });
-        if (!r.ok) return { ok: false, error: `Gemini: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200) };
+        if (!r.ok)
+          return {
+            ok: false,
+            error: `Gemini: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200),
+          };
         return { ok: true, message: "Gemini reachable" };
       }
       // ollama

@@ -23,7 +23,6 @@ export const whiteboardConvert = createServerFn({ method: "POST" })
       requireOcrEnabled: true,
     });
 
-
     const system = `You are an expert whiteboard OCR digitiser for live mathematics, science, engineering and chemistry tutoring.
 Reproduce the page as a clean, polished digital version with ZERO handwritten elements remaining.
 
@@ -47,8 +46,7 @@ Strict output rules:
           content: [
             {
               type: "text",
-              text:
-                "Digitise this whiteboard. Pay special attention to all mathematical notation, especially integrals and calculus symbols. Return only plain text, $$LaTeX$$ math blocks, and inline SVG diagrams.",
+              text: "Digitise this whiteboard. Pay special attention to all mathematical notation, especially integrals and calculus symbols. Return only plain text, $$LaTeX$$ math blocks, and inline SVG diagrams.",
             },
             { type: "image_url", image_url: { url: data.imageDataUrl } },
           ],

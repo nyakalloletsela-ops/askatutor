@@ -47,11 +47,7 @@ export {
   adminListUsers,
   adminDeleteUser,
 } from "./use-cases/admin/user-management";
-export {
-  saveAiKey,
-  getAiKeyStatus,
-  testAiProvider,
-} from "./use-cases/admin/ai-keys";
+export { saveAiKey, getAiKeyStatus, testAiProvider } from "./use-cases/admin/ai-keys";
 export { updatePlatformConfig } from "./use-cases/admin/config-management";
 export {
   getAdminDashboardData,
@@ -59,10 +55,7 @@ export {
   rejectTutorApplication,
   logTutorDecision,
 } from "./use-cases/admin/admin-dashboard";
-export {
-  loadWhiteboard,
-  saveWhiteboard,
-} from "./use-cases/classroom/whiteboard-persistence";
+export { loadWhiteboard, saveWhiteboard } from "./use-cases/classroom/whiteboard-persistence";
 export {
   listClassroomFiles,
   getClassroomFileUrl,
@@ -75,11 +68,7 @@ export {
   bookSession,
   joinWaitlist,
 } from "./use-cases/discovery/book-session";
-export {
-  checkIsAdmin,
-  getClassroomContext,
-  getMyScopes,
-} from "./use-cases/identity/check-access";
+export { checkIsAdmin, getClassroomContext, getMyScopes } from "./use-cases/identity/check-access";
 export { saveToNotes } from "./use-cases/learning/save-to-notes";
 export { listNotes, createNote, deleteNote } from "./use-cases/learning/notes";
 export {

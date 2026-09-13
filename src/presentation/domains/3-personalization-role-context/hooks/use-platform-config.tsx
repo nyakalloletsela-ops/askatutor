@@ -27,7 +27,6 @@ const DEFAULTS: PlatformConfig = {
   whiteboard_export_enabled: true,
 };
 
-
 export function usePlatformConfig() {
   const { data, isLoading } = useQuery({
     queryKey: ["platform-config"],
@@ -42,10 +41,7 @@ export function usePlatformConfig() {
       const row = data as PlatformConfig;
       // Legacy rows may still hold a retired provider name — fall back to the default.
       const valid: AiProvider[] = ["gemini", "groq", "ollama"];
-      return valid.includes(row.ai_provider)
-        ? row
-        : { ...row, ai_provider: DEFAULTS.ai_provider };
-
+      return valid.includes(row.ai_provider) ? row : { ...row, ai_provider: DEFAULTS.ai_provider };
     },
   });
   return { config: data ?? DEFAULTS, isLoading };

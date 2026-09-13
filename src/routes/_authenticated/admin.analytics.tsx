@@ -14,7 +14,11 @@ import {
 import { Users, GraduationCap, BookOpen, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, StatCard, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  PageContainer,
+  StatCard,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 
 export const Route = createFileRoute("/_authenticated/admin/analytics")({
@@ -36,7 +40,10 @@ function AnalyticsPage() {
     queryFn: async () => {
       const [usersRes, tutorsRes, sessionsRes, recentSessions] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role", "tutor"),
+        supabase
+          .from("user_roles")
+          .select("user_id", { count: "exact", head: true })
+          .eq("role", "tutor"),
         supabase.from("sessions").select("id", { count: "exact", head: true }),
         supabase
           .from("sessions")
@@ -67,7 +74,11 @@ function AnalyticsPage() {
         <StatCard icon={Users} label="Total users" value={data?.users ?? "—"} />
         <StatCard icon={GraduationCap} label="Tutors" value={data?.tutors ?? "—"} />
         <StatCard icon={BookOpen} label="Sessions" value={data?.sessions ?? "—"} />
-        <StatCard icon={TrendingUp} label="Last 30d" value={data?.series.reduce((a, b) => a + b.count, 0) ?? "—"} />
+        <StatCard
+          icon={TrendingUp}
+          label="Last 30d"
+          value={data?.series.reduce((a, b) => a + b.count, 0) ?? "—"}
+        />
       </div>
 
       <Card>
@@ -80,7 +91,13 @@ function AnalyticsPage() {
                 <XAxis dataKey="date" fontSize={11} />
                 <YAxis fontSize={11} />
                 <Tooltip />
-                <Line type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>

@@ -136,7 +136,9 @@ function CalendarPage() {
                     </Badge>
                   ))}
                   {cell.events.length > 3 && (
-                    <p className="text-[10px] text-muted-foreground">+{cell.events.length - 3} more</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      +{cell.events.length - 3} more
+                    </p>
                   )}
                 </div>
               </div>

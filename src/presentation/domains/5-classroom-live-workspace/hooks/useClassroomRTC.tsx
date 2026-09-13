@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { createClassroomRTC, type ClassroomRTCService, type ConnectionStats, type RemoteParticipant } from "@/lib/classroom-rtc";
+import {
+  createClassroomRTC,
+  type ClassroomRTCService,
+  type ConnectionStats,
+  type RemoteParticipant,
+} from "@/lib/classroom-rtc";
 
 interface Options {
   roomId: string;
@@ -24,7 +29,12 @@ export interface ClassroomRTCState {
   leave: () => Promise<void>;
 }
 
-export function useClassroomRTC({ roomId, userId, displayName, autoJoin = false }: Options): ClassroomRTCState {
+export function useClassroomRTC({
+  roomId,
+  userId,
+  displayName,
+  autoJoin = false,
+}: Options): ClassroomRTCState {
   const service = useMemo(
     () => createClassroomRTC({ roomId, userId, displayName }),
     [roomId, userId, displayName],
@@ -38,7 +48,12 @@ export function useClassroomRTC({ roomId, userId, displayName, autoJoin = false 
   const [micOn, setMicOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(true);
   const [screenSharing, setScreenSharing] = useState(false);
-  const [stats, setStats] = useState<ConnectionStats>({ rttMs: 0, jitterMs: 0, packetLoss: 0, quality: "unknown" });
+  const [stats, setStats] = useState<ConnectionStats>({
+    rttMs: 0,
+    jitterMs: 0,
+    packetLoss: 0,
+    quality: "unknown",
+  });
 
   useEffect(() => {
     const offs = [
@@ -52,23 +67,48 @@ export function useClassroomRTC({ roomId, userId, displayName, autoJoin = false 
       service.on("error", (m) => setError(m)),
       service.on("joined", () => setJoined(true)),
     ];
-    return () => { offs.forEach((off) => off()); void service.leave(); };
+    return () => {
+      offs.forEach((off) => off());
+      void service.leave();
+    };
   }, [service]);
 
   const join = async () => {
     if (joining || joined) return;
     setError(null);
     setJoining(true);
-    try { await service.join(); } catch (e) { setError(e instanceof Error ? e.message : "Could not start"); }
-    finally { setJoining(false); }
+    try {
+      await service.join();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start");
+    } finally {
+      setJoining(false);
+    }
   };
 
-  const leave = async () => { await service.leave(); setJoined(false); };
+  const leave = async () => {
+    await service.leave();
+    setJoined(false);
+  };
 
   useEffect(() => {
     if (autoJoin) void join();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoJoin]);
 
-  return { service, joined, joining, error, localStream, remoteStream, remote, micOn, cameraOn, screenSharing, stats, join, leave };
+  return {
+    service,
+    joined,
+    joining,
+    error,
+    localStream,
+    remoteStream,
+    remote,
+    micOn,
+    cameraOn,
+    screenSharing,
+    stats,
+    join,
+    leave,
+  };
 }

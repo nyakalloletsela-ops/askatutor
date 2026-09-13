@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { Sparkles, Loader2, Calculator, GitBranch, GraduationCap, FileText, RotateCcw } from "lucide-react";
+import {
+  Sparkles,
+  Loader2,
+  Calculator,
+  GitBranch,
+  GraduationCap,
+  FileText,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "../../8-core-ux-navigation/ui/button";
 import { Textarea } from "../../8-core-ux-navigation/ui/textarea";
 import { SmartMarkdown } from "../../2-learning-journey/ai/SmartMarkdown";
@@ -68,7 +76,8 @@ export function AIAssistantPanel() {
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3">
         {messages.length === 0 ? (
           <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-            Pick an agent above and ask anything. Math renders as equations, diagrams render as charts.
+            Pick an agent above and ask anything. Math renders as equations, diagrams render as
+            charts.
           </p>
         ) : (
           messages.map((m, i) => (
@@ -109,8 +118,17 @@ export function AIAssistantPanel() {
           className="resize-none text-sm"
           disabled={pending}
         />
-        <Button onClick={run} disabled={pending || !prompt.trim()} className="mt-2 w-full" size="sm">
-          {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+        <Button
+          onClick={run}
+          disabled={pending || !prompt.trim()}
+          className="mt-2 w-full"
+          size="sm"
+        >
+          {pending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="mr-2 h-4 w-4" />
+          )}
           {pending ? "Thinking…" : "Send"}
         </Button>
       </div>

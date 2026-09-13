@@ -67,17 +67,18 @@ function TermsPage() {
 
           <h2>6. Community and user content</h2>
           <p>
-            Where AskATutorLive provides community, messaging or content-sharing features, you remain
-            responsible for content you submit and must respect the rights, privacy and safety of
-            other users. Content may be moderated or removed when necessary to enforce platform rules
-            and protect the community.
+            Where AskATutorLive provides community, messaging or content-sharing features, you
+            remain responsible for content you submit and must respect the rights, privacy and
+            safety of other users. Content may be moderated or removed when necessary to enforce
+            platform rules and protect the community.
           </p>
 
           <h2>7. Payments and subscriptions</h2>
           <p>
-            Where paid features, subscriptions or other transactions are offered, additional pricing,
-            payment and refund terms presented during the transaction may apply. Do not attempt to
-            manipulate payment status, entitlements, invoices, subscriptions or platform balances.
+            Where paid features, subscriptions or other transactions are offered, additional
+            pricing, payment and refund terms presented during the transaction may apply. Do not
+            attempt to manipulate payment status, entitlements, invoices, subscriptions or platform
+            balances.
           </p>
 
           <h2>8. Intellectual property</h2>
@@ -89,8 +90,8 @@ function TermsPage() {
 
           <h2>9. Safety and enforcement</h2>
           <p>
-            We may restrict, suspend or terminate access where reasonably necessary to protect users,
-            investigate abuse, enforce these terms, protect the service, or comply with legal
+            We may restrict, suspend or terminate access where reasonably necessary to protect
+            users, investigate abuse, enforce these terms, protect the service, or comply with legal
             obligations.
           </p>
 
@@ -108,7 +109,11 @@ function TermsPage() {
           </p>
 
           <p className="not-prose pt-4 text-sm text-muted-foreground">
-            See also <Link to="/privacy" className="underline underline-offset-4">Privacy Policy</Link>.
+            See also{" "}
+            <Link to="/privacy" className="underline underline-offset-4">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </article>
       </main>

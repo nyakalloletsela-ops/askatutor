@@ -3,17 +3,32 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/presentation/domains/8-core-ux-navigation/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import { Switch } from "@/presentation/domains/8-core-ux-navigation/ui/switch";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Trash2, Plus } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/commissions")({
@@ -59,7 +74,9 @@ function AdminCommissions() {
     setRules((data as Rule[]) ?? []);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const save = async () => {
     if (!editing) return;
@@ -96,8 +113,8 @@ function AdminCommissions() {
     r.method === "percent"
       ? `${r.percent}%`
       : r.method === "fixed"
-      ? `$${(r.fixed_cents / 100).toFixed(2)}`
-      : `${r.percent}% + $${(r.fixed_cents / 100).toFixed(2)}`;
+        ? `$${(r.fixed_cents / 100).toFixed(2)}`
+        : `${r.percent}% + $${(r.fixed_cents / 100).toFixed(2)}`;
 
   return (
     <div className="container mx-auto max-w-5xl space-y-6 px-4 py-6">
@@ -127,11 +144,11 @@ function AdminCommissions() {
                 <div key={r.id} className="flex flex-wrap items-center gap-3 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className="capitalize">{r.scope}</Badge>
+                      <Badge variant="outline" className="capitalize">
+                        {r.scope}
+                      </Badge>
                       <span className="font-semibold">{formatRule(r)}</span>
-                      {r.target_text && (
-                        <Badge variant="secondary">{r.target_text}</Badge>
-                      )}
+                      {r.target_text && <Badge variant="secondary">{r.target_text}</Badge>}
                       {r.target_id && (
                         <Badge variant="secondary" className="font-mono text-[10px]">
                           {r.target_id.slice(0, 8)}…
@@ -140,12 +157,16 @@ function AdminCommissions() {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       From {new Date(r.active_from).toLocaleDateString()}
-                      {r.active_to ? ` to ${new Date(r.active_to).toLocaleDateString()}` : " · ongoing"}
+                      {r.active_to
+                        ? ` to ${new Date(r.active_to).toLocaleDateString()}`
+                        : " · ongoing"}
                       {r.notes ? ` · ${r.notes}` : ""}
                     </p>
                   </div>
                   <Switch checked={r.is_active} onCheckedChange={() => toggleActive(r)} />
-                  <Button size="sm" variant="outline" onClick={() => setEditing(r)}>Edit</Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditing(r)}>
+                    Edit
+                  </Button>
                   <Button size="icon" variant="ghost" onClick={() => del(r.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -170,7 +191,9 @@ function AdminCommissions() {
                     value={editing.scope}
                     onValueChange={(v) => setEditing({ ...editing, scope: v as Rule["scope"] })}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="global">Global</SelectItem>
                       <SelectItem value="tutor">Specific tutor</SelectItem>
@@ -185,7 +208,9 @@ function AdminCommissions() {
                     value={editing.method}
                     onValueChange={(v) => setEditing({ ...editing, method: v as Rule["method"] })}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="percent">Percent</SelectItem>
                       <SelectItem value="fixed">Fixed amount</SelectItem>
@@ -230,7 +255,9 @@ function AdminCommissions() {
                   <Input
                     type="number"
                     value={editing.fixed_cents ?? 0}
-                    onChange={(e) => setEditing({ ...editing, fixed_cents: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, fixed_cents: Number(e.target.value) })
+                    }
                   />
                 </div>
               </div>
@@ -272,7 +299,9 @@ function AdminCommissions() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditing(null)}>
+              Cancel
+            </Button>
             <Button onClick={save}>Save</Button>
           </DialogFooter>
         </DialogContent>

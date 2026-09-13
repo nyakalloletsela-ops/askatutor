@@ -2,7 +2,10 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { adminListUsers, adminDeleteUser } from "@/application/use-cases/admin/user-management";
-import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  PageContainer,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
@@ -60,7 +63,10 @@ function StudentsAdmin() {
             <p className="text-sm text-muted-foreground">No students found.</p>
           )}
           {students.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 rounded-md border bg-card/40 p-3 text-sm">
+            <div
+              key={s.id}
+              className="flex items-center gap-3 rounded-md border bg-card/40 p-3 text-sm"
+            >
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{s.full_name || "Unnamed"}</p>
                 <p className="truncate text-xs text-muted-foreground">{s.email}</p>

@@ -35,7 +35,9 @@ export function ActivityTicker() {
         })),
       );
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (events.length === 0) return null;
@@ -46,7 +48,10 @@ export function ActivityTicker() {
     <div className="border-b border-border/60 bg-muted/20 py-2.5 overflow-hidden">
       <div className="flex gap-6 whitespace-nowrap animate-[ticker_40s_linear_infinite]">
         {loop.map((e, i) => (
-          <span key={`${e.id}-${i}`} className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+          <span
+            key={`${e.id}-${i}`}
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground"
+          >
             <span aria-hidden>{e.emoji}</span>
             <span>{e.text}</span>
             <span className="mx-3 text-border">&middot;</span>

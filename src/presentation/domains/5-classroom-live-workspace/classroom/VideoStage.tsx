@@ -50,7 +50,9 @@ function FloatingTile({ slot, initial }: { slot: VideoSlot; initial: { x: number
         y: Math.max(56, Math.min(window.innerHeight - 124, e.clientY - dragRef.current.dy)),
       });
     };
-    const onUp = () => { dragRef.current = null; };
+    const onUp = () => {
+      dragRef.current = null;
+    };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     return () => {

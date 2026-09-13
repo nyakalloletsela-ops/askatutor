@@ -133,9 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const initials = useMemo(() => {
     const name =
-      (user?.user_metadata as { full_name?: string } | undefined)?.full_name ??
-      user?.email ??
-      "U";
+      (user?.user_metadata as { full_name?: string } | undefined)?.full_name ?? user?.email ?? "U";
     return name
       .split(/\s+/)
       .map((s) => s[0])
@@ -152,7 +150,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const immersive = path.startsWith("/classroom/");
   if (immersive) return <>{children}</>;
 
-
   const isActive = (to: string) => {
     if (to === "/") return path === "/";
     if (to === "/dashboard") return path === "/dashboard";
@@ -162,7 +159,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-
       <Sidebar collapsible="icon" className="border-r border-sidebar-border">
         <SidebarHeader>
           <div className="flex items-center gap-2 px-2 py-1.5">
@@ -317,8 +313,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                     <AvatarFallback className="text-[11px]">{initials}</AvatarFallback>
                   </Avatar>
                   <span className="hidden text-sm font-medium md:inline">
-                    {(user?.user_metadata as { full_name?: string } | undefined)?.full_name?.split(" ")[0] ??
-                      user?.email?.split("@")[0]}
+                    {(user?.user_metadata as { full_name?: string } | undefined)?.full_name?.split(
+                      " ",
+                    )[0] ?? user?.email?.split("@")[0]}
                   </span>
                 </Button>
               </DropdownMenuTrigger>
@@ -355,7 +352,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <div className="min-h-[calc(100svh-72px)] bg-[hsl(210_40%_98%)] dark:bg-background">{children}</div>
+        <div className="min-h-[calc(100svh-72px)] bg-[hsl(210_40%_98%)] dark:bg-background">
+          {children}
+        </div>
       </SidebarInset>
       <CommandPalette />
     </SidebarProvider>
@@ -395,9 +394,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 function buildCrumbs(path: string): { label: string; to: string }[] {
   if (path === "/dashboard") return [{ label: "Dashboard", to: "/dashboard" }];
   const segs = path.split("/").filter(Boolean);
-  const crumbs: { label: string; to: string }[] = [
-    { label: "Dashboard", to: "/dashboard" },
-  ];
+  const crumbs: { label: string; to: string }[] = [{ label: "Dashboard", to: "/dashboard" }];
   let acc = "";
   for (const s of segs) {
     acc += "/" + s;
@@ -409,9 +406,7 @@ function buildCrumbs(path: string): { label: string; to: string }[] {
 
 function prettify(s: string) {
   if (s.startsWith("$")) return "Detail";
-  return s
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return s.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function NotificationsBell() {
@@ -447,7 +442,13 @@ function NotificationsBell() {
   }, [user, qc]);
 
   return (
-    <Button asChild variant="ghost" size="icon" aria-label="Notifications" className="relative h-9 w-9">
+    <Button
+      asChild
+      variant="ghost"
+      size="icon"
+      aria-label="Notifications"
+      className="relative h-9 w-9"
+    >
       <Link to="/notifications">
         <Bell className="h-4 w-4" />
         {count > 0 && (

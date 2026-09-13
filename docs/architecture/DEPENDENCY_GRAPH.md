@@ -227,33 +227,33 @@ Phase 0 → Phase 1 → Phase 2 → Phase 4 → Phase 5 → Phase 7 → Phase 12
 
 After Phase 2, multiple work streams can proceed in parallel:
 
-| Stream | Phases |
-|--------|--------|
+| Stream              | Phases  |
+| ------------------- | ------- |
 | Whiteboard/Evidence | Phase 3 |
-| Tutoring/Sessions | Phase 4 |
-| AI Gateway | Phase 5 |
-| Simulations | Phase 6 |
-| Virtual Labs | Phase 7 |
-| Institutions | Phase 8 |
-| Commerce | Phase 9 |
+| Tutoring/Sessions   | Phase 4 |
+| AI Gateway          | Phase 5 |
+| Simulations         | Phase 6 |
+| Virtual Labs        | Phase 7 |
+| Institutions        | Phase 8 |
+| Commerce            | Phase 9 |
 
 After Phase 9, additional parallelism:
 
-| Stream | Phases |
-|--------|--------|
-| Admin/Operations | Phase 10 |
-| Community | Phase 11 |
+| Stream            | Phases   |
+| ----------------- | -------- |
+| Admin/Operations  | Phase 10 |
+| Community         | Phase 11 |
 | Advanced Learning | Phase 12 |
 | Advanced Features | Phase 13 |
 
 After Phase 14, further parallelism:
 
-| Stream | Phases |
-|--------|--------|
-| Advanced Community | Phase 15 |
+| Stream                | Phases   |
+| --------------------- | -------- |
+| Advanced Community    | Phase 15 |
 | Mobile/Cross-Platform | Phase 16 |
-| Advanced AI | Phase 17 |
-| Enterprise | Phase 18 |
+| Advanced AI           | Phase 17 |
+| Enterprise            | Phase 18 |
 
 ---
 

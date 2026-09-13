@@ -3,17 +3,33 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/presentation/domains/8-core-ux-navigation/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import { Switch } from "@/presentation/domains/8-core-ux-navigation/ui/switch";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Trash2, Plus, UserPlus } from "lucide-react";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
 } from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/plans")({
@@ -71,14 +87,19 @@ function AdminPlans() {
     setPlans((data as Plan[]) ?? []);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const save = async () => {
     if (!editing?.name) return toast.error("Name required");
     const featuresArr =
       typeof editing.features === "string"
-        ? (editing.features as string).split("\n").map((s) => s.trim()).filter(Boolean)
-        : editing.features ?? [];
+        ? (editing.features as string)
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : (editing.features ?? []);
     const payload: any = { ...editing, features: featuresArr };
     const { error } = editing.id
       ? await supabase.from("subscription_plans").update(payload).eq("id", editing.id)
@@ -104,12 +125,14 @@ function AdminPlans() {
   const assign = async () => {
     if (!assignOpen || !assignEmail) return;
     // Look up user by email via profiles->auth (we use admin user list)
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, full_name");
+    const { data: profs } = await supabase.from("profiles").select("id, full_name");
     // We don't have profiles.email; use the admin function to find by email
-    const users = await (await import("@/application/use-cases/admin/user-management")).adminListUsers();
-    const u = (users as any[])?.find((x) => x.email?.toLowerCase() === assignEmail.trim().toLowerCase());
+    const users = await (
+      await import("@/application/use-cases/admin/user-management")
+    ).adminListUsers();
+    const u = (users as any[])?.find(
+      (x) => x.email?.toLowerCase() === assignEmail.trim().toLowerCase(),
+    );
     if (!u) return toast.error("User not found");
     const { error } = await supabase.from("subscription_assignments").insert({
       user_id: u.id,
@@ -149,8 +172,11 @@ function AdminPlans() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {(p.price_cents / 100).toLocaleString(undefined, { style: "currency", currency: p.currency })} ·{" "}
-                      every {p.duration_count} {p.duration_unit}
+                      {(p.price_cents / 100).toLocaleString(undefined, {
+                        style: "currency",
+                        currency: p.currency,
+                      })}{" "}
+                      · every {p.duration_count} {p.duration_unit}
                       {p.description ? ` · ${p.description}` : ""}
                     </p>
                   </div>
@@ -178,7 +204,8 @@ function AdminPlans() {
       <div>
         <h1 className="text-2xl font-bold">Subscription plans</h1>
         <p className="text-sm text-muted-foreground">
-          Create, edit and assign plans for students and tutors. Plans drive feature access and billing.
+          Create, edit and assign plans for students and tutors. Plans drive feature access and
+          billing.
         </p>
       </div>
 
@@ -199,15 +226,22 @@ function AdminPlans() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Name</Label>
-                  <Input value={editing.name ?? ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+                  <Input
+                    value={editing.name ?? ""}
+                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                  />
                 </div>
                 <div>
                   <Label>Audience</Label>
                   <Select
                     value={editing.audience}
-                    onValueChange={(v) => setEditing({ ...editing, audience: v as "student" | "tutor" })}
+                    onValueChange={(v) =>
+                      setEditing({ ...editing, audience: v as "student" | "tutor" })
+                    }
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="tutor">Tutor</SelectItem>
@@ -228,14 +262,18 @@ function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.price_cents ?? 0}
-                    onChange={(e) => setEditing({ ...editing, price_cents: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, price_cents: Number(e.target.value) })
+                    }
                   />
                 </div>
                 <div>
                   <Label>Currency</Label>
                   <Input
                     value={editing.currency ?? "USD"}
-                    onChange={(e) => setEditing({ ...editing, currency: e.target.value.toUpperCase() })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, currency: e.target.value.toUpperCase() })
+                    }
                   />
                 </div>
                 <div>
@@ -254,7 +292,9 @@ function AdminPlans() {
                     value={editing.duration_unit}
                     onValueChange={(v) => setEditing({ ...editing, duration_unit: v })}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="day">Day</SelectItem>
                       <SelectItem value="week">Week</SelectItem>
@@ -270,14 +310,20 @@ function AdminPlans() {
                   <Input
                     type="number"
                     value={editing.duration_count ?? 1}
-                    onChange={(e) => setEditing({ ...editing, duration_count: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setEditing({ ...editing, duration_count: Number(e.target.value) })
+                    }
                   />
                 </div>
               </div>
               <div>
                 <Label>Features (one per line)</Label>
                 <Textarea
-                  value={Array.isArray(editing.features) ? editing.features.join("\n") : (editing.features ?? "")}
+                  value={
+                    Array.isArray(editing.features)
+                      ? editing.features.join("\n")
+                      : (editing.features ?? "")
+                  }
                   onChange={(e) => setEditing({ ...editing, features: e.target.value as any })}
                   placeholder="HD video&#10;Recording&#10;Whiteboard"
                 />
@@ -316,7 +362,9 @@ function AdminPlans() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setEditing(null)}>
+              Cancel
+            </Button>
             <Button onClick={save}>Save</Button>
           </DialogFooter>
         </DialogContent>
@@ -331,15 +379,25 @@ function AdminPlans() {
           <div className="space-y-3">
             <div>
               <Label>User email</Label>
-              <Input value={assignEmail} onChange={(e) => setAssignEmail(e.target.value)} placeholder="user@example.com" />
+              <Input
+                value={assignEmail}
+                onChange={(e) => setAssignEmail(e.target.value)}
+                placeholder="user@example.com"
+              />
             </div>
             <div>
               <Label>Expires (optional)</Label>
-              <Input type="datetime-local" value={assignExpires} onChange={(e) => setAssignExpires(e.target.value)} />
+              <Input
+                type="datetime-local"
+                value={assignExpires}
+                onChange={(e) => setAssignExpires(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignOpen(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAssignOpen(null)}>
+              Cancel
+            </Button>
             <Button onClick={assign}>Assign</Button>
           </DialogFooter>
         </DialogContent>

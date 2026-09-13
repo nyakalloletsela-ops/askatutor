@@ -12,7 +12,10 @@ export const Route = createFileRoute("/tutor/$id")({
   head: ({ params }) => ({
     meta: [
       { title: `Tutor profile — Ask A Tutor Live` },
-      { name: "description", content: `View tutor profile, subjects, ratings and reviews on Ask A Tutor Live.` },
+      {
+        name: "description",
+        content: `View tutor profile, subjects, ratings and reviews on Ask A Tutor Live.`,
+      },
       { property: "og:title", content: `Tutor profile — Ask A Tutor Live` },
       { property: "og:description", content: `Tutor #${params.id} on Ask A Tutor Live.` },
     ],
@@ -39,7 +42,6 @@ type Review = {
   created_at: string;
 };
 
-
 function TutorProfile() {
   const { id } = Route.useParams();
   const [tutor, setTutor] = useState<Tutor | null>(null);
@@ -63,7 +65,9 @@ function TutorProfile() {
       setReviews((r as Review[]) ?? []);
       setLoading(false);
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
   if (loading) {
@@ -94,7 +98,10 @@ function TutorProfile() {
     <div className="min-h-screen pb-24 md:pb-0">
       <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-6 md:py-10">
-        <Link to="/" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link
+          to="/"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to tutors
         </Link>
 
@@ -109,7 +116,11 @@ function TutorProfile() {
               <div className="flex items-end gap-4">
                 <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 border-background bg-muted shadow-glow">
                   {tutor.avatar_url ? (
-                    <img src={tutor.avatar_url} alt={tutor.full_name ?? "Tutor"} className="h-full w-full object-cover" />
+                    <img
+                      src={tutor.avatar_url}
+                      alt={tutor.full_name ?? "Tutor"}
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-aurora text-2xl font-bold text-white">
                       {(tutor.full_name ?? "T").slice(0, 1).toUpperCase()}
@@ -118,14 +129,20 @@ function TutorProfile() {
                 </div>
                 <div className="flex-1 pb-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h1 className="text-2xl font-bold tracking-tight">{tutor.full_name ?? "Tutor"}</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">
+                      {tutor.full_name ?? "Tutor"}
+                    </h1>
                   </div>
                   <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                     {tutor.review_count > 0 ? (
                       <>
                         <Star className="h-4 w-4 fill-gold text-gold" />
-                        <span className="font-medium text-foreground">{Number(tutor.avg_rating).toFixed(1)}</span>
-                        <span>· {tutor.review_count} review{tutor.review_count === 1 ? "" : "s"}</span>
+                        <span className="font-medium text-foreground">
+                          {Number(tutor.avg_rating).toFixed(1)}
+                        </span>
+                        <span>
+                          · {tutor.review_count} review{tutor.review_count === 1 ? "" : "s"}
+                        </span>
                       </>
                     ) : (
                       <span className="italic">New tutor</span>
@@ -150,14 +167,18 @@ function TutorProfile() {
                     <span className="text-sm text-muted-foreground">No subjects listed yet.</span>
                   ) : (
                     tutor.subjects!.map((s) => (
-                      <Badge key={s} variant="secondary">{s}</Badge>
+                      <Badge key={s} variant="secondary">
+                        {s}
+                      </Badge>
                     ))
                   )}
                 </div>
               </div>
 
               <div>
-                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">About</h2>
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  About
+                </h2>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
                   {tutor.bio ?? "This tutor hasn't added a bio yet."}
                 </p>

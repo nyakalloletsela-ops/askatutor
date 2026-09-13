@@ -82,7 +82,10 @@ function fmt(cents: number | null | undefined, currency = "USD") {
 }
 
 function statusBadge(status: string) {
-  const map: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+  const map: Record<
+    string,
+    { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+  > = {
     pending: { variant: "secondary", label: "Pending" },
     processing: { variant: "secondary", label: "Processing" },
     succeeded: { variant: "default", label: "Succeeded" },
@@ -105,9 +108,10 @@ function statusBadge(status: string) {
 /* ====================================================================== */
 
 function AdminPayoutsPage() {
-  const initial = typeof window !== "undefined" && window.location.hash
-    ? window.location.hash.replace("#", "")
-    : "overview";
+  const initial =
+    typeof window !== "undefined" && window.location.hash
+      ? window.location.hash.replace("#", "")
+      : "overview";
   const [tab, setTab] = useState(initial);
   return (
     <PageContainer
@@ -116,18 +120,43 @@ function AdminPayoutsPage() {
     >
       <Tabs value={tab} onValueChange={setTab} className="space-y-5">
         <TabsList className="flex w-full flex-wrap gap-1 sm:w-auto">
-          <TabsTrigger value="overview"><TrendingUp className="mr-1.5 h-3.5 w-3.5" />Overview</TabsTrigger>
-          <TabsTrigger value="intents"><Wallet className="mr-1.5 h-3.5 w-3.5" />Payment Intents</TabsTrigger>
-          <TabsTrigger value="runs"><Banknote className="mr-1.5 h-3.5 w-3.5" />Payout Runs</TabsTrigger>
-          <TabsTrigger value="providers"><Settings2 className="mr-1.5 h-3.5 w-3.5" />Providers</TabsTrigger>
-          <TabsTrigger value="levels"><Layers className="mr-1.5 h-3.5 w-3.5" />Tutor Levels</TabsTrigger>
+          <TabsTrigger value="overview">
+            <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="intents">
+            <Wallet className="mr-1.5 h-3.5 w-3.5" />
+            Payment Intents
+          </TabsTrigger>
+          <TabsTrigger value="runs">
+            <Banknote className="mr-1.5 h-3.5 w-3.5" />
+            Payout Runs
+          </TabsTrigger>
+          <TabsTrigger value="providers">
+            <Settings2 className="mr-1.5 h-3.5 w-3.5" />
+            Providers
+          </TabsTrigger>
+          <TabsTrigger value="levels">
+            <Layers className="mr-1.5 h-3.5 w-3.5" />
+            Tutor Levels
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview"><OverviewTab /></TabsContent>
-        <TabsContent value="intents"><IntentsTab /></TabsContent>
-        <TabsContent value="runs"><PayoutRunsTab /></TabsContent>
-        <TabsContent value="providers"><ProvidersTab /></TabsContent>
-        <TabsContent value="levels"><TutorLevelsTab /></TabsContent>
+        <TabsContent value="overview">
+          <OverviewTab />
+        </TabsContent>
+        <TabsContent value="intents">
+          <IntentsTab />
+        </TabsContent>
+        <TabsContent value="runs">
+          <PayoutRunsTab />
+        </TabsContent>
+        <TabsContent value="providers">
+          <ProvidersTab />
+        </TabsContent>
+        <TabsContent value="levels">
+          <TutorLevelsTab />
+        </TabsContent>
       </Tabs>
     </PageContainer>
   );
@@ -158,10 +187,27 @@ function OverviewTab() {
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Wallet} label="Total volume" value={isLoading ? "…" : fmt(data?.total_volume_cents)} />
-        <StatCard icon={TrendingUp} label="Platform revenue" value={isLoading ? "…" : fmt(data?.total_revenue_cents)} hint={`${data?.succeeded_count ?? 0} paid sessions`} />
-        <StatCard icon={Clock} label="Pending payouts" value={isLoading ? "…" : fmt(data?.pending_payout_cents)} />
-        <StatCard icon={AlertCircle} label="Failed transfers" value={isLoading ? "…" : data?.failed_transfers ?? 0} />
+        <StatCard
+          icon={Wallet}
+          label="Total volume"
+          value={isLoading ? "…" : fmt(data?.total_volume_cents)}
+        />
+        <StatCard
+          icon={TrendingUp}
+          label="Platform revenue"
+          value={isLoading ? "…" : fmt(data?.total_revenue_cents)}
+          hint={`${data?.succeeded_count ?? 0} paid sessions`}
+        />
+        <StatCard
+          icon={Clock}
+          label="Pending payouts"
+          value={isLoading ? "…" : fmt(data?.pending_payout_cents)}
+        />
+        <StatCard
+          icon={AlertCircle}
+          label="Failed transfers"
+          value={isLoading ? "…" : (data?.failed_transfers ?? 0)}
+        />
       </div>
 
       <Card>
@@ -171,11 +217,28 @@ function OverviewTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>• Every student payment writes a <span className="font-medium text-foreground">platform credit</span> and a <span className="font-medium text-foreground">tutor-earnings credit</span> to the immutable ledger.</p>
-          <p>• Funds stay in a <span className="font-medium text-foreground">hold window</span> (default 72h) before becoming payable.</p>
-          <p>• Refunds reverse the original credits and write a refunds credit — never delete history.</p>
-          <p>• Payouts debit tutor earnings and credit the payout balance, linking back to the originating intents.</p>
-          <p>• Commission resolution: <span className="font-mono text-xs">per-tutor → tutor level → subject → global</span>.</p>
+          <p>
+            • Every student payment writes a{" "}
+            <span className="font-medium text-foreground">platform credit</span> and a{" "}
+            <span className="font-medium text-foreground">tutor-earnings credit</span> to the
+            immutable ledger.
+          </p>
+          <p>
+            • Funds stay in a <span className="font-medium text-foreground">hold window</span>{" "}
+            (default 72h) before becoming payable.
+          </p>
+          <p>
+            • Refunds reverse the original credits and write a refunds credit — never delete
+            history.
+          </p>
+          <p>
+            • Payouts debit tutor earnings and credit the payout balance, linking back to the
+            originating intents.
+          </p>
+          <p>
+            • Commission resolution:{" "}
+            <span className="font-mono text-xs">per-tutor → tutor level → subject → global</span>.
+          </p>
         </CardContent>
       </Card>
 
@@ -193,7 +256,8 @@ function OverviewTab() {
 
       {(data?.refunded_cents ?? 0) > 0 && (
         <p className="text-xs text-muted-foreground">
-          Lifetime refunded: <span className="font-medium text-foreground">{fmt(data?.refunded_cents)}</span>
+          Lifetime refunded:{" "}
+          <span className="font-medium text-foreground">{fmt(data?.refunded_cents)}</span>
         </p>
       )}
     </div>
@@ -229,7 +293,11 @@ function IntentsTab() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["payment-intents", status],
     queryFn: async () => {
-      let q = supabase.from("payment_intents").select("*").order("created_at", { ascending: false }).limit(200);
+      let q = supabase
+        .from("payment_intents")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (status !== "all") q = q.eq("status", status);
       const { data, error } = await q;
       if (error) throw error;
@@ -267,10 +335,20 @@ function IntentsTab() {
           {isLoading ? (
             <p className="p-6 text-sm text-muted-foreground">Loading…</p>
           ) : rows.length === 0 ? (
-            <EmptyState icon={Wallet} title="No payment intents yet" description="They will appear here as soon as student payments come in." />
+            <EmptyState
+              icon={Wallet}
+              title="No payment intents yet"
+              description="They will appear here as soon as student payments come in."
+            />
           ) : (
             <div className="divide-y divide-border/60">
-              {rows.map((r) => <IntentRow key={r.id} row={r} onRefund={(reason) => refund.mutate({ id: r.id, reason })} />)}
+              {rows.map((r) => (
+                <IntentRow
+                  key={r.id}
+                  row={r}
+                  onRefund={(reason) => refund.mutate({ id: r.id, reason })}
+                />
+              ))}
             </div>
           )}
         </CardContent>
@@ -289,15 +367,22 @@ function IntentRow({ row, onRefund }: { row: Intent; onRefund: (reason: string) 
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium tabular-nums">{fmt(row.gross_cents, row.currency)}</span>
           {statusBadge(row.status)}
-          <Badge variant="outline" className="text-[10px] uppercase">{row.provider}</Badge>
-          {row.method && <Badge variant="outline" className="text-[10px]">{row.method}</Badge>}
+          <Badge variant="outline" className="text-[10px] uppercase">
+            {row.provider}
+          </Badge>
+          {row.method && (
+            <Badge variant="outline" className="text-[10px]">
+              {row.method}
+            </Badge>
+          )}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Commission {fmt(row.commission_cents, row.currency)} · Tutor {fmt(row.tutor_net_cents, row.currency)} ·{" "}
-          {new Date(row.created_at).toLocaleString()}
+          Commission {fmt(row.commission_cents, row.currency)} · Tutor{" "}
+          {fmt(row.tutor_net_cents, row.currency)} · {new Date(row.created_at).toLocaleString()}
         </p>
         <p className="mt-0.5 break-all font-mono text-[10px] text-muted-foreground">
-          intent {row.id.slice(0, 8)} · tutor {row.tutor_id.slice(0, 8)} · student {row.student_id.slice(0, 8)}
+          intent {row.id.slice(0, 8)} · tutor {row.tutor_id.slice(0, 8)} · student{" "}
+          {row.student_id.slice(0, 8)}
           {row.provider_ref && ` · ref ${row.provider_ref}`}
         </p>
       </div>
@@ -305,14 +390,18 @@ function IntentRow({ row, onRefund }: { row: Intent; onRefund: (reason: string) 
         {canRefund && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button size="sm" variant="outline"><RotateCcw className="mr-1 h-3.5 w-3.5" />Refund</Button>
+              <Button size="sm" variant="outline">
+                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                Refund
+              </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Refund this payment?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Reverses {fmt(row.gross_cents, row.currency)} from platform balance and {fmt(row.tutor_net_cents, row.currency)} from tutor earnings.
-                  Cannot be undone. Refunds intents that have already been paid out must be handled offline.
+                  Reverses {fmt(row.gross_cents, row.currency)} from platform balance and{" "}
+                  {fmt(row.tutor_net_cents, row.currency)} from tutor earnings. Cannot be undone.
+                  Refunds intents that have already been paid out must be handled offline.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="space-y-1">
@@ -403,7 +492,8 @@ function PayoutRunsTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Each Monday a new run aggregates last week's settled payments. You can also open one manually.
+          Each Monday a new run aggregates last week's settled payments. You can also open one
+          manually.
         </p>
         <Button onClick={() => createRun.mutate()} disabled={createRun.isPending}>
           <Play className="mr-1.5 h-4 w-4" /> {createRun.isPending ? "Opening…" : "Open new run"}
@@ -415,17 +505,26 @@ function PayoutRunsTab() {
           {isLoading ? (
             <p className="p-6 text-sm text-muted-foreground">Loading…</p>
           ) : runs.length === 0 ? (
-            <EmptyState icon={Banknote} title="No payout runs yet" description="Open the first one with the button above." />
+            <EmptyState
+              icon={Banknote}
+              title="No payout runs yet"
+              description="Open the first one with the button above."
+            />
           ) : (
             <div className="divide-y divide-border/60">
               {runs.map((r) => (
-                <div key={r.id} className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  key={r.id}
+                  className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div className="min-w-0">
                     <p className="font-medium">
-                      {new Date(r.period_start).toLocaleDateString()} → {new Date(r.period_end).toLocaleDateString()}
+                      {new Date(r.period_start).toLocaleDateString()} →{" "}
+                      {new Date(r.period_end).toLocaleDateString()}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Net {fmt(r.total_net_cents)} · Commission {fmt(r.total_commission_cents)} · Gross {fmt(r.total_gross_cents)}
+                      Net {fmt(r.total_net_cents)} · Commission {fmt(r.total_commission_cents)} ·
+                      Gross {fmt(r.total_gross_cents)}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -450,7 +549,11 @@ function PayoutRunDialog({ runId, onClose }: { runId: string | null; onClose: ()
   const qc = useQueryClient();
   const open = !!runId;
 
-  const { data: items = [], isLoading, refetch } = useQuery({
+  const {
+    data: items = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["payout-items", runId],
     enabled: open,
     queryFn: async () => {
@@ -483,7 +586,10 @@ function PayoutRunDialog({ runId, onClose }: { runId: string | null; onClose: ()
 
   const markFailed = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
-      const { error } = await supabase.rpc("admin_mark_payout_item_failed", { _item: id, _reason: reason });
+      const { error } = await supabase.rpc("admin_mark_payout_item_failed", {
+        _item: id,
+        _reason: reason,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -496,9 +602,19 @@ function PayoutRunDialog({ runId, onClose }: { runId: string | null; onClose: ()
 
   const exportCsv = () => {
     if (!items.length) return;
-    const header = "tutor_id,gross_cents,commission_cents,net_cents,currency,status,paid_at,provider_transfer_ref";
+    const header =
+      "tutor_id,gross_cents,commission_cents,net_cents,currency,status,paid_at,provider_transfer_ref";
     const lines = items.map((i) =>
-      [i.tutor_id, i.gross_cents, i.commission_cents, i.net_cents, i.currency, i.status, i.paid_at ?? "", i.provider_transfer_ref ?? ""].join(","),
+      [
+        i.tutor_id,
+        i.gross_cents,
+        i.commission_cents,
+        i.net_cents,
+        i.currency,
+        i.status,
+        i.paid_at ?? "",
+        i.provider_transfer_ref ?? "",
+      ].join(","),
     );
     const blob = new Blob([header + "\n" + lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -514,19 +630,35 @@ function PayoutRunDialog({ runId, onClose }: { runId: string | null; onClose: ()
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Payout run details</DialogTitle>
-          <DialogDescription>Per-tutor breakdown. Mark each line paid once the transfer succeeds.</DialogDescription>
+          <DialogDescription>
+            Per-tutor breakdown. Mark each line paid once the transfer succeeds.
+          </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-between gap-2">
-          <Badge variant="secondary">{items.length} tutor{items.length === 1 ? "" : "s"}</Badge>
-          <Button size="sm" variant="outline" onClick={exportCsv}><Download className="mr-1.5 h-3.5 w-3.5" />Export CSV</Button>
+          <Badge variant="secondary">
+            {items.length} tutor{items.length === 1 ? "" : "s"}
+          </Badge>
+          <Button size="sm" variant="outline" onClick={exportCsv}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />
+            Export CSV
+          </Button>
         </div>
         <div className="max-h-[60vh] divide-y divide-border/60 overflow-y-auto rounded-md border">
           {isLoading ? (
             <p className="p-6 text-sm text-muted-foreground">Loading…</p>
           ) : items.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">No eligible payments in this period.</p>
+            <p className="p-6 text-sm text-muted-foreground">
+              No eligible payments in this period.
+            </p>
           ) : (
-            items.map((i) => <PayoutItemRow key={i.id} item={i} onPay={(ref) => markPaid.mutate({ id: i.id, ref })} onFail={(r) => markFailed.mutate({ id: i.id, reason: r })} />)
+            items.map((i) => (
+              <PayoutItemRow
+                key={i.id}
+                item={i}
+                onPay={(ref) => markPaid.mutate({ id: i.id, ref })}
+                onFail={(r) => markFailed.mutate({ id: i.id, reason: r })}
+              />
+            ))
           )}
         </div>
       </DialogContent>
@@ -534,7 +666,15 @@ function PayoutRunDialog({ runId, onClose }: { runId: string | null; onClose: ()
   );
 }
 
-function PayoutItemRow({ item, onPay, onFail }: { item: PayoutItem; onPay: (ref: string) => void; onFail: (reason: string) => void }) {
+function PayoutItemRow({
+  item,
+  onPay,
+  onFail,
+}: {
+  item: PayoutItem;
+  onPay: (ref: string) => void;
+  onFail: (reason: string) => void;
+}) {
   const [ref, setRef] = useState("");
   const [reason, setReason] = useState("");
 
@@ -543,13 +683,16 @@ function PayoutItemRow({ item, onPay, onFail }: { item: PayoutItem; onPay: (ref:
       <div className="min-w-0">
         <p className="font-medium tabular-nums">{fmt(item.net_cents, item.currency)}</p>
         <p className="text-xs text-muted-foreground">
-          Gross {fmt(item.gross_cents, item.currency)} · Commission {fmt(item.commission_cents, item.currency)}
+          Gross {fmt(item.gross_cents, item.currency)} · Commission{" "}
+          {fmt(item.commission_cents, item.currency)}
         </p>
         <p className="mt-0.5 break-all font-mono text-[10px] text-muted-foreground">
           tutor {item.tutor_id.slice(0, 8)}
           {item.provider_transfer_ref && ` · ref ${item.provider_transfer_ref}`}
         </p>
-        {item.failure_reason && <p className="mt-1 text-xs italic text-destructive">{item.failure_reason}</p>}
+        {item.failure_reason && (
+          <p className="mt-1 text-xs italic text-destructive">{item.failure_reason}</p>
+        )}
       </div>
       <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
         {statusBadge(item.status)}
@@ -557,14 +700,23 @@ function PayoutItemRow({ item, onPay, onFail }: { item: PayoutItem; onPay: (ref:
           <>
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="sm" variant="default"><CheckCircle2 className="mr-1 h-3.5 w-3.5" />Mark paid</Button>
+                <Button size="sm" variant="default">
+                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                  Mark paid
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Confirm payout sent</DialogTitle>
-                  <DialogDescription>Add the bank / provider reference if you have one.</DialogDescription>
+                  <DialogDescription>
+                    Add the bank / provider reference if you have one.
+                  </DialogDescription>
                 </DialogHeader>
-                <Input placeholder="Transfer reference (optional)" value={ref} onChange={(e) => setRef(e.target.value)} />
+                <Input
+                  placeholder="Transfer reference (optional)"
+                  value={ref}
+                  onChange={(e) => setRef(e.target.value)}
+                />
                 <DialogFooter>
                   <Button onClick={() => onPay(ref)}>Confirm</Button>
                 </DialogFooter>
@@ -572,16 +724,26 @@ function PayoutItemRow({ item, onPay, onFail }: { item: PayoutItem; onPay: (ref:
             </Dialog>
             <Dialog>
               <DialogTrigger asChild>
-                <Button size="sm" variant="outline"><XCircle className="mr-1 h-3.5 w-3.5" />Mark failed</Button>
+                <Button size="sm" variant="outline">
+                  <XCircle className="mr-1 h-3.5 w-3.5" />
+                  Mark failed
+                </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Mark transfer failed</DialogTitle>
                   <DialogDescription>Will retry on the next payout run.</DialogDescription>
                 </DialogHeader>
-                <Textarea rows={2} placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} />
+                <Textarea
+                  rows={2}
+                  placeholder="Reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
                 <DialogFooter>
-                  <Button variant="destructive" onClick={() => onFail(reason)}>Mark failed</Button>
+                  <Button variant="destructive" onClick={() => onFail(reason)}>
+                    Mark failed
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -634,7 +796,10 @@ function ProvidersTab() {
 
   const toggle = useMutation({
     mutationFn: async ({ id, is_enabled }: { id: string; is_enabled: boolean }) => {
-      const { error } = await supabase.from("payment_providers").update({ is_enabled }).eq("id", id);
+      const { error } = await supabase
+        .from("payment_providers")
+        .update({ is_enabled })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -660,8 +825,9 @@ function ProvidersTab() {
           <div>
             <CardTitle className="text-base">Payment providers</CardTitle>
             <p className="mt-1 text-xs text-muted-foreground">
-              Smart router picks the best provider per request (priority weighted by recent success rate).
-              Add a provider here and paste API keys into project secrets using the credentials prefix.
+              Smart router picks the best provider per request (priority weighted by recent success
+              rate). Add a provider here and paste API keys into project secrets using the
+              credentials prefix.
             </p>
           </div>
           <Button size="sm" onClick={() => setAdding(true)}>
@@ -684,11 +850,16 @@ function ProvidersTab() {
                 const rate = total > 0 ? Math.round((p.success_count / total) * 100) : null;
                 const credsOk = !!p.credentials_ref;
                 return (
-                  <div key={p.id} className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div
+                    key={p.id}
+                    className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium">{p.display_name}</p>
-                        <Badge variant="outline" className="text-[10px] uppercase">{p.slug}</Badge>
+                        <Badge variant="outline" className="text-[10px] uppercase">
+                          {p.slug}
+                        </Badge>
                         <Badge
                           variant={p.mode === "live" ? "default" : "secondary"}
                           className="text-[10px] uppercase"
@@ -707,8 +878,8 @@ function ProvidersTab() {
                         )}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {(p.supported_methods?.join(", ") || "—")} ·{" "}
-                        {(p.supported_currencies?.join(", ") || "—")}
+                        {p.supported_methods?.join(", ") || "—"} ·{" "}
+                        {p.supported_currencies?.join(", ") || "—"}
                         {p.supported_countries?.length
                           ? ` · ${p.supported_countries.join(", ")}`
                           : ""}
@@ -820,7 +991,10 @@ function ProviderFormDialog({
   const save = useMutation({
     mutationFn: async () => {
       const split = (s: string) =>
-        s.split(",").map((x) => x.trim()).filter(Boolean);
+        s
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
       const payload = {
         slug: form.slug.trim().toLowerCase(),
         display_name: form.display_name.trim(),
@@ -856,10 +1030,12 @@ function ProviderFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? `Edit ${provider?.display_name}` : "Add payment provider"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? `Edit ${provider?.display_name}` : "Add payment provider"}
+          </DialogTitle>
           <DialogDescription>
-            The credentials prefix points to project secrets — never paste raw keys here.
-            For prefix <code className="font-mono">PAYPAL</code> the router reads{" "}
+            The credentials prefix points to project secrets — never paste raw keys here. For prefix{" "}
+            <code className="font-mono">PAYPAL</code> the router reads{" "}
             <code className="font-mono">PAYPAL_CLIENT_ID</code>,{" "}
             <code className="font-mono">PAYPAL_CLIENT_SECRET</code>, and{" "}
             <code className="font-mono">PAYPAL_WEBHOOK_ID</code>.
@@ -916,8 +1092,9 @@ function ProviderFormDialog({
               placeholder="PAYPAL"
             />
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Add the actual secret values (<code>{form.credentials_ref || "PREFIX"}_CLIENT_ID</code>,
-              etc.) via Backend → Secrets.
+              Add the actual secret values (
+              <code>{form.credentials_ref || "PREFIX"}_CLIENT_ID</code>, etc.) via Backend →
+              Secrets.
             </p>
           </div>
           <div>
@@ -1019,7 +1196,8 @@ function TutorLevelsTab() {
       <CardHeader>
         <CardTitle className="text-base">Tutor levels & commission</CardTitle>
         <p className="text-xs text-muted-foreground">
-          Each tutor inherits the commission % of their level. Per-tutor overrides take precedence (set in Admin → Commissions).
+          Each tutor inherits the commission % of their level. Per-tutor overrides take precedence
+          (set in Admin → Commissions).
         </p>
       </CardHeader>
       <CardContent className="p-0">
@@ -1027,7 +1205,9 @@ function TutorLevelsTab() {
           <p className="p-6 text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="divide-y divide-border/60">
-            {rows.map((l) => <LevelRow key={l.id} level={l} onSave={save.mutate} />)}
+            {rows.map((l) => (
+              <LevelRow key={l.id} level={l} onSave={save.mutate} />
+            ))}
           </div>
         )}
       </CardContent>
@@ -1039,7 +1219,10 @@ function LevelRow({ level, onSave }: { level: Level; onSave: (l: Level) => void 
   const [pct, setPct] = useState(level.commission_percent);
   const [min, setMin] = useState(level.min_completed_sessions);
   const [name, setName] = useState(level.display_name);
-  const dirty = pct !== level.commission_percent || min !== level.min_completed_sessions || name !== level.display_name;
+  const dirty =
+    pct !== level.commission_percent ||
+    min !== level.min_completed_sessions ||
+    name !== level.display_name;
 
   return (
     <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1048,22 +1231,42 @@ function LevelRow({ level, onSave }: { level: Level; onSave: (l: Level) => void 
           <Label className="text-[11px] uppercase text-muted-foreground">Level</Label>
           <div className="flex items-center gap-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" />
-            <Badge variant="outline" className="text-[10px] uppercase">{level.slug}</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase">
+              {level.slug}
+            </Badge>
           </div>
         </div>
         <div>
           <Label className="text-[11px] uppercase text-muted-foreground">Commission %</Label>
-          <Input type="number" step="0.5" value={pct} onChange={(e) => setPct(Number(e.target.value))} className="h-9" />
+          <Input
+            type="number"
+            step="0.5"
+            value={pct}
+            onChange={(e) => setPct(Number(e.target.value))}
+            className="h-9"
+          />
         </div>
         <div>
           <Label className="text-[11px] uppercase text-muted-foreground">Min sessions</Label>
-          <Input type="number" value={min} onChange={(e) => setMin(Number(e.target.value))} className="h-9" />
+          <Input
+            type="number"
+            value={min}
+            onChange={(e) => setMin(Number(e.target.value))}
+            className="h-9"
+          />
         </div>
         <div className="flex items-end">
           <Button
             size="sm"
             disabled={!dirty}
-            onClick={() => onSave({ ...level, commission_percent: pct, min_completed_sessions: min, display_name: name })}
+            onClick={() =>
+              onSave({
+                ...level,
+                commission_percent: pct,
+                min_completed_sessions: min,
+                display_name: name,
+              })
+            }
           >
             Save
           </Button>
@@ -1089,7 +1292,8 @@ function ManualIntentDialog() {
 
   const create = useMutation({
     mutationFn: async () => {
-      if (!studentId || !tutorId || !amount) throw new Error("Student, tutor and amount are required");
+      if (!studentId || !tutorId || !amount)
+        throw new Error("Student, tutor and amount are required");
       const cents = Math.round(Number(amount) * 100);
       if (!Number.isFinite(cents) || cents <= 0) throw new Error("Invalid amount");
       const args: {
@@ -1114,7 +1318,10 @@ function ManualIntentDialog() {
     onSuccess: () => {
       toast.success("Recorded");
       setOpen(false);
-      setStudentId(""); setTutorId(""); setSessionId(""); setAmount("");
+      setStudentId("");
+      setTutorId("");
+      setSessionId("");
+      setAmount("");
       qc.invalidateQueries({ queryKey: ["payments-overview"] });
       qc.invalidateQueries({ queryKey: ["payment-intents"] });
     },
@@ -1124,23 +1331,35 @@ function ManualIntentDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm"><Plus className="mr-1 h-4 w-4" />Record payment</Button>
+        <Button size="sm">
+          <Plus className="mr-1 h-4 w-4" />
+          Record payment
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Record a manual payment</DialogTitle>
           <DialogDescription>
-            Writes a succeeded intent + ledger credits. Commission is computed from the tutor's level / rules.
+            Writes a succeeded intent + ledger credits. Commission is computed from the tutor's
+            level / rules.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
           <div>
             <Label>Student ID</Label>
-            <Input value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="auth user UUID" />
+            <Input
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              placeholder="auth user UUID"
+            />
           </div>
           <div>
             <Label>Tutor ID</Label>
-            <Input value={tutorId} onChange={(e) => setTutorId(e.target.value)} placeholder="auth user UUID" />
+            <Input
+              value={tutorId}
+              onChange={(e) => setTutorId(e.target.value)}
+              placeholder="auth user UUID"
+            />
           </div>
           <div>
             <Label>Session ID (optional)</Label>
@@ -1149,7 +1368,12 @@ function ManualIntentDialog() {
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2">
               <Label>Amount</Label>
-              <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Input
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
             </div>
             <div>
               <Label>Currency</Label>
@@ -1158,7 +1382,11 @@ function ManualIntentDialog() {
           </div>
           <div>
             <Label>Method label</Label>
-            <Input value={method} onChange={(e) => setMethod(e.target.value)} placeholder="manual, bank_transfer, mpesa…" />
+            <Input
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              placeholder="manual, bank_transfer, mpesa…"
+            />
           </div>
         </div>
         <DialogFooter>

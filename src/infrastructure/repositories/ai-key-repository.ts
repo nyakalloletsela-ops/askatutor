@@ -13,18 +13,16 @@ import type {
 export class SupabaseAiKeyRepository implements AiKeyRepository {
   async upsert(input: AiKeyUpsertInput): Promise<void> {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
-      .from("ai_provider_keys")
-      .upsert(
-        {
-          provider: input.provider,
-          api_key: input.apiKey,
-          base_url: input.baseUrl,
-          updated_by: input.updatedBy,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "provider" },
-      );
+    const { error } = await supabaseAdmin.from("ai_provider_keys").upsert(
+      {
+        provider: input.provider,
+        api_key: input.apiKey,
+        base_url: input.baseUrl,
+        updated_by: input.updatedBy,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "provider" },
+    );
     if (error) throw new Error(error.message);
   }
 

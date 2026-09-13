@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 
-let mermaidPromise: Promise<typeof import("mermaid")["default"]> | null = null;
+let mermaidPromise: Promise<(typeof import("mermaid"))["default"]> | null = null;
 function loadMermaid() {
   if (!mermaidPromise) {
     mermaidPromise = import("mermaid").then((m) => {
@@ -67,7 +67,9 @@ export function DiagramBlock({ spec, onRendered }: Props) {
             <RefreshCw className="h-3 w-3" /> Retry
           </button>
         </div>
-        <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-muted-foreground">{spec}</pre>
+        <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-muted-foreground">
+          {spec}
+        </pre>
       </div>
     );
   }

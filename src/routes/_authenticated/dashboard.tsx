@@ -9,7 +9,13 @@ import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Progress } from "@/presentation/domains/8-core-ux-navigation/ui/progress";
 import {
@@ -49,9 +55,20 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const SUBJECT_SUGGESTIONS = [
-  "Math", "Physics", "Chemistry", "Biology", "English", "Sesotho",
-  "Calculus", "Linear Algebra", "Statistics", "Computer Science",
-  "Programming", "Accounting", "Economics", "Engineering Math",
+  "Math",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "English",
+  "Sesotho",
+  "Calculus",
+  "Linear Algebra",
+  "Statistics",
+  "Computer Science",
+  "Programming",
+  "Accounting",
+  "Economics",
+  "Engineering Math",
 ];
 
 type Profile = {
@@ -179,7 +196,9 @@ function Dashboard() {
   useEffect(() => {
     if (!user) return;
     refreshAll();
-    const t = setInterval(() => { refreshSessions(); }, 15000);
+    const t = setInterval(() => {
+      refreshSessions();
+    }, 15000);
     return () => clearInterval(t);
   }, [user]);
 
@@ -202,11 +221,11 @@ function Dashboard() {
   };
 
   const startSession = async (s: SessionRow) => {
-    const { error } = await supabase
-      .from("sessions")
-      .update({ status: "live" })
-      .eq("id", s.id);
-    if (error) { toast.error(error.message); return; }
+    const { error } = await supabase.from("sessions").update({ status: "live" }).eq("id", s.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     window.location.href = `/classroom/${s.room_id}`;
   };
 
@@ -236,7 +255,6 @@ function Dashboard() {
   };
 
   // Tutor onboarding now requires an application reviewed by an admin.
-
 
   const saveProfile = async () => {
     if (!profile || !user) return;
@@ -274,8 +292,12 @@ function Dashboard() {
   const upcoming = useMemo(
     () =>
       sessions
-        .filter((s) => (s.status === "scheduled" || s.status === "live") &&
-          (s.status === "live" || new Date(s.scheduled_at).getTime() + 2 * 60 * 60 * 1000 >= Date.now()))
+        .filter(
+          (s) =>
+            (s.status === "scheduled" || s.status === "live") &&
+            (s.status === "live" ||
+              new Date(s.scheduled_at).getTime() + 2 * 60 * 60 * 1000 >= Date.now()),
+        )
         .slice(0, 5),
     [sessions],
   );
@@ -298,9 +320,7 @@ function Dashboard() {
   }, [profile, isTutor]);
 
   if (!user || !profile) {
-    return (
-      <div className="p-8 text-sm text-muted-foreground">Loading…</div>
-    );
+    return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
   }
 
   const firstName = profile.full_name?.split(" ")[0] ?? "";
@@ -345,7 +365,6 @@ function Dashboard() {
   return (
     <div>
       <main className="mx-auto max-w-7xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -378,8 +397,18 @@ function Dashboard() {
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {isTutor ? (
             <>
-              <StatCard icon={Calendar} label="Upcoming" value={upcoming.length} hint="sessions scheduled" />
-              <StatCard icon={CheckCircle2} label="Completed" value={completedCount} hint="all-time" />
+              <StatCard
+                icon={Calendar}
+                label="Upcoming"
+                value={upcoming.length}
+                hint="sessions scheduled"
+              />
+              <StatCard
+                icon={CheckCircle2}
+                label="Completed"
+                value={completedCount}
+                hint="all-time"
+              />
               <StatCard
                 icon={Wallet}
                 label="Rate"
@@ -401,8 +430,18 @@ function Dashboard() {
                 value={profile.free_minutes_remaining}
                 hint="welcome credit"
               />
-              <StatCard icon={Calendar} label="Upcoming" value={upcoming.length} hint="sessions booked" />
-              <StatCard icon={CheckCircle2} label="Completed" value={completedCount} hint="lessons attended" />
+              <StatCard
+                icon={Calendar}
+                label="Upcoming"
+                value={upcoming.length}
+                hint="sessions booked"
+              />
+              <StatCard
+                icon={CheckCircle2}
+                label="Completed"
+                value={completedCount}
+                hint="lessons attended"
+              />
               <StatCard
                 icon={Sparkles}
                 label="AI access"
@@ -471,7 +510,10 @@ function Dashboard() {
                               <p className="truncate text-sm font-medium">
                                 {s.subject ?? "Tutoring session"}
                                 {isLive && (
-                                  <Badge className="ml-2 bg-green-500/15 text-green-600 hover:bg-green-500/15" variant="secondary">
+                                  <Badge
+                                    className="ml-2 bg-green-500/15 text-green-600 hover:bg-green-500/15"
+                                    variant="secondary"
+                                  >
                                     Live
                                   </Badge>
                                 )}
@@ -479,7 +521,8 @@ function Dashboard() {
                               <p className="mt-0.5 text-xs text-muted-foreground">
                                 {tutorRow ? "Student: " : "Tutor: "}
                                 <span className="font-medium text-foreground">
-                                  {participantNames[tutorRow ? s.student_id : s.tutor_id] ?? "Unnamed"}
+                                  {participantNames[tutorRow ? s.student_id : s.tutor_id] ??
+                                    "Unnamed"}
                                 </span>
                               </p>
                               <p className="mt-0.5 text-xs text-muted-foreground">
@@ -536,7 +579,6 @@ function Dashboard() {
               </Card>
             </section>
 
-
             {/* Tutor profile editor */}
             {isTutor && (
               <section>
@@ -548,18 +590,14 @@ function Dashboard() {
                         <Label>Full name</Label>
                         <Input
                           value={profile.full_name ?? ""}
-                          onChange={(e) =>
-                            setProfile({ ...profile, full_name: e.target.value })
-                          }
+                          onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                         />
                       </div>
                       <div className="space-y-1.5">
                         <Label>Phone</Label>
                         <Input
                           value={profile.phone ?? ""}
-                          onChange={(e) =>
-                            setProfile({ ...profile, phone: e.target.value })
-                          }
+                          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                         />
                       </div>
                     </div>
@@ -624,9 +662,7 @@ function Dashboard() {
                           </Button>
                         </div>
                         <div className="flex flex-wrap gap-1 pt-1">
-                          {SUBJECT_SUGGESTIONS.filter(
-                            (s) => !(profile.subjects ?? []).includes(s),
-                          )
+                          {SUBJECT_SUGGESTIONS.filter((s) => !(profile.subjects ?? []).includes(s))
                             .slice(0, 8)
                             .map((s) => (
                               <button
@@ -679,15 +715,15 @@ function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <Button asChild><Link to="/become-tutor">Apply to tutor</Link></Button>
+                    <Button asChild>
+                      <Link to="/become-tutor">Apply to tutor</Link>
+                    </Button>
                   </CardContent>
                 </Card>
               </section>
             )}
 
             {/* Subscription panel intentionally hidden until free options are finalised. */}
-
-
 
             {/* Reviews (students) */}
             {!isTutor && <ReviewsCard userId={user.id} />}
@@ -966,7 +1002,10 @@ function StudentFeeCard({ userId }: { userId: string }) {
           </div>
         </div>
         {approved && (
-          <Badge variant="secondary" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <Badge
+            variant="secondary"
+            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          >
             Active subscription
           </Badge>
         )}
@@ -1036,10 +1075,7 @@ function ReviewsCard({ userId }: { userId: string }) {
       setTutors([]);
       return;
     }
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", ids);
+    const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
     setTutors((profs ?? []).map((p: any) => ({ id: p.id, name: p.full_name ?? "Tutor" })));
     const { data: rv } = await supabase
       .from("tutor_reviews")
@@ -1058,18 +1094,16 @@ function ReviewsCard({ userId }: { userId: string }) {
   const submit = async (tutorId: string) => {
     const d = drafts[tutorId];
     if (!d || !d.rating) return;
-    const { error } = await supabase
-      .from("tutor_reviews")
-      .upsert(
-        {
-          tutor_id: tutorId,
-          student_id: userId,
-          rating: d.rating,
-          comment: d.comment || null,
-          session_id: null,
-        },
-        { onConflict: "student_id,tutor_id,session_id" },
-      );
+    const { error } = await supabase.from("tutor_reviews").upsert(
+      {
+        tutor_id: tutorId,
+        student_id: userId,
+        rating: d.rating,
+        comment: d.comment || null,
+        session_id: null,
+      },
+      { onConflict: "student_id,tutor_id,session_id" },
+    );
     if (error) toast.error(error.message);
     else {
       toast.success("Review saved");
@@ -1086,11 +1120,10 @@ function ReviewsCard({ userId }: { userId: string }) {
         <CardContent className="space-y-3 p-5">
           {tutors.map((t) => {
             const existing = reviews[t.id];
-            const draft =
-              drafts[t.id] ?? {
-                rating: existing?.rating ?? 0,
-                comment: existing?.comment ?? "",
-              };
+            const draft = drafts[t.id] ?? {
+              rating: existing?.rating ?? 0,
+              comment: existing?.comment ?? "",
+            };
             return (
               <div key={t.id} className="rounded-lg border border-border/60 p-3">
                 <div className="mb-2 flex items-center justify-between">
@@ -1100,16 +1133,12 @@ function ReviewsCard({ userId }: { userId: string }) {
                       <button
                         key={n}
                         type="button"
-                        onClick={() =>
-                          setDrafts({ ...drafts, [t.id]: { ...draft, rating: n } })
-                        }
+                        onClick={() => setDrafts({ ...drafts, [t.id]: { ...draft, rating: n } })}
                         aria-label={`${n} star${n > 1 ? "s" : ""}`}
                       >
                         <Star
                           className={`h-4 w-4 ${
-                            n <= draft.rating
-                              ? "fill-gold text-gold"
-                              : "text-muted-foreground"
+                            n <= draft.rating ? "fill-gold text-gold" : "text-muted-foreground"
                           }`}
                         />
                       </button>
@@ -1163,39 +1192,59 @@ function ProposeCourseCard({ tutorId }: { tutorId: string }) {
       .order("created_at", { ascending: false });
     setMine((data as ProposedCourse[]) ?? []);
   };
-  useEffect(() => { load(); }, [tutorId]);
+  useEffect(() => {
+    load();
+  }, [tutorId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     setBusy(true);
     const { error } = await supabase.from("tutor_courses").insert({
-      tutor_id: tutorId, name: name.trim(), level, description: description.trim() || null,
+      tutor_id: tutorId,
+      name: name.trim(),
+      level,
+      description: description.trim() || null,
     });
     if (error) toast.error(error.message);
-    else { toast.success("Submitted for admin review"); setName(""); setDescription(""); load(); }
+    else {
+      toast.success("Submitted for admin review");
+      setName("");
+      setDescription("");
+      load();
+    }
     setBusy(false);
   };
 
   const labels: Record<ProposedCourse["level"], string> = {
-    primary: "Primary", high_school: "High School", tertiary: "Tertiary",
+    primary: "Primary",
+    high_school: "High School",
+    tertiary: "Tertiary",
   };
 
   return (
     <Card>
       <CardContent className="space-y-4 p-5">
         <p className="text-sm text-muted-foreground">
-          Don't see a subject you teach? Propose it here — an admin will review and add it to the catalog.
+          Don't see a subject you teach? Propose it here — an admin will review and add it to the
+          catalog.
         </p>
         <form onSubmit={submit} className="grid gap-3 md:grid-cols-6">
           <div className="md:col-span-2">
             <Label>Course name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Discrete Mathematics" maxLength={120} />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Discrete Mathematics"
+              maxLength={120}
+            />
           </div>
           <div className="md:col-span-2">
             <Label>Level</Label>
             <Select value={level} onValueChange={(v) => setLevel(v as ProposedCourse["level"])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="primary">Primary</SelectItem>
                 <SelectItem value="high_school">High School</SelectItem>
@@ -1205,21 +1254,41 @@ function ProposeCourseCard({ tutorId }: { tutorId: string }) {
           </div>
           <div className="md:col-span-6">
             <Label>Short description (optional)</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} maxLength={500} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              maxLength={500}
+            />
           </div>
           <div className="md:col-span-6 flex justify-end">
-            <Button type="submit" disabled={busy}>{busy ? "Submitting…" : "Submit for review"}</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Submitting…" : "Submit for review"}
+            </Button>
           </div>
         </form>
 
         {mine.length > 0 && (
           <div>
-            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your proposals</h4>
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Your proposals
+            </h4>
             <ul className="space-y-1.5 text-sm">
               {mine.map((c) => (
                 <li key={c.id} className="flex items-center justify-between rounded-md border p-2">
-                  <span>{c.name} <span className="text-xs text-muted-foreground">· {labels[c.level]}</span></span>
-                  <Badge variant={c.status === "approved" ? "default" : c.status === "rejected" ? "destructive" : "secondary"}>
+                  <span>
+                    {c.name}{" "}
+                    <span className="text-xs text-muted-foreground">· {labels[c.level]}</span>
+                  </span>
+                  <Badge
+                    variant={
+                      c.status === "approved"
+                        ? "default"
+                        : c.status === "rejected"
+                          ? "destructive"
+                          : "secondary"
+                    }
+                  >
                     {c.status}
                   </Badge>
                 </li>

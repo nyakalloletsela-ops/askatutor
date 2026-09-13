@@ -15,20 +15,29 @@ export function SimChat({ schema }: { schema: SimulationSchemaT | null }) {
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, busy]);
 
-  async function send(content: string, mode: "explain" | "simplify" | "harder" | "quiz" | "free" = "free") {
+  async function send(
+    content: string,
+    mode: "explain" | "simplify" | "harder" | "quiz" | "free" = "free",
+  ) {
     if (!content.trim() || busy) return;
     const next: Msg[] = [...messages, { role: "user", content }];
     setMessages(next);
     setInput("");
     setBusy(true);
     try {
-      const ctx = schema ? {
-        title: schema.title, subject: schema.subject, summary: schema.summary,
-        visualization: schema.visualization,
-        objects: schema.objects?.slice(0, 12).map((o) => ({ label: o.label, type: o.type })),
-      } : null;
+      const ctx = schema
+        ? {
+            title: schema.title,
+            subject: schema.subject,
+            summary: schema.summary,
+            visualization: schema.visualization,
+            objects: schema.objects?.slice(0, 12).map((o) => ({ label: o.label, type: o.type })),
+          }
+        : null;
       const { reply } = await chatFn({ data: { messages: next, context: ctx, mode } });
       setMessages([...next, { role: "assistant", content: reply || "(no reply)" }]);
     } catch (e: any) {
@@ -39,10 +48,30 @@ export function SimChat({ schema }: { schema: SimulationSchemaT | null }) {
   }
 
   const quick = [
-    { mode: "explain" as const, label: "Explain", icon: <BookOpen className="h-3 w-3" />, prompt: "Explain the current simulation step by step." },
-    { mode: "simplify" as const, label: "Simplify", icon: <Sparkles className="h-3 w-3" />, prompt: "Simplify this for a beginner." },
-    { mode: "harder" as const, label: "Harder", icon: <Brain className="h-3 w-3" />, prompt: "Give me a harder example." },
-    { mode: "quiz" as const, label: "Quiz me", icon: <Wand2 className="h-3 w-3" />, prompt: "Quiz me on this topic." },
+    {
+      mode: "explain" as const,
+      label: "Explain",
+      icon: <BookOpen className="h-3 w-3" />,
+      prompt: "Explain the current simulation step by step.",
+    },
+    {
+      mode: "simplify" as const,
+      label: "Simplify",
+      icon: <Sparkles className="h-3 w-3" />,
+      prompt: "Simplify this for a beginner.",
+    },
+    {
+      mode: "harder" as const,
+      label: "Harder",
+      icon: <Brain className="h-3 w-3" />,
+      prompt: "Give me a harder example.",
+    },
+    {
+      mode: "quiz" as const,
+      label: "Quiz me",
+      icon: <Wand2 className="h-3 w-3" />,
+      prompt: "Quiz me on this topic.",
+    },
   ];
 
   return (
@@ -57,7 +86,10 @@ export function SimChat({ schema }: { schema: SimulationSchemaT | null }) {
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={`rounded-lg px-3 py-2 text-xs ${m.role === "user" ? "ml-6 bg-violet-500/20 text-white" : "mr-6 bg-white/5 text-white/90"}`}>
+          <div
+            key={i}
+            className={`rounded-lg px-3 py-2 text-xs ${m.role === "user" ? "ml-6 bg-violet-500/20 text-white" : "mr-6 bg-white/5 text-white/90"}`}
+          >
             {m.content}
           </div>
         ))}
@@ -77,12 +109,16 @@ export function SimChat({ schema }: { schema: SimulationSchemaT | null }) {
               disabled={busy}
               className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-white/80 transition hover:border-violet-400/50 hover:bg-violet-500/20 disabled:opacity-50"
             >
-              {q.icon}{q.label}
+              {q.icon}
+              {q.label}
             </button>
           ))}
         </div>
         <form
-          onSubmit={(e) => { e.preventDefault(); send(input); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
           className="flex gap-1"
         >
           <Input

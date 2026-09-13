@@ -3,28 +3,57 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { getTutorProfile, getTutorAvailability, bookSession, joinWaitlist as joinWaitlistFn } from "@/application/use-cases/discovery/book-session";
+import {
+  getTutorProfile,
+  getTutorAvailability,
+  bookSession,
+  joinWaitlist as joinWaitlistFn,
+} from "@/application/use-cases/discovery/book-session";
 import { notifyBookingEmails } from "@/application/use-cases/communication/notifications";
 import { PageContainer } from "@/presentation/domains/8-core-ux-navigation/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/presentation/domains/8-core-ux-navigation/ui/select";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
 import { ChevronLeft, ChevronRight, Repeat, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/book/$tutorId")({
-  component: () => (<ScopeGate scope="find_tutors"><BookTutorPage /></ScopeGate>),
+  component: () => (
+    <ScopeGate scope="find_tutors">
+      <BookTutorPage />
+    </ScopeGate>
+  ),
 });
 
-type Avail = { weekday: number; start_min: number; end_min: number; timezone: string; buffer_minutes: number };
+type Avail = {
+  weekday: number;
+  start_min: number;
+  end_min: number;
+  timezone: string;
+  buffer_minutes: number;
+};
 type Busy = { scheduled_at: string; duration_min: number };
 type Holiday = { start_date: string; end_date: string };
 
@@ -43,7 +72,11 @@ function BookTutorPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [tutor, setTutor] = useState<{ full_name: string | null; hourly_rate: number | null; subjects: string[] | null } | null>(null);
+  const [tutor, setTutor] = useState<{
+    full_name: string | null;
+    hourly_rate: number | null;
+    subjects: string[] | null;
+  } | null>(null);
   const [avail, setAvail] = useState<Avail[]>([]);
   const [busy, setBusy] = useState<Busy[]>([]);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -104,7 +137,9 @@ function BookTutorPage() {
           const end = new Date(candidate.getTime() + duration * 60000);
           const clash = busy.some((b) => {
             const bs = new Date(new Date(b.scheduled_at).getTime() - buffer * 60000);
-            const be = new Date(new Date(b.scheduled_at).getTime() + (b.duration_min + buffer) * 60000);
+            const be = new Date(
+              new Date(b.scheduled_at).getTime() + (b.duration_min + buffer) * 60000,
+            );
             return candidate < be && end > bs;
           });
           if (!clash) slots.push(candidate);
@@ -113,7 +148,9 @@ function BookTutorPage() {
       slots.sort((a, b) => a.getTime() - b.getTime());
       // De-dupe identical timestamps
       const seen = new Set<number>();
-      const unique = slots.filter((s) => (seen.has(s.getTime()) ? false : (seen.add(s.getTime()), true)));
+      const unique = slots.filter((s) =>
+        seen.has(s.getTime()) ? false : (seen.add(s.getTime()), true),
+      );
       out.push({ date: day, slots: unique });
     }
     return out;
@@ -155,14 +192,26 @@ function BookTutorPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <div className="flex items-center gap-1">
-              <Button size="icon" variant="outline" onClick={() => setWeekStart(new Date(weekStart.getTime() - 7 * 86400000))}>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => setWeekStart(new Date(weekStart.getTime() - 7 * 86400000))}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-[200px] text-center text-sm font-medium">
                 {weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} —{" "}
-                {new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                {new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
               </div>
-              <Button size="icon" variant="outline" onClick={() => setWeekStart(new Date(weekStart.getTime() + 7 * 86400000))}>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => setWeekStart(new Date(weekStart.getTime() + 7 * 86400000))}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -174,14 +223,22 @@ function BookTutorPage() {
             {avail.length === 0 ? (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                 <p>This tutor has not set availability yet.</p>
-                <Button variant="link" size="sm" onClick={() => joinWaitlist(tutorId, subject, duration)}>
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => joinWaitlist(tutorId, subject, duration)}
+                >
                   Request a time
                 </Button>
               </div>
             ) : totalSlots === 0 ? (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                 No open slots this week.{" "}
-                <Button variant="link" size="sm" onClick={() => joinWaitlist(tutorId, subject, duration)}>
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => joinWaitlist(tutorId, subject, duration)}
+                >
                   Join the waitlist
                 </Button>
               </div>
@@ -210,7 +267,10 @@ function BookTutorPage() {
                               setConfirmOpen(true);
                             }}
                           >
-                            {s.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                            {s.toLocaleTimeString(undefined, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </Button>
                         ))
                       )}
@@ -224,12 +284,16 @@ function BookTutorPage() {
 
         <div className="space-y-4">
           <Card>
-            <CardHeader><CardTitle className="text-base">Lesson</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Lesson</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               <div>
                 <Label>Duration</Label>
                 <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="30">30 minutes</SelectItem>
                     <SelectItem value="45">45 minutes</SelectItem>
@@ -242,17 +306,27 @@ function BookTutorPage() {
                 <div>
                   <Label>Subject</Label>
                   <Select value={subject} onValueChange={setSubject}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {tutor!.subjects!.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {tutor!.subjects!.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               )}
               <div>
-                <Label className="flex items-center gap-1"><Repeat className="h-3.5 w-3.5" /> Recurring weekly</Label>
+                <Label className="flex items-center gap-1">
+                  <Repeat className="h-3.5 w-3.5" /> Recurring weekly
+                </Label>
                 <Select value={String(recurrence)} onValueChange={(v) => setRecurrence(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">One-off</SelectItem>
                     <SelectItem value="4">4 weeks</SelectItem>
@@ -264,17 +338,29 @@ function BookTutorPage() {
               {tutor?.hourly_rate != null && (
                 <div className="rounded-md bg-muted p-3 text-sm">
                   <p className="text-muted-foreground">Estimated price</p>
-                  <p className="text-lg font-semibold">${((tutor.hourly_rate * duration) / 60).toFixed(2)} per lesson</p>
+                  <p className="text-lg font-semibold">
+                    ${((tutor.hourly_rate * duration) / 60).toFixed(2)} per lesson
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle className="text-base">Timezones</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">Timezones</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-1 text-sm">
-              <p><Badge variant="secondary">You</Badge> {studentTz}</p>
-              <p><Badge variant="outline">Tutor</Badge> {tutorTz}</p>
-              {buffer > 0 && <p className="text-xs text-muted-foreground">Tutor buffer between lessons: {buffer} min</p>}
+              <p>
+                <Badge variant="secondary">You</Badge> {studentTz}
+              </p>
+              <p>
+                <Badge variant="outline">Tutor</Badge> {tutorTz}
+              </p>
+              {buffer > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Tutor buffer between lessons: {buffer} min
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -285,16 +371,29 @@ function BookTutorPage() {
           <DialogHeader>
             <DialogTitle>Confirm booking</DialogTitle>
             <DialogDescription>
-              {picked?.toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-              {" · "}{duration} min{recurrence > 1 ? ` · ${recurrence} weekly sessions` : ""}
+              {picked?.toLocaleString(undefined, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              {" · "}
+              {duration} min{recurrence > 1 ? ` · ${recurrence} weekly sessions` : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-md bg-muted p-3 text-sm">
-            <p className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-600" /> Tutor: {tutor?.full_name}</p>
-            <p className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-600" /> Subject: {subject || "General"}</p>
+            <p className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-600" /> Tutor: {tutor?.full_name}
+            </p>
+            <p className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-green-600" /> Subject: {subject || "General"}
+            </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Back</Button>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Back
+            </Button>
             <Button onClick={onConfirm} disabled={submitting}>
               {submitting ? "Booking…" : "Confirm"}
             </Button>
@@ -309,7 +408,12 @@ function BookTutorPage() {
 // We use the student-side "day" only to anchor a date; we then find the tutor-local
 // timestamp for that day at start_min on weekday _w_. We accept that day boundaries
 // may shift by ±1 day relative to student TZ — slot listing still ends up in student TZ.
-function buildTutorLocal(studentDay: Date, weekday: number, startMin: number, tutorTz: string): Date | null {
+function buildTutorLocal(
+  studentDay: Date,
+  weekday: number,
+  startMin: number,
+  tutorTz: string,
+): Date | null {
   // Iterate ±1 day around the student's calendar day to find the matching tutor weekday.
   for (let offset = -1; offset <= 1; offset++) {
     const probe = new Date(studentDay);
@@ -322,7 +426,11 @@ function buildTutorLocal(studentDay: Date, weekday: number, startMin: number, tu
     // Build "wall time" in tutorTz: YYYY-MM-DDTHH:MM in tutorTz, then convert to UTC.
     const candidate = zonedTimeToUtc(`${y}-${m}-${d}T${hh}:${mm}:00`, tutorTz);
     if (!candidate) continue;
-    if (candidate.toLocaleString("en-US", { timeZone: tutorTz, weekday: "short" }) !== ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][weekday]) continue;
+    if (
+      candidate.toLocaleString("en-US", { timeZone: tutorTz, weekday: "short" }) !==
+      ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][weekday]
+    )
+      continue;
     // Only include if the candidate falls on studentDay in student TZ.
     if (candidate.toDateString() === studentDay.toDateString()) return candidate;
   }
@@ -332,9 +440,14 @@ function buildTutorLocal(studentDay: Date, weekday: number, startMin: number, tu
 // Lightweight wall-time → UTC for a given IANA timezone.
 function zonedTimeToUtc(wall: string, tz: string): Date {
   const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz, hour12: false,
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    timeZone: tz,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   });
   // Guess: treat wall as UTC, then adjust by offset returned for that instant in tz.
   const utcGuess = new Date(wall + "Z");
@@ -343,8 +456,12 @@ function zonedTimeToUtc(wall: string, tz: string): Date {
     return a;
   }, {});
   const asTzMs = Date.UTC(
-    Number(parts.year), Number(parts.month) - 1, Number(parts.day),
-    Number(parts.hour) % 24, Number(parts.minute), Number(parts.second),
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour) % 24,
+    Number(parts.minute),
+    Number(parts.second),
   );
   const diff = asTzMs - utcGuess.getTime();
   return new Date(utcGuess.getTime() - diff);
@@ -352,7 +469,9 @@ function zonedTimeToUtc(wall: string, tz: string): Date {
 
 async function joinWaitlist(tutorId: string, subject: string, duration: number) {
   try {
-    await joinWaitlistFn({ data: { tutorId, subject: subject || undefined, durationMin: duration } });
+    await joinWaitlistFn({
+      data: { tutorId, subject: subject || undefined, durationMin: duration },
+    });
     toast.success("Added to waitlist — we'll notify you when a slot opens.");
   } catch (e) {
     toast.error(e instanceof Error ? e.message : "Failed to join waitlist");

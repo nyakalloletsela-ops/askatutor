@@ -21,18 +21,43 @@ interface Props {
   usedLabs: UsedLab[];
 }
 
-export function ClassroomSidePanel({ open, onChange, roomId, userId, displayName, usedLabs }: Props) {
+export function ClassroomSidePanel({
+  open,
+  onChange,
+  roomId,
+  userId,
+  displayName,
+  usedLabs,
+}: Props) {
   return (
     <div className="flex h-full min-h-0 w-full flex-col border-l bg-card">
-      <Tabs value={open} onValueChange={(v) => onChange(v as SidePanelKey)} className="flex h-full min-h-0 flex-col">
+      <Tabs
+        value={open}
+        onValueChange={(v) => onChange(v as SidePanelKey)}
+        className="flex h-full min-h-0 flex-col"
+      >
         <div className="flex items-center gap-2 border-b px-2 py-2">
           <TabsList className="grid flex-1 grid-cols-4">
-            <TabsTrigger value="chat" className="text-xs">Chat</TabsTrigger>
-            <TabsTrigger value="files" className="text-xs">Files</TabsTrigger>
-            <TabsTrigger value="notes" className="text-xs">Notes</TabsTrigger>
-            <TabsTrigger value="ai" className="text-xs">AI</TabsTrigger>
+            <TabsTrigger value="chat" className="text-xs">
+              Chat
+            </TabsTrigger>
+            <TabsTrigger value="files" className="text-xs">
+              Files
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="text-xs">
+              Notes
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="text-xs">
+              AI
+            </TabsTrigger>
           </TabsList>
-          <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" onClick={() => onChange(null)} aria-label="Close">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 shrink-0"
+            onClick={() => onChange(null)}
+            aria-label="Close"
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -53,16 +78,34 @@ export function ClassroomSidePanel({ open, onChange, roomId, userId, displayName
   );
 }
 
-function NotesTab({ roomId, displayName, usedLabs }: { roomId: string; displayName: string; usedLabs: UsedLab[] }) {
+function NotesTab({
+  roomId,
+  displayName,
+  usedLabs,
+}: {
+  roomId: string;
+  displayName: string;
+  usedLabs: UsedLab[];
+}) {
   const key = `classroom-notes:${roomId}`;
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    try { setValue(localStorage.getItem(key) ?? ""); } catch { /* */ }
+    try {
+      setValue(localStorage.getItem(key) ?? "");
+    } catch {
+      /* */
+    }
   }, [key]);
   useEffect(() => {
-    const id = setTimeout(() => { try { localStorage.setItem(key, value); } catch { /* */ } }, 300);
+    const id = setTimeout(() => {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        /* */
+      }
+    }, 300);
     return () => clearTimeout(id);
   }, [key, value]);
 
@@ -82,20 +125,29 @@ function NotesTab({ roomId, displayName, usedLabs }: { roomId: string; displayNa
 
     doc.setFontSize(11);
     for (const line of doc.splitTextToSize(value || "(empty)", width) as string[]) {
-      if (y > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin; }
+      if (y > doc.internal.pageSize.getHeight() - margin) {
+        doc.addPage();
+        y = margin;
+      }
       doc.text(line, margin, y);
       y += 15;
     }
 
     if (usedLabs.length) {
       y += 14;
-      if (y > doc.internal.pageSize.getHeight() - margin - 40) { doc.addPage(); y = margin; }
+      if (y > doc.internal.pageSize.getHeight() - margin - 40) {
+        doc.addPage();
+        y = margin;
+      }
       doc.setFontSize(13);
       doc.text("Labs used in this lesson", margin, y);
       y += 18;
       doc.setFontSize(10);
       for (const lab of usedLabs) {
-        if (y > doc.internal.pageSize.getHeight() - margin) { doc.addPage(); y = margin; }
+        if (y > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage();
+          y = margin;
+        }
         doc.textWithLink(`• ${lab.name} — ${lab.url}`, margin, y, { url: lab.url });
         y += 14;
       }
@@ -136,10 +188,17 @@ function NotesTab({ roomId, displayName, usedLabs }: { roomId: string; displayNa
   return (
     <div className="flex h-full flex-col p-3">
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <p className="text-xs text-muted-foreground">Auto-saved on this device. Save as PDF to share.</p>
+        <p className="text-xs text-muted-foreground">
+          Auto-saved on this device. Save as PDF to share.
+        </p>
         <div className="ml-auto flex gap-1.5">
           <Button size="sm" variant="outline" disabled={busy} onClick={() => void download()}>
-            {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <FileDown className="mr-1 h-3.5 w-3.5" />} PDF
+            {busy ? (
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <FileDown className="mr-1 h-3.5 w-3.5" />
+            )}{" "}
+            PDF
           </Button>
           <Button size="sm" disabled={busy} onClick={() => void saveShared()}>
             <Save className="mr-1 h-3.5 w-3.5" /> Save to class
@@ -153,7 +212,9 @@ function NotesTab({ roomId, displayName, usedLabs }: { roomId: string; displayNa
         className="min-h-0 flex-1 resize-none rounded-xl border bg-background p-3 font-mono text-sm leading-relaxed outline-none focus:ring-2 focus:ring-primary/40"
       />
       <div className="mt-2 shrink-0">
-        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Labs used</p>
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Labs used
+        </p>
         {usedLabs.length === 0 ? (
           <p className="text-xs text-muted-foreground">No labs opened yet.</p>
         ) : (

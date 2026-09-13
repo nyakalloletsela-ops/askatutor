@@ -1,7 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { listClassroomFiles, getClassroomFileUrl, deleteClassroomFile } from "@/application/use-cases/classroom/classroom-files";
+import {
+  listClassroomFiles,
+  getClassroomFileUrl,
+  deleteClassroomFile,
+} from "@/application/use-cases/classroom/classroom-files";
 import { Button } from "../8-core-ux-navigation/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../8-core-ux-navigation/ui/tabs";
 import { toast } from "sonner";
@@ -11,7 +15,12 @@ interface Props {
   roomId: string;
 }
 
-type FileRow = { name: string; id?: string; updated_at?: string; metadata?: { size?: number } | null };
+type FileRow = {
+  name: string;
+  id?: string;
+  updated_at?: string;
+  metadata?: { size?: number } | null;
+};
 
 const BUCKET = "classroom-files";
 
@@ -83,7 +92,11 @@ export function ClassroomFiles({ roomId }: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <Tabs value={folder} onValueChange={(v) => setFolder(v as "notes" | "videos")} className="flex h-full flex-col">
+      <Tabs
+        value={folder}
+        onValueChange={(v) => setFolder(v as "notes" | "videos")}
+        className="flex h-full flex-col"
+      >
         <div className="flex items-center gap-2 border-b bg-muted/40 p-2">
           <TabsList>
             <TabsTrigger value="notes">

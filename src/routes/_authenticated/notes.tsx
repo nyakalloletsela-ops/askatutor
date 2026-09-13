@@ -35,7 +35,6 @@ function folderLabel(kind: string): string {
   return kind;
 }
 
-
 function NotesPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -126,7 +125,13 @@ function FolderFilter({ notes }: { notes: Note[] }) {
   });
 
   if (notes.length === 0) {
-    return <EmptyState icon={StickyNote} title="No notes yet" description="Capture ideas, summaries, or save AI Coach answers and Toolkit outputs here." />;
+    return (
+      <EmptyState
+        icon={StickyNote}
+        title="No notes yet"
+        description="Capture ideas, summaries, or save AI Coach answers and Toolkit outputs here."
+      />
+    );
   }
 
   return (
@@ -139,7 +144,10 @@ function FolderFilter({ notes }: { notes: Note[] }) {
           onClick={() => setFolder("all")}
           className="h-7 rounded-full text-xs"
         >
-          All <Badge variant="secondary" className="ml-1 text-[10px]">{notes.length}</Badge>
+          All{" "}
+          <Badge variant="secondary" className="ml-1 text-[10px]">
+            {notes.length}
+          </Badge>
         </Button>
         {folders.map(([k, count]) => (
           <Button
@@ -149,7 +157,10 @@ function FolderFilter({ notes }: { notes: Note[] }) {
             onClick={() => setFolder(k)}
             className="h-7 rounded-full text-xs"
           >
-            {folderLabel(k)} <Badge variant="secondary" className="ml-1 text-[10px]">{count}</Badge>
+            {folderLabel(k)}{" "}
+            <Badge variant="secondary" className="ml-1 text-[10px]">
+              {count}
+            </Badge>
           </Button>
         ))}
       </div>
@@ -169,10 +180,18 @@ function FolderFilter({ notes }: { notes: Note[] }) {
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              {n.body && <div className="text-xs text-muted-foreground"><SmartMarkdown>{n.body}</SmartMarkdown></div>}
+              {n.body && (
+                <div className="text-xs text-muted-foreground">
+                  <SmartMarkdown>{n.body}</SmartMarkdown>
+                </div>
+              )}
               <div className="flex items-center justify-between pt-1">
-                <Badge variant="outline" className="text-[10px]">{folderLabel(n.kind)}</Badge>
-                <p className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleDateString()}</p>
+                <Badge variant="outline" className="text-[10px]">
+                  {folderLabel(n.kind)}
+                </Badge>
+                <p className="text-[10px] text-muted-foreground">
+                  {new Date(n.created_at).toLocaleDateString()}
+                </p>
               </div>
             </CardContent>
           </Card>

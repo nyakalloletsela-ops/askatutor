@@ -12,7 +12,9 @@ export function TimelineView({ schema, playing, resetKey, timeScale }: Props) {
   const events = schema.events ?? [];
   const [idx, setIdx] = useState(0);
 
-  useEffect(() => { setIdx(0); }, [resetKey]);
+  useEffect(() => {
+    setIdx(0);
+  }, [resetKey]);
   useEffect(() => {
     if (!playing || events.length === 0) return;
     const ms = 2500 / Math.max(timeScale, 0.1);
@@ -28,7 +30,10 @@ export function TimelineView({ schema, playing, resetKey, timeScale }: Props) {
     <div className="flex h-full w-full flex-col bg-gradient-to-b from-[#0b1020] to-[#08081a] p-4 text-white">
       <div className="mb-3 text-sm font-semibold">{schema.title}</div>
       <div className="relative mb-6 h-2 rounded-full bg-white/10">
-        <div className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 transition-[width]" style={{ width: `${((idx + 1) / events.length) * 100}%` }} />
+        <div
+          className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 transition-[width]"
+          style={{ width: `${((idx + 1) / events.length) * 100}%` }}
+        />
         {events.map((_, i) => (
           <button
             key={i}
@@ -48,7 +53,12 @@ export function TimelineView({ schema, playing, resetKey, timeScale }: Props) {
             <div className="mb-1 text-xs font-mono text-cyan-300">{e.date}</div>
             <div className="text-base font-semibold">{e.title}</div>
             <div className="mt-1 text-sm text-white/70">{e.description}</div>
-            {e.location && <div className="mt-2 text-[11px] text-white/50">📍 {e.location.label ?? `${e.location.lat.toFixed(2)}, ${e.location.lng.toFixed(2)}`}</div>}
+            {e.location && (
+              <div className="mt-2 text-[11px] text-white/50">
+                📍{" "}
+                {e.location.label ?? `${e.location.lat.toFixed(2)}, ${e.location.lng.toFixed(2)}`}
+              </div>
+            )}
           </div>
         ))}
       </div>

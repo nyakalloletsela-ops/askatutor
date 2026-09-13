@@ -69,12 +69,8 @@ export function PayButton({
 
   return (
     <Button onClick={onClick} disabled={disabled || busy} className={className}>
-      {busy ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <Lock className="mr-2 h-4 w-4" />
-      )}
-      {busy ? "Processing…" : label ?? `Pay ${fmt(amountCents)}`}
+      {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
+      {busy ? "Processing…" : (label ?? `Pay ${fmt(amountCents)}`)}
     </Button>
   );
 }
