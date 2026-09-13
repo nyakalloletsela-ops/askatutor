@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { Toaster } from "@/presentation/domains/8-core-ux-navigation/ui/sonner";
 import { AuthProvider } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
@@ -17,10 +18,15 @@ import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
-    <main className="flex min-h-[100svh] items-center justify-center bg-background px-4" aria-labelledby="not-found-title">
+    <main
+      className="flex min-h-[100svh] items-center justify-center bg-background px-4"
+      aria-labelledby="not-found-title"
+    >
       <div className="max-w-md text-center">
         <p className="text-sm font-medium text-primary">AskATutorLive</p>
-        <h1 id="not-found-title" className="mt-2 text-6xl font-bold tracking-tight">404</h1>
+        <h1 id="not-found-title" className="mt-2 text-6xl font-bold tracking-tight">
+          404
+        </h1>
         <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           The page you’re looking for doesn’t exist or may have moved.
@@ -36,14 +42,19 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   return (
-    <main className="flex min-h-[100svh] items-center justify-center bg-background px-4" aria-labelledby="error-title">
+    <main
+      className="flex min-h-[100svh] items-center justify-center bg-background px-4"
+      aria-labelledby="error-title"
+    >
       <div className="max-w-md text-center">
         <p className="text-sm font-medium text-destructive">AskATutorLive</p>
-        <h1 id="error-title" className="mt-2 text-xl font-semibold">Something went wrong</h1>
+        <h1 id="error-title" className="mt-2 text-xl font-semibold">
+          Something went wrong
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           We couldn’t load this page. Please try again, or return home if the problem continues.
         </p>
@@ -84,16 +95,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "AskATutorLive — Learn with the right support" },
       {
         property: "og:description",
-        content: "Ask questions, learn with tutors, practise, and build your understanding with technology and AI supporting the learning journey.",
+        content:
+          "Ask questions, learn with tutors, practise, and build your understanding with technology and AI supporting the learning journey.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "AskATutorLive — Learn with the right support" },
       {
         name: "twitter:description",
-        content: "Ask questions, learn with tutors, practise, and build your understanding with technology and AI supporting the learning journey.",
+        content:
+          "Ask questions, learn with tutors, practise, and build your understanding with technology and AI supporting the learning journey.",
       },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/353d268d-b2bf-4c87-b265-9c526e9802b2" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/353d268d-b2bf-4c87-b265-9c526e9802b2" },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/353d268d-b2bf-4c87-b265-9c526e9802b2",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/353d268d-b2bf-4c87-b265-9c526e9802b2",
+      },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#0b1220" },
       { name: "apple-mobile-web-app-capable", content: "yes" },

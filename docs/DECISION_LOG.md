@@ -63,19 +63,19 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
 
 ### ATD-0001 — ATD-0011 (stack / requirement decisions, `docs/archive/DECISION_LOG (2).md`)
 
-| ID | Historical decision | Historical status (`(2)` source) | Current status under AT-0001 |
-|----|---------------------|-----------------------------------|------------------------------|
-| ATD-0001 | Implementation language: TypeScript | ACCEPTED | HISTORICAL — consistent with verified present state (TS project); NOT re-accepted as a decision |
-| ATD-0002 | Frontend framework: React | ACCEPTED | HISTORICAL — consistent with verified present state (React 19); NOT re-accepted |
-| ATD-0003 | Build tool: Vite | ACCEPTED | HISTORICAL — consistent with verified present state (`vite build`); NOT re-accepted |
-| ATD-0004 | Styling: Tailwind CSS | ACCEPTED | HISTORICAL — present-state styling stack NOT verified; REQUIRES CURRENT CONFIRMATION |
-| ATD-0005 | Database: PostgreSQL via Supabase | ACCEPTED | HISTORICAL — consistent with verified present state (Supabase project); NOT re-accepted |
-| ATD-0006 | 3D / lab rendering: Three.js | ACCEPTED | HISTORICAL — no 3D lab in verified present state; REQUIRES CURRENT CONFIRMATION |
-| ATD-0007 | Whiteboard assessment requirement: CONFIRMED (Product Constitution §5) | ACCEPTED | HISTORICAL — requirement confirmation, NOT architecture; current status REQUIRES CURRENT CONFIRMATION |
-| ATD-0008 | Mandatory initial assessment: CONFIRMED (Product Constitution §4) | ACCEPTED | HISTORICAL — requirement confirmation, NOT architecture; current status REQUIRES CURRENT CONFIRMATION |
-| ATD-0009 | Testing framework: Vitest (unit/integration) + Playwright (E2E) recommended | PROPOSED / PENDING | HISTORICAL — current verified test framework is `bun:test`; any framework decision REQUIRES CURRENT HUMAN DECISION |
-| ATD-0010 | Deployment platform: Vercel + Railway/Supabase recommended | PROPOSED / PENDING | HISTORICAL — current verified deployment is Cloudflare Workers default (Node/Vercel options); REQUIRES CURRENT HUMAN DECISION |
-| ATD-0011 | Authentication provider: Supabase Auth recommended | PROPOSED / PENDING | `ACCEPTED` as current decision (D-0003, 2026-09-09) — re-confirmed from present-state evidence + explicit human approval; historical record preserved for provenance |
+| ID       | Historical decision                                                         | Historical status (`(2)` source) | Current status under AT-0001                                                                                                                                         |
+| -------- | --------------------------------------------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ATD-0001 | Implementation language: TypeScript                                         | ACCEPTED                         | HISTORICAL — consistent with verified present state (TS project); NOT re-accepted as a decision                                                                      |
+| ATD-0002 | Frontend framework: React                                                   | ACCEPTED                         | HISTORICAL — consistent with verified present state (React 19); NOT re-accepted                                                                                      |
+| ATD-0003 | Build tool: Vite                                                            | ACCEPTED                         | HISTORICAL — consistent with verified present state (`vite build`); NOT re-accepted                                                                                  |
+| ATD-0004 | Styling: Tailwind CSS                                                       | ACCEPTED                         | HISTORICAL — present-state styling stack NOT verified; REQUIRES CURRENT CONFIRMATION                                                                                 |
+| ATD-0005 | Database: PostgreSQL via Supabase                                           | ACCEPTED                         | HISTORICAL — consistent with verified present state (Supabase project); NOT re-accepted                                                                              |
+| ATD-0006 | 3D / lab rendering: Three.js                                                | ACCEPTED                         | HISTORICAL — no 3D lab in verified present state; REQUIRES CURRENT CONFIRMATION                                                                                      |
+| ATD-0007 | Whiteboard assessment requirement: CONFIRMED (Product Constitution §5)      | ACCEPTED                         | HISTORICAL — requirement confirmation, NOT architecture; current status REQUIRES CURRENT CONFIRMATION                                                                |
+| ATD-0008 | Mandatory initial assessment: CONFIRMED (Product Constitution §4)           | ACCEPTED                         | HISTORICAL — requirement confirmation, NOT architecture; current status REQUIRES CURRENT CONFIRMATION                                                                |
+| ATD-0009 | Testing framework: Vitest (unit/integration) + Playwright (E2E) recommended | PROPOSED / PENDING               | HISTORICAL — current verified test framework is `bun:test`; any framework decision REQUIRES CURRENT HUMAN DECISION                                                   |
+| ATD-0010 | Deployment platform: Vercel + Railway/Supabase recommended                  | PROPOSED / PENDING               | HISTORICAL — current verified deployment is Cloudflare Workers default (Node/Vercel options); REQUIRES CURRENT HUMAN DECISION                                        |
+| ATD-0011 | Authentication provider: Supabase Auth recommended                          | PROPOSED / PENDING               | `ACCEPTED` as current decision (D-0003, 2026-09-09) — re-confirmed from present-state evidence + explicit human approval; historical record preserved for provenance |
 
 ### Phase-0 architecture decisions (`docs/archive/CURRENT_STATE (2).md`)
 
@@ -88,7 +88,7 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
    2. Currency conversion with SACU region overrides (ZAR, NAD, BWP, SLE, SZL special handling).
    3. Data residency/sovereignty compliance logging (EU GDPR, US CCPA, SACU local storage).
    - Per-country rules configuration-driven; audit-trail requirements mandatory per law.
-   Current: **HISTORICAL → PROPOSED / REQUIRES HUMAN DECISION — NOT ACCEPTED.** These are requirements/recommendations for a future commerce phase, with no verified payment/tax/currency/residency implementation in present state (current Commerce is `PARTIAL` — reconciliation missing; see `docs/CURRENT_STATE.md` → Commerce Findings). They do not authorize or claim implementation.
+     Current: **HISTORICAL → PROPOSED / REQUIRES HUMAN DECISION — NOT ACCEPTED.** These are requirements/recommendations for a future commerce phase, with no verified payment/tax/currency/residency implementation in present state (current Commerce is `PARTIAL` — reconciliation missing; see `docs/CURRENT_STATE.md` → Commerce Findings). They do not authorize or claim implementation.
 
 - **Notes:** The `(2)` source documents remain unchanged. Where a historical item is consistent with verified present state (e.g., TypeScript, React, Vite, Supabase DB/Auth), present-state evidence stands on its own; the historical record is retained for provenance, not to confer acceptance.
 
@@ -152,6 +152,20 @@ No explicit, application-architecture `ACCEPTED` decisions were located in the r
   - **Evidence-resolvable:** `session_records.ai_summary` writer (UNKNOWN — REQUIRES VERIFICATION; `docs/BACKLOG.md` P2).
   - **Doc reconciliation:** MASTER_PLAN §1 vs D-0005 bounded acceptance (aligned in this exercise); stale archive docs preserved-not-rewritten (`docs/BACKLOG.md` P4).
 - **Scope:** This entry does **not** accept, change, or re-classify any application architecture; it does **not** authorise Phase 1 or any implementation. Acceptance of this closure recommendation is the reviewer's act; the historical `COMPLETE-PENDING-REVIEW` status is resolved to this recorded recommendation pending that acceptance.
+
+---
+
+## D-0007 — Build-script portability correction and dependency-configuration observation (AT-0004, engineering/process)
+
+- **Reference:** AT-0004 (branch `presentation/public-trust-pages`); build failure + correction, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`; current-state record `docs/CURRENT_STATE.md` → AT-0004.
+- **Kind:** Engineering-process / tooling record (NOT an application-architecture decision).
+- **Date:** 2026-09-13 (AT-0004 verification phase).
+- **Status:** RECORDED — including the evidence investigation of the package-manager question (2026-09-13). **No package-manager decision made: pnpm is NOT adopted** (STOP — an authoritative Bun workflow contradicts pnpm adoption; see fact 3). Changes already applied + verified; no new architecture accepted.
+- **Recorded facts (evidence-verified in AT-0004):**
+  1. **Windows build correction APPLIED and VERIFIED:** the previous build scripts used Unix-only environment-prefix syntax (`NODE_OPTIONS=...`, `NITRO_PRESET=...`), which fails on Windows shells. `build`, `build:dev`, `build:node`, `build:vercel` now use `cross-env` (devDependency `cross-env@10.1.0`); `pnpm build` → SUCCESS (exit 0, ~29 s) on this Windows host. This is a build-tooling correction, not an application-architecture decision.
+  2. **`package.json` `pnpm.overrides` (`entities` = `4.5.0`) is NOT APPLIED:** pnpm 11 no longer reads the `pnpm` field in `package.json` (verified warning). The lockfile/`node_modules` hold both `entities@4.5.0` and `entities@6.0.1`; the pin takes no effect. Status: `UNKNOWN — REQUIRES VERIFICATION` (whether the pin is required is unverified; builds pass with both present). Resolution options (future, requires authorization): remove the dead field, or move the override into `pnpm-workspace.yaml` (`overrides`).
+  3. **No package-manager decision made — STOP (authoritative Bun workflow contradicts pnpm adoption):** an untruncated evidence investigation (2026-09-13) across the tracked tree found an authoritative Bun workflow: `README.md` documents the project as "managed with **bun**" (`bun.lock`, `bunfig.toml`); `DEPLOYMENT.md` uses bun commands throughout (`bun install`, `bun run build`, `bun run start` via `scripts/start-node.mjs`, `FROM oven/bun:1` Dockerfile with `bun install --frozen-lockfile`, `bunx wrangler deploy`); the canonical tracked lockfile is `bun.lock` (unchanged) with tracked `bunfig.toml` (`minimumReleaseAge = 86400` supply-chain guard); `docs/AUDIT_BASELINE_AT-0001.md` records "Package manager: `bun`"; tests run via `bun:test`. `package.json` has **no `packageManager` field**. The only pnpm signal is the dead `pnpm` field (ignored by pnpm 11) and untracked `pnpm-lock.yaml`/`pnpm-workspace.yaml`; npm appears only in ignore patterns and a "or: npm install" alternative — none constitute adoption evidence. Per the AT-0004 decision rule, the contradictory authoritative Bun workflow means the decision is **NOT MADE → pnpm is NOT adopted**; `pnpm-lock.yaml`/`pnpm-workspace.yaml` remain **untracked** and are **excluded** from the AT-0004 commits. Package-manager unification (bun, or a deliberate pnpm migration) stays an open item requiring an explicit human decision.
+- **Scope:** Records the current dependency/tooling state, the not-applied override, and that **no new application-architecture decision was accepted** during AT-0004. It does **not** authorise implementation, migration, dependency changes, or a package-manager migration.
 
 ---
 
