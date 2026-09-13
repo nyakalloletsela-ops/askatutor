@@ -1,25 +1,97 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Brain, HeartHandshake, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Brain, CalendarPlus, CheckCircle2, Sparkles, Users } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "../../8-core-ux-navigation/ui/badge";
 import { Button } from "../../8-core-ux-navigation/ui/button";
 
-export function LearningBeyondSession() {
+export type FeaturedTutor = {
+  id: string;
+  full_name: string | null;
+  bio: string | null;
+  subjects: string[] | null;
+  hourly_rate: number | null;
+  avatar_url: string | null;
+  avg_rating: number | null;
+  review_count: number | null;
+};
+
+export function FeaturedTutors() {
+  const [tutors, setTutors] = useState<FeaturedTutor[]>([]);
+
+  useEffect(() => {
+    supabase.rpc("list_public_tutors").then(({ data, error }) => {
+      if (!error) setTutors(((data as FeaturedTutor[]) ?? []).slice(0, 3));
+    });
+  }, []);
+
+  if (!tutors.length) return null;
+
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 md:py-20">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-3xl border border-border/60 bg-card p-7 md:p-9">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Beyond the session</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight">Learning doesn&apos;t stop when the session ends.</h2>
-          <p className="mt-4 text-sm leading-7 text-muted-foreground">A good learning experience continues after the call. Review what you learned, practise it, reflect on mistakes and decide what to work on next.</p>
-          <div className="mt-7 flex flex-wrap gap-2 text-xs font-medium">
-            {["Learn", "Practise", "Reflect", "Evidence", "Progress"].map((item) => <span key={item} className="rounded-full border border-border/60 bg-muted/30 px-3 py-1.5">{item}</span>)}
-          </div>
+    <section className="mx-auto max-w-6xl px-4 py-14 md:py-18">
+      <div className="mb-7 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Find your tutor</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Learn from someone who fits your goal.</h2>
         </div>
-        <div className="rounded-3xl border border-primary/20 bg-primary/5 p-7 md:p-9">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Brain className="h-5 w-5" /></div>
-          <h2 className="mt-5 text-2xl font-semibold tracking-tight">Technology that helps you learn better.</h2>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">AI can explain concepts, offer guidance, help you practise and support tutors. The goal is better learning — not simply faster answers.</p>
-          <div className="mt-6 flex items-center gap-3 text-xs font-medium text-muted-foreground">
-            <span className="rounded-xl border bg-background px-3 py-2">You</span><ArrowRight className="h-4 w-4" /><span className="rounded-xl border bg-background px-3 py-2">Tutor / AI assistance</span><ArrowRight className="h-4 w-4" /><span className="rounded-xl border bg-background px-3 py-2">Learning</span>
+        <Button asChild variant="ghost" className="hidden sm:inline-flex">
+          <Link to="/tutors">See all tutors <ArrowRight className="ml-1 h-4 w-4" /></Link>
+        </Button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {tutors.map((tutor) => (
+          <div key={tutor.id} className="rounded-2xl border border-border/60 bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+            <div className="flex items-start gap-3">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-muted">
+                {tutor.avatar_url ? <img src={tutor.avatar_url} alt={tutor.full_name ?? "Tutor"} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-lg font-semibold text-muted-foreground">{(tutor.full_name ?? "?").charAt(0).toUpperCase()}</div>}
+              </div>
+              <div className="min-w-0">
+                <h3 className="truncate font-semibold">{tutor.full_name ?? "Tutor"}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{tutor.review_count ? `${Number(tutor.avg_rating ?? 0).toFixed(1)} · ${tutor.review_count} reviews` : "New tutor"}</p>
+              </div>
+            </div>
+            <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted-foreground">{tutor.bio ?? "Ready to help you learn."}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {(tutor.subjects ?? []).slice(0, 3).map((subject) => <Badge key={subject} variant="secondary" className="text-xs">{subject}</Badge>)}
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              {tutor.hourly_rate != null ? <span className="text-sm font-semibold"><span className="text-aurora">M{tutor.hourly_rate}</span><span className="text-muted-foreground">/hour</span></span> : <span />}
+              <Button asChild size="sm" className="bg-aurora text-white">
+                <Link to="/tutor/$id" params={{ id: tutor.id }}>View tutor</Link>
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 text-center sm:hidden"><Button asChild variant="outline"><Link to="/tutors">See all tutors</Link></Button></div>
+    </section>
+  );
+}
+
+export function LearningTools() {
+  return (
+    <section className="border-y border-border/60 bg-muted/20">
+      <div className="mx-auto max-w-6xl px-4 py-14 md:py-18">
+        <div className="grid gap-5 md:grid-cols-3">
+          <div className="md:col-span-2 rounded-3xl border border-border/60 bg-card p-7 md:p-9">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">More than a video call</p>
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Everything you need to keep learning.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Use live tutoring alongside lessons, practice, resources and feedback so each session has a useful next step.</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[[CheckCircle2, "Live tutoring", "Personal help when a concept needs a human."], [Sparkles, "Practice", "Turn explanations into active learning."], [CalendarPlus, "Keep going", "Book the next session when you are ready."]].map(([Icon, title, text]) => (
+                <div key={title as string} className="rounded-2xl border border-border/60 p-4">
+                  <Icon className="h-5 w-5 text-primary" />
+                  <h3 className="mt-3 text-sm font-semibold">{title as string}</h3>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{text as string}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-3xl border border-primary/20 bg-primary/5 p-7 md:p-9">
+            <Brain className="h-6 w-6 text-primary" />
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight">AI when it helps.</h2>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Get explanations, guidance and practice support without losing the human tutor at the centre of learning.</p>
+            <Button asChild variant="outline" className="mt-6 rounded-xl"><Link to="/ai-tools">Explore AI support <ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
           </div>
         </div>
       </div>
@@ -29,36 +101,14 @@ export function LearningBeyondSession() {
 
 export function TutorOpportunity() {
   return (
-    <section className="border-y border-border/60 bg-muted/20">
-      <div className="mx-auto max-w-6xl px-4 py-16 md:py-20">
-        <div className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">For tutors</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">Share what you know. Help someone learn.</h2>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">Build your tutor profile, share your expertise, connect with learners and turn your knowledge into someone else&apos;s progress.</p>
-          </div>
-          <Button asChild size="lg" variant="outline" className="rounded-2xl px-6">
-            <Link to="/become-tutor"><Users className="mr-2 h-5 w-5" /> Become a Tutor</Link>
-          </Button>
+    <section className="mx-auto max-w-6xl px-4 py-14 md:py-20">
+      <div className="rounded-3xl border border-border/60 bg-card p-7 md:flex md:items-center md:justify-between md:gap-8 md:p-10">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">For tutors</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Teach what you know. Reach more learners.</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Create your tutor profile, set your availability and connect with learners who need your expertise.</p>
         </div>
-      </div>
-    </section>
-  );
-}
-
-export function FinalLearningCta() {
-  return (
-    <section className="mx-auto max-w-6xl px-4 py-16 md:py-24">
-      <div className="overflow-hidden rounded-3xl bg-primary p-8 text-primary-foreground md:p-12">
-        <div className="max-w-2xl">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-foreground/10"><HeartHandshake className="h-5 w-5" /></div>
-          <h2 className="mt-6 text-3xl font-semibold tracking-tight md:text-5xl">Ready to keep learning?</h2>
-          <p className="mt-4 max-w-xl text-sm leading-7 text-primary-foreground/80 md:text-base">Start with the question, subject or goal in front of you. AskATutorLive helps you find the next useful step.</p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <Button asChild size="lg" variant="secondary" className="rounded-2xl"><Link to="/auth"><Sparkles className="mr-2 h-4 w-4" /> Start Learning</Link></Button>
-            <Button asChild size="lg" variant="outline" className="rounded-2xl border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><Link to="/tutors">Find a Tutor <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-          </div>
-        </div>
+        <Button asChild size="lg" variant="outline" className="mt-6 shrink-0 rounded-2xl md:mt-0"><Link to="/become-tutor"><Users className="mr-2 h-5 w-5" /> Become a Tutor</Link></Button>
       </div>
     </section>
   );
