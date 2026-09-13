@@ -1,28 +1,30 @@
 import { Link } from "@tanstack/react-router";
-import { MessageSquare, Video, Bot, ArrowRight } from "lucide-react";
+import { ArrowRight, CircleHelp, Dumbbell, UserRound } from "lucide-react";
 
 const actions = [
-  { icon: MessageSquare, emoji: "\u{1F4D8}", title: "Ask a Question", desc: "Type it. Get an answer in seconds.", to: "/auth" as const },
-  { icon: Video, emoji: "\u{1F3A5}", title: "Join Live Tutor", desc: "Hop into a session with a verified tutor.", to: "/tutors" as const },
-  { icon: Bot, emoji: "\u{1F916}", title: "AI Tutor Mode", desc: "Instant explanations, 24/7.", to: "/auth" as const },
+  { icon: CircleHelp, title: "I have a question", desc: "Get help understanding something you are stuck on.", to: "/auth" as const, label: "Ask for help" },
+  { icon: UserRound, title: "I want to learn", desc: "Explore subjects, tutors, lessons and learning resources.", to: "/tutors" as const, label: "Find a tutor" },
+  { icon: Dumbbell, title: "I want to improve", desc: "Practise, review your work and build stronger understanding.", to: "/auth" as const, label: "Start practising" },
 ];
 
 export function InstantActions() {
   return (
     <section className="mx-auto max-w-6xl px-4 py-16 md:py-20">
-      <div className="grid gap-5 md:grid-cols-3">
-        {actions.map((a) => (
-          <Link
-            key={a.title}
-            to={a.to}
-            className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card p-7 transition hover:-translate-y-0.5 hover:border-electric hover:shadow-glow-electric"
-          >
-            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
-            <div className="text-4xl">{a.emoji}</div>
-            <h3 className="mt-5 text-xl font-semibold tracking-tight">{a.title}</h3>
-            <p className="mt-1.5 text-sm text-muted-foreground">{a.desc}</p>
-            <span className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-electric">
-              Start now <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+      <div className="mx-auto mb-9 max-w-2xl text-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Start where you are</p>
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">What do you need right now?</h2>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground md:text-base">There is no single way to learn. Choose the next step that matches what you need.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {actions.map((action) => (
+          <Link key={action.title} to={action.to} className="group rounded-3xl border border-border/60 bg-card p-7 transition hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <action.icon className="h-5 w-5" />
+            </div>
+            <h3 className="mt-5 text-xl font-semibold tracking-tight">{action.title}</h3>
+            <p className="mt-2 min-h-12 text-sm leading-6 text-muted-foreground">{action.desc}</p>
+            <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+              {action.label}<ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
             </span>
           </Link>
         ))}

@@ -12,14 +12,15 @@ import {
   SubjectsGrid,
   MinimalFooter,
 } from "@/presentation/domains/1-discovery-matching";
+import { LearningBeyondSession, TutorOpportunity, FinalLearningCta } from "@/presentation/domains/1-discovery-matching/home/PurposeSections";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "AskATutorLive \u2014 Get unstuck in seconds" },
-      { name: "description", content: "Start a live learning session instantly with real tutors or AI. No waiting, no friction." },
-      { property: "og:title", content: "AskATutorLive \u2014 Get unstuck in seconds" },
-      { property: "og:description", content: "Start a live learning session instantly with real tutors or AI." },
+      { title: "AskATutorLive — Learn how to solve it" },
+      { name: "description", content: "Ask a question, find the right tutor, practise what you are learning, and get intelligent support along the way." },
+      { property: "og:title", content: "AskATutorLive — Learn how to solve it" },
+      { property: "og:description", content: "People, learning tools and AI working together to help you make real progress." },
     ],
   }),
   component: Home,
@@ -43,12 +44,17 @@ function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <HeroSection tutorCount={tutorCount} />
-      <ActivityTicker />
-      <InstantActions />
-      <HowItWorksSection />
-      <TrustMetrics tutorCount={tutorCount} />
-      <SubjectsGrid />
+      <main>
+        <HeroSection tutorCount={tutorCount} />
+        <ActivityTicker />
+        <InstantActions />
+        <HowItWorksSection />
+        <LearningBeyondSession />
+        <SubjectsGrid />
+        <TrustMetrics tutorCount={tutorCount} />
+        <TutorOpportunity />
+        <FinalLearningCta />
+      </main>
       <MinimalFooter />
     </div>
   );
