@@ -1,29 +1,29 @@
 import { Link } from "@tanstack/react-router";
-import { MessageSquare, Video, Bot, ArrowRight } from "lucide-react";
+import { ArrowRight, CircleHelp, Dumbbell, UserRound } from "lucide-react";
 
 const actions = [
-  { icon: MessageSquare, emoji: "\u{1F4D8}", title: "Ask a Question", desc: "Type it. Get an answer in seconds.", to: "/auth" as const },
-  { icon: Video, emoji: "\u{1F3A5}", title: "Join Live Tutor", desc: "Hop into a session with a verified tutor.", to: "/tutors" as const },
-  { icon: Bot, emoji: "\u{1F916}", title: "AI Tutor Mode", desc: "Instant explanations, 24/7.", to: "/auth" as const },
+  { icon: CircleHelp, title: "I have a question", desc: "Get help with something you are stuck on.", to: "/auth" as const, label: "Get help" },
+  { icon: UserRound, title: "I want to learn", desc: "Find a tutor for your subject, level and goal.", to: "/tutors" as const, label: "Find a tutor" },
+  { icon: Dumbbell, title: "I want to practise", desc: "Build understanding with practice and learning tools.", to: "/auth" as const, label: "Start learning" },
 ];
 
 export function InstantActions() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 md:py-20">
-      <div className="grid gap-5 md:grid-cols-3">
-        {actions.map((a) => (
-          <Link
-            key={a.title}
-            to={a.to}
-            className="group relative overflow-hidden rounded-3xl border border-border/60 bg-card p-7 transition hover:-translate-y-0.5 hover:border-electric hover:shadow-glow-electric"
-          >
-            <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary/10 blur-3xl transition group-hover:bg-primary/20" />
-            <div className="text-4xl">{a.emoji}</div>
-            <h3 className="mt-5 text-xl font-semibold tracking-tight">{a.title}</h3>
-            <p className="mt-1.5 text-sm text-muted-foreground">{a.desc}</p>
-            <span className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-electric">
-              Start now <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-            </span>
+    <section className="mx-auto max-w-6xl px-4 py-12 md:py-16">
+      <div className="mb-7 text-center">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Start here</p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">What are you looking for?</h2>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {actions.map((action) => (
+          <Link key={action.title} to={action.to} className="group rounded-2xl border border-border/60 bg-card p-5 transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><action.icon className="h-5 w-5" /></div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary" />
+            </div>
+            <h3 className="mt-4 font-semibold">{action.title}</h3>
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">{action.desc}</p>
+            <span className="mt-3 inline-block text-sm font-semibold text-primary">{action.label}</span>
           </Link>
         ))}
       </div>

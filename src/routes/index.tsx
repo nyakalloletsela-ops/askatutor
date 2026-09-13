@@ -3,25 +3,16 @@ import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import {
-  HeroSection,
-  ActivityTicker,
-  InstantActions,
-  HowItWorksSection,
-  TrustMetrics,
-  SubjectsGrid,
-  MinimalFooter,
-} from "@/presentation/domains/1-discovery-matching";
+import { HeroSection, InstantActions, HowItWorksSection, SubjectsGrid, MinimalFooter } from "@/presentation/domains/1-discovery-matching";
+import { FeaturedTutors, LearningTools, TutorOpportunity } from "@/presentation/domains/1-discovery-matching/home/PurposeSections";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "AskATutorLive \u2014 Get unstuck in seconds" },
-      { name: "description", content: "Start a live learning session instantly with real tutors or AI. No waiting, no friction." },
-      { property: "og:title", content: "AskATutorLive \u2014 Get unstuck in seconds" },
-      { property: "og:description", content: "Start a live learning session instantly with real tutors or AI." },
-    ],
-  }),
+  head: () => ({ meta: [
+    { title: "AskATutorLive — Learn with the right support" },
+    { name: "description", content: "Find a tutor, learn online, practise what you are learning, and get intelligent support when you need it." },
+    { property: "og:title", content: "AskATutorLive — Learn with the right support" },
+    { property: "og:description", content: "Find a tutor, learn online, practise, and get help when you need it." },
+  ] }),
   component: Home,
 });
 
@@ -33,8 +24,7 @@ function Home() {
 
   useEffect(() => {
     supabase.rpc("list_public_tutors").then(({ data, error }) => {
-      if (error) { setTutorCount(null); return; }
-      setTutorCount(((data as TutorRow[]) ?? []).length);
+      if (!error) setTutorCount(((data as TutorRow[]) ?? []).length);
     });
   }, []);
 
@@ -43,12 +33,15 @@ function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <HeroSection tutorCount={tutorCount} />
-      <ActivityTicker />
-      <InstantActions />
-      <HowItWorksSection />
-      <TrustMetrics tutorCount={tutorCount} />
-      <SubjectsGrid />
+      <main>
+        <HeroSection tutorCount={tutorCount} />
+        <InstantActions />
+        <FeaturedTutors />
+        <HowItWorksSection />
+        <LearningTools />
+        <SubjectsGrid />
+        <TutorOpportunity />
+      </main>
       <MinimalFooter />
     </div>
   );

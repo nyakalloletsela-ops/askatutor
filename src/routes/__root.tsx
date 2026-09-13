@@ -17,21 +17,22 @@ import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main className="flex min-h-[100svh] items-center justify-center bg-background px-4" aria-labelledby="not-found-title">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-navy">404</h1>
+        <p className="text-sm font-medium text-primary">AskATutorLive</p>
+        <h1 id="not-found-title" className="mt-2 text-6xl font-bold tracking-tight">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist.
+          The page you’re looking for doesn’t exist or may have moved.
         </p>
         <Link
           to="/"
-          className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+          className="mt-6 inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           Go home
         </Link>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -39,21 +40,33 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main className="flex min-h-[100svh] items-center justify-center bg-background px-4" aria-labelledby="error-title">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-        <button
-          onClick={() => {
-            router.invalidate();
-            reset();
-          }}
-          className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-        >
-          Try again
-        </button>
+        <p className="text-sm font-medium text-destructive">AskATutorLive</p>
+        <h1 id="error-title" className="mt-2 text-xl font-semibold">Something went wrong</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We couldn’t load this page. Please try again, or return home if the problem continues.
+        </p>
+        <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            Try again
+          </button>
+          <Link
+            to="/"
+            className="inline-flex min-h-10 items-center justify-center rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            Go home
+          </Link>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -61,27 +74,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ask A Tutor Live — Lesotho's Smartest Learning Platform" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { title: "AskATutorLive — Learn with the right support" },
       {
         name: "description",
         content:
-          "Live tutoring, AI study tools, and virtual STEM labs for students from primary school to university. Built for Lesotho and Africa.",
+          "Ask questions, learn with tutors, practise, and build your understanding with technology and AI supporting the learning journey.",
       },
-      { property: "og:title", content: "Ask A Tutor Live — Lesotho's Smartest Learning Platform" },
-      { property: "og:description", content: "Ask A Tutor Live connects students with Lesotho-based tutors in live virtual classrooms." },
+      { property: "og:title", content: "AskATutorLive — Learn with the right support" },
+      {
+        property: "og:description",
+        content: "Ask questions, learn with tutors, practise, and build your understanding with technology and AI supporting the learning journey.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "Ask A Tutor Live — Lesotho's Smartest Learning Platform" },
-      { name: "twitter:description", content: "Ask A Tutor Live connects students with Lesotho-based tutors in live virtual classrooms." },
+      { name: "twitter:title", content: "AskATutorLive — Learn with the right support" },
+      {
+        name: "twitter:description",
+        content: "Ask questions, learn with tutors, practise, and build your understanding with technology and AI supporting the learning journey.",
+      },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/353d268d-b2bf-4c87-b265-9c526e9802b2" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/353d268d-b2bf-4c87-b265-9c526e9802b2" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "description", content: "Ask A Tutor Live connects students with Lesotho-based tutors in live virtual classrooms." },
       { name: "theme-color", content: "#0b1220" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "AskATutor" },
+      { name: "apple-mobile-web-app-title", content: "AskATutorLive" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
