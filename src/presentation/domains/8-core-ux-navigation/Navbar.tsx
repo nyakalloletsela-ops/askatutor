@@ -6,10 +6,7 @@ import { useAuth } from "../3-personalization-role-context/hooks/use-auth";
 import { useTheme } from "./hooks/use-theme";
 import { Button } from "./ui/button";
 import { supabase } from "@/integrations/supabase/client";
-
-const APP_SHELL_PREFIXES = [
-  "/dashboard", "/admin", "/ai-tools", "/ai-tutor", "/messages", "/assignments", "/notes", "/calendar", "/code", "/become-tutor", "/certificate", "/labs", "/classroom",
-];
+import { isAppShellRoute } from "./navigation-visibility";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
@@ -23,15 +20,24 @@ export function Navbar() {
     if (!isAdmin) return;
     let alive = true;
     const load = async () => {
-      const { count: courses } = await supabase.from("tutor_courses").select("id", { count: "exact", head: true }).eq("status", "pending");
+      const { count: courses } = await supabase
+        .from("tutor_courses")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
       if (alive) setPendingCount(courses ?? 0);
     };
     load();
     const t = setInterval(load, 30000);
-    return () => { alive = false; clearInterval(t); };
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
   }, [isAdmin]);
 
-  if (APP_SHELL_PREFIXES.some((p) => path === p || path.startsWith(p + "/"))) return null;
+  // Authenticated routes have AppShell as their single navigation owner.
+  // Keeping this guard here lets legacy/public routes migrate incrementally
+  // without rendering two competing navigation systems.
+  if (isAppShellRoute(path)) return null;
 
   const close = () => setOpen(false);
   const links = (
@@ -55,7 +61,7 @@ export function Navbar() {
           <img src={logo} alt="Ask A Tutor Live logo" className="h-9 w-9 object-contain" />
           <span className="text-lg tracking-tight">Ask A Tutor <span className="text-aurora">Live</span></span>
         </Link>
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
           {links}
           <Button asChild size="sm" className="ml-2 rounded-xl bg-aurora text-white hover:opacity-90"><Link to={user ? "/dashboard" : "/auth"}>{user ? "Continue Learning" : "Start Learning"}</Link></Button>
           <button onClick={toggle} aria-label="Toggle theme" className="ml-1 rounded-md p-2 text-foreground/70 hover:bg-accent hover:text-foreground">{theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</button>
