@@ -117,7 +117,7 @@ export function createPaymentGateway(): PaymentGateway {
 
     async refundPayment({ intentId, reason }): Promise<void> {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { error } = await supabaseAdmin.rpc("refund_payment", {
+      const { error } = await supabaseAdmin.rpc("admin_refund_intent", {
         _intent: intentId,
         _reason: reason,
       });
