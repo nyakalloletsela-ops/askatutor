@@ -28,15 +28,13 @@ export function FeaturedTutors() {
   if (!tutors.length) return null;
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-14 md:py-18">
+    <section className="mx-auto max-w-6xl px-4 py-14 md:py-20">
       <div className="mb-7 flex items-end justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Find your tutor</p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Learn from someone who fits your goal.</h2>
         </div>
-        <Button asChild variant="ghost" className="hidden sm:inline-flex">
-          <Link to="/tutors">See all tutors <ArrowRight className="ml-1 h-4 w-4" /></Link>
-        </Button>
+        <Button asChild variant="ghost" className="hidden sm:inline-flex"><Link to="/tutors">See all tutors <ArrowRight className="ml-1 h-4 w-4" /></Link></Button>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {tutors.map((tutor) => (
@@ -51,14 +49,10 @@ export function FeaturedTutors() {
               </div>
             </div>
             <p className="mt-3 line-clamp-2 text-sm leading-6 text-muted-foreground">{tutor.bio ?? "Ready to help you learn."}</p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {(tutor.subjects ?? []).slice(0, 3).map((subject) => <Badge key={subject} variant="secondary" className="text-xs">{subject}</Badge>)}
-            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">{(tutor.subjects ?? []).slice(0, 3).map((subject) => <Badge key={subject} variant="secondary" className="text-xs">{subject}</Badge>)}</div>
             <div className="mt-4 flex items-center justify-between gap-3">
               {tutor.hourly_rate != null ? <span className="text-sm font-semibold"><span className="text-aurora">M{tutor.hourly_rate}</span><span className="text-muted-foreground">/hour</span></span> : <span />}
-              <Button asChild size="sm" className="bg-aurora text-white">
-                <Link to="/tutor/$id" params={{ id: tutor.id }}>View tutor</Link>
-              </Button>
+              <Button asChild size="sm" className="bg-aurora text-white"><Link to="/tutor/$id" params={{ id: tutor.id }}>View tutor</Link></Button>
             </div>
           </div>
         ))}
@@ -68,21 +62,27 @@ export function FeaturedTutors() {
   );
 }
 
+const learningTools = [
+  { icon: CheckCircle2, title: "Live tutoring", text: "Personal help when a concept needs a human." },
+  { icon: Sparkles, title: "Practice", text: "Turn explanations into active learning." },
+  { icon: CalendarPlus, title: "Keep going", text: "Book the next session when you are ready." },
+];
+
 export function LearningTools() {
   return (
     <section className="border-y border-border/60 bg-muted/20">
-      <div className="mx-auto max-w-6xl px-4 py-14 md:py-18">
+      <div className="mx-auto max-w-6xl px-4 py-14 md:py-20">
         <div className="grid gap-5 md:grid-cols-3">
-          <div className="md:col-span-2 rounded-3xl border border-border/60 bg-card p-7 md:p-9">
+          <div className="rounded-3xl border border-border/60 bg-card p-7 md:col-span-2 md:p-9">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">More than a video call</p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Everything you need to keep learning.</h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Use live tutoring alongside lessons, practice, resources and feedback so each session has a useful next step.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              {[[CheckCircle2, "Live tutoring", "Personal help when a concept needs a human."], [Sparkles, "Practice", "Turn explanations into active learning."], [CalendarPlus, "Keep going", "Book the next session when you are ready."]].map(([Icon, title, text]) => (
-                <div key={title as string} className="rounded-2xl border border-border/60 p-4">
+              {learningTools.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="rounded-2xl border border-border/60 p-4">
                   <Icon className="h-5 w-5 text-primary" />
-                  <h3 className="mt-3 text-sm font-semibold">{title as string}</h3>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{text as string}</p>
+                  <h3 className="mt-3 text-sm font-semibold">{title}</h3>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
                 </div>
               ))}
             </div>
