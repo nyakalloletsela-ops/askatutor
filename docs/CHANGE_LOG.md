@@ -379,6 +379,11 @@ This document records meaningful changes chronologically. Every work item record
 - Documentation (this change set): `docs/CURRENT_STATE.md`, `docs/DECISION_LOG.md` (D-0007 — includes the STOP verdict: bun authoritative, pnpm NOT adopted, `pnpm-lock.yaml`/`pnpm-workspace.yaml` excluded), `docs/CHANGE_LOG.md` (this entry), `docs/BACKLOG.md` (AT-0004 register).
 - `docs/archive/{BACKLOG,CURRENT_STATE,DECISION_LOG,MASTER_PLAN,WORK_PROTOCOL} (2).md` — prettier-only reformat (Git-quoted paths; classified as FORMATTING_ONLY by `verify-quoted-docs.mjs`; committed in the formatting-only commit).
 
+#### FILES MODIFIED (post-commit, D-0007 follow-up — entities pin resolution)
+
+- `package.json` — `pnpm.overrides.entities = 4.5.0` block removed (dead config; ignored by pnpm 11 and Bun; pin proven NOT REQUIRED — see DECISION_LOG D-0007). Only change = 5 lines deleted.
+- `bun.lock` — reconciled by `bun install` to the manifest (`cross-env@10.1.0` at root, was stale `7.0.3`; `@react-three/drei` nested `cross-env@7.0.3` retained; entities unchanged: 4.5.0 top-level, 6.0.1 nested in parse5).
+
 #### FILES MODIFIED (uncommitted, AT-0004 formatting-only — 263 files)
 
 - Pure `prettier --write` rewrites across `src/`, `docs/`, `tests/`, `README.md`, `DEPLOYMENT.md` — proven `working tree == prettier.format(HEAD)` byte-for-byte (`audit-evidence/working-tree-classification.json`; the 5 `docs/archive/*(2).md` files verified by `audit-evidence/verify-quoted-docs.mjs`). Zero content drift. Committed as the formatting-only commit.
@@ -420,7 +425,7 @@ This document records meaningful changes chronologically. Every work item record
 
 #### KNOWN ISSUES / REMAINING OPEN
 
-- `entities@4.5.0` override ineffective (see D-0007) — resolve (remove dead field or move to `pnpm-workspace.yaml` `overrides`).
+- ~~`entities@4.5.0` override ineffective (see D-0007) — resolve (remove dead field or move to `pnpm-workspace.yaml` `overrides`).~~ **RESOLVED — NOT REQUIRED; dead `pnpm.overrides` removed from `package.json`.** Clean Bun install verified (822 packages, tsc 0, prettier clean, lint 112 baseline, build SUCCESS).
 - Package-manager split (`bun.lock` tracked canonical vs untracked pnpm tooling) unresolved — requires an explicit human decision.
 - 112 baseline lint problems remain (separate authorized fixing item required).
 
