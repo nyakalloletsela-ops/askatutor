@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Star, Crown, BookOpen, MessageSquare } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowLeft, Star, BookOpen, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { getTutorProfile, getTutorReviews } from "@/application/use-cases/discovery/book-session";
 import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
 import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
@@ -23,54 +24,23 @@ export const Route = createFileRoute("/tutor/$id")({
   component: TutorProfile,
 });
 
-type Tutor = {
-  id: string;
-  full_name: string | null;
-  bio: string | null;
-  subjects: string[] | null;
-  hourly_rate: number | null;
-  avatar_url: string | null;
-  is_featured: boolean;
-  avg_rating: number;
-  review_count: number;
-};
-
-type Review = {
-  id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-};
-
 function TutorProfile() {
   const { id } = Route.useParams();
-  const [tutor, setTutor] = useState<Tutor | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const { data } = await supabase.rpc("list_public_tutors");
-      const found = (data ?? []).find((t: Tutor) => t.id === id) ?? null;
-      if (!mounted) return;
-      setTutor(found);
-      const { data: r } = await supabase
-        .from("tutor_reviews")
-        .select("id, rating, comment, created_at")
-        .eq("tutor_id", id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (!mounted) return;
-      setReviews((r as Review[]) ?? []);
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [id]);
+  const fetchTutorProfile = useServerFn(getTutorProfile);
+  const fetchTutorReviews = useServerFn(getTutorReviews);
 
-  if (loading) {
+  const profileQuery = useQuery({
+    queryKey: ["tutor-profile", id],
+    queryFn: () => fetchTutorProfile({ data: { tutorId: id } }),
+  });
+
+  const reviewsQuery = useQuery({
+    queryKey: ["tutor-reviews", id],
+    queryFn: () => fetchTutorReviews({ data: { tutorId: id } }),
+  });
+
+  if (profileQuery.isPending) {
     return (
       <div className="min-h-screen">
         <Navbar />
@@ -79,7 +49,24 @@ function TutorProfile() {
     );
   }
 
-  if (!tutor) {
+  if (profileQuery.isError) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <h1 className="text-2xl font-bold">Something went wrong</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We couldn't load this tutor's profile.
+          </p>
+          <Button asChild className="mt-6">
+            <Link to="/tutors">Back to tutors</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profileQuery.data) {
     return (
       <div className="min-h-screen">
         <Navbar />
@@ -87,19 +74,23 @@ function TutorProfile() {
           <h1 className="text-2xl font-bold">Tutor not found</h1>
           <p className="mt-2 text-sm text-muted-foreground">This profile may have been removed.</p>
           <Button asChild className="mt-6">
-            <Link to="/">Back to tutors</Link>
+            <Link to="/tutors">Back to tutors</Link>
           </Button>
         </div>
       </div>
     );
   }
 
+  const tutor = profileQuery.data;
+  const reviews = reviewsQuery.data ?? [];
+  const reviewCount = tutor.review_count ?? reviews.length;
+
   return (
     <div className="min-h-screen pb-24 md:pb-0">
       <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-6 md:py-10">
         <Link
-          to="/"
+          to="/tutors"
           className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Back to tutors
@@ -134,14 +125,14 @@ function TutorProfile() {
                     </h1>
                   </div>
                   <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                    {tutor.review_count > 0 ? (
+                    {reviewCount > 0 ? (
                       <>
                         <Star className="h-4 w-4 fill-gold text-gold" />
                         <span className="font-medium text-foreground">
-                          {Number(tutor.avg_rating).toFixed(1)}
+                          {Number(tutor.avg_rating ?? 0).toFixed(1)}
                         </span>
                         <span>
-                          · {tutor.review_count} review{tutor.review_count === 1 ? "" : "s"}
+                          · {reviewCount} review{reviewCount === 1 ? "" : "s"}
                         </span>
                       </>
                     ) : (
@@ -186,7 +177,7 @@ function TutorProfile() {
 
               <div className="pt-2">
                 <Button asChild className="bg-aurora text-white hover:opacity-90">
-                  <Link to="/">Book a session</Link>
+                  <Link to="/tutors">Book a session</Link>
                 </Button>
               </div>
             </CardContent>

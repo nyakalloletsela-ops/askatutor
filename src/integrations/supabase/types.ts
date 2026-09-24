@@ -1665,6 +1665,7 @@ export type Database = {
           id: string;
           processed: boolean;
           prompt: string;
+          save_request_id: string | null;
           schema_json: Json;
           subject: string | null;
           tags: string[];
@@ -1680,6 +1681,7 @@ export type Database = {
           id?: string;
           processed?: boolean;
           prompt: string;
+          save_request_id?: string | null;
           schema_json: Json;
           subject?: string | null;
           tags?: string[];
@@ -1695,6 +1697,7 @@ export type Database = {
           id?: string;
           processed?: boolean;
           prompt?: string;
+          save_request_id?: string | null;
           schema_json?: Json;
           subject?: string | null;
           tags?: string[];
@@ -2514,6 +2517,7 @@ export type Database = {
         Args: { _reason?: string; _session: string };
         Returns: undefined;
       };
+      complete_own_assignment: { Args: { _assignment_id: string }; Returns: undefined };
       complete_session: { Args: { _session: string }; Returns: undefined };
       compute_commission_cents: {
         Args: { _amount_cents: number; _subject?: string; _tutor: string };
@@ -2698,6 +2702,28 @@ export type Database = {
       reschedule_session: {
         Args: { _new_start: string; _session: string };
         Returns: undefined;
+      };
+      save_simulation_with_initial_version: {
+        Args: {
+          _embedding: string | null;
+          _prompt: string;
+          _save_request_id: string;
+          _schema_json: Json;
+          _subject: string;
+          _tags: string[];
+          _thumbnail_url: string | null;
+          _title: string;
+        };
+        Returns: {
+          created_at: string;
+          id: string;
+          prompt: string;
+          schema_json: Json;
+          subject: string;
+          tags: string[];
+          thumbnail_url: string | null;
+          title: string;
+        }[];
       };
       student_has_scope: { Args: { _scope: string }; Returns: boolean };
       tutor_balance: {

@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireAppDependencies } from "@/integrations/auth/app-dependencies";
 import { assertAiEntitlement } from "@/application/services/entitlement-guard";
+import { MAX_MATH_EXPRESSION_LENGTH, parseMathExpression } from "@/domain/lab/math-expression";
+import type { AiChatOptions, AiEmbedOptions } from "@/application/contracts/ai";
 import type { AppDependencies } from "@/application/contracts/dependencies";
 
 const ExplainSchema = z
@@ -124,7 +126,12 @@ export const SimulationSchema = z.object({
           z.object({
             label: z.string().optional(),
             color: z.string().optional(),
-            expr: z.string(), // JS expression of x and t, e.g. "Math.sin(x + t)"
+            expr: z
+              .string()
+              .max(MAX_MATH_EXPRESSION_LENGTH)
+              .refine((expression) => parseMathExpression(expression) !== null, {
+                message: "Graph expressions must use the supported bounded math grammar.",
+              }),
           }),
         )
         .max(6)
@@ -171,7 +178,7 @@ scene3d / scene2d:
   Add object "explain": {definition, purpose, keyFacts[], misconceptions[]} for the IMPORTANT objects so students can click them.
   "connections": [{from,to,type:"bond|force|flow|relationship",label}].
   "rules" subset of {newton_second_law,collision_response,gravity,flow_dynamics,orbital_motion,growth_cycle,chemical_bonding,graph_transform,market_flow,semantic_flow}.
-  For scene2d math/economics also fill "graph2d": {xLabel,yLabel,xMin,xMax,yMin,yMax,curves:[{label,color,expr}],points:[{x,y,label,color}]} where expr is a JS expression in variables x and t (time seconds), e.g. "Math.sin(x+t)" or "Math.exp(-x)".
+For scene2d math/economics also fill "graph2d": {xLabel,yLabel,xMin,xMax,yMin,yMax,curves:[{label,color,expr}],points:[{x,y,label,color}]}. Each expr is a bounded arithmetic expression in x and t (time seconds), using + - * / ^, parentheses, Math.PI / Math.E, and whitelisted Math functions such as Math.sin(x+t) or Math.exp(-x). Do not emit other JavaScript.
 
 process:
   Fill "steps": [{title, description, duration_seconds, highlight:[objectIndexes]}]. Also fill "objects" so highlighted indexes refer to something visible.
@@ -465,27 +472,49 @@ function fallbackSchema(prompt: string): SimulationSchemaT {
   };
 }
 
-async function callGateway(aiGateway: AppDependencies["aiGateway"], path: string, body: any) {
-  if (path === "/chat/completions") {
-    const { raw } = await aiGateway.chat({
-      model: body.model,
-      messages: body.messages,
-      temperature: body.temperature,
-      response_format: body.response_format,
-    });
+type GatewayRequest =
+  | { path: "/chat/completions"; body: AiChatOptions }
+  | { path: "/embeddings"; body: AiEmbedOptions };
+
+async function callGateway(aiGateway: AppDependencies["aiGateway"], request: GatewayRequest) {
+  if (request.path === "/chat/completions") {
+    const { raw } = await aiGateway.chat(request.body);
     return raw;
   }
-  if (path === "/embeddings") {
-    const { embedding } = await aiGateway.embed({ model: body.model, input: body.input });
+  if (request.path === "/embeddings") {
+    const { embedding } = await aiGateway.embed(request.body);
     return { data: [{ embedding }] };
   }
-  throw new Error(`Unsupported AI path: ${path}`);
 }
 
-async function assertLabsScope(deps: AppDependencies, userId: string) {
+async function assertLabsScope(deps: Pick<AppDependencies, "entitlement">, userId: string) {
   // Fail closed: admins/tutors pass via role; students need the 'labs' scope.
   // Any config/role/scope read error denies rather than allows.
   await assertAiEntitlement(deps.entitlement, userId, "labs");
+}
+
+export async function saveSimulationForUser(
+  deps: Pick<AppDependencies, "entitlement" | "simulation">,
+  userId: string,
+  data: {
+    requestId: string;
+    prompt: string;
+    schema: SimulationSchemaT;
+    embedding?: number[] | null;
+    thumbnailDataUrl?: string | null;
+  },
+) {
+  await assertLabsScope(deps, userId);
+  return deps.simulation.save({
+    requestId: data.requestId,
+    prompt: data.prompt,
+    subject: data.schema.subject,
+    title: data.schema.title,
+    schema: data.schema,
+    embedding: data.embedding ?? null,
+    thumbnailUrl: data.thumbnailDataUrl ?? null,
+    tags: data.schema.tags ?? [],
+  });
 }
 
 export const embedPrompt = createServerFn({ method: "POST" })
@@ -493,9 +522,9 @@ export const embedPrompt = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => z.object({ text: z.string().min(1).max(4000) }).parse(i))
   .handler(async ({ data, context }) => {
     await assertLabsScope(context.deps, context.userId);
-    const json = (await callGateway(context.deps.aiGateway, "/embeddings", {
-      model: "openai/text-embedding-3-small",
-      input: data.text,
+    const json = (await callGateway(context.deps.aiGateway, {
+      path: "/embeddings",
+      body: { model: "openai/text-embedding-3-small", input: data.text },
     })) as { data?: { embedding: number[] }[] };
     const emb = json.data?.[0]?.embedding;
     if (!emb) throw new Error("No embedding returned");
@@ -524,13 +553,16 @@ export const generateSimulationSchema = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertLabsScope(context.deps, context.userId);
     try {
-      const json = (await callGateway(context.deps.aiGateway, "/chat/completions", {
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: data.prompt },
-        ],
-        response_format: { type: "json_object" },
+      const json = (await callGateway(context.deps.aiGateway, {
+        path: "/chat/completions",
+        body: {
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: data.prompt },
+          ],
+          response_format: { type: "json_object" },
+        },
       })) as { choices?: { message?: { content?: string } }[] };
       const raw = json.choices?.[0]?.message?.content ?? "";
       const cleaned = raw
@@ -550,6 +582,7 @@ export const saveSimulation = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) =>
     z
       .object({
+        requestId: z.string().uuid(),
         prompt: z.string().min(1).max(2000),
         schema: SimulationSchema,
         embedding: z.array(z.number()).length(1536).nullable().optional(),
@@ -558,16 +591,7 @@ export const saveSimulation = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const simulation = await context.deps.simulation.save({
-      userId: context.userId,
-      prompt: data.prompt,
-      subject: data.schema.subject,
-      title: data.schema.title,
-      schema: data.schema,
-      embedding: data.embedding ?? null,
-      thumbnailUrl: data.thumbnailDataUrl ?? null,
-      tags: data.schema.tags ?? [],
-    });
+    const simulation = await saveSimulationForUser(context.deps, context.userId, data);
     return { simulation };
   });
 

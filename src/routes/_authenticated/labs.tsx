@@ -1,11 +1,9 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
 import { LorddaLab } from "@/presentation/domains/5-classroom-live-workspace/LorddaLab";
 import { WebGLLab } from "@/presentation/domains/5-classroom-live-workspace/WebGLLab";
 import { FlaskConical, Boxes, ExternalLink, Sparkles } from "lucide-react";
-import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { STUDENT_LAB_LIMIT, readViewedSlugs, recordViewedSlug } from "@/lib/lab-modules";
 import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/labs")({
@@ -30,20 +28,6 @@ type Mode = "phet" | "3d";
 function LabsPage() {
   const [mode, setMode] = useState<Mode>("phet");
   const location = useLocation();
-  const { isAdmin, isTutor } = useAuth();
-  const [viewed, setViewed] = useState<string[]>([]);
-
-  // Students get capped access; tutors and admins are unlimited.
-  const enforceLimit = !isAdmin && !isTutor;
-
-  useEffect(() => {
-    setViewed(readViewedSlugs());
-  }, []);
-
-  const handleOpen = (slug: string) => {
-    if (!enforceLimit) return;
-    setViewed(recordViewedSlug(slug));
-  };
 
   if (location.pathname !== "/labs") return <Outlet />;
 
@@ -82,28 +66,9 @@ function LabsPage() {
         >
           <Sparkles className="h-3 w-3" /> Simulation Lab
         </Link>
-        <span className="ml-auto hidden text-[11px] text-muted-foreground sm:inline">
-          {enforceLimit
-            ? `Free plan · ${viewed.length}/${STUDENT_LAB_LIMIT} experiments used`
-            : "Unlimited access"}
-        </span>
       </div>
       <div className="flex-1 overflow-hidden pb-16 md:pb-0">
-        {mode === "phet" ? (
-          <LorddaLab
-            enforceLimit={enforceLimit}
-            viewedSlugs={viewed}
-            limit={STUDENT_LAB_LIMIT}
-            onOpen={handleOpen}
-          />
-        ) : (
-          <WebGLLab
-            enforceLimit={enforceLimit}
-            viewedSlugs={viewed}
-            limit={STUDENT_LAB_LIMIT}
-            onOpen={handleOpen}
-          />
-        )}
+        {mode === "phet" ? <LorddaLab /> : <WebGLLab />}
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-center gap-1 border-t bg-muted/30 px-3 py-1.5 text-[10px] text-muted-foreground">
         <span>{mode === "phet" ? "2D simulations by" : "Inspired by simulations from"}</span>

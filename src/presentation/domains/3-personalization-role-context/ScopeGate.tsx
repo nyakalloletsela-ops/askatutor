@@ -19,8 +19,17 @@ const labels: Record<FeatureScope, string> = {
 };
 
 export function ScopeGate({ scope, title, description, children }: Props) {
-  const { hasScope, loading } = useEntitlements();
+  const { hasScope, loading, verificationError } = useEntitlements();
   if (loading) return null;
+  if (verificationError) {
+    return (
+      <div className="container mx-auto max-w-xl px-4 py-12" role="alert">
+        <p className="text-sm text-muted-foreground">
+          We couldn’t verify access right now. Please try again shortly.
+        </p>
+      </div>
+    );
+  }
   if (hasScope(scope)) return <>{children}</>;
   return (
     <div className="container mx-auto max-w-xl px-4 py-12">

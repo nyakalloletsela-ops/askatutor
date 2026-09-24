@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
+import { initiateCheckout } from "@/application/use-cases/commerce/initiate-checkout";
 import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 import {
   TutorLookup,
@@ -39,24 +40,21 @@ function PayTutorInner() {
   const [lessons, setLessons] = useState(1);
   const [minutes, setMinutes] = useState(60);
   const [submitting, setSubmitting] = useState(false);
+  const startCheckout = useServerFn(initiateCheckout);
 
   const submit = async () => {
     if (!pricing) return;
     setSubmitting(true);
-    const { data, error } = await supabase.rpc("create_bulk_lesson_intent", {
-      _tutor: pricing.id,
-      _lessons: lessons,
-      _lesson_minutes: minutes,
-      _method: "manual",
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success(
-      `Payment request created. Reference: ${data}. An admin will confirm once payment is received.`,
-      { duration: 8000 },
-    );
-    setPricing(null);
-    setLessons(1);
+    try {
+      const result = await startCheckout({
+        data: { tutorId: pricing.id, lessons, lessonMinutes: minutes },
+      });
+      window.location.assign(result.approvalUrl);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Checkout could not be started.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

@@ -642,31 +642,3 @@ export const LAB_LEVELS: LabLevel[] = ["Primary", "Secondary", "Tertiary"];
 
 export const phetUrl = (slug: string) =>
   `https://phet.colorado.edu/sims/html/${slug}/latest/${slug}_en.html`;
-
-export const STUDENT_LAB_LIMIT = 10;
-export const LAB_USAGE_STORAGE_KEY = "aat:labs:viewed-slugs";
-
-export function readViewedSlugs(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(LAB_USAGE_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((s) => typeof s === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-export function recordViewedSlug(slug: string): string[] {
-  if (typeof window === "undefined") return [];
-  const list = readViewedSlugs();
-  if (list.includes(slug)) return list;
-  const next = [...list, slug];
-  try {
-    window.localStorage.setItem(LAB_USAGE_STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
-  return next;
-}

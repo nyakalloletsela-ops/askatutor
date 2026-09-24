@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FileText, Plus, Trash2, CheckCircle2, Clock } from "lucide-react";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { completeOwnAssignment } from "@/application/use-cases/learning/assignments";
 import {
   PageContainer,
   EmptyState,
@@ -51,6 +53,7 @@ type Assignment = {
 function AssignmentsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const completeAssignment = useServerFn(completeOwnAssignment);
 
   const { data: assignments = [], isLoading } = useQuery({
     queryKey: ["assignments", user?.id],
@@ -89,11 +92,7 @@ function AssignmentsPage() {
 
   const markDone = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("assignments")
-        .update({ status: "completed" })
-        .eq("id", id);
-      if (error) throw new Error(error.message);
+      await completeAssignment({ data: { assignmentId: id } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["assignments"] }),
   });
@@ -155,7 +154,7 @@ function AssignmentsPage() {
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  {a.status !== "completed" && (
+                  {a.student_id === user?.id && a.status !== "completed" && (
                     <Button size="sm" variant="outline" onClick={() => markDone.mutate(a.id)}>
                       Mark done
                     </Button>

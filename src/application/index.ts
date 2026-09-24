@@ -39,6 +39,11 @@ export {
 } from "./use-cases/simulation/lab";
 export { notifyBookingEmails } from "./use-cases/communication/notifications";
 export { sendMessage } from "./use-cases/communication/messaging";
+export {
+  validateModelClassFn,
+  validateModelInstanceFn,
+  validateExpressionFn,
+} from "./use-cases/lab/validate";
 export { getCourseMaterialUrl } from "./use-cases/courses/material-url";
 export { listSchedulableStudents } from "./use-cases/students/list";
 export { submitHelpMessage, sendSubscriptionDecisionEmail } from "./use-cases/support/help";
@@ -64,12 +69,14 @@ export {
 export { sendClassroomMessage } from "./use-cases/classroom/classroom-chat";
 export {
   getTutorProfile,
+  getTutorReviews,
   getTutorAvailability,
   bookSession,
   joinWaitlist,
 } from "./use-cases/discovery/book-session";
 export { checkIsAdmin, getClassroomContext, getMyScopes } from "./use-cases/identity/check-access";
 export { saveToNotes } from "./use-cases/learning/save-to-notes";
+export { completeOwnAssignment } from "./use-cases/learning/assignments";
 export { listNotes, createNote, deleteNote } from "./use-cases/learning/notes";
 export {
   cancelSession,

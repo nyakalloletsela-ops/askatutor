@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { PageContainer } from "@/presentation/domains/8-core-ux-navigation/primitives";
 import {
@@ -20,7 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/presentation/domains/8-core-ux-navigation/ui/select";
-import { Trash2, Copy, CalendarOff } from "lucide-react";
+import { Trash2, Copy, CalendarOff, Loader2 } from "lucide-react";
+import {
+  getMyAvailability,
+  addAvailabilityWindow,
+  updateAvailabilitySettings,
+  deleteAvailabilityWindow,
+  copyAvailabilityDay,
+} from "@/application/use-cases/tutor/availability";
 
 export const Route = createFileRoute("/_authenticated/tutor/availability")({
   component: AvailabilityPage,
@@ -55,14 +62,15 @@ function AvailabilityPage() {
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("17:00");
 
+  const fetchAvailability = useServerFn(getMyAvailability);
+  const addWindow = useServerFn(addAvailabilityWindow);
+  const updateSettings = useServerFn(updateAvailabilitySettings);
+  const deleteWindow = useServerFn(deleteAvailabilityWindow);
+  const copyDayFn = useServerFn(copyAvailabilityDay);
+
   const load = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("tutor_availability")
-      .select("id, weekday, start_min, end_min, timezone, buffer_minutes")
-      .eq("tutor_id", user.id)
-      .order("weekday")
-      .order("start_min");
+    const data = await fetchAvailability();
     const rows = (data as Slot[]) ?? [];
     setSlots(rows);
     if (rows[0]) {
@@ -75,55 +83,73 @@ function AvailabilityPage() {
     load();
   }, [user]);
 
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [copying, setCopying] = useState<string | null>(null);
+
   const add = async () => {
     if (!user) return;
     const s = mins(start),
       e = mins(end);
     if (e <= s) return toast.error("End must be after start");
-    const { error } = await supabase.from("tutor_availability").insert({
-      tutor_id: user.id,
-      weekday: Number(weekday),
-      start_min: s,
-      end_min: e,
-      timezone: tz,
-      buffer_minutes: buffer,
-    });
-    if (error) return toast.error(error.message);
-    load();
+    setAdding(true);
+    try {
+      await addWindow({
+        data: {
+          weekday: Number(weekday),
+          start_min: s,
+          end_min: e,
+          timezone: tz,
+          buffer_minutes: buffer,
+        },
+      });
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to add window");
+    } finally {
+      setAdding(false);
+    }
   };
 
   const del = async (id: string) => {
-    await supabase.from("tutor_availability").delete().eq("id", id);
-    load();
+    setDeleting(id);
+    try {
+      await deleteWindow({ data: { windowId: id } });
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to delete");
+    } finally {
+      setDeleting(null);
+    }
   };
 
   const updateAll = async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from("tutor_availability")
-      .update({ timezone: tz, buffer_minutes: buffer })
-      .eq("tutor_id", user.id);
-    if (error) toast.error(error.message);
-    else toast.success("Saved");
-    load();
+    setSaving(true);
+    try {
+      await updateSettings({ data: { timezone: tz, buffer_minutes: buffer } });
+      toast.success("Saved");
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const copyDay = async (from: number, to: number) => {
     if (!user) return;
-    const rows = slots.filter((s) => s.weekday === from);
-    if (rows.length === 0) return toast.error("Nothing to copy");
-    await supabase.from("tutor_availability").delete().eq("tutor_id", user.id).eq("weekday", to);
-    await supabase.from("tutor_availability").insert(
-      rows.map((r) => ({
-        tutor_id: user.id,
-        weekday: to,
-        start_min: r.start_min,
-        end_min: r.end_min,
-        timezone: tz,
-        buffer_minutes: buffer,
-      })),
-    );
-    load();
+    const key = `${from}-${to}`;
+    setCopying(key);
+    try {
+      await copyDayFn({ data: { fromWeekday: from, toWeekday: to } });
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to copy");
+    } finally {
+      setCopying(null);
+    }
   };
 
   if (!isTutor) {
@@ -177,7 +203,9 @@ function AvailabilityPage() {
                 <Input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
               </div>
             </div>
-            <Button onClick={add}>Add window</Button>
+            <Button onClick={add} disabled={adding}>
+              {adding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Add window
+            </Button>
           </CardContent>
         </Card>
 
@@ -204,8 +232,8 @@ function AvailabilityPage() {
                 onChange={(e) => setBuffer(Number(e.target.value))}
               />
             </div>
-            <Button variant="outline" size="sm" onClick={updateAll}>
-              Save settings
+            <Button variant="outline" size="sm" onClick={updateAll} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Save settings"}
             </Button>
           </CardContent>
         </Card>
@@ -223,21 +251,22 @@ function AvailabilityPage() {
                 <div key={d} className="rounded-md border p-2">
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-xs font-semibold uppercase">{d}</p>
-                    <Select onValueChange={(v) => copyDay(i, Number(v))}>
+                    <Select
+                      onValueChange={(v) => copyDay(i, Number(v))}
+                      disabled={copying?.startsWith(`${i}-`)}
+                    >
                       <SelectTrigger className="h-6 w-6 border-none p-0">
                         <Copy className="h-3 w-3" />
                       </SelectTrigger>
                       <SelectContent>
-                        {
-                          WEEKDAYS.map(
-                            (t, j) =>
-                              j !== i && (
-                                <SelectItem key={j} value={String(j)}>
-                                  Copy → {t}
-                                </SelectItem>
-                              ),
-                          ).filter(Boolean) as any
-                        }
+                        {WEEKDAYS.map(
+                          (t, j) =>
+                            j !== i && (
+                              <SelectItem key={j} value={String(j)}>
+                                Copy → {t}
+                              </SelectItem>
+                            ),
+                        ).filter((item): item is React.ReactElement => item !== false)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -255,9 +284,14 @@ function AvailabilityPage() {
                           </span>
                           <button
                             onClick={() => del(s.id)}
+                            disabled={deleting === s.id}
                             className="text-muted-foreground hover:text-destructive"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            {deleting === s.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
                           </button>
                         </li>
                       ))}

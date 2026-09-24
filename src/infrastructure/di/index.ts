@@ -3,6 +3,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { AppDependencies } from "@/application/contracts/dependencies";
 import { aiGateway, emailService, paymentGateway } from "@/infrastructure/adapters";
 import { supabaseEntitlementGateway } from "@/infrastructure/adapters/supabase-entitlement-gateway";
+import { supabaseAnon } from "@/integrations/supabase/client.public.server";
 import { SupabaseUserRepository } from "@/infrastructure/repositories/user-repository";
 import { SupabaseSessionRepository } from "@/infrastructure/repositories/session-repository";
 import { SupabaseTutorRepository } from "@/infrastructure/repositories/tutor-repository";
@@ -17,6 +18,7 @@ import { SupabasePlatformConfigRepository } from "@/infrastructure/repositories/
 import { SupabaseAiKeyRepository } from "@/infrastructure/repositories/ai-key-repository";
 import { SupabaseAdminRepository } from "@/infrastructure/repositories/admin-repository";
 import { SupabaseEmailSuppressionRepository } from "@/infrastructure/repositories/email-suppression-repository";
+import { SupabaseAssignmentRepository } from "@/infrastructure/repositories/assignment-repository";
 
 /**
  * Composition root — builds the request-scoped AppDependencies for an
@@ -42,6 +44,7 @@ export function buildAppDependencies(
     aiKey: new SupabaseAiKeyRepository(),
     admin: new SupabaseAdminRepository(supabase),
     emailSuppression: new SupabaseEmailSuppressionRepository(),
+    assignment: new SupabaseAssignmentRepository(supabase),
     aiGateway,
     emailService,
     paymentGateway,
@@ -57,6 +60,7 @@ export function buildAppDependencies(
 export function buildPublicDependencies(): AppDependencies {
   const provided: Partial<AppDependencies> = {
     help: new SupabaseHelpRepository(),
+    tutor: new SupabaseTutorRepository(supabaseAnon),
     emailService,
     paymentGateway,
     emailSuppression: new SupabaseEmailSuppressionRepository(),

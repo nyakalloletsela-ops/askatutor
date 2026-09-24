@@ -93,6 +93,20 @@ function toLibraryItems(rows: unknown): LibraryItem[] {
   });
 }
 
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    error.message
+  ) {
+    return error.message;
+  }
+  return fallback;
+}
+
 function Lab3DPage() {
   const embedFn = useServerFn(embedPrompt);
   const findFn = useServerFn(findSimilarSimulation);
@@ -104,16 +118,22 @@ function Lab3DPage() {
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [schema, setSchema] = useState<SimulationSchemaT | null>(null);
+  const [activePrompt, setActivePrompt] = useState("");
+  const [saveRequestId, setSaveRequestId] = useState<string | null>(null);
+  const [savedSimulationId, setSavedSimulationId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [playing, setPlaying] = useState(true);
   const [resetKey, setResetKey] = useState(0);
   const [timeScale, setTimeScale] = useState(1);
   const [library, setLibrary] = useState<LibraryItem[]>([]);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [subject, setSubject] = useState<string>("");
   const [match, setMatch] = useState<LibraryItem | null>(null);
   const [pendingEmbedding, setPendingEmbedding] = useState<number[] | null>(null);
   const [selectedObj, setSelectedObj] = useState<number | null>(null);
   const [quizOpen, setQuizOpen] = useState(false);
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [quizIdx, setQuizIdx] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, string>>({});
   const [quizReveal, setQuizReveal] = useState(false);
@@ -138,8 +158,9 @@ function Lab3DPage() {
         data: { search: search || undefined, subject: subject || undefined },
       });
       setLibrary(toLibraryItems(simulations));
-    } catch (e: any) {
-      // silent
+      setLibraryError(null);
+    } catch (error: unknown) {
+      setLibraryError(errorMessage(error, "Could not load your saved simulations."));
     }
   }
 
@@ -151,7 +172,7 @@ function Lab3DPage() {
   }, [subject]);
 
   async function handleGenerate(forceNew = false) {
-    if (!prompt.trim() || busy) return;
+    if (!prompt.trim() || busy || saving) return;
     setBusy(true);
     try {
       let embedding: number[] | null = null;
@@ -180,54 +201,46 @@ function Lab3DPage() {
       if (fallback)
         toast.warning("AI returned an unexpected shape — showing a safe fallback scene.");
       setSchema(gen as SimulationSchemaT);
+      setActivePrompt(prompt.trim());
+      setSaveRequestId(crypto.randomUUID());
+      setSavedSimulationId(null);
+      setPendingEmbedding(embedding);
       setResetKey((k) => k + 1);
       setPlaying(true);
-
-      // capture thumbnail after a short render delay
-      setTimeout(async () => {
-        let thumb: string | null = null;
-        try {
-          const gl = glRef.current;
-          if (gl) {
-            thumb = gl.domElement.toDataURL("image/jpeg", 0.5);
-            if (thumb && thumb.length > 350_000) thumb = null;
-          }
-        } catch {
-          thumb = null;
-        }
-        try {
-          await saveFn({ data: { prompt, schema: gen, embedding, thumbnailDataUrl: thumb } });
-          toast.success("Saved to your library");
-          refreshLibrary();
-        } catch (e: any) {
-          toast.error(e?.message ?? "Could not save");
-        }
-      }, 600);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Generation failed");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Generation failed"));
     } finally {
       setBusy(false);
     }
   }
 
   async function loadFromLibrary(item: LibraryItem) {
+    if (saving) return;
     setSchema(item.schema_json);
     setPrompt(item.prompt);
+    setActivePrompt(item.prompt);
+    setSaveRequestId(null);
+    setSavedSimulationId(item.id);
+    setPendingEmbedding(null);
     setResetKey((k) => k + 1);
     setPlaying(true);
   }
 
   async function loadMatched() {
-    if (!match) return;
+    if (!match || saving) return;
     setSchema(match.schema_json);
+    setPrompt(match.prompt);
+    setActivePrompt(match.prompt);
+    setSaveRequestId(null);
+    setSavedSimulationId(match.id);
+    setPendingEmbedding(null);
     setResetKey((k) => k + 1);
     setPlaying(true);
     setMatch(null);
-    setPendingEmbedding(null);
   }
 
   async function generateAnyway() {
-    if (!match) return;
+    if (!match || saving) return;
     setMatch(null);
     const emb = pendingEmbedding;
     setPendingEmbedding(null);
@@ -237,22 +250,51 @@ function Lab3DPage() {
       const { schema: gen, fallback } = (await genFn({ data: { prompt } })) as GenerateResult;
       if (fallback) toast.warning("Using a safe fallback scene.");
       setSchema(gen as SimulationSchemaT);
+      setActivePrompt(prompt.trim());
+      setSaveRequestId(crypto.randomUUID());
+      setSavedSimulationId(null);
       setResetKey((k) => k + 1);
       setPlaying(true);
-      setTimeout(async () => {
-        const thumb = glRef.current?.domElement.toDataURL("image/jpeg", 0.5) ?? null;
-        await saveFn({
-          data: {
-            prompt,
-            schema: gen,
-            embedding: emb,
-            thumbnailDataUrl: thumb && thumb.length < 350_000 ? thumb : null,
-          },
-        });
-        refreshLibrary();
-      }, 600);
+      setPendingEmbedding(emb);
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Generation failed"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveCurrentSimulation() {
+    if (!schema || !saveRequestId || savedSimulationId || saving) return;
+    setSaving(true);
+    let thumbnailDataUrl: string | null = null;
+    try {
+      const gl = glRef.current;
+      if (gl) {
+        thumbnailDataUrl = gl.domElement.toDataURL("image/jpeg", 0.5);
+        if (thumbnailDataUrl.length > 350_000) thumbnailDataUrl = null;
+      }
+    } catch {
+      thumbnailDataUrl = null;
+    }
+    try {
+      const { simulation } = await saveFn({
+        data: {
+          requestId: saveRequestId,
+          prompt: activePrompt,
+          schema,
+          embedding: pendingEmbedding,
+          thumbnailDataUrl,
+        },
+      });
+      setSavedSimulationId(simulation.id);
+      setSaveRequestId(null);
+      toast.success("Saved to your library");
+      await refreshLibrary();
+    } catch (error: unknown) {
+      // Keep the request id so a retry returns the same saved object.
+      toast.error(errorMessage(error, "Could not save. You can retry."));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -261,8 +303,8 @@ function Lab3DPage() {
     try {
       await delFn({ data: { id } });
       setLibrary((l) => l.filter((x) => x.id !== id));
-    } catch (e: any) {
-      toast.error(e?.message ?? "Delete failed");
+    } catch (error: unknown) {
+      toast.error(errorMessage(error, "Delete failed"));
     }
   }
 
@@ -297,7 +339,7 @@ function Lab3DPage() {
           />
           <Button
             onClick={() => handleGenerate(false)}
-            disabled={busy || !prompt.trim()}
+            disabled={busy || saving || !prompt.trim()}
             className="w-full"
           >
             {busy ? (
@@ -313,6 +355,15 @@ function Lab3DPage() {
               <div>Subject: {schema.subject}</div>
               <div>Objects: {schema.objects.length}</div>
               <div>Rules: {schema.rules.join(", ") || "—"}</div>
+              <Button
+                onClick={saveCurrentSimulation}
+                disabled={!saveRequestId || !!savedSimulationId || saving}
+                className="mt-2 w-full"
+                size="sm"
+              >
+                {saving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                {savedSimulationId ? "Saved to library" : "Save to library"}
+              </Button>
             </div>
           )}
         </aside>
@@ -342,7 +393,7 @@ function Lab3DPage() {
             <Button
               size="sm"
               onClick={() => handleGenerate(false)}
-              disabled={busy || !prompt.trim()}
+              disabled={busy || saving || !prompt.trim()}
             >
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -351,6 +402,17 @@ function Lab3DPage() {
               )}
             </Button>
           </div>
+          {schema && (
+            <Button
+              size="sm"
+              onClick={saveCurrentSimulation}
+              disabled={!saveRequestId || !!savedSimulationId || saving}
+              className="absolute right-3 top-16 z-10 md:hidden"
+            >
+              {saving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+              {savedSimulationId ? "Saved" : "Save"}
+            </Button>
+          )}
           {/* mode selector */}
           <div className="absolute left-1/2 top-3 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-black/70 px-1.5 py-1 backdrop-blur md:flex">
             {[
@@ -419,10 +481,17 @@ function Lab3DPage() {
             <Button
               size="icon"
               variant="ghost"
-              onClick={() => {
-                setRightTab("chat");
-              }}
-              className="h-8 w-8 text-white hover:bg-white/10"
+              onClick={() => setRightTab("chat")}
+              className="hidden h-8 w-8 text-white hover:bg-white/10 md:inline-flex"
+              aria-label="AI Tutor"
+            >
+              <Sparkles className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setMobileChatOpen(true)}
+              className="h-8 w-8 text-white hover:bg-white/10 md:hidden"
               aria-label="AI Tutor"
             >
               <Sparkles className="h-4 w-4" />
@@ -566,7 +635,9 @@ function Lab3DPage() {
                 )}
               </div>
               <div className="flex-1 overflow-y-auto p-2">
-                {library.length === 0 ? (
+                {libraryError ? (
+                  <div className="p-6 text-center text-xs text-rose-300">{libraryError}</div>
+                ) : library.length === 0 ? (
                   <div className="p-6 text-center text-xs text-white/50">No simulations yet</div>
                 ) : (
                   library.map((it) => (
@@ -576,6 +647,7 @@ function Lab3DPage() {
                     >
                       <button
                         onClick={() => loadFromLibrary(it)}
+                        disabled={saving}
                         className="flex flex-1 items-start gap-2 text-left"
                       >
                         {it.thumbnail_url ? (
@@ -625,11 +697,27 @@ function Lab3DPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={generateAnyway}>
+            <Button variant="outline" onClick={generateAnyway} disabled={saving}>
               Generate new
             </Button>
-            <Button onClick={loadMatched}>Load existing</Button>
+            <Button onClick={loadMatched} disabled={saving}>
+              Load existing
+            </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mobileChatOpen} onOpenChange={setMobileChatOpen}>
+        <DialogContent className="flex h-[85dvh] max-h-[85dvh] flex-col bg-[#0b1020] text-white md:hidden">
+          <DialogHeader>
+            <DialogTitle>AI Tutor</DialogTitle>
+            <DialogDescription className="text-white/60">
+              Ask about the current simulation. Replies are AI assistance, not assessment results.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1">
+            <SimChat schema={schema} />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -650,7 +738,10 @@ function Lab3DPage() {
             <DialogTitle className="flex items-center gap-2">
               <GraduationCap className="h-4 w-4 text-violet-400" /> Test your understanding
             </DialogTitle>
-            <DialogDescription>Auto-generated from this simulation.</DialogDescription>
+            <DialogDescription>
+              AI-generated practice only. Answers are checked in this browser and are not saved as
+              grades or learning records.
+            </DialogDescription>
           </DialogHeader>
           {schema?.quiz && schema.quiz.length > 0 ? (
             (() => {

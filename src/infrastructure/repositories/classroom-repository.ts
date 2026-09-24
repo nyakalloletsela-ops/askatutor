@@ -52,26 +52,29 @@ export class SupabaseClassroomRepository implements ClassroomRepository {
   }
 
   async loadWhiteboard(roomId: string): Promise<WhiteboardSnapshot | null> {
-    const { data: wbId } = await this.supabase.rpc("ensure_whiteboard", {
+    const { data: wbId, error: ensureError } = await this.supabase.rpc("ensure_whiteboard", {
       _room_id: roomId,
     });
+    if (ensureError) throw new Error(ensureError.message);
     if (!wbId) return null;
 
-    const { data: snap } = await this.supabase
+    const { data: snap, error: snapshotError } = await this.supabase
       .from("whiteboard_snapshots")
       .select("snapshot_data, created_at")
       .eq("whiteboard_id", wbId as string)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (snapshotError) throw new Error(snapshotError.message);
 
     return (snap as unknown as WhiteboardSnapshot | null) ?? null;
   }
 
   async saveWhiteboard(roomId: string, snapshotData: JsonValue): Promise<void> {
-    const { data: wbId } = await this.supabase.rpc("ensure_whiteboard", {
+    const { data: wbId, error: ensureError } = await this.supabase.rpc("ensure_whiteboard", {
       _room_id: roomId,
     });
+    if (ensureError) throw new Error(ensureError.message);
     if (!wbId) throw new Error("Could not create whiteboard");
 
     const { error } = await this.supabase.from("whiteboard_snapshots").insert({

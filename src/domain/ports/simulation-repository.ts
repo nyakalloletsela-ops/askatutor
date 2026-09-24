@@ -17,7 +17,8 @@ export interface SimulationRow {
 }
 
 export interface SaveSimulationInput {
-  userId: string;
+  /** Stable UUID reused when retrying the same explicit learner save. */
+  requestId: string;
   prompt: string;
   subject: string;
   title: string;

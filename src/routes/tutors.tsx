@@ -1,32 +1,14 @@
-import { useEffect, useState } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { notifyBookingEmails } from "@/application/use-cases/communication/notifications";
+import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { browseTutors } from "@/application/use-cases/discovery/browse-tutors";
 import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
-import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/presentation/domains/8-core-ux-navigation/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/presentation/domains/8-core-ux-navigation/ui/select";
-import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { Search, Crown, Star, CalendarPlus, Gift } from "lucide-react";
+import { Search, CalendarPlus, Star } from "lucide-react";
 
 export const Route = createFileRoute("/tutors")({
   head: () => ({
@@ -56,26 +38,15 @@ type TutorRow = {
 };
 
 function AllTutorsPage() {
-  const [tutors, setTutors] = useState<TutorRow[]>([]);
   const [q, setQ] = useState("");
   const [subject, setSubject] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.rpc("list_public_tutors");
-      if (error) {
-        console.error(error);
-        return;
-      }
-      setTutors((data as TutorRow[]) ?? []);
-    })();
-  }, []);
-
-  const filtered = tutors.filter((t) => {
-    if (subject && !(t.subjects ?? []).includes(subject)) return false;
-    if (q && !(t.full_name ?? "").toLowerCase().includes(q.toLowerCase())) return false;
-    return true;
+  const fetchTutors = useServerFn(browseTutors);
+  const { data: tutors = [] } = useQuery({
+    queryKey: ["browse-tutors", subject, q],
+    queryFn: () => fetchTutors({ data: { subject: subject ?? undefined, search: q || undefined } }),
   });
+
   const allSubjects = Array.from(new Set(tutors.flatMap((t) => t.subjects ?? []))).sort();
 
   return (
@@ -116,13 +87,13 @@ function AllTutorsPage() {
           </div>
         )}
 
-        {filtered.length === 0 ? (
+        {tutors.length === 0 ? (
           <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground">
             No tutors match your search.
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((t) => (
+            {tutors.map((t) => (
               <TutorCard key={t.id} t={t} />
             ))}
           </div>
@@ -212,200 +183,5 @@ function TutorCard({ t }: { t: TutorRow }) {
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function BookSessionDialog({ tutor }: { tutor: TutorRow }) {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const subjects = tutor.subjects ?? [];
-  const [subject, setSubject] = useState<string>(subjects[0] ?? "");
-  const [date, setDate] = useState<string>("");
-  const [time, setTime] = useState<string>("");
-  const [duration, setDuration] = useState<string>("60");
-  const [useFree, setUseFree] = useState(false);
-  const [freeMinutes, setFreeMinutes] = useState<number>(0);
-
-  useEffect(() => {
-    if (!open || !user) return;
-    supabase
-      .from("profiles")
-      .select("free_minutes_remaining")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) =>
-        setFreeMinutes(
-          (data as { free_minutes_remaining?: number } | null)?.free_minutes_remaining ?? 0,
-        ),
-      );
-  }, [open, user]);
-
-  if (!user) {
-    return (
-      <Button
-        size="sm"
-        className="w-full bg-aurora text-white"
-        onClick={() => {
-          toast.info("Please sign in to book");
-          navigate({ to: "/auth" });
-        }}
-      >
-        <CalendarPlus className="mr-1 h-4 w-4" /> Book session
-      </Button>
-    );
-  }
-
-  if (user.id === tutor.id) {
-    return (
-      <Button size="sm" variant="outline" className="w-full" disabled>
-        This is you
-      </Button>
-    );
-  }
-
-  const canUseFree = freeMinutes >= Number(duration);
-
-  const submit = async () => {
-    if (!date || !time) return;
-    setLoading(true);
-    try {
-      const scheduledAt = new Date(`${date}T${time}`);
-      if (isNaN(scheduledAt.getTime()) || scheduledAt < new Date()) {
-        toast.error("Pick a future date and time");
-        return;
-      }
-      if (user.id === tutor.id) {
-        toast.error("You can't book a session with yourself");
-        return;
-      }
-      const { data, error } = await supabase.rpc("book_session", {
-        _tutor: tutor.id,
-        _start: scheduledAt.toISOString(),
-        _duration_min: Number(duration),
-        _subject: subject || "General",
-        _is_free: useFree,
-        _recurrence_weeks: 1,
-      });
-      const insertedId = (data as string[] | null)?.[0];
-      if (error) {
-        const msg =
-          /Not authenticated|Not authorized|Not enough free minutes|subscription or prepaid lessons/i.test(
-            error.message,
-          )
-            ? "You can't book this session. Make sure you're signed in as a student and entitled to book paid lessons."
-            : error.message;
-        throw new Error(msg);
-      }
-      if (insertedId) {
-        notifyBookingEmails({ data: { sessionId: insertedId } }).catch(() => {});
-      }
-      toast.success("Session booked!");
-      setOpen(false);
-      navigate({ to: "/dashboard" });
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" className="w-full bg-aurora text-white">
-          <CalendarPlus className="mr-1 h-4 w-4" /> Book session
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Book {tutor.full_name ?? "tutor"}</DialogTitle>
-          <DialogDescription>Pick a subject, date and time for your session.</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          {subjects.length > 0 && (
-            <div className="space-y-1.5">
-              <Label>Subject</Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Time</Label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Duration</Label>
-            <Select
-              value={duration}
-              onValueChange={(v) => {
-                setDuration(v);
-                if (Number(v) > freeMinutes) setUseFree(false);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">30 min</SelectItem>
-                <SelectItem value="60">1 hour</SelectItem>
-                <SelectItem value="90">1.5 hours</SelectItem>
-                <SelectItem value="120">2 hours</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {freeMinutes > 0 && (
-            <label
-              className={`flex items-start gap-3 rounded-md border p-3 text-sm ${canUseFree ? "cursor-pointer hover:bg-muted/40" : "opacity-60"}`}
-            >
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={useFree}
-                disabled={!canUseFree}
-                onChange={(e) => setUseFree(e.target.checked)}
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <Gift className="h-4 w-4 text-gold" /> Use a free welcome lesson
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  You have <strong>{freeMinutes} minutes</strong> remaining.
-                </p>
-              </div>
-            </label>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={submit}
-            disabled={loading || !date || !time}
-            className="bg-aurora text-white"
-          >
-            {loading ? "Booking…" : "Confirm booking"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

@@ -88,11 +88,11 @@ export function BulkLessonConfig({
           ) : (
             <Wallet className="mr-2 h-4 w-4" />
           )}
-          Create payment request
+          Proceed to payment
         </Button>
         <p className="text-xs text-muted-foreground">
-          After paying, an admin will confirm and your lessons will be credited. You can then book
-          that many sessions with your tutor without paying again.
+          You'll be taken to a secure checkout to complete the payment. Your prepaid lessons are
+          credited automatically once payment is confirmed.
         </p>
       </CardContent>
     </Card>

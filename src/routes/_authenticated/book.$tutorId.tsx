@@ -7,7 +7,7 @@ import {
   getTutorProfile,
   getTutorAvailability,
   bookSession,
-  joinWaitlist as joinWaitlistFn,
+  joinWaitlist as joinWaitlistUseCase,
 } from "@/application/use-cases/discovery/book-session";
 import { notifyBookingEmails } from "@/application/use-cases/communication/notifications";
 import { PageContainer } from "@/presentation/domains/8-core-ux-navigation/primitives";
@@ -92,14 +92,16 @@ function BookTutorPage() {
   const fetchTutorProfile = useServerFn(getTutorProfile);
   const fetchTutorAvailability = useServerFn(getTutorAvailability);
   const bookSessionFn = useServerFn(bookSession);
+  const joinWaitlistFn = useServerFn(joinWaitlistUseCase);
+  const notifyBookingEmailsFn = useServerFn(notifyBookingEmails);
 
   useEffect(() => {
     (async () => {
       const t = await fetchTutorProfile({ data: { tutorId } });
-      setTutor(t as any);
+      setTutor(t);
       if (t?.subjects?.[0]) setSubject(t.subjects[0]);
     })();
-  }, [tutorId]);
+  }, [fetchTutorProfile, tutorId]);
 
   useEffect(() => {
     (async () => {
@@ -110,7 +112,7 @@ function BookTutorPage() {
       setHolidays(result.holidays ?? []);
       setBusy(result.busySlots ?? []);
     })();
-  }, [tutorId, weekStart]);
+  }, [fetchTutorAvailability, tutorId, weekStart]);
 
   const tutorTz = avail[0]?.timezone ?? "UTC";
   const buffer = avail[0]?.buffer_minutes ?? 0;
@@ -174,13 +176,34 @@ function BookTutorPage() {
       });
       const ids = result.sessionIds;
       toast.success(`Booked ${ids.length} session${ids.length > 1 ? "s" : ""}`);
-      ids.forEach((id: string) => notifyBookingEmails({ data: { sessionId: id } }).catch(() => {}));
+      void Promise.allSettled(
+        ids.map((id) =>
+          Promise.resolve().then(() => notifyBookingEmailsFn({ data: { sessionId: id } })),
+        ),
+      ).then((results) => {
+        if (results.some((result) => result.status === "rejected" || !result.value.ok)) {
+          toast.warning(
+            "Your booking was saved, but one or more confirmation emails could not be sent.",
+          );
+        }
+      });
       setConfirmOpen(false);
       navigate({ to: "/lessons" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Booking failed");
     }
     setSubmitting(false);
+  };
+
+  const onJoinWaitlist = async (subjectToLearn: string, durationMin: number) => {
+    try {
+      await joinWaitlistFn({
+        data: { tutorId, subject: subjectToLearn || undefined, durationMin },
+      });
+      toast.success("Added to waitlist — we'll notify you when a slot opens.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to join waitlist");
+    }
   };
 
   return (
@@ -223,22 +246,14 @@ function BookTutorPage() {
             {avail.length === 0 ? (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                 <p>This tutor has not set availability yet.</p>
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => joinWaitlist(tutorId, subject, duration)}
-                >
+                <Button variant="link" size="sm" onClick={() => onJoinWaitlist(subject, duration)}>
                   Request a time
                 </Button>
               </div>
             ) : totalSlots === 0 ? (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                 No open slots this week.{" "}
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => joinWaitlist(tutorId, subject, duration)}
-                >
+                <Button variant="link" size="sm" onClick={() => onJoinWaitlist(subject, duration)}>
                   Join the waitlist
                 </Button>
               </div>
@@ -465,15 +480,4 @@ function zonedTimeToUtc(wall: string, tz: string): Date {
   );
   const diff = asTzMs - utcGuess.getTime();
   return new Date(utcGuess.getTime() - diff);
-}
-
-async function joinWaitlist(tutorId: string, subject: string, duration: number) {
-  try {
-    await joinWaitlistFn({
-      data: { tutorId, subject: subject || undefined, durationMin: duration },
-    });
-    toast.success("Added to waitlist — we'll notify you when a slot opens.");
-  } catch (e) {
-    toast.error(e instanceof Error ? e.message : "Failed to join waitlist");
-  }
 }

@@ -1,4 +1,5 @@
 export type { UserRepository, RoleName, ManagedUser, CreateUserInput } from "./user-repository";
+export type { AssignmentRepository } from "./assignment-repository";
 export type {
   SessionRepository,
   LessonRow,
@@ -12,6 +13,7 @@ export type {
 export type {
   TutorRepository,
   TutorProfile,
+  TutorReview,
   TutorAvailability,
   AvailabilityWindow,
   Holiday,

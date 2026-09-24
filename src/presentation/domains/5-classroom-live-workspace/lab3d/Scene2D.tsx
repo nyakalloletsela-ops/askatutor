@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SimulationSchemaT } from "@/lib/sim-lab.functions";
+import { evaluateMathExpression, parseMathExpression } from "@/domain/lab/math-expression";
 
 type Props = {
   schema: SimulationSchemaT;
@@ -8,19 +9,13 @@ type Props = {
   timeScale: number;
 };
 
-function safeEval(expr: string, x: number, t: number): number {
-  try {
-    // eslint-disable-next-line no-new-func
-    const fn = new Function("x", "t", "Math", `return (${expr});`);
-    const v = fn(x, t, Math);
-    return Number.isFinite(v) ? v : NaN;
-  } catch {
-    return NaN;
-  }
-}
-
 export function Scene2D({ schema, playing, resetKey, timeScale }: Props) {
   const g = schema.graph2d;
+  const compiledCurves = useMemo(
+    () =>
+      (g?.curves ?? []).map((curve) => ({ ...curve, expression: parseMathExpression(curve.expr) })),
+    [g?.curves],
+  );
   const [t, setT] = useState(0);
   const raf = useRef<number | null>(null);
   const last = useRef<number>(0);
@@ -60,17 +55,18 @@ export function Scene2D({ schema, playing, resetKey, timeScale }: Props) {
   const sy = (y: number) => H - PAD - ((y - g.yMin) / yRange) * (H - 2 * PAD);
 
   const samples = 240;
-  const curvePaths = g.curves.map((c) => {
+  const curvePaths = compiledCurves.map((c) => {
     let d = "";
     for (let i = 0; i <= samples; i++) {
       const x = g.xMin + (i / samples) * xRange;
-      const y = safeEval(c.expr, x, t);
+      const y = c.expression ? evaluateMathExpression(c.expression, { x, t }) : Number.NaN;
       if (!Number.isFinite(y)) continue;
       const yc = Math.max(g.yMin - yRange, Math.min(g.yMax + yRange, y));
       d += `${d ? "L" : "M"} ${sx(x).toFixed(1)} ${sy(yc).toFixed(1)} `;
     }
-    return { d, color: c.color ?? "#22d3ee", label: c.label };
+    return { d, color: c.color ?? "#22d3ee", label: c.label, isValid: c.expression !== null };
   });
+  const invalidCurveCount = curvePaths.filter((curve) => !curve.isValid).length;
 
   return (
     <div className="flex h-full w-full items-center justify-center bg-[#0b1020] p-4">
@@ -107,6 +103,11 @@ export function Scene2D({ schema, playing, resetKey, timeScale }: Props) {
             )}
           </g>
         ))}
+        {invalidCurveCount > 0 && (
+          <text x={PAD} y={H - PAD + 4} fill="#fda4af" fontSize="12">
+            {invalidCurveCount} curve expression(s) could not be rendered safely
+          </text>
+        )}
         {/* points */}
         {g.points.map((p, i) => (
           <g key={i}>

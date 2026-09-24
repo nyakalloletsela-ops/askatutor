@@ -28,7 +28,7 @@ const DEFAULTS: PlatformConfig = {
 };
 
 export function usePlatformConfig() {
-  const { data, isLoading } = useQuery({
+  const query = useQuery({
     queryKey: ["platform-config"],
     staleTime: 60_000,
     queryFn: async (): Promise<PlatformConfig> => {
@@ -37,12 +37,17 @@ export function usePlatformConfig() {
         .select("*")
         .eq("id", 1)
         .maybeSingle();
-      if (error || !data) return DEFAULTS;
+      if (error) throw new Error(error.message);
+      if (!data) throw new Error("Platform configuration is unavailable");
       const row = data as PlatformConfig;
       // Legacy rows may still hold a retired provider name — fall back to the default.
       const valid: AiProvider[] = ["gemini", "groq", "ollama"];
       return valid.includes(row.ai_provider) ? row : { ...row, ai_provider: DEFAULTS.ai_provider };
     },
   });
-  return { config: data ?? DEFAULTS, isLoading };
+  return {
+    config: query.data ?? DEFAULTS,
+    isLoading: query.isLoading,
+    isError: query.isError,
+  };
 }

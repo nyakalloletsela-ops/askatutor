@@ -44,7 +44,7 @@ bun run build                                 # default: cloudflare-module
 
 ```bash
 NITRO_PRESET=node-server bun run build
-PORT=3000 bun run start          # scripts/start-node.mjs boots .output/server/index.mjs
+PORT=8080 bun run start          # scripts/start-node.mjs boots .output/server/index.mjs
 ```
 
 Minimal Dockerfile:
@@ -59,8 +59,8 @@ FROM oven/bun:1
 WORKDIR /app
 COPY --from=build /app/.output ./output
 COPY --from=build /app/scripts ./scripts
-ENV PORT=3000
-EXPOSE 3000
+ENV PORT=8080
+EXPOSE 8080
 CMD ["bun", "run", "scripts/start-node.mjs"]
 ```
 

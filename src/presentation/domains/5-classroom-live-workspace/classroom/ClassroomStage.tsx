@@ -65,13 +65,7 @@ export function ClassroomStage({
         <div
           className={`absolute inset-0 ${stage === "phet" ? "" : "invisible pointer-events-none"}`}
         >
-          <LorddaLab
-            enforceLimit={false}
-            viewedSlugs={[]}
-            limit={999}
-            onOpen={onLabOpen}
-            roomId={roomId}
-          />
+          <LorddaLab onOpen={onLabOpen} roomId={roomId} />
         </div>
         <div
           className={`absolute inset-0 ${stage === "sim" ? "" : "invisible pointer-events-none"}`}
