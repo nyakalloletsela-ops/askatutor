@@ -29,7 +29,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "../3-personalization-role-context/hooks/use-auth";
 
-type Cmd = { label: string; to: string; icon: typeof LayoutDashboard; group: string; admin?: boolean };
+type Cmd = {
+  label: string;
+  to: string;
+  icon: typeof LayoutDashboard;
+  group: string;
+  admin?: boolean;
+};
 
 const commands: Cmd[] = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, group: "Navigate" },

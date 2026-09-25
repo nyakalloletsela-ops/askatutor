@@ -7,9 +7,7 @@
 type Mode = "sandbox" | "live";
 
 function baseUrl(mode: Mode) {
-  return mode === "live"
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com";
+  return mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 }
 
 function readCreds(ref: string) {
@@ -18,9 +16,7 @@ function readCreds(ref: string) {
   const secret = process.env[`${ref}_CLIENT_SECRET`];
   const webhookId = process.env[`${ref}_WEBHOOK_ID`];
   if (!clientId || !secret) {
-    throw new Error(
-      `Missing PayPal credentials (${ref}_CLIENT_ID / ${ref}_CLIENT_SECRET)`,
-    );
+    throw new Error(`Missing PayPal credentials (${ref}_CLIENT_ID / ${ref}_CLIENT_SECRET)`);
   }
   return { clientId, secret, webhookId };
 }
@@ -98,16 +94,13 @@ export async function paypalCaptureOrder(opts: {
   orderId: string;
 }): Promise<{ status: string; captureId?: string }> {
   const token = await getAccessToken(opts.mode, opts.credentialsRef);
-  const res = await fetch(
-    `${baseUrl(opts.mode)}/v2/checkout/orders/${opts.orderId}/capture`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+  const res = await fetch(`${baseUrl(opts.mode)}/v2/checkout/orders/${opts.orderId}/capture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-  );
+  });
   if (!res.ok) {
     throw new Error(`PayPal capture failed (${res.status}): ${await res.text()}`);
   }
@@ -165,17 +158,14 @@ export async function paypalVerifyWebhook(opts: {
     webhook_id: webhookId,
     webhook_event: JSON.parse(opts.rawBody),
   };
-  const res = await fetch(
-    `${baseUrl(opts.mode)}/v1/notifications/verify-webhook-signature`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+  const res = await fetch(`${baseUrl(opts.mode)}/v1/notifications/verify-webhook-signature`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify(payload),
+  });
   if (!res.ok) return false;
   const j = (await res.json()) as { verification_status: string };
   return j.verification_status === "SUCCESS";

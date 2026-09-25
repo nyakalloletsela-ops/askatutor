@@ -18,14 +18,14 @@ Security is a cross-cutting concern that affects all layers and domains. This do
 
 ## 2. AUTHENTICATION
 
-| Aspect | Approach |
-|--------|----------|
-| Method | Email/password + optional OAuth |
-| Session Management | Server-side sessions with secure tokens |
-| Token Type | JWT or opaque tokens (REQUIRES DECISION) |
-| MFA | Optional, recommended for tutors and admins |
-| Password Policy | Minimum length, hashing with bcrypt/argon2 |
-| Session Expiry | Configurable per role |
+| Aspect             | Approach                                    |
+| ------------------ | ------------------------------------------- |
+| Method             | Email/password + optional OAuth             |
+| Session Management | Server-side sessions with secure tokens     |
+| Token Type         | JWT or opaque tokens (REQUIRES DECISION)    |
+| MFA                | Optional, recommended for tutors and admins |
+| Password Policy    | Minimum length, hashing with bcrypt/argon2  |
+| Session Expiry     | Configurable per role                       |
 
 **Implementation Phase**: Phase 1 (Identity foundation)
 
@@ -33,14 +33,14 @@ Security is a cross-cutting concern that affects all layers and domains. This do
 
 ## 3. AUTHORIZATION — ROLE MODEL
 
-| Role | Scope | Capabilities |
-|------|-------|-------------|
-| LEARNER | Own data, own sessions | Learn, use whiteboard, request tutor, save labs, manage profile |
-| TUTOR | Assigned sessions | View learner briefing, conduct sessions, confirm interpretations, manage profile |
-| PARENT | Linked learners (with consent) | View progress summaries, facilitate payments |
-| INSTITUTION_ADMIN | Institution scope | Manage classes, generate links, view reports |
-| ADMIN | Platform-wide (with auth) | User management, moderation, system health, audit |
-| ANONYMOUS (institution-link) | Session-scoped | Participate in assigned session only |
+| Role                         | Scope                          | Capabilities                                                                     |
+| ---------------------------- | ------------------------------ | -------------------------------------------------------------------------------- |
+| LEARNER                      | Own data, own sessions         | Learn, use whiteboard, request tutor, save labs, manage profile                  |
+| TUTOR                        | Assigned sessions              | View learner briefing, conduct sessions, confirm interpretations, manage profile |
+| PARENT                       | Linked learners (with consent) | View progress summaries, facilitate payments                                     |
+| INSTITUTION_ADMIN            | Institution scope              | Manage classes, generate links, view reports                                     |
+| ADMIN                        | Platform-wide (with auth)      | User management, moderation, system health, audit                                |
+| ANONYMOUS (institution-link) | Session-scoped                 | Participate in assigned session only                                             |
 
 ---
 
@@ -48,35 +48,35 @@ Security is a cross-cutting concern that affects all layers and domains. This do
 
 ### 4.1 Resource-Based Permissions
 
-| Resource | Owner | Tutor | Parent | Institution | Admin |
-|----------|-------|-------|--------|-------------|-------|
-| Learner Profile | Full | Read (session) | Read (consent) | None | Full |
-| Learning Session | Full | Read/Write (assigned) | None | Read (institution) | Full |
-| Whiteboard | Full | Read/Write (session) | None | Read (institution) | Full |
-| Evidence | Full | Read (session) | Read (consent) | Read (institution) | Full |
-| AI Interaction | Full | Read (session) | None | None | Read (audit) |
-| Lab Record | Full | Read (session) | None | None | Full |
-| Community Post | Full | Full | None | None | Full |
-| Payment Data | Full | None | Read | None | Full |
-| Institution Data | None | None | None | Full | Full |
+| Resource         | Owner | Tutor                 | Parent         | Institution        | Admin        |
+| ---------------- | ----- | --------------------- | -------------- | ------------------ | ------------ |
+| Learner Profile  | Full  | Read (session)        | Read (consent) | None               | Full         |
+| Learning Session | Full  | Read/Write (assigned) | None           | Read (institution) | Full         |
+| Whiteboard       | Full  | Read/Write (session)  | None           | Read (institution) | Full         |
+| Evidence         | Full  | Read (session)        | Read (consent) | Read (institution) | Full         |
+| AI Interaction   | Full  | Read (session)        | None           | None               | Read (audit) |
+| Lab Record       | Full  | Read (session)        | None           | None               | Full         |
+| Community Post   | Full  | Full                  | None           | None               | Full         |
+| Payment Data     | Full  | None                  | Read           | None               | Full         |
+| Institution Data | None  | None                  | None           | Full               | Full         |
 
 ### 4.2 Action-Based Permissions
 
-| Action | Required Role | Additional Check |
-|--------|--------------|-----------------|
-| Create Account | Public | None |
-| Login | Public | Valid credentials |
-| Start Learning Session | Learner | Active subscription/entitlement |
-| Request Tutor | Learner | Active subscription/entitlement |
-| Conduct Tutor Session | Tutor | Assigned to session |
-| Confirm AI Interpretation | Tutor | Assigned to session |
-| Save Lab | Learner | Entitlement check |
-| Share Lab | Learner | Lab ownership + safety rules |
-| Create Forum Post | Learner/Tutor | None |
-| Moderate Content | Admin | Authorization check |
-| Process Payment | System | Server-authoritative |
-| Generate Institution Link | Institution Admin | Institution ownership |
-| View Audit Log | Admin | Authorization check |
+| Action                    | Required Role     | Additional Check                |
+| ------------------------- | ----------------- | ------------------------------- |
+| Create Account            | Public            | None                            |
+| Login                     | Public            | Valid credentials               |
+| Start Learning Session    | Learner           | Active subscription/entitlement |
+| Request Tutor             | Learner           | Active subscription/entitlement |
+| Conduct Tutor Session     | Tutor             | Assigned to session             |
+| Confirm AI Interpretation | Tutor             | Assigned to session             |
+| Save Lab                  | Learner           | Entitlement check               |
+| Share Lab                 | Learner           | Lab ownership + safety rules    |
+| Create Forum Post         | Learner/Tutor     | None                            |
+| Moderate Content          | Admin             | Authorization check             |
+| Process Payment           | System            | Server-authoritative            |
+| Generate Institution Link | Institution Admin | Institution ownership           |
+| View Audit Log            | Admin             | Authorization check             |
 
 ---
 
@@ -136,13 +136,13 @@ Security is a cross-cutting concern that affects all layers and domains. This do
 
 ## 10. RATE LIMITING
 
-| Endpoint Category | Limit | Window |
-|------------------|-------|--------|
-| Authentication | 5 attempts | 15 minutes |
-| API (authenticated) | 100 requests | 1 minute |
-| AI Gateway | Per plan limits | Per billing cycle |
-| File Upload | Per plan limits | Per billing cycle |
-| Password Reset | 3 attempts | 1 hour |
+| Endpoint Category   | Limit           | Window            |
+| ------------------- | --------------- | ----------------- |
+| Authentication      | 5 attempts      | 15 minutes        |
+| API (authenticated) | 100 requests    | 1 minute          |
+| AI Gateway          | Per plan limits | Per billing cycle |
+| File Upload         | Per plan limits | Per billing cycle |
+| Password Reset      | 3 attempts      | 1 hour            |
 
 ---
 
@@ -189,16 +189,16 @@ Security is a cross-cutting concern that affects all layers and domains. This do
 
 ## 15. AUDIT LOGGING
 
-| Event Type | Logged |
-|------------|--------|
-| Authentication events | Yes |
-| Authorization failures | Yes |
-| Resource access (sensitive) | Yes |
-| Payment transactions | Yes |
-| Admin actions | Yes |
-| AI interactions | Yes |
-| Content moderation | Yes |
-| Data exports | Yes |
+| Event Type                  | Logged |
+| --------------------------- | ------ |
+| Authentication events       | Yes    |
+| Authorization failures      | Yes    |
+| Resource access (sensitive) | Yes    |
+| Payment transactions        | Yes    |
+| Admin actions               | Yes    |
+| AI interactions             | Yes    |
+| Content moderation          | Yes    |
+| Data exports                | Yes    |
 
 ---
 
@@ -215,14 +215,14 @@ Security is a cross-cutting concern that affects all layers and domains. This do
 
 ## 17. SECURITY PHASES
 
-| Phase | Security Deliverable |
-|-------|---------------------|
-| Phase 1 | Auth foundation, role model, basic session management |
-| Phase 2 | Learner isolation, resource authorization |
-| Phase 3 | Evidence access control, file upload security |
-| Phase 4 | Tutor access control, session security |
-| Phase 5 | AI gateway security, data boundary |
-| Phase 8 | Institution link security |
-| Phase 9 | Payment security, financial audit |
-| Phase 10 | Admin security, audit logging |
-| Phase 11 | Community moderation, abuse prevention |
+| Phase    | Security Deliverable                                  |
+| -------- | ----------------------------------------------------- |
+| Phase 1  | Auth foundation, role model, basic session management |
+| Phase 2  | Learner isolation, resource authorization             |
+| Phase 3  | Evidence access control, file upload security         |
+| Phase 4  | Tutor access control, session security                |
+| Phase 5  | AI gateway security, data boundary                    |
+| Phase 8  | Institution link security                             |
+| Phase 9  | Payment security, financial audit                     |
+| Phase 10 | Admin security, audit logging                         |
+| Phase 11 | Community moderation, abuse prevention                |

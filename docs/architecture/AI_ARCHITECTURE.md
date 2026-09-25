@@ -46,20 +46,20 @@ The AI Gateway is the single entry point for all AI interactions.
 
 ## 3. AI GATEWAY RESPONSIBILITIES
 
-| Responsibility | Description |
-|---------------|-------------|
-| Model Selection | Choose appropriate model for the task |
-| Provider Selection | Choose provider based on cost/availability |
-| Entitlement Check | Verify user has AI access entitlement |
-| Quota Enforcement | Track and enforce usage quotas |
-| Safety Filtering | Filter unsafe/inappropriate responses |
+| Responsibility               | Description                                |
+| ---------------------------- | ------------------------------------------ |
+| Model Selection              | Choose appropriate model for the task      |
+| Provider Selection           | Choose provider based on cost/availability |
+| Entitlement Check            | Verify user has AI access entitlement      |
+| Quota Enforcement            | Track and enforce usage quotas             |
+| Safety Filtering             | Filter unsafe/inappropriate responses      |
 | Structured Output Validation | Validate AI output against expected schema |
-| Retry Logic | Handle transient failures with retries |
-| Timeout Management | Enforce request timeouts |
-| Logging | Log all AI interactions for audit |
-| Cost Controls | Track token usage and costs |
-| Fallback | Fallback to alternative model/provider |
-| Observability | Metrics, health, alerts |
+| Retry Logic                  | Handle transient failures with retries     |
+| Timeout Management           | Enforce request timeouts                   |
+| Logging                      | Log all AI interactions for audit          |
+| Cost Controls                | Track token usage and costs                |
+| Fallback                     | Fallback to alternative model/provider     |
+| Observability                | Metrics, health, alerts                    |
 
 ---
 
@@ -84,69 +84,69 @@ Adding a new provider requires implementing the adapter interface. No changes to
 
 ### 5.1 Learner Difficulty Probing
 
-| Aspect | Detail |
-|--------|--------|
-| Purpose | Help identify the learner's actual difficulty |
-| Input | Learner's initial concern statement |
-| Output | Probing questions, difficulty suggestions |
-| Constraint | Must NOT declare difficulty independently |
-| Authority | Learner confirms, not AI |
-| Phase | 2-5 |
+| Aspect     | Detail                                        |
+| ---------- | --------------------------------------------- |
+| Purpose    | Help identify the learner's actual difficulty |
+| Input      | Learner's initial concern statement           |
+| Output     | Probing questions, difficulty suggestions     |
+| Constraint | Must NOT declare difficulty independently     |
+| Authority  | Learner confirms, not AI                      |
+| Phase      | 2-5                                           |
 
 ### 5.2 Learning Guidance
 
-| Aspect | Detail |
-|--------|--------|
-| Purpose | Guide learner through topic |
-| Input | Current lesson, learner's progress, identified difficulties |
-| Output | Explanations, hints, practice suggestions |
-| Constraint | Must respect learner's pace |
-| Authority | Learner controls flow |
-| Phase | 5 |
+| Aspect     | Detail                                                      |
+| ---------- | ----------------------------------------------------------- |
+| Purpose    | Guide learner through topic                                 |
+| Input      | Current lesson, learner's progress, identified difficulties |
+| Output     | Explanations, hints, practice suggestions                   |
+| Constraint | Must respect learner's pace                                 |
+| Authority  | Learner controls flow                                       |
+| Phase      | 5                                                           |
 
 ### 5.3 Virtual Lab Generation
 
-| Aspect | Detail |
-|--------|--------|
-| Purpose | Generate virtual lab scenarios |
-| Input | Learner's requested scenario, topic context |
-| Output | Lab specification, scenario definition |
+| Aspect     | Detail                                       |
+| ---------- | -------------------------------------------- |
+| Purpose    | Generate virtual lab scenarios               |
+| Input      | Learner's requested scenario, topic context  |
+| Output     | Lab specification, scenario definition       |
 | Constraint | Must stay within controlled lab architecture |
-| Authority | Platform validates, learner interacts |
-| Phase | 7 |
+| Authority  | Platform validates, learner interacts        |
+| Phase      | 7                                            |
 
 ### 5.4 Tutor Briefing Generation
 
-| Aspect | Detail |
-|--------|--------|
-| Purpose | Prepare tutor for learner session |
-| Input | Learner's concern, identified difficulties, session history |
-| Output | Structured briefing report |
-| Constraint | Clearly mark AI-generated vs learner-stated |
-| Authority | Tutor confirms/overrides |
-| Phase | 4 |
+| Aspect     | Detail                                                      |
+| ---------- | ----------------------------------------------------------- |
+| Purpose    | Prepare tutor for learner session                           |
+| Input      | Learner's concern, identified difficulties, session history |
+| Output     | Structured briefing report                                  |
+| Constraint | Clearly mark AI-generated vs learner-stated                 |
+| Authority  | Tutor confirms/overrides                                    |
+| Phase      | 4                                                           |
 
 ### 5.5 Evidence Analysis
 
-| Aspect | Detail |
-|--------|--------|
-| Purpose | Analyze learning evidence for insights |
-| Input | Evidence records (whiteboard, notes, etc.) |
-| Output | Analysis, suggestions |
-| Constraint | Analysis is advisory, not authoritative |
-| Authority | Tutor confirmation required for instructional decisions |
-| Phase | 5 |
+| Aspect     | Detail                                                  |
+| ---------- | ------------------------------------------------------- |
+| Purpose    | Analyze learning evidence for insights                  |
+| Input      | Evidence records (whiteboard, notes, etc.)              |
+| Output     | Analysis, suggestions                                   |
+| Constraint | Analysis is advisory, not authoritative                 |
+| Authority  | Tutor confirmation required for instructional decisions |
+| Phase      | 5                                                       |
 
 ### 5.6 Content Generation
 
-| Aspect | Detail |
-|--------|--------|
-| Purpose | Generate practice questions, explanations |
-| Input | Topic, difficulty level, learner profile |
-| Output | Generated content |
+| Aspect     | Detail                                                     |
+| ---------- | ---------------------------------------------------------- |
+| Purpose    | Generate practice questions, explanations                  |
+| Input      | Topic, difficulty level, learner profile                   |
+| Output     | Generated content                                          |
 | Constraint | Must be reviewed before becoming reusable platform content |
-| Authority | Approval required for reuse |
-| Phase | 5 |
+| Authority  | Approval required for reuse                                |
+| Phase      | 5                                                          |
 
 ---
 
@@ -188,20 +188,20 @@ AI responses follow structured output schemas:
 
 ```typescript
 interface AIResponse {
-  type: 'probe' | 'suggestion' | 'explanation' | 'lab_spec' | 'briefing' | 'analysis'
-  content: string
+  type: "probe" | "suggestion" | "explanation" | "lab_spec" | "briefing" | "analysis";
+  content: string;
   metadata: {
-    model: string
-    provider: string
-    tokens: { input: number; output: number }
-    cost: number
-    confidence: number
-    is_ai_generated: true
-  }
+    model: string;
+    provider: string;
+    tokens: { input: number; output: number };
+    cost: number;
+    confidence: number;
+    is_ai_generated: true;
+  };
   safety: {
-    flagged: boolean
-    flags: string[]
-  }
+    flagged: boolean;
+    flags: string[];
+  };
 }
 ```
 
@@ -209,28 +209,28 @@ interface AIResponse {
 
 ## 8. AI COST CONTROL
 
-| Control | Description |
-|---------|-------------|
-| Token Limits | Max tokens per request |
-| Daily Limits | Max tokens per user per day |
-| Monthly Budgets | Max cost per user per month |
-| Model Selection | Cheaper models for simple tasks |
-| Caching | Cache repeated queries |
-| Fallback | Use cheaper model if budget exceeded |
+| Control         | Description                          |
+| --------------- | ------------------------------------ |
+| Token Limits    | Max tokens per request               |
+| Daily Limits    | Max tokens per user per day          |
+| Monthly Budgets | Max cost per user per month          |
+| Model Selection | Cheaper models for simple tasks      |
+| Caching         | Cache repeated queries               |
+| Fallback        | Use cheaper model if budget exceeded |
 
 ---
 
 ## 9. AI OBSERVABILITY
 
-| Metric | Description |
-|--------|-------------|
-| Request Count | Total AI requests |
-| Response Time | Average response latency |
-| Error Rate | Failed request percentage |
-| Token Usage | Tokens consumed per request |
-| Cost | Dollar cost per request/user/day |
-| Safety Flags | Content safety violations |
-| Provider Availability | Uptime per provider |
+| Metric                | Description                      |
+| --------------------- | -------------------------------- |
+| Request Count         | Total AI requests                |
+| Response Time         | Average response latency         |
+| Error Rate            | Failed request percentage        |
+| Token Usage           | Tokens consumed per request      |
+| Cost                  | Dollar cost per request/user/day |
+| Safety Flags          | Content safety violations        |
+| Provider Availability | Uptime per provider              |
 
 ---
 

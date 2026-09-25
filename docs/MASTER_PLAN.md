@@ -3,7 +3,7 @@
 - **Work ID:** AT-0001 (control-system baseline; AT-0002 tracked below)
 - **Status:** IN_PROGRESS (control system installed and AT-0001 COMPLETED; AT-0002 = `VERIFIED WITH ACTIONABLE FINDINGS` — non-prod migration reproduction VERIFIED 73/73 (session 4) + cross-learner RUNTIME isolation VERIFIED on non-prod (session 5: 588 PASS / 40 BLOCKED / 0 FAIL) + **session-6 grant-gap remediation EXECUTED on non-prod `rwpxaejhouunxlcibpou`: minimal intended `sessions` GRANTs restored (`authenticated` arwd + `service_role` ALL, anon untouched), RLS unchanged, previously-blocked 40 re-run 40/40 PASS, full 628-case regression 628/628 PASS**; production applied-state PARTIALLY VERIFIED (historical narrative) and production OVER-grant flagged (anon arwdDxtm on learner tables) as an actionable prod-side finding — see Work Item Register / capability entry)
 - **Type:** Engineering governance (process control), not an application architecture decision
-- **Authority:** The governance model supplied with the AT-0001 task brief. Where the supplied Master Engineering Programme is referenced, it is authoritative for *engineering process*. It is NOT automatically authoritative for *application architecture decisions* (see Governance Rule below).
+- **Authority:** The governance model supplied with the AT-0001 task brief. Where the supplied Master Engineering Programme is referenced, it is authoritative for _engineering process_. It is NOT automatically authoritative for _application architecture decisions_ (see Governance Rule below).
 
 ---
 
@@ -21,7 +21,7 @@ This document is the permanent engineering-control specification for the AskATut
 - unsupported verification claims
 - unfinished work being silently forgotten
 
-The repository's *actual* state — as established by the AT-0001 baseline audit — is recorded in
+The repository's _actual_ state — as established by the AT-0001 baseline audit — is recorded in
 `docs/CURRENT_STATE.md` and `docs/AUDIT_BASELINE_AT-0001.md`. **Evidence takes precedence over assumptions.**
 
 ---
@@ -39,7 +39,7 @@ Any specific architectural stance must be either:
 
 > **Assessment architecture is `PROPOSED / UNACCEPTED` (bounded exception: D-0005).**
 >
-> The "dedicated assessment outcome consumed by Learning" direction discussed during the audit is a *proposed* architectural direction. It has **not** been accepted by explicit human decision and is **not** permission to implement. Only an explicit `ACCEPTED` entry in `docs/DECISION_LOG.md` authorizes implementation. **Superseded in part (2026-09-10):** D-0005 explicitly accepted the **bounded** learning/assessment target model (`topic_prerequisites`, typed `learner_assessments`, `learner_affective_reports`, `mastery_snapshots`, `learning_decisions`) as a design target; the remainder of the prior proposal (scoring service, learning-state heuristics, AI-graded mastery) stays `PROPOSED / UNACCEPTED`. Acceptance as a design target does **not** authorize implementation.
+> The "dedicated assessment outcome consumed by Learning" direction discussed during the audit is a _proposed_ architectural direction. It has **not** been accepted by explicit human decision and is **not** permission to implement. Only an explicit `ACCEPTED` entry in `docs/DECISION_LOG.md` authorizes implementation. **Superseded in part (2026-09-10):** D-0005 explicitly accepted the **bounded** learning/assessment target model (`topic_prerequisites`, typed `learner_assessments`, `learner_affective_reports`, `mastery_snapshots`, `learning_decisions`) as a design target; the remainder of the prior proposal (scoring service, learning-state heuristics, AI-graded mastery) stays `PROPOSED / UNACCEPTED`. Acceptance as a design target does **not** authorize implementation.
 
 No roadmap phase implies authorization to implement.
 
@@ -68,7 +68,7 @@ Rules:
 
 The phases below are the programme map supplied with the task. They are **programme phases**, not automatically accepted application-architecture decisions. Phase-specific architecture must satisfy the Governance Rule (Section 1).
 
-> NOTE: The AT-0001 baseline audit (docs/CURRENT_STATE.md, docs/AUDIT_BASELINE_AT-0001.md) MUST be consulted to determine where the repository *actually* sits relative to these phases. Do not assume the repository is at a phase merely because the roadmap lists it. See `ROADMAP POSITION` in the baseline audit.
+> NOTE: The AT-0001 baseline audit (docs/CURRENT_STATE.md, docs/AUDIT_BASELINE_AT-0001.md) MUST be consulted to determine where the repository _actually_ sits relative to these phases. Do not assume the repository is at a phase merely because the roadmap lists it. See `ROADMAP POSITION` in the baseline audit.
 
 Phases 0–19 (as supplied):
 

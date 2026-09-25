@@ -19,9 +19,16 @@ export const Route = createFileRoute("/community")({
   head: () => ({
     meta: [
       { title: "Community Forum — Ask A Tutor Live" },
-      { name: "description", content: "Join study groups, ask questions, and share answers with students and tutors across Africa." },
+      {
+        name: "description",
+        content:
+          "Join study groups, ask questions, and share answers with students and tutors across Africa.",
+      },
       { property: "og:title", content: "Community Forum — Ask A Tutor Live" },
-      { property: "og:description", content: "A friendly place to ask, answer, and study together." },
+      {
+        property: "og:description",
+        content: "A friendly place to ask, answer, and study together.",
+      },
     ],
   }),
 });
@@ -35,7 +42,6 @@ type Post = {
   created_at: string;
   author_name: string;
 };
-
 
 function CommunityPage() {
   const { user } = useAuth();
@@ -56,7 +62,9 @@ function CommunityPage() {
     setPosts((data as Post[] | null) ?? []);
     setLoading(false);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const threads = posts.filter((p) => !p.parent_id);
   const replies = (parentId: string) => posts.filter((p) => p.parent_id === parentId).reverse();
@@ -64,9 +72,13 @@ function CommunityPage() {
   const create = async () => {
     if (!user) return toast.error("Please sign in to post");
     if (!body.trim() || !title.trim()) return;
-    await createPost({ data: { title: title.trim(), body: body.trim(), subject: subject.trim() || undefined } });
+    await createPost({
+      data: { title: title.trim(), body: body.trim(), subject: subject.trim() || undefined },
+    });
     toast.success("Posted");
-    setTitle(""); setBody(""); setSubject("");
+    setTitle("");
+    setBody("");
+    setSubject("");
     load();
   };
 
@@ -139,12 +151,29 @@ function CommunityPage() {
                     <span className="font-semibold">Start a new thread</span>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title (e.g. Help with quadratics)" />
-                    <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject (optional)" />
+                    <Input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Title (e.g. Help with quadratics)"
+                    />
+                    <Input
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="Subject (optional)"
+                    />
                   </div>
-                  <Textarea rows={3} value={body} onChange={(e) => setBody(e.target.value)} placeholder="What's on your mind?" />
+                  <Textarea
+                    rows={3}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    placeholder="What's on your mind?"
+                  />
                   <div className="flex justify-end">
-                    <Button onClick={create} disabled={!title.trim() || !body.trim()} className="bg-aurora text-white hover:opacity-90">
+                    <Button
+                      onClick={create}
+                      disabled={!title.trim() || !body.trim()}
+                      className="bg-aurora text-white hover:opacity-90"
+                    >
                       <Send className="mr-2 h-4 w-4" /> Post
                     </Button>
                   </div>
@@ -153,8 +182,12 @@ function CommunityPage() {
             ) : (
               <Card className="mb-4">
                 <CardContent className="flex items-center justify-between p-4">
-                  <p className="text-sm text-muted-foreground">Sign in to start a thread or reply.</p>
-                  <Button asChild size="sm"><Link to="/auth">Sign in</Link></Button>
+                  <p className="text-sm text-muted-foreground">
+                    Sign in to start a thread or reply.
+                  </p>
+                  <Button asChild size="sm">
+                    <Link to="/auth">Sign in</Link>
+                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -162,7 +195,11 @@ function CommunityPage() {
             {loading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : threads.length === 0 ? (
-              <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">No threads yet — be the first!</CardContent></Card>
+              <Card>
+                <CardContent className="p-6 text-center text-sm text-muted-foreground">
+                  No threads yet — be the first!
+                </CardContent>
+              </Card>
             ) : (
               <ul className="space-y-2">
                 {threads.map((t, i) => (
@@ -172,15 +209,16 @@ function CommunityPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i * 0.02, 0.2) }}
                   >
-                    <button
-                      onClick={() => setOpenId(t.id)}
-                      className="block w-full text-left"
-                    >
+                    <button onClick={() => setOpenId(t.id)} className="block w-full text-left">
                       <Card className="transition-colors hover:border-primary/50">
                         <CardContent className="space-y-1 p-4">
                           <div className="flex items-center justify-between gap-2">
                             <h3 className="truncate font-semibold">{t.title ?? "(no title)"}</h3>
-                            {t.subject && <Badge variant="secondary" className="shrink-0">{t.subject}</Badge>}
+                            {t.subject && (
+                              <Badge variant="secondary" className="shrink-0">
+                                {t.subject}
+                              </Badge>
+                            )}
                           </div>
                           <p className="line-clamp-2 text-sm text-muted-foreground">{t.body}</p>
                           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -221,7 +259,10 @@ function ReplyBox({ onSend, disabled }: { onSend: (text: string) => void; disabl
           <Button
             size="sm"
             disabled={disabled || !text.trim()}
-            onClick={() => { onSend(text); setText(""); }}
+            onClick={() => {
+              onSend(text);
+              setText("");
+            }}
           >
             <Send className="mr-1 h-3.5 w-3.5" /> Reply
           </Button>

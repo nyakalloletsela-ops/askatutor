@@ -4,8 +4,16 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { checkIsAdmin } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  PageContainer,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
@@ -132,7 +140,9 @@ function PromotionsPage() {
           <div>
             <Label>Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as "percent" | "fixed")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="percent">Percent</SelectItem>
                 <SelectItem value="fixed">Fixed amount</SelectItem>
@@ -176,7 +186,9 @@ function PromotionsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Active &amp; past codes</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Active &amp; past codes</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-2">
           {promos.length === 0 && (
             <p className="text-sm text-muted-foreground">No promotions yet.</p>
@@ -194,7 +206,8 @@ function PromotionsPage() {
                 {p.discount_type === "percent" ? `${p.amount}% off` : `R${p.amount} off`}
               </span>
               <span className="text-muted-foreground">
-                Used {p.uses}{p.max_uses ? ` / ${p.max_uses}` : ""}
+                Used {p.uses}
+                {p.max_uses ? ` / ${p.max_uses}` : ""}
               </span>
               {p.expires_at && (
                 <span className="text-muted-foreground">

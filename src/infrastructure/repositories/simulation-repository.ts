@@ -1,7 +1,7 @@
 import type { UserDataClient } from "./helpers";
 import { toVectorLiteral } from "./helpers";
-import type { Json } from "@/integrations/supabase/types";
 import type { JsonValue } from "@/domain/ports/json";
+import type { Json } from "@/integrations/supabase/types";
 import type {
   SaveSimulationInput,
   SimulationRepository,
@@ -29,36 +29,22 @@ export class SupabaseSimulationRepository implements SimulationRepository {
   }
 
   async save(input: SaveSimulationInput): Promise<SimulationRow> {
-    const insert = {
-      user_id: input.userId,
-      prompt: input.prompt,
-      subject: input.subject,
-      title: input.title,
-      schema_json: input.schema as unknown as Json,
-      embedding: input.embedding ? toVectorLiteral(input.embedding) : null,
-      thumbnail_url: input.thumbnailUrl ?? null,
-      tags: input.tags,
-      processed: true,
-      ai_schema_version: 2,
-    };
-
-    const { data: row, error } = await this.supabase
-      .from("simulations")
-      .insert(insert)
-      .select("id, prompt, subject, title, schema_json, thumbnail_url, created_at, tags")
+    const { data, error } = await this.supabase
+      .rpc("save_simulation_with_initial_version", {
+        _save_request_id: input.requestId,
+        _prompt: input.prompt,
+        _subject: input.subject,
+        _title: input.title,
+        _schema_json: input.schema as unknown as Json,
+        _embedding: input.embedding ? toVectorLiteral(input.embedding) : null,
+        _thumbnail_url: input.thumbnailUrl,
+        _tags: input.tags,
+      })
       .single();
     if (error) throw new Error(error.message);
+    if (!data) throw new Error("Simulation save returned no row");
 
-    const saved = row as unknown as { id: string };
-    await this.supabase.from("simulation_versions").insert({
-      simulation_id: saved.id,
-      user_id: input.userId,
-      schema_json: input.schema as unknown as Json,
-      prompt: input.prompt,
-      version_number: 1,
-    });
-
-    return row as unknown as SimulationRow;
+    return data as unknown as SimulationRow;
   }
 
   async list(opts: { search?: string; subject?: string }): Promise<SimulationRow[]> {

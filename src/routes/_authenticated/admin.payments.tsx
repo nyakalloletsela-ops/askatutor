@@ -76,8 +76,16 @@ function PaymentsPage() {
     queryKey: ["admin-payments"],
     queryFn: async () => {
       const [students, tutors] = await Promise.all([
-        supabase.from("student_subscriptions").select("*").order("submitted_at", { ascending: false }).limit(200),
-        supabase.from("tutor_subscriptions").select("*").order("submitted_at", { ascending: false }).limit(200),
+        supabase
+          .from("student_subscriptions")
+          .select("*")
+          .order("submitted_at", { ascending: false })
+          .limit(200),
+        supabase
+          .from("tutor_subscriptions")
+          .select("*")
+          .order("submitted_at", { ascending: false })
+          .limit(200),
       ]);
       const sRows = ((students.data ?? []) as Record<string, unknown>[]).map(
         (s) => ({ ...s, kind: "student" }) as unknown as Row,
@@ -88,7 +96,9 @@ function PaymentsPage() {
       const all: Row[] = [...sRows, ...tRows].sort(
         (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime(),
       );
-      const totalApproved = all.filter((x) => x.status === "approved").reduce((s, x) => s + Number(x.amount), 0);
+      const totalApproved = all
+        .filter((x) => x.status === "approved")
+        .reduce((s, x) => s + Number(x.amount), 0);
       return {
         all,
         totalApproved,
@@ -173,34 +183,58 @@ function PaymentsPage() {
         <CardContent className="p-0">
           <div className="divide-y">
             {rows.map((row) => (
-              <div key={`${row.kind}-${row.id}`} className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <div
+                key={`${row.kind}-${row.id}`}
+                className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+              >
                 <div className="min-w-0">
                   <p className="truncate font-medium">{row.transaction_ref}</p>
                   <p className="text-xs text-muted-foreground">
-                    {row.kind} · {row.payment_method} · {new Date(row.submitted_at).toLocaleDateString()}
+                    {row.kind} · {row.payment_method} ·{" "}
+                    {new Date(row.submitted_at).toLocaleDateString()}
                   </p>
-                  {row.notes && <p className="mt-1 text-xs italic text-muted-foreground">“{row.notes}”</p>}
+                  {row.notes && (
+                    <p className="mt-1 text-xs italic text-muted-foreground">“{row.notes}”</p>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="tabular-nums font-medium">M {row.amount}</span>
                   <Badge
-                    variant={row.status === "approved" ? "default" : row.status === "pending" ? "secondary" : "destructive"}
+                    variant={
+                      row.status === "approved"
+                        ? "default"
+                        : row.status === "pending"
+                          ? "secondary"
+                          : "destructive"
+                    }
                     className="text-[10px]"
                   >
                     {row.status}
                   </Badge>
                   {row.status !== "approved" && (
-                    <Button size="sm" variant="default" onClick={() => setStatus.mutate({ row, status: "approved" })}>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => setStatus.mutate({ row, status: "approved" })}
+                    >
                       Approve
                     </Button>
                   )}
                   {row.status !== "rejected" && (
-                    <Button size="sm" variant="outline" onClick={() => setStatus.mutate({ row, status: "rejected" })}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setStatus.mutate({ row, status: "rejected" })}
+                    >
                       Reject
                     </Button>
                   )}
                   {row.status !== "pending" && (
-                    <Button size="sm" variant="ghost" onClick={() => setStatus.mutate({ row, status: "pending" })}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setStatus.mutate({ row, status: "pending" })}
+                    >
                       Revoke
                     </Button>
                   )}
@@ -212,7 +246,9 @@ function PaymentsPage() {
               </div>
             ))}
             {rows.length === 0 && (
-              <p className="p-6 text-center text-sm text-muted-foreground">No transactions match.</p>
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                No transactions match.
+              </p>
             )}
           </div>
         </CardContent>
@@ -320,7 +356,9 @@ function GrantDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Grant subscription</DialogTitle>
-          <DialogDescription>Manually approve a subscription for a student or tutor (no transaction needed).</DialogDescription>
+          <DialogDescription>
+            Manually approve a subscription for a student or tutor (no transaction needed).
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -337,7 +375,11 @@ function GrantDialog() {
           </div>
           <div>
             <Label>User ID</Label>
-            <Input value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="auth user UUID" />
+            <Input
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="auth user UUID"
+            />
             <p className="mt-1 text-[11px] text-muted-foreground">
               Copy from Admin → {kind === "student" ? "Students" : "Tutors"}.
             </p>

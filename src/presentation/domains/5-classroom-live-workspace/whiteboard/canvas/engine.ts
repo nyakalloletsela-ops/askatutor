@@ -23,57 +23,114 @@ export interface HighlighterShape extends ShapeBase {
 }
 export interface LineShape extends ShapeBase {
   type: "line";
-  x1: number; y1: number; x2: number; y2: number;
-  color: string; size: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+  size: number;
 }
 export interface ArrowShape extends ShapeBase {
   type: "arrow";
-  x1: number; y1: number; x2: number; y2: number;
-  color: string; size: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  color: string;
+  size: number;
 }
 export interface RectShape extends ShapeBase {
   type: "rect";
-  x: number; y: number; w: number; h: number;
-  color: string; size: number; fill: string | null;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+  size: number;
+  fill: string | null;
 }
 export interface EllipseShape extends ShapeBase {
   type: "ellipse";
-  x: number; y: number; w: number; h: number;
-  color: string; size: number; fill: string | null;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+  size: number;
+  fill: string | null;
 }
 export interface TriangleShape extends ShapeBase {
   type: "triangle";
-  x: number; y: number; w: number; h: number;
-  color: string; size: number; fill: string | null;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  color: string;
+  size: number;
+  fill: string | null;
 }
 export interface TextShape extends ShapeBase {
   type: "text";
-  x: number; y: number; w: number; h: number;
-  text: string; color: string; size: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text: string;
+  color: string;
+  size: number;
 }
 export interface StickyShape extends ShapeBase {
   type: "sticky";
-  x: number; y: number; w: number; h: number;
-  text: string; bg: string; color: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text: string;
+  bg: string;
+  color: string;
 }
 export interface ImageShape extends ShapeBase {
   type: "image";
-  x: number; y: number; w: number; h: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
   /** data URL or http URL */
   src: string;
 }
 
 export type Shape =
-  | PencilShape | HighlighterShape | LineShape | ArrowShape
-  | RectShape | EllipseShape | TriangleShape
-  | TextShape | StickyShape | ImageShape;
+  | PencilShape
+  | HighlighterShape
+  | LineShape
+  | ArrowShape
+  | RectShape
+  | EllipseShape
+  | TriangleShape
+  | TextShape
+  | StickyShape
+  | ImageShape;
 
 export type ToolId =
-  | "select" | "pencil" | "highlighter" | "eraser"
-  | "line" | "arrow" | "rect" | "ellipse" | "triangle"
-  | "text" | "sticky" | "image" | "hand";
+  | "select"
+  | "pencil"
+  | "highlighter"
+  | "eraser"
+  | "line"
+  | "arrow"
+  | "rect"
+  | "ellipse"
+  | "triangle"
+  | "text"
+  | "sticky"
+  | "image"
+  | "hand";
 
-export interface Camera { x: number; y: number; z: number; }
+export interface Camera {
+  x: number;
+  y: number;
+  z: number;
+}
 
 export interface SceneDoc {
   version: 1;
@@ -102,11 +159,17 @@ export function shapeBounds(s: Shape): { x: number; y: number; w: number; h: num
   switch (s.type) {
     case "pencil":
     case "highlighter": {
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
       for (let i = 0; i < s.points.length; i += 2) {
-        const x = s.points[i], y = s.points[i + 1];
-        if (x < minX) minX = x; if (x > maxX) maxX = x;
-        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        const x = s.points[i],
+          y = s.points[i + 1];
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
       }
       if (!isFinite(minX)) return { x: 0, y: 0, w: 0, h: 0 };
       const pad = s.size;
@@ -114,8 +177,10 @@ export function shapeBounds(s: Shape): { x: number; y: number; w: number; h: num
     }
     case "line":
     case "arrow": {
-      const minX = Math.min(s.x1, s.x2), maxX = Math.max(s.x1, s.x2);
-      const minY = Math.min(s.y1, s.y2), maxY = Math.max(s.y1, s.y2);
+      const minX = Math.min(s.x1, s.x2),
+        maxX = Math.max(s.x1, s.x2);
+      const minY = Math.min(s.y1, s.y2),
+        maxY = Math.max(s.y1, s.y2);
       const pad = s.size + 8;
       return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
     }
@@ -136,7 +201,10 @@ export function translateShape(s: Shape, dx: number, dy: number): Shape {
     case "pencil":
     case "highlighter": {
       const pts = s.points.slice();
-      for (let i = 0; i < pts.length; i += 2) { pts[i] += dx; pts[i + 1] += dy; }
+      for (let i = 0; i < pts.length; i += 2) {
+        pts[i] += dx;
+        pts[i + 1] += dy;
+      }
       return { ...s, points: pts };
     }
     case "line":

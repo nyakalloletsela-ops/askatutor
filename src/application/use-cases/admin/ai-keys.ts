@@ -4,7 +4,10 @@ import { requireAppDependencies } from "@/integrations/auth/app-dependencies";
 
 const ProviderSchema = z.enum(["groq", "gemini", "ollama"]);
 
-async function assertAdmin(context: { deps: { user: { isAdmin: (id: string) => Promise<boolean> } }; userId: string }) {
+async function assertAdmin(context: {
+  deps: { user: { isAdmin: (id: string) => Promise<boolean> } };
+  userId: string;
+}) {
   const isAdmin = await context.deps.user.isAdmin(context.userId);
   if (!isAdmin) throw new Error("Forbidden");
 }
@@ -42,9 +45,12 @@ export const getAiKeyStatus = createServerFn({ method: "GET" })
     ]);
     const byProvider = Object.fromEntries(rows.map((r) => [r.provider, r]));
 
-    const groq = byProvider.groq as { api_key: string | null; base_url: string | null; updated_at: string | null } | undefined;
-    const gemini = byProvider.gemini as { api_key: string | null; base_url: string | null; updated_at: string | null } | undefined;
-    const ollama = byProvider.ollama as { api_key: string | null; base_url: string | null; updated_at: string | null } | undefined;
+    const groq = byProvider.groq as
+      { api_key: string | null; base_url: string | null; updated_at: string | null } | undefined;
+    const gemini = byProvider.gemini as
+      { api_key: string | null; base_url: string | null; updated_at: string | null } | undefined;
+    const ollama = byProvider.ollama as
+      { api_key: string | null; base_url: string | null; updated_at: string | null } | undefined;
 
     return {
       groq: {

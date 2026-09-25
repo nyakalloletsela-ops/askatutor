@@ -46,6 +46,7 @@ A learner's initial statement must NOT be treated as the complete problem descri
 AI must NOT independently invent an interpretation and declare "Your problem is X." The learner's own response is the primary starting evidence.
 
 AI should:
+
 - Ask
 - Probe
 - Clarify
@@ -57,6 +58,7 @@ AI should:
 ### 3.2 Final Evidence
 
 The final evidence must include whether the learner reports that the fear/confusion was:
+
 - Resolved
 - Reduced
 - Unchanged
@@ -72,6 +74,7 @@ The platform must preserve the journey from initial concern through intervention
 The learner-difficulty/fear interaction is **mandatory for the first three lessons**.
 
 After the first three lessons, the learner may choose to use this process:
+
 - For every topic
 - Every lesson
 - Whenever needed
@@ -80,6 +83,7 @@ After the first three lessons, the learner may choose to use this process:
 ### 4.1 Interaction Must Not Feel Like an Exam
 
 The presentation must be:
+
 - Conversational
 - Interactive
 - Psychologically comfortable
@@ -100,6 +104,7 @@ Learners **MUST** use the whiteboard for writing their assessments.
 The architecture must treat the whiteboard as a first-class learning interaction, not merely an optional visual widget.
 
 Whiteboard interactions must:
+
 - Support preservation as evidence
 - Be saved as PDF
 - Integrate with tutor sessions, AI assistance, simulations, virtual labs, notes, and classroom/session records
@@ -113,6 +118,7 @@ AI is an assistant and guide.
 AI does NOT independently decide what the learner understands or does not understand.
 
 AI may:
+
 - Ask questions
 - Probe
 - Clarify
@@ -128,6 +134,7 @@ AI may:
 AI must not silently convert an assumption into established learner evidence.
 
 AI-generated interpretation must remain distinguishable from:
+
 - Learner statements
 - Tutor observations
 - Verified learning evidence
@@ -150,6 +157,7 @@ The system must be capable of creating the scenario as imposed/requested by the 
 The architecture must eventually support storing generated labs when the user agrees.
 
 Saved labs may become reusable by:
+
 - The same learner
 - Other users
 - Tutors
@@ -170,6 +178,7 @@ However, the architecture must support expansion. AskATutorLive is not STEM-only
 PhET and similar external simulations may be used from their official sources.
 
 The platform must:
+
 - Preserve appropriate source attribution
 - Display required logos/branding where permitted
 - Provide external links
@@ -180,6 +189,7 @@ The platform must:
 External simulations must integrate conceptually with AskATutorLive classroom experiences.
 
 Where technically and legally possible, the architecture should allow interaction with:
+
 - Whiteboard
 - Notes
 - Classroom/session context
@@ -201,6 +211,7 @@ The platform should make tutor support easy to activate when the learner needs i
 The learner's initial difficulty/fear interaction can produce a structured preparation report for the selected tutor.
 
 The report may include:
+
 - Learner's own description
 - Specific areas they identified as confusing
 - Questions asked during the interaction
@@ -222,13 +233,13 @@ The tutor may review this information and confirm or correct instructional inter
 
 Different participants have different visibility:
 
-| Role | Visibility |
-|------|-----------|
-| LEARNER | Controls their learning journey, sees their own learning information, chooses tutor support, chooses whether generated labs are saved/shared |
-| TUTOR | Sees information necessary to prepare and teach the learner, can review learner evidence, can confirm/correct AI interpretations |
-| PARENT | May receive appropriate learner progress/support information, may support the learner, may facilitate payments; must not automatically receive unrestricted access |
-| ADMIN | Must be able to access platform information when legitimately required for administration, safety, support, compliance or operations, subject to proper authorization and auditing |
-| AI | Receives only information permitted by the relevant trust boundary; must not bypass authorization |
+| Role    | Visibility                                                                                                                                                                         |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LEARNER | Controls their learning journey, sees their own learning information, chooses tutor support, chooses whether generated labs are saved/shared                                       |
+| TUTOR   | Sees information necessary to prepare and teach the learner, can review learner evidence, can confirm/correct AI interpretations                                                   |
+| PARENT  | May receive appropriate learner progress/support information, may support the learner, may facilitate payments; must not automatically receive unrestricted access                 |
+| ADMIN   | Must be able to access platform information when legitimately required for administration, safety, support, compliance or operations, subject to proper authorization and auditing |
+| AI      | Receives only information permitted by the relevant trust boundary; must not bypass authorization                                                                                  |
 
 ---
 
@@ -241,11 +252,13 @@ Institutions are supported but are NOT the primary target market.
 An institution may distribute a lesson/class/session link to learners.
 
 Learners using an institution-provided link:
+
 - Do NOT need individual AskATutorLive accounts for that institutional experience
 - Are NOT anonymous — they are identified within the institution's controlled context
 - Can participate in an assigned class/session
 
 The institution can receive learning outputs such as:
+
 - PDFs
 - Whiteboard records
 - Recordings where enabled
@@ -258,15 +271,16 @@ The institution can receive learning outputs such as:
 
 Whiteboard and other core learning interactions must be preserved appropriately.
 
-| Type | Policy |
-|------|--------|
-| WHITEBOARD | Always saved as PDF |
-| VOICE | Recorded when the tutor or learner needs it / when enabled |
-| VIDEO | Recorded when needed / when enabled and supported by user's plan and technical limits |
+| Type       | Policy                                                                                |
+| ---------- | ------------------------------------------------------------------------------------- |
+| WHITEBOARD | Always saved as PDF                                                                   |
+| VOICE      | Recorded when the tutor or learner needs it / when enabled                            |
+| VIDEO      | Recorded when needed / when enabled and supported by user's plan and technical limits |
 
 ### 12.1 Free Tier Constraints
 
 The platform starts with a FREE tier. Architecture must account for:
+
 - Storage limits
 - Recording limits
 - Retention
@@ -277,6 +291,7 @@ The platform starts with a FREE tier. Architecture must account for:
 ### 12.2 Evidence Types
 
 Evidence may include:
+
 - Learner responses
 - Whiteboard
 - Notes
@@ -298,6 +313,7 @@ Evidence is not automatically mastery.
 Learners must eventually be able to interact with other learners.
 
 Community functionality includes:
+
 - Forums
 - Groups
 - Learner discussions
@@ -305,6 +321,7 @@ Community functionality includes:
 - Sharing approved/safe saved labs
 
 Community must have strong:
+
 - Moderation
 - Reporting
 - Privacy
@@ -320,6 +337,7 @@ Community must have strong:
 Every meaningful user interaction should exist within an entitlement/account model because AskATutorLive is a paid platform.
 
 The architecture must support:
+
 - Free tier
 - Paid plans
 - Tutor services
@@ -335,6 +353,7 @@ The architecture must support:
 Payment architecture must be server-authoritative. Never trust client-supplied financial values.
 
 Financial records require:
+
 - Authorization
 - Validation
 - Idempotency
@@ -348,23 +367,24 @@ Financial records require:
 
 Implementation language: **TypeScript**
 
-| Category | Decision |
-|----------|----------|
-| Language | TypeScript |
-| Frontend | React |
-| Build Tool | Vite |
-| Styling | Tailwind CSS |
-| Backend | Node.js |
-| Database | PostgreSQL / Supabase |
-| 3D / Labs | Three.js (where required) |
-| Testing | TBD — REQUIRES DECISION |
-| Deployment | TBD — REQUIRES DECISION |
+| Category   | Decision                  |
+| ---------- | ------------------------- |
+| Language   | TypeScript                |
+| Frontend   | React                     |
+| Build Tool | Vite                      |
+| Styling    | Tailwind CSS              |
+| Backend    | Node.js                   |
+| Database   | PostgreSQL / Supabase     |
+| 3D / Labs  | Three.js (where required) |
+| Testing    | TBD — REQUIRES DECISION   |
+| Deployment | TBD — REQUIRES DECISION   |
 
 ---
 
 ## 16. SCOPE BOUNDARIES
 
 ### IN SCOPE (Complete Platform)
+
 - Learner difficulty identification and intervention
 - Whiteboard as first-class surface
 - AI-assisted learning guidance
@@ -378,6 +398,7 @@ Implementation language: **TypeScript**
 - Reporting
 
 ### OUT OF SCOPE (Phase 0)
+
 - Application feature implementation
 - Dashboard implementation
 - AI feature implementation

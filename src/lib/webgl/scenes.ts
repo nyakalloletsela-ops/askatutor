@@ -16,12 +16,18 @@ export type SceneInstance = {
 };
 
 function bond(from: Vec3, to: Vec3, cyl: MeshHandle, color: Vec3, thickness = 0.08): DrawCall {
-  const dx = to[0] - from[0], dy = to[1] - from[1], dz = to[2] - from[2];
+  const dx = to[0] - from[0],
+    dy = to[1] - from[1],
+    dz = to[2] - from[2];
   const len = Math.hypot(dx, dy, dz);
   // Build rotation that maps +Y to bond direction.
-  const ux = dx / len, uy = dy / len, uz = dz / len;
+  const ux = dx / len,
+    uy = dy / len,
+    uz = dz / len;
   // Use Rodrigues formula vs Y-axis.
-  const ax = -uz, ay = 0, az = ux;
+  const ax = -uz,
+    ay = 0,
+    az = ux;
   const al = Math.hypot(ax, ay, az);
   let model = m4.identity();
   model[12] = (from[0] + to[0]) / 2;
@@ -29,14 +35,26 @@ function bond(from: Vec3, to: Vec3, cyl: MeshHandle, color: Vec3, thickness = 0.
   model[14] = (from[2] + to[2]) / 2;
   if (al > 1e-6) {
     const angle = Math.acos(Math.max(-1, Math.min(1, uy)));
-    const c = Math.cos(angle), s = Math.sin(angle), C = 1 - c;
-    const nx = ax / al, ny = ay / al, nz = az / al;
+    const c = Math.cos(angle),
+      s = Math.sin(angle),
+      C = 1 - c;
+    const nx = ax / al,
+      ny = ay / al,
+      nz = az / al;
     const R = new Float32Array(16);
-    R[0] = c + nx * nx * C;        R[1] = ny * nx * C + nz * s;  R[2] = nz * nx * C - ny * s;
-    R[4] = nx * ny * C - nz * s;   R[5] = c + ny * ny * C;       R[6] = nz * ny * C + nx * s;
-    R[8] = nx * nz * C + ny * s;   R[9] = ny * nz * C - nx * s;  R[10] = c + nz * nz * C;
+    R[0] = c + nx * nx * C;
+    R[1] = ny * nx * C + nz * s;
+    R[2] = nz * nx * C - ny * s;
+    R[4] = nx * ny * C - nz * s;
+    R[5] = c + ny * ny * C;
+    R[6] = nz * ny * C + nx * s;
+    R[8] = nx * nz * C + ny * s;
+    R[9] = ny * nz * C - nx * s;
+    R[10] = c + nz * nz * C;
     R[15] = 1;
-    R[12] = model[12]; R[13] = model[13]; R[14] = model[14];
+    R[12] = model[12];
+    R[13] = model[13];
+    R[14] = model[14];
     model = R;
   }
   model = m4.scale(model, [thickness, len, thickness]);
@@ -72,7 +90,10 @@ export const SCENES: Scene[] = [
           calls.push(b1, b2);
           return calls;
         },
-        dispose: () => { sph.dispose(); cyl.dispose(); },
+        dispose: () => {
+          sph.dispose();
+          cyl.dispose();
+        },
       };
     },
   },
@@ -116,11 +137,15 @@ export const SCENES: Scene[] = [
         const t = (k / FRAMES) * Math.PI * 2;
         meshes.push(
           r.upload(
-            surface((x, y) => {
-              const r1 = Math.hypot(x - 1, y);
-              const r2 = Math.hypot(x + 1, y);
-              return 0.35 * (Math.cos(3 * r1 - t) / (1 + r1) + Math.cos(3 * r2 - t) / (1 + r2));
-            }, 2.5, 70),
+            surface(
+              (x, y) => {
+                const r1 = Math.hypot(x - 1, y);
+                const r2 = Math.hypot(x + 1, y);
+                return 0.35 * (Math.cos(3 * r1 - t) / (1 + r1) + Math.cos(3 * r2 - t) / (1 + r2));
+              },
+              2.5,
+              70,
+            ),
           ),
         );
       }
@@ -162,9 +187,13 @@ export const SCENES: Scene[] = [
       const cyl = r.upload(cylinder(1, 1, 24));
       const d = 1.3;
       const H: Vec3[] = [
-        [d, d, d], [-d, -d, d], [-d, d, -d], [d, -d, -d],
+        [d, d, d],
+        [-d, -d, d],
+        [-d, d, -d],
+        [d, -d, -d],
       ].map(([x, y, z]) => {
-        const l = Math.hypot(x, y, z); return [x / l * d, y / l * d, z / l * d];
+        const l = Math.hypot(x, y, z);
+        return [(x / l) * d, (y / l) * d, (z / l) * d];
       });
       const C: Vec3 = [0, 0, 0];
       return {
@@ -175,14 +204,21 @@ export const SCENES: Scene[] = [
           ];
           for (const h of H) {
             const tr = m4.translate(spin, h);
-            calls.push({ mesh: sph, model: m4.scale(tr, [0.32, 0.32, 0.32]), color: [0.92, 0.92, 0.95] });
+            calls.push({
+              mesh: sph,
+              model: m4.scale(tr, [0.32, 0.32, 0.32]),
+              color: [0.92, 0.92, 0.95],
+            });
             const b = bond(C, h, cyl, [0.7, 0.7, 0.8]);
             b.model = m4.multiply(spin, b.model);
             calls.push(b);
           }
           return calls;
         },
-        dispose: () => { sph.dispose(); cyl.dispose(); },
+        dispose: () => {
+          sph.dispose();
+          cyl.dispose();
+        },
       };
     },
   },

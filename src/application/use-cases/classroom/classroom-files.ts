@@ -9,9 +9,7 @@ import { requireAppDependencies } from "@/integrations/auth/app-dependencies";
  */
 export const listClassroomFiles = createServerFn({ method: "POST" })
   .middleware([requireAppDependencies])
-  .inputValidator((input) =>
-    z.object({ roomId: z.string().min(1).max(200) }).parse(input),
-  )
+  .inputValidator((input) => z.object({ roomId: z.string().min(1).max(200) }).parse(input))
   .handler(async ({ context, data }) => {
     return context.deps.classroom.listFiles(data.roomId);
   });
@@ -23,9 +21,7 @@ export const listClassroomFiles = createServerFn({ method: "POST" })
  */
 export const getClassroomFileUrl = createServerFn({ method: "POST" })
   .middleware([requireAppDependencies])
-  .inputValidator((input) =>
-    z.object({ path: z.string().min(1) }).parse(input),
-  )
+  .inputValidator((input) => z.object({ path: z.string().min(1) }).parse(input))
   .handler(async ({ context, data }) => {
     const url = await context.deps.classroom.getFileUrl(data.path);
     return { url };
@@ -38,9 +34,7 @@ export const getClassroomFileUrl = createServerFn({ method: "POST" })
  */
 export const deleteClassroomFile = createServerFn({ method: "POST" })
   .middleware([requireAppDependencies])
-  .inputValidator((input) =>
-    z.object({ path: z.string().min(1) }).parse(input),
-  )
+  .inputValidator((input) => z.object({ path: z.string().min(1) }).parse(input))
   .handler(async ({ context, data }) => {
     await context.deps.classroom.deleteFile(data.path);
   });

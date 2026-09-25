@@ -45,10 +45,17 @@ export function ClassroomChat({ roomId, userId, displayName }: Props) {
       .channel(`chat:${roomId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "classroom_chat", filter: `room_id=eq.${roomId}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "classroom_chat",
+          filter: `room_id=eq.${roomId}`,
+        },
         (payload) => {
           setMessages((prev) =>
-            prev.some((m) => m.id === (payload.new as ChatRow).id) ? prev : [...prev, payload.new as ChatRow],
+            prev.some((m) => m.id === (payload.new as ChatRow).id)
+              ? prev
+              : [...prev, payload.new as ChatRow],
           );
         },
       )
@@ -84,7 +91,9 @@ export function ClassroomChat({ roomId, userId, displayName }: Props) {
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3">
         {messages.length === 0 && (
-          <p className="py-8 text-center text-xs text-muted-foreground">No messages yet — start the conversation.</p>
+          <p className="py-8 text-center text-xs text-muted-foreground">
+            No messages yet — start the conversation.
+          </p>
         )}
         {messages.map((m) => {
           const mine = m.user_id === userId;
@@ -119,7 +128,12 @@ export function ClassroomChat({ roomId, userId, displayName }: Props) {
           className="h-9"
           disabled={sending}
         />
-        <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={sending || !input.trim()}>
+        <Button
+          type="submit"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          disabled={sending || !input.trim()}
+        >
           <Send className="h-4 w-4" />
         </Button>
       </form>

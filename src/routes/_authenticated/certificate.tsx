@@ -13,7 +13,10 @@ export const Route = createFileRoute("/_authenticated/certificate")({
   head: () => ({
     meta: [
       { title: "Your Certificate — Ask A Tutor Live" },
-      { name: "description", content: "Download or print your Ask A Tutor Live certificate of completion." },
+      {
+        name: "description",
+        content: "Download or print your Ask A Tutor Live certificate of completion.",
+      },
     ],
   }),
 });
@@ -41,7 +44,11 @@ function CertificatePage() {
   }, [user]);
 
   const eligible = completed >= 3;
-  const issuedDate = new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
+  const issuedDate = new Date().toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
   const certNo = user ? `AATL-${user.id.slice(0, 8).toUpperCase()}` : "AATL-XXXXXXXX";
 
   if (loading) {
@@ -63,14 +70,21 @@ function CertificatePage() {
           .cert-card { box-shadow: none !important; border: none !important; page-break-inside: avoid; }
         }
       `}</style>
-      <div className="no-print"><Navbar /></div>
+      <div className="no-print">
+        <Navbar />
+      </div>
       <main className="mx-auto max-w-4xl space-y-4 px-4 py-6">
         <div className="no-print flex items-center justify-between gap-3">
           <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard"><ArrowLeft className="mr-1 h-4 w-4" /> Dashboard</Link>
+            <Link to="/dashboard">
+              <ArrowLeft className="mr-1 h-4 w-4" /> Dashboard
+            </Link>
           </Button>
           {eligible && (
-            <Button onClick={() => window.print()} className="bg-aurora text-white hover:opacity-90">
+            <Button
+              onClick={() => window.print()}
+              className="bg-aurora text-white hover:opacity-90"
+            >
               <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
             </Button>
           )}
@@ -85,7 +99,9 @@ function CertificatePage() {
                 Complete at least <strong>3 tutoring sessions</strong> to unlock your certificate.
                 You have completed <strong>{completed}</strong> so far.
               </p>
-              <Button asChild className="bg-aurora text-white"><Link to="/">Find a tutor</Link></Button>
+              <Button asChild className="bg-aurora text-white">
+                <Link to="/">Find a tutor</Link>
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -101,20 +117,32 @@ function CertificatePage() {
                 <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-aurora text-white shadow-glow">
                   <Award className="h-7 w-7" />
                 </div>
-                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Ask A Tutor Live</p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">Certificate of Completion</h1>
+                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+                  Ask A Tutor Live
+                </p>
+                <h1 className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">
+                  Certificate of Completion
+                </h1>
                 <p className="mt-4 text-sm text-muted-foreground">This is to certify that</p>
                 <p className="mt-2 font-serif text-4xl font-bold text-aurora md:text-5xl">{name}</p>
                 <div className="mx-auto mt-2 h-px w-48 bg-gold" />
                 <p className="mt-4 max-w-xl text-balance text-sm leading-relaxed text-foreground/90 md:text-base mx-auto">
-                  has successfully completed <strong>{completed}</strong> live tutoring sessions on the
-                  Ask A Tutor Live platform, demonstrating sustained learning and dedication
-                  {subjects.length > 0 && <> across <strong>{subjects.slice(0, 5).join(", ")}</strong></>}.
+                  has successfully completed <strong>{completed}</strong> live tutoring sessions on
+                  the Ask A Tutor Live platform, demonstrating sustained learning and dedication
+                  {subjects.length > 0 && (
+                    <>
+                      {" "}
+                      across <strong>{subjects.slice(0, 5).join(", ")}</strong>
+                    </>
+                  )}
+                  .
                 </p>
 
                 <div className="mt-8 flex flex-wrap items-end justify-between gap-6 text-xs">
                   <div className="text-left">
-                    <p className="border-b border-foreground/40 pb-1 font-serif text-lg italic">Nyakallo Letsela</p>
+                    <p className="border-b border-foreground/40 pb-1 font-serif text-lg italic">
+                      Nyakallo Letsela
+                    </p>
                     <p className="mt-1 text-muted-foreground">Founder, Ask A Tutor Live</p>
                   </div>
                   <div className="text-right">

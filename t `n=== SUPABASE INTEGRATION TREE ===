@@ -1,0 +1,31 @@
+[33m2d5fd2b[m Removed Lovable deps
+
+ .env.example                                       |    55 [32m+[m[31m-[m
+ ...lly-self-hosted-and-lovable-free-2026-08-11.md} |     0
+ DEPLOYMENT.md                                      |   110 [32m+[m
+ MIGRATION.md                                       |   245 [31m-[m
+ bun.lock                                           |    76 [31m-[m
+ bunfig.toml                                        |     2 [32m+[m[31m-[m
+ package-lock.json                                  | 10458 [31m-------------------[m
+ package.json                                       |    15 [32m+[m[31m-[m
+ scripts/start-node.mjs                             |    13 [32m+[m
+ src/components/InstallPrompt.tsx                   |     4 [32m+[m[31m-[m
+ src/components/admin/AiProviderSelect.tsx          |     7 [32m+[m[31m-[m
+ src/hooks/use-agent.ts                             |     2 [32m+[m[31m-[m
+ src/hooks/use-platform-config.ts                   |    12 [32m+[m[31m-[m
+ src/integrations/lovable/index.ts                  |    38 [31m-[m
+ src/lib/ai/provider.server.ts                      |    36 [32m+[m[31m-[m
+ src/lib/email/enqueue.server.ts                    |    93 [32m+[m[31m-[m
+ src/lib/email/provider.server.ts                   |   187 [32m+[m[31m-[m
+ src/lib/email/send.ts                              |    19 [31m-[m
+ src/routeTree.gen.ts                               |    87 [31m-[m
+ src/routes/api/public/webhooks/paypal.ts           |     2 [32m+[m[31m-[m
+ src/routes/auth.tsx                                |     8 [32m+[m[31m-[m
+ src/routes/lovable/email/queue/process.ts          |   326 [31m-[m
+ src/routes/lovable/email/suppression.ts            |   158 [31m-[m
+ src/routes/lovable/email/transactional/preview.ts  |    89 [31m-[m
+ src/routes/lovable/email/transactional/send.ts     |   326 [31m-[m
+ src/start.ts                                       |     2 [32m+[m[31m-[m
+ vite.config.ts                                     |   140 [32m+[m[31m-[m
+ wrangler.jsonc                                     |     2 [32m+[m[31m-[m
+ 28 files changed, 469 insertions(+), 12043 deletions(-)

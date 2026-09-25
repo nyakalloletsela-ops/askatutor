@@ -25,7 +25,10 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     return { id: created.id, email: created.email };
   });
 
-async function assertAdmin(context: { deps: { user: { isAdmin: (id: string) => Promise<boolean> } }; userId: string }) {
+async function assertAdmin(context: {
+  deps: { user: { isAdmin: (id: string) => Promise<boolean> } };
+  userId: string;
+}) {
   const isAdmin = await context.deps.user.isAdmin(context.userId);
   if (!isAdmin) throw new Error("Forbidden");
 }

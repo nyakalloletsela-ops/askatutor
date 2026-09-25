@@ -39,6 +39,7 @@ Operations/Observability crosses all layers.
 ```
 
 Rules:
+
 - Presentation must NOT contain domain business rules
 - Domain must NOT depend on UI
 - Domain/Application must NOT directly depend on infrastructure implementation details
@@ -118,23 +119,23 @@ Rules:
 
 ## 3. TECHNOLOGY STACK
 
-| Layer | Technology | Notes |
-|-------|-----------|-------|
-| Language | TypeScript | Full-stack |
-| Frontend | React 18+ | SPA with routing |
-| Build | Vite | Fast dev/build |
-| Styling | Tailwind CSS | Utility-first |
-| API | REST + WebSocket | WebSocket for real-time |
-| Backend | Node.js | API server |
-| Database | PostgreSQL | Via Supabase |
-| Auth | Supabase Auth | Or custom — REQUIRES DECISION |
-| Storage | Supabase Storage / S3 | For files, recordings, PDFs |
-| 3D | Three.js | For virtual labs |
-| AI | AI Gateway (custom) | See AI_ARCHITECTURE.md |
-| Testing | UNKNOWN | REQUIRES DECISION |
-| Deployment | UNKNOWN | REQUIRES DECISION |
-| CI/CD | UNKNOWN | REQUIRES DECISION |
-| Monitoring | UNKNOWN | REQUIRES DECISION |
+| Layer      | Technology            | Notes                         |
+| ---------- | --------------------- | ----------------------------- |
+| Language   | TypeScript            | Full-stack                    |
+| Frontend   | React 18+             | SPA with routing              |
+| Build      | Vite                  | Fast dev/build                |
+| Styling    | Tailwind CSS          | Utility-first                 |
+| API        | REST + WebSocket      | WebSocket for real-time       |
+| Backend    | Node.js               | API server                    |
+| Database   | PostgreSQL            | Via Supabase                  |
+| Auth       | Supabase Auth         | Or custom — REQUIRES DECISION |
+| Storage    | Supabase Storage / S3 | For files, recordings, PDFs   |
+| 3D         | Three.js              | For virtual labs              |
+| AI         | AI Gateway (custom)   | See AI_ARCHITECTURE.md        |
+| Testing    | UNKNOWN               | REQUIRES DECISION             |
+| Deployment | UNKNOWN               | REQUIRES DECISION             |
+| CI/CD      | UNKNOWN               | REQUIRES DECISION             |
+| Monitoring | UNKNOWN               | REQUIRES DECISION             |
 
 ---
 
@@ -171,6 +172,7 @@ Domain
 ## 5. REAL-TIME ARCHITECTURE
 
 WebSocket connections support:
+
 - Live tutoring sessions
 - Whiteboard collaboration
 - AI chat/streaming

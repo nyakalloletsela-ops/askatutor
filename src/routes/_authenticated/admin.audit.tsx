@@ -1,10 +1,21 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { checkIsAdmin } from "@/lib/access.functions";
-import { PageContainer, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  PageContainer,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
-import { RouteAuditCard, AuditStatusBadge } from "@/presentation/domains/4-trust-safety-compliance/audit/RouteAuditCard";
+import {
+  RouteAuditCard,
+  AuditStatusBadge,
+} from "@/presentation/domains/4-trust-safety-compliance/audit/RouteAuditCard";
 
 export const Route = createFileRoute("/_authenticated/admin/audit")({
   beforeLoad: async () => {
@@ -94,7 +105,11 @@ function AuditPage() {
             </CardHeader>
             <CardContent className="space-y-1">
               {grouped[g].map((r) => (
-                <RouteAuditCard key={r.path} route={r} warningsCount={r.status === "warning" ? 1 : 0} />
+                <RouteAuditCard
+                  key={r.path}
+                  route={r}
+                  warningsCount={r.status === "warning" ? 1 : 0}
+                />
               ))}
             </CardContent>
           </Card>
@@ -102,8 +117,8 @@ function AuditPage() {
       </div>
 
       <p className="mt-6 text-xs text-muted-foreground">
-        This registry is hand-maintained. When you add or rename a route in <code>src/routes/</code>,
-        update <code>src/routes/_authenticated/admin.audit.tsx</code> so the audit stays accurate.
+        This registry is hand-maintained. When you add or rename a route in <code>src/routes/</code>
+        , update <code>src/routes/_authenticated/admin.audit.tsx</code> so the audit stays accurate.
       </p>
     </PageContainer>
   );

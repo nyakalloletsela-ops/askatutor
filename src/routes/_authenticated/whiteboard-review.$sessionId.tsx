@@ -22,9 +22,9 @@ function ReviewPage() {
         <div className="max-w-md space-y-3">
           <p className="text-sm font-medium">Recording playback is being upgraded</p>
           <p className="text-xs text-muted-foreground">
-            The whiteboard recording format is being migrated to the new canvas engine.
-            Existing recordings from the legacy whiteboard are not available for replay.
-            Future sessions will be replayable here.
+            The whiteboard recording format is being migrated to the new canvas engine. Existing
+            recordings from the legacy whiteboard are not available for replay. Future sessions will
+            be replayable here.
           </p>
         </div>
       </main>

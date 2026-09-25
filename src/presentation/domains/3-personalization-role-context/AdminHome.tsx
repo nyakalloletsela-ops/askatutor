@@ -3,7 +3,12 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { getAdminDashboardData, approveTutorApplication, rejectTutorApplication, logTutorDecision } from "@/application/use-cases/admin/admin-dashboard";
+import {
+  getAdminDashboardData,
+  approveTutorApplication,
+  rejectTutorApplication,
+  logTutorDecision,
+} from "@/application/use-cases/admin/admin-dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "../8-core-ux-navigation/ui/card";
 import { Button } from "../8-core-ux-navigation/ui/button";
 import { Badge } from "../8-core-ux-navigation/ui/badge";
@@ -84,7 +89,9 @@ function Stat({
   return (
     <div className="rounded-xl border border-border/60 bg-card p-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
         <div className={`flex h-7 w-7 items-center justify-center rounded-md ${tone}`}>
           <Icon className="h-4 w-4" />
         </div>
@@ -214,7 +221,7 @@ export function AdminHome({ firstName }: { firstName: string }) {
       ids.map((id) =>
         confirm === "approve"
           ? approveApp({ data: { applicationId: id, notes: notes[id] } })
-          : rejectApp({ data: { applicationId: id, notes: notes[id] } })
+          : rejectApp({ data: { applicationId: id, notes: notes[id] } }),
       ),
     );
     setBusy(null);
@@ -232,11 +239,12 @@ export function AdminHome({ firstName }: { firstName: string }) {
       });
     }
     if (failed > 0) toast.error(`${failed} of ${ids.length} failed`);
-    else toast.success(`${ids.length} application(s) ${confirm === "approve" ? "approved" : "rejected"}`);
+    else
+      toast.success(
+        `${ids.length} application(s) ${confirm === "approve" ? "approved" : "rejected"}`,
+      );
     load();
   };
-
-
 
   const toggleFeatured = async (p: TutorProfile, v: boolean) => {
     const { error } = await supabase
@@ -271,7 +279,9 @@ export function AdminHome({ firstName }: { firstName: string }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link to="/admin">Full admin panel <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+              <Link to="/admin">
+                Full admin panel <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
             </Button>
             <Button asChild size="sm">
               <Link to="/admin/analytics">Analytics</Link>
@@ -282,9 +292,27 @@ export function AdminHome({ firstName }: { firstName: string }) {
 
       {/* Stat strip */}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={Users} label="Students" value={counts.students} hint="registered" accent="blue" />
-        <Stat icon={GraduationCap} label="Tutors" value={counts.tutors} hint={`${featuredCount} featured`} accent="primary" />
-        <Stat icon={Calendar} label="Sessions" value={counts.sessions} hint="all-time" accent="amber" />
+        <Stat
+          icon={Users}
+          label="Students"
+          value={counts.students}
+          hint="registered"
+          accent="blue"
+        />
+        <Stat
+          icon={GraduationCap}
+          label="Tutors"
+          value={counts.tutors}
+          hint={`${featuredCount} featured`}
+          accent="primary"
+        />
+        <Stat
+          icon={Calendar}
+          label="Sessions"
+          value={counts.sessions}
+          hint="all-time"
+          accent="amber"
+        />
         <Stat
           icon={Wallet}
           label="Minutes (30d)"
@@ -298,7 +326,13 @@ export function AdminHome({ firstName }: { firstName: string }) {
       <section className="grid gap-3 sm:grid-cols-3">
         <Stat icon={Activity} label="Live now" value={live} accent="green" />
         <Stat icon={Clock} label="Upcoming" value={upcoming} hint="next 30 days" accent="blue" />
-        <Stat icon={CheckCircle2} label="Pending review" value={pending.length} hint="tutor applications" accent="amber" />
+        <Stat
+          icon={CheckCircle2}
+          label="Pending review"
+          value={pending.length}
+          hint="tutor applications"
+          accent="amber"
+        />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -313,7 +347,9 @@ export function AdminHome({ firstName }: { firstName: string }) {
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <Sparkles className="mb-2 h-8 w-8 text-muted-foreground/60" />
                 <p className="text-sm font-medium">All caught up</p>
-                <p className="mt-1 text-xs text-muted-foreground">No applications waiting for review.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  No applications waiting for review.
+                </p>
               </div>
             ) : (
               <>
@@ -363,18 +399,24 @@ export function AdminHome({ firstName }: { firstName: string }) {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold">
                             {r.full_name}
-                            <Badge variant="secondary" className="ml-2 text-[10px]">{r.status}</Badge>
+                            <Badge variant="secondary" className="ml-2 text-[10px]">
+                              {r.status}
+                            </Badge>
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {r.email} · {new Date(r.submitted_at).toLocaleDateString()}
                           </p>
                           <div className="mt-1 flex flex-wrap gap-1">
                             {(r.subjects ?? []).slice(0, 5).map((s) => (
-                              <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
+                              <Badge key={s} variant="outline" className="text-[10px]">
+                                {s}
+                              </Badge>
                             ))}
                           </div>
                           {r.bio && (
-                            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{r.bio}</p>
+                            <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">
+                              {r.bio}
+                            </p>
                           )}
                           <div className="mt-2 space-y-2">
                             <Textarea
@@ -412,7 +454,9 @@ export function AdminHome({ firstName }: { firstName: string }) {
             {pending.length > 6 && (
               <div className="mt-3 text-right">
                 <Button asChild size="sm" variant="ghost">
-                  <Link to="/admin">View all {pending.length} <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+                  <Link to="/admin">
+                    View all {pending.length} <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Link>
                 </Button>
               </div>
             )}
@@ -423,7 +467,8 @@ export function AdminHome({ firstName }: { firstName: string }) {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                {confirm === "approve" ? "Approve" : "Reject"} {selected.size} application{selected.size === 1 ? "" : "s"}?
+                {confirm === "approve" ? "Approve" : "Reject"} {selected.size} application
+                {selected.size === 1 ? "" : "s"}?
               </AlertDialogTitle>
               <AlertDialogDescription>
                 {confirm === "approve"
@@ -435,15 +480,25 @@ export function AdminHome({ firstName }: { firstName: string }) {
               <AlertDialogCancel disabled={busy === "bulk"}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 disabled={busy === "bulk"}
-                onClick={(e) => { e.preventDefault(); runBulk(); }}
-                className={confirm === "reject" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  runBulk();
+                }}
+                className={
+                  confirm === "reject"
+                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    : undefined
+                }
               >
-                {busy === "bulk" ? "Working…" : confirm === "approve" ? "Approve all" : "Reject all"}
+                {busy === "bulk"
+                  ? "Working…"
+                  : confirm === "approve"
+                    ? "Approve all"
+                    : "Reject all"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
 
         {/* Featured placement */}
         <Card>
@@ -467,10 +522,7 @@ export function AdminHome({ firstName }: { firstName: string }) {
                         {typeof t.session_count === "number" && ` · ${t.session_count} sessions`}
                       </p>
                     </div>
-                    <Switch
-                      checked={t.is_featured}
-                      onCheckedChange={(v) => toggleFeatured(t, v)}
-                    />
+                    <Switch checked={t.is_featured} onCheckedChange={(v) => toggleFeatured(t, v)} />
                   </li>
                 ))
               )}
@@ -489,7 +541,9 @@ export function AdminHome({ firstName }: { firstName: string }) {
         </CardHeader>
         <CardContent className="p-0">
           {audit.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">No approve/reject actions yet.</p>
+            <p className="px-4 py-6 text-sm text-muted-foreground">
+              No approve/reject actions yet.
+            </p>
           ) : (
             <ul className="divide-y divide-border/60">
               {audit.map((row) => (
@@ -509,14 +563,14 @@ export function AdminHome({ firstName }: { firstName: string }) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm">
-                      <span className="font-semibold">
-                        {actorNames[row.actor_id] ?? "Admin"}
-                      </span>{" "}
+                      <span className="font-semibold">{actorNames[row.actor_id] ?? "Admin"}</span>{" "}
                       {row.action === "approve" ? "approved" : "rejected"}{" "}
                       <span className="font-semibold">{row.application_ids.length}</span>{" "}
                       application{row.application_ids.length === 1 ? "" : "s"}
                       {row.is_bulk && (
-                        <Badge variant="outline" className="ml-2 text-[10px]">bulk</Badge>
+                        <Badge variant="outline" className="ml-2 text-[10px]">
+                          bulk
+                        </Badge>
                       )}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">

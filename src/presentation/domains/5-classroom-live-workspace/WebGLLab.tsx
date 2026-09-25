@@ -1,40 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../8-core-ux-navigation/ui/button";
-import { Boxes, RotateCw, Lock, Maximize2 } from "lucide-react";
+import { Boxes, RotateCw, Maximize2 } from "lucide-react";
 import { Renderer } from "@/lib/webgl/renderer";
 import { SCENES, type SceneInstance } from "@/lib/webgl/scenes";
 import type { Vec3 } from "@/lib/webgl/mat4";
-
-type Props = {
-  enforceLimit: boolean;
-  viewedSlugs: string[];
-  limit: number;
-  onOpen: (slug: string) => void;
-};
 
 /**
  * Native WebGL2 3D Lab — no Three.js. Renders a small library of
  * interactive scenes (molecules, surfaces, wave interference, topology)
  * using hand-written GLSL shaders.
  */
-export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
+export function WebGLLab() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [sceneId, setSceneId] = useState(SCENES[0].id);
   const [unsupported, setUnsupported] = useState<string | null>(null);
 
   const scene = useMemo(() => SCENES.find((s) => s.id === sceneId)!, [sceneId]);
-  const usedCount = viewedSlugs.length;
-  const quotaReached = enforceLimit && usedCount >= limit && !viewedSlugs.includes(sceneId);
-
-  // Track scene visits against the free quota.
   useEffect(() => {
-    if (!enforceLimit) return;
-    if (!viewedSlugs.includes(sceneId) && !quotaReached) onOpen(sceneId);
-  }, [sceneId, enforceLimit, viewedSlugs, onOpen, quotaReached]);
-
-  useEffect(() => {
-    if (quotaReached) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const gl = canvas.getContext("webgl2", { antialias: true });
@@ -60,22 +43,32 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
     }
 
     // Camera controls.
-    let yaw = 0.6, pitch = 0.35, dist = 6;
+    let yaw = 0.6,
+      pitch = 0.35,
+      dist = 6;
     let dragging = false;
-    let lastX = 0, lastY = 0;
+    let lastX = 0,
+      lastY = 0;
     const onDown = (e: PointerEvent) => {
-      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
       canvas.setPointerCapture(e.pointerId);
     };
     const onMove = (e: PointerEvent) => {
       if (!dragging) return;
       yaw += (e.clientX - lastX) * 0.01;
       pitch = Math.max(-1.4, Math.min(1.4, pitch + (e.clientY - lastY) * 0.01));
-      lastX = e.clientX; lastY = e.clientY;
+      lastX = e.clientX;
+      lastY = e.clientY;
     };
     const onUp = (e: PointerEvent) => {
       dragging = false;
-      try { canvas.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* noop */
+      }
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -96,7 +89,8 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
       const w = Math.max(1, Math.floor(rect.width * dpr));
       const h = Math.max(1, Math.floor(rect.height * dpr));
       if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w; canvas.height = h;
+        canvas.width = w;
+        canvas.height = h;
       }
     };
 
@@ -125,7 +119,7 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
       const ext = gl.getExtension("WEBGL_lose_context");
       ext?.loseContext();
     };
-  }, [scene, quotaReached]);
+  }, [scene]);
 
   const goFullscreen = () => {
     const el = wrapRef.current;
@@ -142,11 +136,6 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
         <span className="hidden text-xs text-muted-foreground sm:inline">
           Hand-shaded GLSL · interactive scenes
         </span>
-        {enforceLimit && (
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-            {usedCount}/{limit} scenes opened
-          </span>
-        )}
         <div className="ml-auto flex items-center gap-2">
           <select
             value={sceneId}
@@ -155,10 +144,17 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
             aria-label="Choose scene"
           >
             {SCENES.map((s) => (
-              <option key={s.id} value={s.id}>{s.subject} · {s.label}</option>
+              <option key={s.id} value={s.id}>
+                {s.subject} · {s.label}
+              </option>
             ))}
           </select>
-          <Button size="icon" variant="outline" onClick={() => setSceneId((s) => s)} aria-label="Reload">
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={() => setSceneId((s) => s)}
+            aria-label="Reload"
+          >
             <RotateCw className="h-4 w-4" />
           </Button>
           <Button size="icon" variant="outline" onClick={goFullscreen} aria-label="Fullscreen">
@@ -167,15 +163,7 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
         </div>
       </div>
 
-      {quotaReached ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-          <Lock className="h-10 w-10 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Free lab quota reached</h3>
-          <p className="max-w-md text-sm text-muted-foreground">
-            You've opened {limit} scenes. Book a tutor session to keep exploring the full WebGL library.
-          </p>
-        </div>
-      ) : unsupported ? (
+      {unsupported ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm text-muted-foreground">
           <p>{unsupported}</p>
           <p>Try the latest Chrome, Edge, Firefox, or Safari.</p>
@@ -187,7 +175,9 @@ export function WebGLLab({ enforceLimit, viewedSlugs, limit, onOpen }: Props) {
             className="absolute inset-0 h-full w-full cursor-grab touch-none active:cursor-grabbing"
           />
           <div className="pointer-events-none absolute bottom-2 left-2 max-w-md rounded-md bg-background/70 px-3 py-2 text-xs text-foreground backdrop-blur">
-            <div className="font-semibold">{scene.subject} · {scene.label}</div>
+            <div className="font-semibold">
+              {scene.subject} · {scene.label}
+            </div>
             <div className="text-muted-foreground">{scene.description}</div>
           </div>
         </div>

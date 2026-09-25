@@ -22,6 +22,7 @@ import type { PlatformConfigRepository } from "@/domain/ports/platform-config-re
 import type { AiKeyRepository } from "@/domain/ports/ai-key-repository";
 import type { AdminRepository } from "@/domain/ports/admin-repository";
 import type { EmailSuppressionRepository } from "@/domain/ports/email-suppression-repository";
+import type { AssignmentRepository } from "@/domain/ports/assignment-repository";
 
 export interface AppDependencies {
   user: UserRepository;
@@ -38,6 +39,7 @@ export interface AppDependencies {
   aiKey: AiKeyRepository;
   admin: AdminRepository;
   emailSuppression: EmailSuppressionRepository;
+  assignment: AssignmentRepository;
   aiGateway: AiGateway;
   emailService: EmailService;
   paymentGateway: PaymentGateway;

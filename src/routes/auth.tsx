@@ -6,8 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
 import { GraduationCap } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
@@ -127,11 +137,13 @@ function AuthPage() {
               <div className="space-y-1.5">
                 <Label>I am a…</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {([
-                    { v: "student", t: "Student", d: "Find & book tutors" },
-                    { v: "tutor", t: "Tutor", d: "Teach & earn" },
-                    { v: "parent", t: "Parent", d: "Manage children" },
-                  ] as const).map((o) => (
+                  {(
+                    [
+                      { v: "student", t: "Student", d: "Find & book tutors" },
+                      { v: "tutor", t: "Tutor", d: "Teach & earn" },
+                      { v: "parent", t: "Parent", d: "Manage children" },
+                    ] as const
+                  ).map((o) => (
                     <button
                       key={o.v}
                       type="button"

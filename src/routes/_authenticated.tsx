@@ -25,7 +25,10 @@ function AuthGate() {
         aria-live="polite"
       >
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" aria-hidden="true" />
+          <div
+            className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary"
+            aria-hidden="true"
+          />
           <p className="text-sm text-muted-foreground">Loading your workspace…</p>
         </div>
       </main>

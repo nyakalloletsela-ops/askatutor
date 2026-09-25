@@ -1,4 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { MinimalFooter } from "@/presentation/domains/1-discovery-matching/home/MinimalFooter";
+import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -16,42 +18,34 @@ export const Route = createFileRoute("/privacy")({
 function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border/60 bg-background/95">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-5">
-          <Link to="/" className="font-semibold tracking-tight hover:opacity-80">
-            AskATutorLive
-          </Link>
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-            Back to home
-          </Link>
-        </div>
-      </header>
-
+      <Navbar />
       <main className="mx-auto max-w-4xl px-4 py-10 sm:py-14">
         <article className="prose prose-slate max-w-none dark:prose-invert">
           <h1>Privacy Policy</h1>
           <p className="lead">
-            AskATutorLive is committed to protecting the information entrusted to the platform.
-            This policy explains, at a high level, what information may be processed when you use
+            AskATutorLive is committed to protecting the information entrusted to the platform. This
+            policy explains, at a high level, what information may be processed when you use
             AskATutorLive and how it is used to provide and improve the service.
           </p>
-          <p><strong>Last updated:</strong> September 13, 2026</p>
+          <p>
+            <strong>Last updated:</strong> September 13, 2026
+          </p>
 
           <h2>1. Information we process</h2>
           <p>
             Depending on how you use the service, AskATutorLive may process account and profile
-            information, including your name, email address, authentication information and
-            profile details; information you provide while using tutoring, learning and community
-            features; messages and support requests; and technical information needed to operate,
-            secure and troubleshoot the service.
+            information, including your name, email address, authentication information and profile
+            details; information you provide while using tutoring, learning and community features;
+            messages and support requests; and technical information needed to operate, secure and
+            troubleshoot the service.
           </p>
 
           <h2>2. Google sign-in</h2>
           <p>
             If you choose Google sign-in, Google provides authentication information to
-            AskATutorLive so that we can create and maintain your account and authenticate you.
-            We use Google account information only for the purposes described in this policy and
-            the service's user-facing functionality. AskATutorLive does not sell Google user data.
+            AskATutorLive so that we can create and maintain your account and authenticate you. We
+            use Google account information only for the purposes described in this policy and the
+            service's user-facing functionality. AskATutorLive does not sell Google user data.
           </p>
 
           <h2>3. How information is used</h2>
@@ -63,10 +57,10 @@ function PrivacyPage() {
 
           <h2>4. Service providers</h2>
           <p>
-            AskATutorLive uses third-party infrastructure and service providers where necessary
-            to operate features such as authentication, data storage, communications, hosting,
-            payments and other platform functionality. Information shared with a provider is
-            limited to what is reasonably necessary for that provider to perform its service.
+            AskATutorLive uses third-party infrastructure and service providers where necessary to
+            operate features such as authentication, data storage, communications, hosting, payments
+            and other platform functionality. Information shared with a provider is limited to what
+            is reasonably necessary for that provider to perform its service.
           </p>
 
           <h2>5. AI features</h2>
@@ -85,8 +79,8 @@ function PrivacyPage() {
 
           <h2>7. Retention and deletion</h2>
           <p>
-            Information is retained for as long as reasonably necessary to provide the service,
-            meet operational and legal requirements, resolve disputes, prevent abuse and maintain
+            Information is retained for as long as reasonably necessary to provide the service, meet
+            operational and legal requirements, resolve disputes, prevent abuse and maintain
             security. If you want to request account or personal-data deletion, contact
             <a href="mailto:help@askatutorlive.com"> help@askatutorlive.com</a> with enough
             information for us to identify the relevant account.
@@ -101,8 +95,8 @@ function PrivacyPage() {
 
           <h2>9. Children and learners</h2>
           <p>
-            AskATutorLive is an education platform. Where a learner is a child or otherwise needs
-            a parent, guardian or institution to provide consent, the applicable account and
+            AskATutorLive is an education platform. Where a learner is a child or otherwise needs a
+            parent, guardian or institution to provide consent, the applicable account and
             authorization process should be followed. We do not knowingly request unnecessary
             personal information from children.
           </p>
@@ -120,10 +114,15 @@ function PrivacyPage() {
           </p>
 
           <p className="not-prose pt-4 text-sm text-muted-foreground">
-            See also <Link to="/terms" className="underline underline-offset-4">Terms of Service</Link>.
+            See also{" "}
+            <Link to="/terms" className="underline underline-offset-4">
+              Terms of Service
+            </Link>
+            .
           </p>
         </article>
       </main>
+      <MinimalFooter />
     </div>
   );
 }

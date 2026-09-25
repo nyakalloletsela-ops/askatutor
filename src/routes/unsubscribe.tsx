@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 
 type Search = { token?: string };
 
@@ -65,9 +70,13 @@ function UnsubscribePage() {
           <CardTitle>Email preferences</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {state === "loading" && <p className="text-sm text-muted-foreground">Checking your link…</p>}
+          {state === "loading" && (
+            <p className="text-sm text-muted-foreground">Checking your link…</p>
+          )}
           {state === "invalid" && (
-            <p className="text-sm text-muted-foreground">This unsubscribe link is invalid or expired.</p>
+            <p className="text-sm text-muted-foreground">
+              This unsubscribe link is invalid or expired.
+            </p>
           )}
           {state === "already" && (
             <p className="text-sm text-muted-foreground">You're already unsubscribed.</p>
@@ -75,7 +84,8 @@ function UnsubscribePage() {
           {state === "ready" && (
             <>
               <p className="text-sm">
-                Click the button below to stop receiving emails from Ask A Tutor Live at this address.
+                Click the button below to stop receiving emails from Ask A Tutor Live at this
+                address.
               </p>
               <Button onClick={confirm} disabled={busy}>
                 {busy ? "Working…" : "Confirm unsubscribe"}
@@ -88,7 +98,9 @@ function UnsubscribePage() {
             </p>
           )}
           {state === "error" && (
-            <p className="text-sm text-destructive">Something went wrong. Please try again later.</p>
+            <p className="text-sm text-destructive">
+              Something went wrong. Please try again later.
+            </p>
           )}
         </CardContent>
       </Card>

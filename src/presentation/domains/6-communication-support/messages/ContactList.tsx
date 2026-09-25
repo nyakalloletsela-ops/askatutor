@@ -8,18 +8,16 @@ interface ContactListProps {
   onSelectContact: (contact: Contact) => void;
 }
 
-export function ContactList({
-  contacts,
-  activeContact,
-  onSelectContact,
-}: ContactListProps) {
+export function ContactList({ contacts, activeContact, onSelectContact }: ContactListProps) {
   const sorted = contacts;
 
   if (sorted.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground">
         <MessageSquare className="h-6 w-6" />
-        <p className="text-sm">No conversations yet. Book or schedule a session to start chatting.</p>
+        <p className="text-sm">
+          No conversations yet. Book or schedule a session to start chatting.
+        </p>
       </div>
     );
   }

@@ -14,7 +14,10 @@ export const Route = createFileRoute("/_authenticated/code")({
   head: () => ({
     meta: [
       { title: "Coding Playground — Ask A Tutor Live" },
-      { name: "description", content: "In-browser JavaScript playground with an AI code helper for learners." },
+      {
+        name: "description",
+        content: "In-browser JavaScript playground with an AI code helper for learners.",
+      },
     ],
   }),
 });
@@ -80,7 +83,9 @@ function CodePlayground() {
       <div className="flex items-center gap-2">
         <Code className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold tracking-tight">Coding Playground</h1>
-        <Badge variant="secondary" className="ml-auto">JavaScript</Badge>
+        <Badge variant="secondary" className="ml-auto">
+          JavaScript
+        </Badge>
       </div>
       <p className="text-sm text-muted-foreground">
         Write code, run it instantly in your browser, and ask the AI helper when stuck.
@@ -90,12 +95,18 @@ function CodePlayground() {
         <Card>
           <CardContent className="space-y-2 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Editor</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Editor
+              </span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => setCode(STARTER)}>
                   <Trash2 className="mr-1 h-3.5 w-3.5" /> Reset
                 </Button>
-                <Button size="sm" onClick={execute} className="bg-aurora text-white hover:opacity-90">
+                <Button
+                  size="sm"
+                  onClick={execute}
+                  className="bg-aurora text-white hover:opacity-90"
+                >
                   <Play className="mr-1 h-3.5 w-3.5" /> Run
                 </Button>
               </div>
@@ -112,9 +123,15 @@ function CodePlayground() {
         <Card>
           <CardContent className="space-y-2 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Console</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Console
+              </span>
               <Button size="sm" variant="outline" onClick={askAi} disabled={aiBusy}>
-                {aiBusy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
+                {aiBusy ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                )}
                 Ask AI
               </Button>
             </div>
@@ -133,5 +150,9 @@ function CodePlayground() {
 
 function fmt(v: unknown): string {
   if (typeof v === "string") return v;
-  try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+  try {
+    return JSON.stringify(v, null, 2);
+  } catch {
+    return String(v);
+  }
 }

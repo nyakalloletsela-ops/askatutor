@@ -15,9 +15,7 @@ import type {
  * Extracted from src/lib/ai-entitlement.ts to establish a proper boundary
  * between Application contracts and Infrastructure implementations.
  */
-export function supabaseEntitlementGateway(
-  supabase: SupabaseClient<Database>,
-): EntitlementGateway {
+export function supabaseEntitlementGateway(supabase: SupabaseClient<Database>): EntitlementGateway {
   return {
     async getRoles(userId) {
       const { data, error } = await supabase

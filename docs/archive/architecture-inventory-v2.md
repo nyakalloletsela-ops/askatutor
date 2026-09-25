@@ -16,27 +16,27 @@
 
 ## 2. File Types
 
-| Extension | Count |
-|---|---:|
-| `.tsx` | 161 |
-| `.sql` | 109 |
-| `.ts` | 66 |
-| `.json` | 7 |
-| `[none]` | 7 |
-| `.md` | 5 |
-| `.txt` | 3 |
-| `.toml` | 2 |
-| `.png` | 2 |
-| `.mjs` | 1 |
-| `.css` | 1 |
-| `.jpg` | 1 |
-| `.gitignore` | 1 |
-| `.lock` | 1 |
-| `.prettierrc` | 1 |
-| `.prettierignore` | 1 |
-| `.ico` | 1 |
-| `.jsonc` | 1 |
-| `.js` | 1 |
+| Extension         | Count |
+| ----------------- | ----: |
+| `.tsx`            |   161 |
+| `.sql`            |   109 |
+| `.ts`             |    66 |
+| `.json`           |     7 |
+| `[none]`          |     7 |
+| `.md`             |     5 |
+| `.txt`            |     3 |
+| `.toml`           |     2 |
+| `.png`            |     2 |
+| `.mjs`            |     1 |
+| `.css`            |     1 |
+| `.jpg`            |     1 |
+| `.gitignore`      |     1 |
+| `.lock`           |     1 |
+| `.prettierrc`     |     1 |
+| `.prettierignore` |     1 |
+| `.ico`            |     1 |
+| `.jsonc`          |     1 |
+| `.js`             |     1 |
 
 ## 3. Top-Level Directories
 
@@ -48,7 +48,7 @@
 
 ## 4. Complete File Inventory
 
-`	ext
+` ext
 .gitignore
 .prettierignore
 .prettierrc
@@ -421,6 +421,7 @@ verify_user_roles_policies.sql
 vite.config.ts
 wrangler.jsonc
 ZERO_META.json
+
 ### `all_triggers.sql`
 
 - Category: **SQL**
@@ -6095,6 +6096,7 @@ ZERO_META.json
 ### Supabase
 
 Detected in **84** files.
+
 - `src/components/admin/AiProviderSelect.tsx`
 - `src/components/admin/ConfigToggle.tsx`
 - `src/components/ai/SaveToNotes.tsx`
@@ -6183,6 +6185,7 @@ Detected in **84** files.
 ### Authentication
 
 Detected in **50** files.
+
 - `src/components/classroom/ClassroomHeader.tsx`
 - `src/components/classroom/useSessionTimer.ts`
 - `src/components/dashboard/AdminHome.tsx`
@@ -6237,6 +6240,7 @@ Detected in **50** files.
 ### Authorization
 
 Detected in **46** files.
+
 - `src/components/classroom/AIAssistantPanel.tsx`
 - `src/components/dashboard/AdminHome.tsx`
 - `src/components/home/HomeSections.tsx`
@@ -6287,6 +6291,7 @@ Detected in **46** files.
 ### Payments
 
 Detected in **39** files.
+
 - `src/components/dashboard/AppShell.tsx`
 - `src/components/dashboard/CommandPalette.tsx`
 - `src/components/dashboard/TutorHome.tsx`
@@ -6330,6 +6335,7 @@ Detected in **39** files.
 ### AI
 
 Detected in **11** files.
+
 - `src/components/admin/AiKeyManager.tsx`
 - `src/components/admin/AiProviderSelect.tsx`
 - `src/hooks/use-platform-config.ts`
@@ -6345,6 +6351,7 @@ Detected in **11** files.
 ### Classroom
 
 Detected in **71** files.
+
 - `src/components/admin/AiProviderSelect.tsx`
 - `src/components/ai/DiagramBlock.tsx`
 - `src/components/ai/SaveToNotes.tsx`
@@ -6420,6 +6427,7 @@ Detected in **71** files.
 ### Realtime
 
 Detected in **9** files.
+
 - `src/components/classroom/ClassroomShell.tsx`
 - `src/components/classroom/ParticipantsPanel.tsx`
 - `src/components/classroom/VideoLayout.tsx`
@@ -6433,6 +6441,7 @@ Detected in **9** files.
 ### Storage
 
 Detected in **26** files.
+
 - `src/components/classroom/SidePanel.tsx`
 - `src/components/ClassroomFiles.tsx`
 - `src/components/InstallPrompt.tsx`
@@ -6463,6 +6472,7 @@ Detected in **26** files.
 ### Email
 
 Detected in **36** files.
+
 - `src/components/dashboard/AdminHome.tsx`
 - `src/components/dashboard/AppShell.tsx`
 - `src/components/ScheduleStudentCard.tsx`
@@ -6503,6 +6513,7 @@ Detected in **36** files.
 ### Scheduling
 
 Detected in **22** files.
+
 - `src/components/dashboard/AdminHome.tsx`
 - `src/components/dashboard/AppShell.tsx`
 - `src/components/dashboard/StudentHome.tsx`
@@ -6529,6 +6540,7 @@ Detected in **22** files.
 ### Assessment
 
 Detected in **27** files.
+
 - `src/components/ai/SaveToNotes.tsx`
 - `src/components/dashboard/StudentHome.tsx`
 - `src/components/dashboard/TutorHome.tsx`
@@ -6560,6 +6572,7 @@ Detected in **27** files.
 ### Learning
 
 Detected in **35** files.
+
 - `src/components/ai/SmartMarkdown.tsx`
 - `src/components/classroom/SidePanel.tsx`
 - `src/components/dashboard/AppShell.tsx`
@@ -6598,81 +6611,81 @@ Detected in **35** files.
 
 ## 7. Supabase Migration Inventory
 
-| Migration |
-|---|
-| `supabase/migrations/20260518180453_b7b6b188-b2f9-4a6e-8317-5f8fd52bffac.sql` |
-| `supabase/migrations/20260518180507_8749a32b-dc91-4e11-b9de-8107bc6e9a43.sql` |
-| `supabase/migrations/20260518180559_079a0331-844f-4a93-af54-df8c3b16c8ff.sql` |
-| `supabase/migrations/20260520134733_17b373c0-0c07-41a8-a4e7-7a2d37738f9b.sql` |
-| `supabase/migrations/20260521120359_e0e495a3-e6c6-4d8c-9376-6aab3bcb158c.sql` |
-| `supabase/migrations/20260521120426_f8a86ba3-535c-4a9b-9c14-d92ffe33f02c.sql` |
-| `supabase/migrations/20260521120758_573f01a8-70c7-4bea-904d-df0f39bd7928.sql` |
-| `supabase/migrations/20260522062230_43125182-8270-4977-9b19-ccf05619dfc1.sql` |
-| `supabase/migrations/20260522073549_72500aff-965a-49a8-b3ab-2239c850168b.sql` |
-| `supabase/migrations/20260522080609_f51f3676-392c-4338-9bf9-df9c105ace54.sql` |
-| `supabase/migrations/20260522081314_e4dfd053-8a0b-4f10-b201-0bf7b8ed2693.sql` |
-| `supabase/migrations/20260522083220_390d842b-0b64-43c7-b5e6-c87b5c7fd60f.sql` |
-| `supabase/migrations/20260522085703_b8342121-277e-478e-9c42-e2786a56c7c3.sql` |
-| `supabase/migrations/20260522085716_cae43fa7-ce66-4c10-81a1-e0f4588a6e75.sql` |
-| `supabase/migrations/20260522092853_email_infra.sql` |
-| `supabase/migrations/20260522092905_email_infra.sql` |
-| `supabase/migrations/20260522093122_email_infra.sql` |
-| `supabase/migrations/20260522105704_683e0c7c-3a9f-4da8-822e-a34d221a36f2.sql` |
-| `supabase/migrations/20260522110136_e7689ab4-ce46-4391-8a25-1cc5f1eb3a9d.sql` |
-| `supabase/migrations/20260522113118_7b053bf2-58a5-48b8-8dbe-dbb0583cf4a1.sql` |
-| `supabase/migrations/20260522120800_fe282aa0-ce58-4c5b-a14a-79b180215e97.sql` |
-| `supabase/migrations/20260523081725_04e83f6c-dd2a-4938-9b33-3e24fa61ed29.sql` |
-| `supabase/migrations/20260523083334_1bbbc501-2402-4d07-a676-38c68d2d1f0b.sql` |
-| `supabase/migrations/20260524041428_148987e9-23da-47fa-8182-294dcfc9400c.sql` |
-| `supabase/migrations/20260524041718_e722d83c-5457-4ec3-b7b6-c6e8be29c3df.sql` |
-| `supabase/migrations/20260524041736_08febb8a-724f-4196-9c78-0b3d6784c153.sql` |
-| `supabase/migrations/20260524042040_6fd4de5c-4856-4bbc-a86b-eda4026f5bff.sql` |
-| `supabase/migrations/20260524042244_6ecb8491-343f-435d-9189-c0e2483ea230.sql` |
-| `supabase/migrations/20260524042859_808cd5c3-c692-4ca0-b22d-e5359b17464c.sql` |
-| `supabase/migrations/20260524043637_d17d6f91-84c3-45ff-af6b-648a666f715d.sql` |
-| `supabase/migrations/20260524044641_c5814e6b-fe15-459d-96b0-746ba98fdc2c.sql` |
-| `supabase/migrations/20260524044744_email_infra.sql` |
-| `supabase/migrations/20260524051514_1878b3e2-125a-46eb-a789-fa1409028e71.sql` |
-| `supabase/migrations/20260524064757_b2d8e9c2-2d6e-4b76-8a73-dd3c1987a2ae.sql` |
-| `supabase/migrations/20260524065325_6df81ffd-fb2e-4df8-ac71-5b5f8cd92554.sql` |
-| `supabase/migrations/20260524070449_ae8130d6-d9a2-4437-8dd0-73c2893185b3.sql` |
-| `supabase/migrations/20260524074439_b5bca5df-a7ce-40c8-a931-d1e64321d7b5.sql` |
-| `supabase/migrations/20260525125039_8673bafb-4eda-434f-9900-1a4c688ab424.sql` |
-| `supabase/migrations/20260528060818_02ef6fb2-553e-43f1-900a-bd8eb4dd56af.sql` |
-| `supabase/migrations/20260530152504_b823d221-b60a-432b-85ac-0745a79e9d55.sql` |
-| `supabase/migrations/20260601045818_f63dbd87-f3a0-4e98-8232-d380ac4a68f6.sql` |
-| `supabase/migrations/20260605061006_40c146b5-f458-4620-a3ed-688348719a19.sql` |
-| `supabase/migrations/20260611082303_c77aeed1-ee3d-4917-983d-abc4f0e52ceb.sql` |
-| `supabase/migrations/20260620193809_e7f89819-b8cc-4e85-9441-39e6b31e579d.sql` |
-| `supabase/migrations/20260620193831_7e7a3f45-9cbe-4ad4-91c4-0884121a0b3a.sql` |
-| `supabase/migrations/20260622125739_8a71ad77-3504-43d2-92b4-3fedd6b2a91e.sql` |
-| `supabase/migrations/20260622125757_eabc3c74-3adb-4b2a-bb50-d98a2da0a202.sql` |
-| `supabase/migrations/20260622133155_c56722d8-1a65-4287-bf95-1c06689bba3f.sql` |
-| `supabase/migrations/20260623074007_ddbe3e51-097a-4763-af33-95b236a42698.sql` |
-| `supabase/migrations/20260623075231_4c324342-ee6b-47fa-ad48-39af2516c21c.sql` |
-| `supabase/migrations/20260623082025_9963a138-6dc4-4d83-8b63-3cd31e3a7504.sql` |
-| `supabase/migrations/20260623082050_70d58ecc-f89e-48ad-9e55-0d5e10f677f2.sql` |
-| `supabase/migrations/20260623082342_5be4ee4e-9845-45f8-b995-dace190d24f1.sql` |
-| `supabase/migrations/20260623100541_29ade4ae-9cc6-46bf-a916-ba9ecf155ff3.sql` |
-| `supabase/migrations/20260623102100_68bc0646-a669-4dd9-9ba7-4cdb16225116.sql` |
-| `supabase/migrations/20260623111535_6dc2ecd4-5f71-421a-a372-bd125820c267.sql` |
-| `supabase/migrations/20260623113448_5862c988-44e2-423a-8dce-ff55c49cf774.sql` |
-| `supabase/migrations/20260623114741_9a1edb8d-58ea-4825-8560-ba68d6527ab9.sql` |
-| `supabase/migrations/20260623121121_6dd82a2e-a01a-42c2-a505-12240ec66391.sql` |
-| `supabase/migrations/20260701082250_cc8fecf7-8ce5-4d5e-971b-0bad7a33e4e9.sql` |
-| `supabase/migrations/20260701084425_090d5165-a08f-4cce-ba0a-56620c1578d1.sql` |
-| `supabase/migrations/20260811090000_29d8fece-92c9-4bab-a85f-e95d49161abf.sql` |
-| `supabase/migrations/20260812060000_p0_security_fixes.sql` |
-| `supabase/migrations/20260812100000_close_session_insert_bypass.sql` |
-| `supabase/migrations/20260812120000_restore_whiteboard_chat_tables.sql` |
-| `supabase/migrations/20260812130000_harden_rpc_grants_and_guards.sql` |
-| `supabase/migrations/20260812140000_revoke_public_execute_grants.sql` |
-| `supabase/migrations/20260812150000_align_booking_gate_with_subscriptions_flag.sql` |
-| `supabase/migrations/20260813090000_add_rls_profiles_user_roles_policies.sql` |
-| `supabase/migrations/20260814090000_add_rls_admin_operations_policies.sql` |
+| Migration                                                                              |
+| -------------------------------------------------------------------------------------- |
+| `supabase/migrations/20260518180453_b7b6b188-b2f9-4a6e-8317-5f8fd52bffac.sql`          |
+| `supabase/migrations/20260518180507_8749a32b-dc91-4e11-b9de-8107bc6e9a43.sql`          |
+| `supabase/migrations/20260518180559_079a0331-844f-4a93-af54-df8c3b16c8ff.sql`          |
+| `supabase/migrations/20260520134733_17b373c0-0c07-41a8-a4e7-7a2d37738f9b.sql`          |
+| `supabase/migrations/20260521120359_e0e495a3-e6c6-4d8c-9376-6aab3bcb158c.sql`          |
+| `supabase/migrations/20260521120426_f8a86ba3-535c-4a9b-9c14-d92ffe33f02c.sql`          |
+| `supabase/migrations/20260521120758_573f01a8-70c7-4bea-904d-df0f39bd7928.sql`          |
+| `supabase/migrations/20260522062230_43125182-8270-4977-9b19-ccf05619dfc1.sql`          |
+| `supabase/migrations/20260522073549_72500aff-965a-49a8-b3ab-2239c850168b.sql`          |
+| `supabase/migrations/20260522080609_f51f3676-392c-4338-9bf9-df9c105ace54.sql`          |
+| `supabase/migrations/20260522081314_e4dfd053-8a0b-4f10-b201-0bf7b8ed2693.sql`          |
+| `supabase/migrations/20260522083220_390d842b-0b64-43c7-b5e6-c87b5c7fd60f.sql`          |
+| `supabase/migrations/20260522085703_b8342121-277e-478e-9c42-e2786a56c7c3.sql`          |
+| `supabase/migrations/20260522085716_cae43fa7-ce66-4c10-81a1-e0f4588a6e75.sql`          |
+| `supabase/migrations/20260522092853_email_infra.sql`                                   |
+| `supabase/migrations/20260522092905_email_infra.sql`                                   |
+| `supabase/migrations/20260522093122_email_infra.sql`                                   |
+| `supabase/migrations/20260522105704_683e0c7c-3a9f-4da8-822e-a34d221a36f2.sql`          |
+| `supabase/migrations/20260522110136_e7689ab4-ce46-4391-8a25-1cc5f1eb3a9d.sql`          |
+| `supabase/migrations/20260522113118_7b053bf2-58a5-48b8-8dbe-dbb0583cf4a1.sql`          |
+| `supabase/migrations/20260522120800_fe282aa0-ce58-4c5b-a14a-79b180215e97.sql`          |
+| `supabase/migrations/20260523081725_04e83f6c-dd2a-4938-9b33-3e24fa61ed29.sql`          |
+| `supabase/migrations/20260523083334_1bbbc501-2402-4d07-a676-38c68d2d1f0b.sql`          |
+| `supabase/migrations/20260524041428_148987e9-23da-47fa-8182-294dcfc9400c.sql`          |
+| `supabase/migrations/20260524041718_e722d83c-5457-4ec3-b7b6-c6e8be29c3df.sql`          |
+| `supabase/migrations/20260524041736_08febb8a-724f-4196-9c78-0b3d6784c153.sql`          |
+| `supabase/migrations/20260524042040_6fd4de5c-4856-4bbc-a86b-eda4026f5bff.sql`          |
+| `supabase/migrations/20260524042244_6ecb8491-343f-435d-9189-c0e2483ea230.sql`          |
+| `supabase/migrations/20260524042859_808cd5c3-c692-4ca0-b22d-e5359b17464c.sql`          |
+| `supabase/migrations/20260524043637_d17d6f91-84c3-45ff-af6b-648a666f715d.sql`          |
+| `supabase/migrations/20260524044641_c5814e6b-fe15-459d-96b0-746ba98fdc2c.sql`          |
+| `supabase/migrations/20260524044744_email_infra.sql`                                   |
+| `supabase/migrations/20260524051514_1878b3e2-125a-46eb-a789-fa1409028e71.sql`          |
+| `supabase/migrations/20260524064757_b2d8e9c2-2d6e-4b76-8a73-dd3c1987a2ae.sql`          |
+| `supabase/migrations/20260524065325_6df81ffd-fb2e-4df8-ac71-5b5f8cd92554.sql`          |
+| `supabase/migrations/20260524070449_ae8130d6-d9a2-4437-8dd0-73c2893185b3.sql`          |
+| `supabase/migrations/20260524074439_b5bca5df-a7ce-40c8-a931-d1e64321d7b5.sql`          |
+| `supabase/migrations/20260525125039_8673bafb-4eda-434f-9900-1a4c688ab424.sql`          |
+| `supabase/migrations/20260528060818_02ef6fb2-553e-43f1-900a-bd8eb4dd56af.sql`          |
+| `supabase/migrations/20260530152504_b823d221-b60a-432b-85ac-0745a79e9d55.sql`          |
+| `supabase/migrations/20260601045818_f63dbd87-f3a0-4e98-8232-d380ac4a68f6.sql`          |
+| `supabase/migrations/20260605061006_40c146b5-f458-4620-a3ed-688348719a19.sql`          |
+| `supabase/migrations/20260611082303_c77aeed1-ee3d-4917-983d-abc4f0e52ceb.sql`          |
+| `supabase/migrations/20260620193809_e7f89819-b8cc-4e85-9441-39e6b31e579d.sql`          |
+| `supabase/migrations/20260620193831_7e7a3f45-9cbe-4ad4-91c4-0884121a0b3a.sql`          |
+| `supabase/migrations/20260622125739_8a71ad77-3504-43d2-92b4-3fedd6b2a91e.sql`          |
+| `supabase/migrations/20260622125757_eabc3c74-3adb-4b2a-bb50-d98a2da0a202.sql`          |
+| `supabase/migrations/20260622133155_c56722d8-1a65-4287-bf95-1c06689bba3f.sql`          |
+| `supabase/migrations/20260623074007_ddbe3e51-097a-4763-af33-95b236a42698.sql`          |
+| `supabase/migrations/20260623075231_4c324342-ee6b-47fa-ad48-39af2516c21c.sql`          |
+| `supabase/migrations/20260623082025_9963a138-6dc4-4d83-8b63-3cd31e3a7504.sql`          |
+| `supabase/migrations/20260623082050_70d58ecc-f89e-48ad-9e55-0d5e10f677f2.sql`          |
+| `supabase/migrations/20260623082342_5be4ee4e-9845-45f8-b995-dace190d24f1.sql`          |
+| `supabase/migrations/20260623100541_29ade4ae-9cc6-46bf-a916-ba9ecf155ff3.sql`          |
+| `supabase/migrations/20260623102100_68bc0646-a669-4dd9-9ba7-4cdb16225116.sql`          |
+| `supabase/migrations/20260623111535_6dc2ecd4-5f71-421a-a372-bd125820c267.sql`          |
+| `supabase/migrations/20260623113448_5862c988-44e2-423a-8dce-ff55c49cf774.sql`          |
+| `supabase/migrations/20260623114741_9a1edb8d-58ea-4825-8560-ba68d6527ab9.sql`          |
+| `supabase/migrations/20260623121121_6dd82a2e-a01a-42c2-a505-12240ec66391.sql`          |
+| `supabase/migrations/20260701082250_cc8fecf7-8ce5-4d5e-971b-0bad7a33e4e9.sql`          |
+| `supabase/migrations/20260701084425_090d5165-a08f-4cce-ba0a-56620c1578d1.sql`          |
+| `supabase/migrations/20260811090000_29d8fece-92c9-4bab-a85f-e95d49161abf.sql`          |
+| `supabase/migrations/20260812060000_p0_security_fixes.sql`                             |
+| `supabase/migrations/20260812100000_close_session_insert_bypass.sql`                   |
+| `supabase/migrations/20260812120000_restore_whiteboard_chat_tables.sql`                |
+| `supabase/migrations/20260812130000_harden_rpc_grants_and_guards.sql`                  |
+| `supabase/migrations/20260812140000_revoke_public_execute_grants.sql`                  |
+| `supabase/migrations/20260812150000_align_booking_gate_with_subscriptions_flag.sql`    |
+| `supabase/migrations/20260813090000_add_rls_profiles_user_roles_policies.sql`          |
+| `supabase/migrations/20260814090000_add_rls_admin_operations_policies.sql`             |
 | `supabase/migrations/20260814140000_add_rls_entitlement_gates_beyond_book_session.sql` |
-| `supabase/migrations/20260815090000_add_rls_tutor_app_promotion_validation.sql` |
-| `supabase/migrations/20260815140000_add_rls_parent_role_policies.sql` |
+| `supabase/migrations/20260815090000_add_rls_tutor_app_promotion_validation.sql`        |
+| `supabase/migrations/20260815140000_add_rls_parent_role_policies.sql`                  |
 
 ## 8. Package Metadata
 
@@ -6680,103 +6693,104 @@ Detected in **35** files.
 
 ### Dependencies
 
-| Package | Version |
-|---|---|
-| `@cloudflare/vite-plugin` | `^1.25.5` |
-| `@hookform/resolvers` | `^5.2.2` |
-| `@radix-ui/react-accordion` | `^1.2.12` |
-| `@radix-ui/react-alert-dialog` | `^1.1.15` |
-| `@radix-ui/react-aspect-ratio` | `^1.1.8` |
-| `@radix-ui/react-avatar` | `^1.1.11` |
-| `@radix-ui/react-checkbox` | `^1.3.3` |
-| `@radix-ui/react-collapsible` | `^1.1.12` |
-| `@radix-ui/react-context-menu` | `^2.2.16` |
-| `@radix-ui/react-dialog` | `^1.1.15` |
-| `@radix-ui/react-dropdown-menu` | `^2.1.16` |
-| `@radix-ui/react-hover-card` | `^1.1.15` |
-| `@radix-ui/react-label` | `^2.1.8` |
-| `@radix-ui/react-menubar` | `^1.1.16` |
-| `@radix-ui/react-navigation-menu` | `^1.2.14` |
-| `@radix-ui/react-popover` | `^1.1.15` |
-| `@radix-ui/react-progress` | `^1.1.8` |
-| `@radix-ui/react-radio-group` | `^1.3.8` |
-| `@radix-ui/react-scroll-area` | `^1.2.10` |
-| `@radix-ui/react-select` | `^2.2.6` |
-| `@radix-ui/react-separator` | `^1.1.8` |
-| `@radix-ui/react-slider` | `^1.3.6` |
-| `@radix-ui/react-slot` | `^1.2.4` |
-| `@radix-ui/react-switch` | `^1.2.6` |
-| `@radix-ui/react-tabs` | `^1.1.13` |
-| `@radix-ui/react-toggle` | `^1.1.10` |
-| `@radix-ui/react-toggle-group` | `^1.1.11` |
-| `@radix-ui/react-tooltip` | `^1.2.8` |
-| `@react-email/components` | `^1.0.12` |
-| `@react-three/drei` | `^10.7.7` |
-| `@react-three/fiber` | `^9.6.1` |
-| `@supabase/supabase-js` | `^2.106.1` |
-| `@tailwindcss/vite` | `^4.2.1` |
-| `@tanstack/react-query` | `^5.83.0` |
-| `@tanstack/react-router` | `^1.168.25` |
-| `@tanstack/react-start` | `^1.167.50` |
-| `@tanstack/router-plugin` | `^1.167.28` |
-| `@types/three` | `^0.184.1` |
-| `class-variance-authority` | `^0.7.1` |
-| `clsx` | `^2.1.1` |
-| `cmdk` | `^1.1.1` |
-| `date-fns` | `^4.1.0` |
-| `embla-carousel-react` | `^8.6.0` |
-| `framer-motion` | `^12.39.0` |
-| `input-otp` | `^1.4.2` |
-| `jspdf` | `^4.2.1` |
-| `katex` | `^0.17.0` |
-| `lucide-react` | `^0.575.0` |
-| `mathjs` | `^15.2.0` |
-| `mermaid` | `^11.15.0` |
-| `nitro` | `3.0.260603-beta` |
-| `react` | `^19.2.0` |
-| `react-day-picker` | `^9.14.0` |
-| `react-dom` | `^19.2.0` |
-| `react-email` | `^6.3.2` |
-| `react-hook-form` | `^7.71.2` |
-| `react-markdown` | `^10.1.0` |
-| `react-resizable-panels` | `^4.6.5` |
-| `recharts` | `^2.15.4` |
-| `rehype-katex` | `^7.0.1` |
-| `remark-gfm` | `^4.0.1` |
-| `remark-math` | `^6.0.0` |
-| `sonner` | `^2.0.7` |
-| `tailwindcss` | `^4.2.1` |
-| `tailwind-merge` | `^3.5.0` |
-| `three` | `^0.184.0` |
-| `tw-animate-css` | `^1.3.4` |
-| `vaul` | `^1.1.2` |
-| `vite-tsconfig-paths` | `^6.0.2` |
-| `zod` | `^3.24.2` |
+| Package                           | Version           |
+| --------------------------------- | ----------------- |
+| `@cloudflare/vite-plugin`         | `^1.25.5`         |
+| `@hookform/resolvers`             | `^5.2.2`          |
+| `@radix-ui/react-accordion`       | `^1.2.12`         |
+| `@radix-ui/react-alert-dialog`    | `^1.1.15`         |
+| `@radix-ui/react-aspect-ratio`    | `^1.1.8`          |
+| `@radix-ui/react-avatar`          | `^1.1.11`         |
+| `@radix-ui/react-checkbox`        | `^1.3.3`          |
+| `@radix-ui/react-collapsible`     | `^1.1.12`         |
+| `@radix-ui/react-context-menu`    | `^2.2.16`         |
+| `@radix-ui/react-dialog`          | `^1.1.15`         |
+| `@radix-ui/react-dropdown-menu`   | `^2.1.16`         |
+| `@radix-ui/react-hover-card`      | `^1.1.15`         |
+| `@radix-ui/react-label`           | `^2.1.8`          |
+| `@radix-ui/react-menubar`         | `^1.1.16`         |
+| `@radix-ui/react-navigation-menu` | `^1.2.14`         |
+| `@radix-ui/react-popover`         | `^1.1.15`         |
+| `@radix-ui/react-progress`        | `^1.1.8`          |
+| `@radix-ui/react-radio-group`     | `^1.3.8`          |
+| `@radix-ui/react-scroll-area`     | `^1.2.10`         |
+| `@radix-ui/react-select`          | `^2.2.6`          |
+| `@radix-ui/react-separator`       | `^1.1.8`          |
+| `@radix-ui/react-slider`          | `^1.3.6`          |
+| `@radix-ui/react-slot`            | `^1.2.4`          |
+| `@radix-ui/react-switch`          | `^1.2.6`          |
+| `@radix-ui/react-tabs`            | `^1.1.13`         |
+| `@radix-ui/react-toggle`          | `^1.1.10`         |
+| `@radix-ui/react-toggle-group`    | `^1.1.11`         |
+| `@radix-ui/react-tooltip`         | `^1.2.8`          |
+| `@react-email/components`         | `^1.0.12`         |
+| `@react-three/drei`               | `^10.7.7`         |
+| `@react-three/fiber`              | `^9.6.1`          |
+| `@supabase/supabase-js`           | `^2.106.1`        |
+| `@tailwindcss/vite`               | `^4.2.1`          |
+| `@tanstack/react-query`           | `^5.83.0`         |
+| `@tanstack/react-router`          | `^1.168.25`       |
+| `@tanstack/react-start`           | `^1.167.50`       |
+| `@tanstack/router-plugin`         | `^1.167.28`       |
+| `@types/three`                    | `^0.184.1`        |
+| `class-variance-authority`        | `^0.7.1`          |
+| `clsx`                            | `^2.1.1`          |
+| `cmdk`                            | `^1.1.1`          |
+| `date-fns`                        | `^4.1.0`          |
+| `embla-carousel-react`            | `^8.6.0`          |
+| `framer-motion`                   | `^12.39.0`        |
+| `input-otp`                       | `^1.4.2`          |
+| `jspdf`                           | `^4.2.1`          |
+| `katex`                           | `^0.17.0`         |
+| `lucide-react`                    | `^0.575.0`        |
+| `mathjs`                          | `^15.2.0`         |
+| `mermaid`                         | `^11.15.0`        |
+| `nitro`                           | `3.0.260603-beta` |
+| `react`                           | `^19.2.0`         |
+| `react-day-picker`                | `^9.14.0`         |
+| `react-dom`                       | `^19.2.0`         |
+| `react-email`                     | `^6.3.2`          |
+| `react-hook-form`                 | `^7.71.2`         |
+| `react-markdown`                  | `^10.1.0`         |
+| `react-resizable-panels`          | `^4.6.5`          |
+| `recharts`                        | `^2.15.4`         |
+| `rehype-katex`                    | `^7.0.1`          |
+| `remark-gfm`                      | `^4.0.1`          |
+| `remark-math`                     | `^6.0.0`          |
+| `sonner`                          | `^2.0.7`          |
+| `tailwindcss`                     | `^4.2.1`          |
+| `tailwind-merge`                  | `^3.5.0`          |
+| `three`                           | `^0.184.0`        |
+| `tw-animate-css`                  | `^1.3.4`          |
+| `vaul`                            | `^1.1.2`          |
+| `vite-tsconfig-paths`             | `^6.0.2`          |
+| `zod`                             | `^3.24.2`         |
 
 ### Development Dependencies
 
-| Package | Version |
-|---|---|
-| `@eslint/js` | `^9.32.0` |
-| `@types/katex` | `^0.16.8` |
-| `@types/node` | `^22.16.5` |
-| `@types/react` | `^19.2.0` |
-| `@types/react-dom` | `^19.2.0` |
-| `@vitejs/plugin-react` | `^5.0.4` |
-| `eslint` | `^9.32.0` |
-| `eslint-config-prettier` | `^10.1.1` |
-| `eslint-plugin-prettier` | `^5.2.6` |
-| `eslint-plugin-react-hooks` | `^5.2.0` |
-| `eslint-plugin-react-refresh` | `^0.4.20` |
-| `globals` | `^15.15.0` |
-| `prettier` | `^3.7.3` |
-| `typescript` | `^5.8.3` |
-| `typescript-eslint` | `^8.56.1` |
-| `vite` | `^7.3.1` |
+| Package                       | Version    |
+| ----------------------------- | ---------- |
+| `@eslint/js`                  | `^9.32.0`  |
+| `@types/katex`                | `^0.16.8`  |
+| `@types/node`                 | `^22.16.5` |
+| `@types/react`                | `^19.2.0`  |
+| `@types/react-dom`            | `^19.2.0`  |
+| `@vitejs/plugin-react`        | `^5.0.4`   |
+| `eslint`                      | `^9.32.0`  |
+| `eslint-config-prettier`      | `^10.1.1`  |
+| `eslint-plugin-prettier`      | `^5.2.6`   |
+| `eslint-plugin-react-hooks`   | `^5.2.0`   |
+| `eslint-plugin-react-refresh` | `^0.4.20`  |
+| `globals`                     | `^15.15.0` |
+| `prettier`                    | `^3.7.3`   |
+| `typescript`                  | `^5.8.3`   |
+| `typescript-eslint`           | `^8.56.1`  |
+| `vite`                        | `^7.3.1`   |
 
 ## 9. Sanitization
 
 Excluded directories:
+
 - `.git`
 - `.svn`
 - `node_modules`
@@ -6798,6 +6812,7 @@ Excluded directories:
 - `.vscode`
 
 Excluded sensitive filename patterns:
+
 - `.env`
 - `.env.*`
 - `*.pem`
@@ -6816,4 +6831,3 @@ Excluded sensitive filename patterns:
 
 This inventory is metadata, not an authoritative description of business responsibility.
 Architecture conclusions should be validated against imports, exports, database structure, routes and application behavior.
-

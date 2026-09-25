@@ -5,12 +5,23 @@ import { AppShell } from "@/presentation/domains/8-core-ux-navigation/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { useTheme } from "@/presentation/domains/8-core-ux-navigation/hooks/use-theme";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
 import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/presentation/domains/8-core-ux-navigation/ui/tabs";
 import { Switch } from "@/presentation/domains/8-core-ux-navigation/ui/switch";
 import { Separator } from "@/presentation/domains/8-core-ux-navigation/ui/separator";
 import { User, Bell, CreditCard, Shield, Palette, LogOut, Save } from "lucide-react";
@@ -43,18 +54,43 @@ function SettingsPage() {
 
         <Tabs defaultValue="profile" className="space-y-5">
           <TabsList className="flex w-full flex-wrap gap-1 sm:w-auto">
-            <TabsTrigger value="profile"><User className="mr-1.5 h-4 w-4" />Profile</TabsTrigger>
-            <TabsTrigger value="appearance"><Palette className="mr-1.5 h-4 w-4" />Appearance</TabsTrigger>
-            <TabsTrigger value="notifications"><Bell className="mr-1.5 h-4 w-4" />Notifications</TabsTrigger>
-            <TabsTrigger value="security"><Shield className="mr-1.5 h-4 w-4" />Security</TabsTrigger>
-            <TabsTrigger value="billing"><CreditCard className="mr-1.5 h-4 w-4" />Billing</TabsTrigger>
+            <TabsTrigger value="profile">
+              <User className="mr-1.5 h-4 w-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="appearance">
+              <Palette className="mr-1.5 h-4 w-4" />
+              Appearance
+            </TabsTrigger>
+            <TabsTrigger value="notifications">
+              <Bell className="mr-1.5 h-4 w-4" />
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger value="security">
+              <Shield className="mr-1.5 h-4 w-4" />
+              Security
+            </TabsTrigger>
+            <TabsTrigger value="billing">
+              <CreditCard className="mr-1.5 h-4 w-4" />
+              Billing
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile"><ProfileSection /></TabsContent>
-          <TabsContent value="appearance"><AppearanceSection /></TabsContent>
-          <TabsContent value="notifications"><NotificationsSection /></TabsContent>
-          <TabsContent value="security"><SecuritySection /></TabsContent>
-          <TabsContent value="billing"><BillingSection /></TabsContent>
+          <TabsContent value="profile">
+            <ProfileSection />
+          </TabsContent>
+          <TabsContent value="appearance">
+            <AppearanceSection />
+          </TabsContent>
+          <TabsContent value="notifications">
+            <NotificationsSection />
+          </TabsContent>
+          <TabsContent value="security">
+            <SecuritySection />
+          </TabsContent>
+          <TabsContent value="billing">
+            <BillingSection />
+          </TabsContent>
         </Tabs>
       </div>
     </AppShell>
@@ -197,7 +233,10 @@ function AppearanceSection() {
             <div className="font-medium">Dark mode</div>
             <div className="text-xs text-muted-foreground">Easier on the eyes at night.</div>
           </div>
-          <Switch checked={theme === "dark"} onCheckedChange={(v) => setTheme(v ? "dark" : "light")} />
+          <Switch
+            checked={theme === "dark"}
+            onCheckedChange={(v) => setTheme(v ? "dark" : "light")}
+          />
         </div>
       </CardContent>
     </Card>
@@ -245,8 +284,16 @@ function NotificationsSection() {
 }
 
 function ToggleRow({
-  label, desc, checked, onChange,
-}: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
+  label,
+  desc,
+  checked,
+  onChange,
+}: {
+  label: string;
+  desc: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-center justify-between rounded-xl border p-4">
       <div className="pr-4">
@@ -266,12 +313,18 @@ function SecuritySection() {
   const [busy, setBusy] = useState(false);
 
   const changePassword = async () => {
-    if (pwd.length < 8) { toast.error("Use at least 8 characters"); return; }
+    if (pwd.length < 8) {
+      toast.error("Use at least 8 characters");
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password: pwd });
     setBusy(false);
     if (error) toast.error(error.message);
-    else { toast.success("Password updated"); setPwd(""); }
+    else {
+      toast.success("Password updated");
+      setPwd("");
+    }
   };
 
   const sendReset = async () => {
@@ -298,14 +351,20 @@ function SecuritySection() {
               value={pwd}
               onChange={(e) => setPwd(e.target.value)}
             />
-            <Button onClick={changePassword} disabled={busy || pwd.length < 8} className="bg-aurora text-white">
+            <Button
+              onClick={changePassword}
+              disabled={busy || pwd.length < 8}
+              className="bg-aurora text-white"
+            >
               Update
             </Button>
           </div>
         </div>
         <Separator />
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" onClick={sendReset}>Email me a reset link</Button>
+          <Button variant="outline" onClick={sendReset}>
+            Email me a reset link
+          </Button>
           <Button variant="outline" onClick={() => signOut()}>
             <LogOut className="mr-2 h-4 w-4" /> Sign out
           </Button>
@@ -325,8 +384,12 @@ function BillingSection() {
         <CardDescription>Wallet, plans, and payment history.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-3">
-        <Button asChild variant="outline"><Link to="/wallet">Open wallet</Link></Button>
-        <Button asChild variant="outline"><Link to="/dashboard">View sessions</Link></Button>
+        <Button asChild variant="outline">
+          <Link to="/wallet">Open wallet</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/dashboard">View sessions</Link>
+        </Button>
       </CardContent>
     </Card>
   );

@@ -54,11 +54,7 @@ function ModerationPage() {
       ) : (
         <div className="space-y-2">
           {posts.map((p) => (
-            <ModerationPostCard
-              key={p.id}
-              post={p}
-              onDelete={(id) => del.mutate(id)}
-            />
+            <ModerationPostCard key={p.id} post={p} onDelete={(id) => del.mutate(id)} />
           ))}
         </div>
       )}

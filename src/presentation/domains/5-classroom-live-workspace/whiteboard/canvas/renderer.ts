@@ -26,7 +26,20 @@ export interface RenderOpts {
 }
 
 export function render(opts: RenderOpts) {
-  const { ctx, shapes, camera, width, height, dpr, grid = "off", selection, marquee, bg = "#ffffff", imageCache, graphAxes } = opts;
+  const {
+    ctx,
+    shapes,
+    camera,
+    width,
+    height,
+    dpr,
+    grid = "off",
+    selection,
+    marquee,
+    bg = "#ffffff",
+    imageCache,
+    graphAxes,
+  } = opts;
   // Reset transform
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = bg;
@@ -73,11 +86,17 @@ function importBounds(s: Shape) {
   switch (s.type) {
     case "pencil":
     case "highlighter": {
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
       for (let i = 0; i < s.points.length; i += 2) {
-        const x = s.points[i], y = s.points[i + 1];
-        if (x < minX) minX = x; if (x > maxX) maxX = x;
-        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        const x = s.points[i],
+          y = s.points[i + 1];
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
       }
       if (!isFinite(minX)) return { x: 0, y: 0, w: 0, h: 0 };
       const pad = s.size;
@@ -85,8 +104,10 @@ function importBounds(s: Shape) {
     }
     case "line":
     case "arrow": {
-      const minX = Math.min(s.x1, s.x2), maxX = Math.max(s.x1, s.x2);
-      const minY = Math.min(s.y1, s.y2), maxY = Math.max(s.y1, s.y2);
+      const minX = Math.min(s.x1, s.x2),
+        maxX = Math.max(s.x1, s.x2);
+      const minY = Math.min(s.y1, s.y2),
+        maxY = Math.max(s.y1, s.y2);
       const pad = s.size + 8;
       return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 };
     }
@@ -95,7 +116,14 @@ function importBounds(s: Shape) {
   }
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: number, mode: "grid" | "dots" | "graph", axes?: GraphAxes) {
+function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  cam: Camera,
+  w: number,
+  h: number,
+  mode: "grid" | "dots" | "graph",
+  axes?: GraphAxes,
+) {
   if (mode === "graph") {
     drawGraphAxes(ctx, w, h, axes ?? { xMin: -10, xMax: 10, yMin: -10, yMax: 10 });
     return;
@@ -108,8 +136,14 @@ function drawGrid(ctx: CanvasRenderingContext2D, cam: Camera, w: number, h: numb
     ctx.strokeStyle = "rgba(15,23,42,0.06)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    for (let x = offX; x < w; x += step) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, h); }
-    for (let y = offY; y < h; y += step) { ctx.moveTo(0, y + 0.5); ctx.lineTo(w, y + 0.5); }
+    for (let x = offX; x < w; x += step) {
+      ctx.moveTo(x + 0.5, 0);
+      ctx.lineTo(x + 0.5, h);
+    }
+    for (let y = offY; y < h; y += step) {
+      ctx.moveTo(0, y + 0.5);
+      ctx.lineTo(w, y + 0.5);
+    }
     ctx.stroke();
   } else {
     ctx.fillStyle = "rgba(15,23,42,0.18)";
@@ -149,10 +183,14 @@ function drawGraphAxes(ctx: CanvasRenderingContext2D, w: number, h: number, ax: 
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let x = Math.ceil(xMin / minorX) * minorX; x <= xMax + 1e-9; x += minorX) {
-    const px = sx(x); ctx.moveTo(px + 0.5, 0); ctx.lineTo(px + 0.5, h);
+    const px = sx(x);
+    ctx.moveTo(px + 0.5, 0);
+    ctx.lineTo(px + 0.5, h);
   }
   for (let y = Math.ceil(yMin / minorY) * minorY; y <= yMax + 1e-9; y += minorY) {
-    const py = sy(y); ctx.moveTo(0, py + 0.5); ctx.lineTo(w, py + 0.5);
+    const py = sy(y);
+    ctx.moveTo(0, py + 0.5);
+    ctx.lineTo(w, py + 0.5);
   }
   ctx.stroke();
 
@@ -160,10 +198,14 @@ function drawGraphAxes(ctx: CanvasRenderingContext2D, w: number, h: number, ax: 
   ctx.strokeStyle = "rgba(15,23,42,0.15)";
   ctx.beginPath();
   for (let x = Math.ceil(xMin / stepX) * stepX; x <= xMax + 1e-9; x += stepX) {
-    const px = sx(x); ctx.moveTo(px + 0.5, 0); ctx.lineTo(px + 0.5, h);
+    const px = sx(x);
+    ctx.moveTo(px + 0.5, 0);
+    ctx.lineTo(px + 0.5, h);
   }
   for (let y = Math.ceil(yMin / stepY) * stepY; y <= yMax + 1e-9; y += stepY) {
-    const py = sy(y); ctx.moveTo(0, py + 0.5); ctx.lineTo(w, py + 0.5);
+    const py = sy(y);
+    ctx.moveTo(0, py + 0.5);
+    ctx.lineTo(w, py + 0.5);
   }
   ctx.stroke();
 
@@ -172,9 +214,15 @@ function drawGraphAxes(ctx: CanvasRenderingContext2D, w: number, h: number, ax: 
   ctx.lineWidth = 1.25;
   ctx.beginPath();
   const ay = sy(0);
-  if (ay >= 0 && ay <= h) { ctx.moveTo(0, ay + 0.5); ctx.lineTo(w, ay + 0.5); }
+  if (ay >= 0 && ay <= h) {
+    ctx.moveTo(0, ay + 0.5);
+    ctx.lineTo(w, ay + 0.5);
+  }
   const axc = sx(0);
-  if (axc >= 0 && axc <= w) { ctx.moveTo(axc + 0.5, 0); ctx.lineTo(axc + 0.5, h); }
+  if (axc >= 0 && axc <= w) {
+    ctx.moveTo(axc + 0.5, 0);
+    ctx.lineTo(axc + 0.5, h);
+  }
   ctx.stroke();
 
   // Tick labels
@@ -200,7 +248,11 @@ function drawGraphAxes(ctx: CanvasRenderingContext2D, w: number, h: number, ax: 
   }
 }
 
-function drawShape(ctx: CanvasRenderingContext2D, s: Shape, imageCache?: Map<string, HTMLImageElement>) {
+function drawShape(
+  ctx: CanvasRenderingContext2D,
+  s: Shape,
+  imageCache?: Map<string, HTMLImageElement>,
+) {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   switch (s.type) {
@@ -223,33 +275,66 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape, imageCache?: Map<str
       break;
     }
     case "line": {
-      ctx.strokeStyle = s.color; ctx.lineWidth = s.size;
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.size;
+      ctx.beginPath();
+      ctx.moveTo(s.x1, s.y1);
+      ctx.lineTo(s.x2, s.y2);
+      ctx.stroke();
       break;
     }
     case "arrow": {
-      ctx.strokeStyle = s.color; ctx.fillStyle = s.color; ctx.lineWidth = s.size;
-      ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
+      ctx.strokeStyle = s.color;
+      ctx.fillStyle = s.color;
+      ctx.lineWidth = s.size;
+      ctx.beginPath();
+      ctx.moveTo(s.x1, s.y1);
+      ctx.lineTo(s.x2, s.y2);
+      ctx.stroke();
       const ang = Math.atan2(s.y2 - s.y1, s.x2 - s.x1);
       const head = 10 + s.size * 1.5;
       ctx.beginPath();
       ctx.moveTo(s.x2, s.y2);
-      ctx.lineTo(s.x2 - head * Math.cos(ang - Math.PI / 7), s.y2 - head * Math.sin(ang - Math.PI / 7));
-      ctx.lineTo(s.x2 - head * Math.cos(ang + Math.PI / 7), s.y2 - head * Math.sin(ang + Math.PI / 7));
-      ctx.closePath(); ctx.fill();
+      ctx.lineTo(
+        s.x2 - head * Math.cos(ang - Math.PI / 7),
+        s.y2 - head * Math.sin(ang - Math.PI / 7),
+      );
+      ctx.lineTo(
+        s.x2 - head * Math.cos(ang + Math.PI / 7),
+        s.y2 - head * Math.sin(ang + Math.PI / 7),
+      );
+      ctx.closePath();
+      ctx.fill();
       break;
     }
     case "rect": {
-      if (s.fill) { ctx.fillStyle = s.fill; ctx.fillRect(s.x, s.y, s.w, s.h); }
-      ctx.strokeStyle = s.color; ctx.lineWidth = s.size;
+      if (s.fill) {
+        ctx.fillStyle = s.fill;
+        ctx.fillRect(s.x, s.y, s.w, s.h);
+      }
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.size;
       ctx.strokeRect(s.x, s.y, s.w, s.h);
       break;
     }
     case "ellipse": {
       ctx.beginPath();
-      ctx.ellipse(s.x + s.w / 2, s.y + s.h / 2, Math.abs(s.w / 2), Math.abs(s.h / 2), 0, 0, Math.PI * 2);
-      if (s.fill) { ctx.fillStyle = s.fill; ctx.fill(); }
-      ctx.strokeStyle = s.color; ctx.lineWidth = s.size; ctx.stroke();
+      ctx.ellipse(
+        s.x + s.w / 2,
+        s.y + s.h / 2,
+        Math.abs(s.w / 2),
+        Math.abs(s.h / 2),
+        0,
+        0,
+        Math.PI * 2,
+      );
+      if (s.fill) {
+        ctx.fillStyle = s.fill;
+        ctx.fill();
+      }
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.size;
+      ctx.stroke();
       break;
     }
     case "triangle": {
@@ -258,8 +343,13 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape, imageCache?: Map<str
       ctx.lineTo(s.x + s.w, s.y + s.h);
       ctx.lineTo(s.x, s.y + s.h);
       ctx.closePath();
-      if (s.fill) { ctx.fillStyle = s.fill; ctx.fill(); }
-      ctx.strokeStyle = s.color; ctx.lineWidth = s.size; ctx.stroke();
+      if (s.fill) {
+        ctx.fillStyle = s.fill;
+        ctx.fill();
+      }
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.size;
+      ctx.stroke();
       break;
     }
     case "text": {
@@ -272,10 +362,12 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape, imageCache?: Map<str
     case "sticky": {
       ctx.fillStyle = s.bg;
       ctx.shadowColor = "rgba(0,0,0,0.18)";
-      ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 2;
       roundRect(ctx, s.x, s.y, s.w, s.h, 8);
       ctx.fill();
-      ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
       ctx.fillStyle = s.color;
       ctx.font = `14px ui-sans-serif, system-ui, sans-serif`;
       ctx.textBaseline = "top";
@@ -287,8 +379,10 @@ function drawShape(ctx: CanvasRenderingContext2D, s: Shape, imageCache?: Map<str
       if (img && img.complete && img.naturalWidth > 0) {
         ctx.drawImage(img, s.x, s.y, s.w, s.h);
       } else {
-        ctx.fillStyle = "#f1f5f9"; ctx.fillRect(s.x, s.y, s.w, s.h);
-        ctx.strokeStyle = "#cbd5e1"; ctx.strokeRect(s.x, s.y, s.w, s.h);
+        ctx.fillStyle = "#f1f5f9";
+        ctx.fillRect(s.x, s.y, s.w, s.h);
+        ctx.strokeStyle = "#cbd5e1";
+        ctx.strokeRect(s.x, s.y, s.w, s.h);
       }
       break;
     }
@@ -312,7 +406,14 @@ function strokePath(ctx: CanvasRenderingContext2D, pts: number[]) {
   ctx.stroke();
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+) {
   const rr = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
   ctx.beginPath();
   ctx.moveTo(x + rr, y);
@@ -327,7 +428,14 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lineH: number) {
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxW: number,
+  lineH: number,
+) {
   const paragraphs = text.split("\n");
   let yy = y;
   for (const para of paragraphs) {
@@ -343,7 +451,10 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: num
         line = test;
       }
     }
-    if (line) { ctx.fillText(line, x, yy); yy += lineH; }
+    if (line) {
+      ctx.fillText(line, x, yy);
+      yy += lineH;
+    }
     if (!para) yy += lineH;
   }
 }

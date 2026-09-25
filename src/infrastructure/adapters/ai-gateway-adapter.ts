@@ -36,7 +36,11 @@ export function createAiGateway(): AiGateway {
           const r = await fetch("https://api.groq.com/openai/v1/models", {
             headers: { Authorization: `Bearer ${creds.api_key}` },
           });
-          if (!r.ok) return { ok: false, error: `Groq: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200) };
+          if (!r.ok)
+            return {
+              ok: false,
+              error: `Groq: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200),
+            };
           return { ok: true, message: "Groq reachable" };
         }
         if (provider === "gemini") {
@@ -44,7 +48,11 @@ export function createAiGateway(): AiGateway {
           const r = await fetch("https://generativelanguage.googleapis.com/v1beta/openai/models", {
             headers: { Authorization: `Bearer ${creds.api_key}` },
           });
-          if (!r.ok) return { ok: false, error: `Gemini: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200) };
+          if (!r.ok)
+            return {
+              ok: false,
+              error: `Gemini: ${r.status} ${await r.text().catch(() => "")}`.slice(0, 200),
+            };
           return { ok: true, message: "Gemini reachable" };
         }
         const base = (creds.base_url ?? "").replace(/\/+$/, "");

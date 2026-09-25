@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "../8-core-ux-navigation/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "../8-core-ux-navigation/ui/select";
 import { Button } from "../8-core-ux-navigation/ui/button";
 import { Input } from "../8-core-ux-navigation/ui/input";
-import { FlaskConical, RotateCw, ExternalLink, Search, Lock, Users } from "lucide-react";
+import { FlaskConical, RotateCw, ExternalLink, Search, Users } from "lucide-react";
 import {
   LAB_MODULES,
   LAB_SUBJECTS,
@@ -15,19 +23,13 @@ import {
 } from "@/lib/lab-modules";
 
 type Props = {
-  /** When true, student-tier limits apply. */
-  enforceLimit: boolean;
-  /** Already-viewed slugs (for student quota). */
-  viewedSlugs: string[];
-  /** Maximum unique experiments a student may access. */
-  limit: number;
-  /** Called when a new experiment is opened so the parent can update quota. */
-  onOpen: (slug: string) => void;
+  /** Called when an experiment is selected (for classroom-side visibility). */
+  onOpen?: (slug: string) => void;
   /** When provided, the selected experiment is synchronized between participants of the classroom. */
   roomId?: string;
 };
 
-export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: Props) {
+export function LorddaLab({ onOpen, roomId }: Props) {
   const [selected, setSelected] = useState<LabModule | null>(LAB_MODULES[0]);
   const [key, setKey] = useState(0);
   const [filter, setFilter] = useState<LabSubject | "All">("All");
@@ -36,26 +38,29 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const subscribedRef = useRef(false);
   const selectedRef = useRef<LabModule | null>(selected);
+  const onOpenRef = useRef(onOpen);
   const lastAppliedSlugRef = useRef<string | null>(selected?.slug ?? null);
   const pendingBroadcastRef = useRef<string | null>(null);
-  useEffect(() => { selectedRef.current = selected; }, [selected]);
-
-  const applyRemoteSlug = (slug: string, ts?: number) => {
-    if (!slug || lastAppliedSlugRef.current === slug) return;
-    const m = LAB_MODULES.find((x) => x.slug === slug);
-    if (!m) return;
-    lastAppliedSlugRef.current = slug;
-    setSelected(m);
-    setKey((k) => k + 1);
-    // Mirror remote selections into the usage log (never counts against a quota).
-    if (!enforceLimit) onOpen(slug);
-    void ts;
-  };
-
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
+  useEffect(() => {
+    onOpenRef.current = onOpen;
+  }, [onOpen]);
 
   // Sync the active experiment between classroom participants.
   useEffect(() => {
     if (!roomId) return;
+    const applyRemoteSlug = (slug: string, ts?: number) => {
+      if (!slug || lastAppliedSlugRef.current === slug) return;
+      const module = LAB_MODULES.find((item) => item.slug === slug);
+      if (!module) return;
+      lastAppliedSlugRef.current = slug;
+      setSelected(module);
+      setKey((key) => key + 1);
+      onOpenRef.current?.(slug);
+      void ts;
+    };
     subscribedRef.current = false;
     const channel = supabase.channel(`lab:${roomId}`, {
       config: {
@@ -83,13 +88,17 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
       })
       .on("presence", { event: "sync" }, () => {
         // Pick the presence entry with the highest ts and adopt its slug.
-        const state = channel.presenceState() as Record<string, Array<{ slug?: string; ts?: number }>>;
+        const state = channel.presenceState() as Record<
+          string,
+          Array<{ slug?: string; ts?: number }>
+        >;
         let bestSlug: string | null = null;
         let bestTs = latestTs;
         for (const entries of Object.values(state)) {
           for (const e of entries) {
             if (e?.slug && typeof e.ts === "number" && e.ts > bestTs) {
-              bestTs = e.ts; bestSlug = e.slug;
+              bestTs = e.ts;
+              bestSlug = e.slug;
             }
           }
         }
@@ -146,19 +155,11 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
     return g;
   }, [visible]);
 
-  const usedCount = viewedSlugs.length;
-  const quotaReached =
-    enforceLimit && selected != null && !viewedSlugs.includes(selected.slug) && usedCount >= limit;
-
   const tryOpen = (m: LabModule) => {
-    if (enforceLimit && !viewedSlugs.includes(m.slug) && usedCount >= limit) {
-      setSelected(m);
-      return;
-    }
     lastAppliedSlugRef.current = m.slug;
     setSelected(m);
     setKey((k) => k + 1);
-    onOpen(m.slug);
+    onOpen?.(m.slug);
     if (roomId) {
       const ch = channelRef.current;
       const ts = Date.now();
@@ -172,17 +173,11 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
     }
   };
 
-
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b bg-muted/40 p-2">
         <FlaskConical className="h-4 w-4 text-primary" />
         <span className="text-sm font-semibold text-navy">PhET Virtual Lab</span>
-        {enforceLimit && (
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-            {usedCount}/{limit} experiments used
-          </span>
-        )}
         {roomId && (
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600">
             <Users className="h-3 w-3" /> Synced with classroom
@@ -199,17 +194,29 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
             />
           </div>
           <Select value={filter} onValueChange={(v) => setFilter(v as LabSubject | "All")}>
-            <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All subjects</SelectItem>
-              {LAB_SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              {LAB_SUBJECTS.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={levelFilter} onValueChange={(v) => setLevelFilter(v as LabLevel | "All")}>
-            <SelectTrigger className="h-9 w-[130px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="All">All levels</SelectItem>
-              {LAB_LEVELS.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+              {LAB_LEVELS.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select
@@ -219,20 +226,18 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
               if (m) tryOpen(m);
             }}
           >
-            <SelectTrigger className="h-9 w-[260px]"><SelectValue placeholder="Choose an experiment" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[260px]">
+              <SelectValue placeholder="Choose an experiment" />
+            </SelectTrigger>
             <SelectContent className="max-h-[60vh]">
               {Object.entries(grouped).map(([subject, mods]) => (
                 <SelectGroup key={subject}>
                   <SelectLabel>{subject}</SelectLabel>
-                  {mods.map((m) => {
-                    const locked = enforceLimit && !viewedSlugs.includes(m.slug) && usedCount >= limit;
-                    return (
-                      <SelectItem key={m.id} value={m.id}>
-                        {locked && <Lock className="mr-1 inline h-3 w-3" />}
-                        {m.name}
-                      </SelectItem>
-                    );
-                  })}
+                  {mods.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
                 </SelectGroup>
               ))}
               {visible.length === 0 && (
@@ -240,27 +245,25 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
               )}
             </SelectContent>
           </Select>
-          <Button size="icon" variant="outline" onClick={() => setKey((k) => k + 1)} aria-label="Reload">
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={() => setKey((k) => k + 1)}
+            aria-label="Reload"
+          >
             <RotateCw className="h-4 w-4" />
           </Button>
           {selected && (
             <Button asChild size="icon" variant="outline" aria-label="Open in new tab">
-              <a href={phetUrl(selected.slug)} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+              <a href={phetUrl(selected.slug)} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </a>
             </Button>
           )}
         </div>
       </div>
 
-      {quotaReached ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-muted/20 p-8 text-center">
-          <Lock className="h-10 w-10 text-primary" />
-          <h3 className="text-lg font-semibold">Free lab quota reached</h3>
-          <p className="max-w-md text-sm text-muted-foreground">
-            You've opened {limit} experiments on the free student tier. Book a session with a
-            tutor to unlock unlimited access to all {LAB_MODULES.length}+ simulations.
-          </p>
-        </div>
-      ) : selected ? (
+      {selected ? (
         <iframe
           key={key}
           src={phetUrl(selected.slug)}
@@ -272,9 +275,12 @@ export function LorddaLab({ enforceLimit, viewedSlugs, limit, onOpen, roomId }: 
       ) : (
         <div className="flex-1 p-6 text-sm text-muted-foreground">Select an experiment.</div>
       )}
-      {selected && !quotaReached && (
+      {selected && (
         <p className="border-t bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{selected.subject} · {selected.name}</span> — {selected.description}
+          <span className="font-medium text-foreground">
+            {selected.subject} · {selected.name}
+          </span>{" "}
+          — {selected.description}
         </p>
       )}
     </div>

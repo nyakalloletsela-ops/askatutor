@@ -36,7 +36,10 @@ function MessagesPage() {
       const otherIds = Array.from(
         new Set((ss ?? []).map((s) => (s.tutor_id === user.id ? s.student_id : s.tutor_id))),
       );
-      if (otherIds.length === 0) { setContacts([]); return; }
+      if (otherIds.length === 0) {
+        setContacts([]);
+        return;
+      }
       const { data: profs } = await supabase
         .from("profiles")
         .select("id, full_name")
@@ -75,14 +78,20 @@ function MessagesPage() {
           if (
             (m.sender_id === user.id && m.recipient_id === active.id) ||
             (m.sender_id === active.id && m.recipient_id === user.id)
-          ) setMessages((prev) => [...prev, m]);
+          )
+            setMessages((prev) => [...prev, m]);
         },
       )
       .subscribe();
-    return () => { cancelled = true; supabase.removeChannel(ch); };
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(ch);
+    };
   }, [user, active]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMessageFn = useServerFn(sendMessage);
 

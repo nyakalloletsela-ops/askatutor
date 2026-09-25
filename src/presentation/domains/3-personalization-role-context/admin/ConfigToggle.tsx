@@ -45,7 +45,15 @@ export function ConfigToggle({
   }
 
   // number
-  return <NumberRow k={k} label={label} description={description} initial={value as number} onSave={update} />;
+  return (
+    <NumberRow
+      k={k}
+      label={label}
+      description={description}
+      initial={value as number}
+      onSave={update}
+    />
+  );
 }
 
 function NumberRow({
@@ -67,12 +75,7 @@ function NumberRow({
         <Label className="text-sm font-medium">{label}</Label>
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
-      <Input
-        type="number"
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        className="w-32"
-      />
+      <Input type="number" value={val} onChange={(e) => setVal(e.target.value)} className="w-32" />
       <Button size="sm" onClick={() => onSave(Number(val))}>
         Save
       </Button>

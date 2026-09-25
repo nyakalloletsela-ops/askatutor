@@ -25,19 +25,27 @@ export function ParticipantsPanel({ participants, roomId, selfId, selfName, isTu
       const { senderId, raised: r } = payload.payload as { senderId: string; raised: boolean };
       setHands((prev) => {
         const next = new Set(prev);
-        if (r) next.add(senderId); else next.delete(senderId);
+        if (r) next.add(senderId);
+        else next.delete(senderId);
         return next;
       });
     });
     channel.subscribe();
     setChanRef(channel);
-    return () => { supabase.removeChannel(channel); setChanRef(null); };
+    return () => {
+      supabase.removeChannel(channel);
+      setChanRef(null);
+    };
   }, [roomId]);
 
   const toggleHand = () => {
     const next = !raised;
     setRaised(next);
-    chanRef?.send({ type: "broadcast", event: "hand", payload: { senderId: selfId, raised: next } });
+    chanRef?.send({
+      type: "broadcast",
+      event: "hand",
+      payload: { senderId: selfId, raised: next },
+    });
   };
 
   return (
@@ -69,7 +77,9 @@ export function ParticipantsPanel({ participants, roomId, selfId, selfName, isTu
           highlight={isTutor}
         />
         {participants.length === 0 ? (
-          <p className="px-2 py-6 text-center text-xs text-muted-foreground">Waiting for others to join…</p>
+          <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+            Waiting for others to join…
+          </p>
         ) : (
           participants.map((p) => (
             <ParticipantRow

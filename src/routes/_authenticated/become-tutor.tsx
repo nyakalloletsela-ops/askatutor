@@ -5,7 +5,12 @@ import { useAuth } from "@/presentation/domains/3-personalization-role-context/h
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/presentation/domains/8-core-ux-navigation/Navbar";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Textarea } from "@/presentation/domains/8-core-ux-navigation/ui/textarea";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
@@ -27,15 +32,49 @@ type DocRow = { id: string; label: string; storage_path: string };
 
 type DocSpec = { label: string; required: boolean; accept: string; hint: string };
 const DOC_SPECS: DocSpec[] = [
-  { label: "Government ID", required: true, accept: "application/pdf,image/*", hint: "Passport or national ID — clear photo or PDF." },
-  { label: "Highest Qualification", required: true, accept: "application/pdf,image/*", hint: "Degree certificate, diploma or transcript." },
-  { label: "Additional Education Documents", required: false, accept: "application/pdf,image/*", hint: "Extra transcripts, certifications, or training records." },
-  { label: "Teaching Certificate", required: false, accept: "application/pdf,image/*", hint: "PGCE, TEFL, or equivalent if available." },
-  { label: "CV / Resume", required: true, accept: "application/pdf,image/*", hint: "Up-to-date CV listing teaching experience." },
-  { label: "Motivational Letter", required: true, accept: "application/pdf,.doc,.docx,image/*", hint: "Why do you want to tutor on AskATutorLive?" },
-  { label: "Introduction Video", required: true, accept: "video/*", hint: "60–120s self-intro. MP4/MOV/WebM, max ~100MB." },
+  {
+    label: "Government ID",
+    required: true,
+    accept: "application/pdf,image/*",
+    hint: "Passport or national ID — clear photo or PDF.",
+  },
+  {
+    label: "Highest Qualification",
+    required: true,
+    accept: "application/pdf,image/*",
+    hint: "Degree certificate, diploma or transcript.",
+  },
+  {
+    label: "Additional Education Documents",
+    required: false,
+    accept: "application/pdf,image/*",
+    hint: "Extra transcripts, certifications, or training records.",
+  },
+  {
+    label: "Teaching Certificate",
+    required: false,
+    accept: "application/pdf,image/*",
+    hint: "PGCE, TEFL, or equivalent if available.",
+  },
+  {
+    label: "CV / Resume",
+    required: true,
+    accept: "application/pdf,image/*",
+    hint: "Up-to-date CV listing teaching experience.",
+  },
+  {
+    label: "Motivational Letter",
+    required: true,
+    accept: "application/pdf,.doc,.docx,image/*",
+    hint: "Why do you want to tutor on AskATutorLive?",
+  },
+  {
+    label: "Introduction Video",
+    required: true,
+    accept: "video/*",
+    hint: "60–120s self-intro. MP4/MOV/WebM, max ~100MB.",
+  },
 ];
-
 
 function BecomeTutorPage() {
   const { user, isTutor } = useAuth();
@@ -75,11 +114,19 @@ function BecomeTutorPage() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user?.id]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line */
+  }, [user?.id]);
 
   const submit = async () => {
     if (!user) return;
-    if (!fullName.trim() || !bio.trim() || !qualifications.trim() || !subjects.trim() || !motivation.trim()) {
+    if (
+      !fullName.trim() ||
+      !bio.trim() ||
+      !qualifications.trim() ||
+      !subjects.trim() ||
+      !motivation.trim()
+    ) {
       return toast.error("Please fill in name, subjects, bio, qualifications and motivation");
     }
     setSubmitting(true);
@@ -91,7 +138,10 @@ function BecomeTutorPage() {
         email: email.trim(),
         phone: phone.trim() || null,
         bio: bio.trim(),
-        subjects: subjects.split(",").map((s) => s.trim()).filter(Boolean),
+        subjects: subjects
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
         qualifications: `${qualifications.trim()}\n\n--- Motivation ---\n${motivation.trim()}`,
       })
       .select("id, status, admin_notes, submitted_at")
@@ -132,18 +182,26 @@ function BecomeTutorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen"><Navbar /><main className="mx-auto max-w-3xl px-4 py-10">Loading…</main></div>
+      <div className="min-h-screen">
+        <Navbar />
+        <main className="mx-auto max-w-3xl px-4 py-10">Loading…</main>
+      </div>
     );
   }
 
   if (isTutor) {
     return (
-      <div className="min-h-screen"><Navbar />
+      <div className="min-h-screen">
+        <Navbar />
         <main className="mx-auto max-w-3xl px-4 py-10">
-          <Card><CardContent className="p-6">
-            <p className="text-lg font-semibold">You are already a tutor.</p>
-            <Button className="mt-3" onClick={() => navigate({ to: "/dashboard" })}>Go to dashboard</Button>
-          </CardContent></Card>
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-lg font-semibold">You are already a tutor.</p>
+              <Button className="mt-3" onClick={() => navigate({ to: "/dashboard" })}>
+                Go to dashboard
+              </Button>
+            </CardContent>
+          </Card>
         </main>
       </div>
     );
@@ -170,7 +228,15 @@ function BecomeTutorPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Application status
-                <Badge variant={existing.status === "approved" ? "default" : existing.status === "rejected" ? "destructive" : "secondary"}>
+                <Badge
+                  variant={
+                    existing.status === "approved"
+                      ? "default"
+                      : existing.status === "rejected"
+                        ? "destructive"
+                        : "secondary"
+                  }
+                >
                   {existing.status}
                 </Badge>
               </CardTitle>
@@ -179,12 +245,20 @@ function BecomeTutorPage() {
               <p>Submitted {new Date(existing.submitted_at).toLocaleString()}.</p>
               {existing.admin_notes && (
                 <div className="rounded-md border bg-muted/40 p-3">
-                  <p className="text-xs font-semibold uppercase text-muted-foreground">Admin notes</p>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">
+                    Admin notes
+                  </p>
                   <p>{existing.admin_notes}</p>
                 </div>
               )}
               {existing.status === "rejected" && (
-                <Button variant="outline" onClick={() => { setExisting(null); setDocs([]); }}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setExisting(null);
+                    setDocs([]);
+                  }}
+                >
                   Start a new application
                 </Button>
               )}
@@ -192,20 +266,65 @@ function BecomeTutorPage() {
           </Card>
         ) : (
           <Card>
-            <CardHeader><CardTitle>Your details</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Your details</CardTitle>
+            </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2"><Label>Full name</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
-              <div><Label>Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div><Label>Phone</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-              <div className="sm:col-span-2"><Label>Subjects you can teach (comma-separated)</Label><Input value={subjects} onChange={(e) => setSubjects(e.target.value)} placeholder="Mathematics, Physical Sciences, English" /></div>
-              <div className="sm:col-span-2"><Label>Short bio</Label><Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell us about your teaching experience and approach." /></div>
-              <div className="sm:col-span-2"><Label>Qualifications</Label><Textarea rows={3} value={qualifications} onChange={(e) => setQualifications(e.target.value)} placeholder="e.g. BSc Mathematics (UCT, 2022); 3 years tutoring..." /></div>
-              <div className="sm:col-span-2"><Label>Motivational letter</Label><Textarea rows={5} value={motivation} onChange={(e) => setMotivation(e.target.value)} placeholder="Why do you want to tutor on AskATutorLive? What's your teaching philosophy?" /></div>
+              <div className="sm:col-span-2">
+                <Label>Full name</Label>
+                <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Subjects you can teach (comma-separated)</Label>
+                <Input
+                  value={subjects}
+                  onChange={(e) => setSubjects(e.target.value)}
+                  placeholder="Mathematics, Physical Sciences, English"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Short bio</Label>
+                <Textarea
+                  rows={4}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about your teaching experience and approach."
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Qualifications</Label>
+                <Textarea
+                  rows={3}
+                  value={qualifications}
+                  onChange={(e) => setQualifications(e.target.value)}
+                  placeholder="e.g. BSc Mathematics (UCT, 2022); 3 years tutoring..."
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Motivational letter</Label>
+                <Textarea
+                  rows={5}
+                  value={motivation}
+                  onChange={(e) => setMotivation(e.target.value)}
+                  placeholder="Why do you want to tutor on AskATutorLive? What's your teaching philosophy?"
+                />
+              </div>
               <div className="sm:col-span-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
-                After submitting, you'll upload supporting documents: government ID, qualifications, CV, motivational letter (optional file), and a short intro video.
+                After submitting, you'll upload supporting documents: government ID, qualifications,
+                CV, motivational letter (optional file), and a short intro video.
               </div>
               <div className="sm:col-span-2 flex justify-end">
-                <Button disabled={submitting} onClick={submit}>{submitting ? "Submitting…" : "Submit application"}</Button>
+                <Button disabled={submitting} onClick={submit}>
+                  {submitting ? "Submitting…" : "Submit application"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -218,10 +337,13 @@ function BecomeTutorPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Upload clear PDF, image or video files. Admins use these to verify your identity, qualifications and teaching readiness.
+                Upload clear PDF, image or video files. Admins use these to verify your identity,
+                qualifications and teaching readiness.
               </p>
               {(() => {
-                const missing = DOC_SPECS.filter((d) => d.required && !docs.some((u) => u.label === d.label));
+                const missing = DOC_SPECS.filter(
+                  (d) => d.required && !docs.some((u) => u.label === d.label),
+                );
                 if (missing.length === 0) return null;
                 return (
                   <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
@@ -238,9 +360,13 @@ function BecomeTutorPage() {
                         <p className="flex items-center gap-2 text-sm font-medium">
                           {spec.label}
                           {spec.required ? (
-                            <Badge variant="destructive" className="text-[10px]">Required</Badge>
+                            <Badge variant="destructive" className="text-[10px]">
+                              Required
+                            </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px]">Optional</Badge>
+                            <Badge variant="secondary" className="text-[10px]">
+                              Optional
+                            </Badge>
                           )}
                         </p>
                         <p className="mt-0.5 text-xs text-muted-foreground">{spec.hint}</p>
@@ -251,18 +377,31 @@ function BecomeTutorPage() {
                           type="file"
                           className="hidden"
                           accept={spec.accept}
-                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(spec.label, f); e.target.value = ""; }}
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadDoc(spec.label, f);
+                            e.target.value = "";
+                          }}
                         />
                       </label>
                     </div>
                     <ul className="space-y-1">
                       {uploaded.map((d) => (
-                        <li key={d.id} className="flex items-center justify-between rounded bg-muted/40 px-2 py-1 text-xs">
-                          <span className="flex items-center gap-1 truncate"><FileText className="h-3.5 w-3.5" /> {d.storage_path.split("/").pop()}</span>
-                          <button className="text-destructive" onClick={() => removeDoc(d)}><X className="h-3.5 w-3.5" /></button>
+                        <li
+                          key={d.id}
+                          className="flex items-center justify-between rounded bg-muted/40 px-2 py-1 text-xs"
+                        >
+                          <span className="flex items-center gap-1 truncate">
+                            <FileText className="h-3.5 w-3.5" /> {d.storage_path.split("/").pop()}
+                          </span>
+                          <button className="text-destructive" onClick={() => removeDoc(d)}>
+                            <X className="h-3.5 w-3.5" />
+                          </button>
                         </li>
                       ))}
-                      {uploaded.length === 0 && <li className="text-xs text-muted-foreground">No file uploaded yet.</li>}
+                      {uploaded.length === 0 && (
+                        <li className="text-xs text-muted-foreground">No file uploaded yet.</li>
+                      )}
                     </ul>
                   </div>
                 );

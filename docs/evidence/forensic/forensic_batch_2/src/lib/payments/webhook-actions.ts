@@ -35,8 +35,7 @@ export function resolvePaypalWebhookAction(event: PaypalWebhookEvent): WebhookAc
   if (type === "PAYMENT.CAPTURE.COMPLETED") {
     const customId = readCustomId(resource);
     const providerRef =
-      (resource.id as string | undefined) ??
-      (resource as { invoice_id?: string }).invoice_id;
+      (resource.id as string | undefined) ?? (resource as { invoice_id?: string }).invoice_id;
     if (customId && providerRef) return { kind: "finalize", customId, providerRef };
     return { kind: "ignore" };
   }

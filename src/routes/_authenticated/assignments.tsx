@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { FileText, Plus, Trash2, CheckCircle2, Clock } from "lucide-react";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { PageContainer, EmptyState, SectionHeader } from "@/presentation/domains/8-core-ux-navigation/primitives";
+import { completeOwnAssignment } from "@/application/use-cases/learning/assignments";
+import {
+  PageContainer,
+  EmptyState,
+  SectionHeader,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
@@ -47,6 +53,7 @@ type Assignment = {
 function AssignmentsPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const completeAssignment = useServerFn(completeOwnAssignment);
 
   const { data: assignments = [], isLoading } = useQuery({
     queryKey: ["assignments", user?.id],
@@ -85,11 +92,7 @@ function AssignmentsPage() {
 
   const markDone = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("assignments")
-        .update({ status: "completed" })
-        .eq("id", id);
-      if (error) throw new Error(error.message);
+      await completeAssignment({ data: { assignmentId: id } });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["assignments"] }),
   });
@@ -100,11 +103,7 @@ function AssignmentsPage() {
     <PageContainer
       title="Assignments"
       description="Homework and tasks shared between tutors and students."
-      actions={
-        isTutor ? (
-          <CreateAssignmentDialog students={students} />
-        ) : undefined
-      }
+      actions={isTutor ? <CreateAssignmentDialog students={students} /> : undefined}
     >
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -155,21 +154,13 @@ function AssignmentsPage() {
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  {a.status !== "completed" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => markDone.mutate(a.id)}
-                    >
+                  {a.student_id === user?.id && a.status !== "completed" && (
+                    <Button size="sm" variant="outline" onClick={() => markDone.mutate(a.id)}>
                       Mark done
                     </Button>
                   )}
                   {a.tutor_id === user?.id && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => del.mutate(a.id)}
-                    >
+                    <Button size="icon" variant="ghost" onClick={() => del.mutate(a.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
@@ -183,11 +174,7 @@ function AssignmentsPage() {
   );
 }
 
-function CreateAssignmentDialog({
-  students,
-}: {
-  students: { id: string; full_name: string }[];
-}) {
+function CreateAssignmentDialog({ students }: { students: { id: string; full_name: string }[] }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -268,11 +255,7 @@ function CreateAssignmentDialog({
           </div>
           <div>
             <Label>Due date</Label>
-            <Input
-              type="datetime-local"
-              value={dueAt}
-              onChange={(e) => setDueAt(e.target.value)}
-            />
+            <Input type="datetime-local" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
           </div>
         </div>
         <DialogFooter>

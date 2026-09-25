@@ -2,7 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { evaluate, parse } from "mathjs";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ReferenceLine } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  ReferenceLine,
+} from "recharts";
 import { Button } from "../8-core-ux-navigation/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../8-core-ux-navigation/ui/tabs";
 import { X, Copy, FunctionSquare, Sigma, Calculator } from "lucide-react";
@@ -42,7 +51,9 @@ function LatexPreview({ tex }: { tex: string }) {
       /* noop */
     }
   }, [tex]);
-  return <div ref={ref} className="min-h-12 overflow-x-auto rounded border bg-card p-3 text-center" />;
+  return (
+    <div ref={ref} className="min-h-12 overflow-x-auto rounded border bg-card p-3 text-center" />
+  );
 }
 
 function LatexEditor() {
@@ -59,7 +70,12 @@ function LatexEditor() {
       />
       <div className="flex flex-wrap gap-1">
         {PRESETS.map((p) => (
-          <Button key={p.label} size="sm" variant="outline" onClick={() => setTex((t) => `${t} ${p.tex}`)}>
+          <Button
+            key={p.label}
+            size="sm"
+            variant="outline"
+            onClick={() => setTex((t) => `${t} ${p.tex}`)}
+          >
             {p.label}
           </Button>
         ))}
@@ -149,7 +165,14 @@ function GraphPlotter() {
             <Tooltip />
             <ReferenceLine x={0} stroke="hsl(var(--muted-foreground))" />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
-            <Line type="monotone" dataKey="y" stroke="hsl(var(--primary))" dot={false} strokeWidth={2} isAnimationActive={false} />
+            <Line
+              type="monotone"
+              dataKey="y"
+              stroke="hsl(var(--primary))"
+              dot={false}
+              strokeWidth={2}
+              isAnimationActive={false}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -183,9 +206,7 @@ function CalcPad() {
       <Button size="sm" onClick={compute}>
         Evaluate
       </Button>
-      {result && (
-        <div className="rounded-md border bg-card p-3 font-mono text-sm">= {result}</div>
-      )}
+      {result && <div className="rounded-md border bg-card p-3 font-mono text-sm">= {result}</div>}
       <p className="text-[11px] text-muted-foreground">
         Powered by mathjs: arithmetic, algebra, units, constants, functions.
       </p>
@@ -196,7 +217,10 @@ function CalcPad() {
 export function MathTools({ open, onClose }: Props) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-end bg-black/30 sm:items-center sm:justify-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[60] flex items-end justify-end bg-black/30 sm:items-center sm:justify-center"
+      onClick={onClose}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-xl border bg-background shadow-2xl sm:rounded-xl"

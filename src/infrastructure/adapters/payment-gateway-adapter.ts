@@ -53,10 +53,15 @@ export function createPaymentGateway(): PaymentGateway {
     },
 
     resolveWebhookAction(event: PaymentWebhookEvent): PaymentWebhookAction {
-      const action = resolvePaypalWebhookAction(event as Parameters<typeof resolvePaypalWebhookAction>[0]);
-      if (action.kind === "finalize") return { kind: "finalize", customId: action.customId, providerRef: action.providerRef };
-      if (action.kind === "refund") return { kind: "refund", intentId: action.intentId, reason: action.reason };
-      if (action.kind === "mark_failed") return { kind: "mark_failed", intentId: action.intentId, reason: action.reason };
+      const action = resolvePaypalWebhookAction(
+        event as Parameters<typeof resolvePaypalWebhookAction>[0],
+      );
+      if (action.kind === "finalize")
+        return { kind: "finalize", customId: action.customId, providerRef: action.providerRef };
+      if (action.kind === "refund")
+        return { kind: "refund", intentId: action.intentId, reason: action.reason };
+      if (action.kind === "mark_failed")
+        return { kind: "mark_failed", intentId: action.intentId, reason: action.reason };
       return { kind: "ignore" };
     },
 

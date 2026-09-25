@@ -19,21 +19,53 @@ type Props = {
   onSelectObject?: (i: number) => void;
 };
 
-export function SimDispatch({ schema, playing, resetKey, timeScale, onCanvasReady, onSelectObject }: Props) {
+export function SimDispatch({
+  schema,
+  playing,
+  resetKey,
+  timeScale,
+  onCanvasReady,
+  onSelectObject,
+}: Props) {
   if (!schema) {
     return (
-      <Suspense fallback={<div className="flex h-full items-center justify-center text-white/60"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
-        <SimScene schema={null} playing={playing} resetKey={resetKey} timeScale={timeScale} onCanvasReady={onCanvasReady} onSelectObject={onSelectObject} />
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center text-white/60">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        }
+      >
+        <SimScene
+          schema={null}
+          playing={playing}
+          resetKey={resetKey}
+          timeScale={timeScale}
+          onCanvasReady={onCanvasReady}
+          onSelectObject={onSelectObject}
+        />
       </Suspense>
     );
   }
   switch (schema.visualization) {
     case "scene2d":
-      return <Scene2D schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} />;
+      return (
+        <Scene2D schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} />
+      );
     case "process":
-      return <ProcessView schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} onSelectObject={onSelectObject} />;
+      return (
+        <ProcessView
+          schema={schema}
+          playing={playing}
+          resetKey={resetKey}
+          timeScale={timeScale}
+          onSelectObject={onSelectObject}
+        />
+      );
     case "timeline":
-      return <TimelineView schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} />;
+      return (
+        <TimelineView schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} />
+      );
     case "geo":
       return <GeoView schema={schema} />;
     case "language":
@@ -41,8 +73,21 @@ export function SimDispatch({ schema, playing, resetKey, timeScale, onCanvasRead
     case "scene3d":
     default:
       return (
-        <Suspense fallback={<div className="flex h-full items-center justify-center text-white/60"><Loader2 className="h-6 w-6 animate-spin" /></div>}>
-          <SimScene schema={schema} playing={playing} resetKey={resetKey} timeScale={timeScale} onCanvasReady={onCanvasReady} onSelectObject={onSelectObject} />
+        <Suspense
+          fallback={
+            <div className="flex h-full items-center justify-center text-white/60">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          }
+        >
+          <SimScene
+            schema={schema}
+            playing={playing}
+            resetKey={resetKey}
+            timeScale={timeScale}
+            onCanvasReady={onCanvasReady}
+            onSelectObject={onSelectObject}
+          />
         </Suspense>
       );
   }

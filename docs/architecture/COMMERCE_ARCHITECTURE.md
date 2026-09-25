@@ -20,29 +20,29 @@ AskATutorLive is a paid platform. Every meaningful user interaction exists withi
 
 ### 2.1 Free Tier
 
-| Feature | Limit |
-|---------|-------|
-| Learning sessions | Limited per month |
-| AI interactions | Limited per month |
-| Whiteboard saves | Limited storage |
-| Voice recording | Not included or limited |
-| Video recording | Not included |
-| Virtual labs | Limited per month |
-| Community access | Full |
-| Tutor access | Limited or pay-per-session |
-| Evidence storage | Limited |
-| Notes | Limited |
+| Feature           | Limit                      |
+| ----------------- | -------------------------- |
+| Learning sessions | Limited per month          |
+| AI interactions   | Limited per month          |
+| Whiteboard saves  | Limited storage            |
+| Voice recording   | Not included or limited    |
+| Video recording   | Not included               |
+| Virtual labs      | Limited per month          |
+| Community access  | Full                       |
+| Tutor access      | Limited or pay-per-session |
+| Evidence storage  | Limited                    |
+| Notes             | Limited                    |
 
 > NOTE: Specific free tier limits are REQUIRES DECISION.
 
 ### 2.2 Paid Plans
 
-| Plan | Features |
-|------|----------|
-| Basic | More sessions, more AI, basic recordings |
-| Pro | Unlimited sessions, full AI, all recordings, labs |
-| Premium | All features, priority tutor access, advanced labs |
-| Institution | Custom plan for institutions |
+| Plan        | Features                                           |
+| ----------- | -------------------------------------------------- |
+| Basic       | More sessions, more AI, basic recordings           |
+| Pro         | Unlimited sessions, full AI, all recordings, labs  |
+| Premium     | All features, priority tutor access, advanced labs |
+| Institution | Custom plan for institutions                       |
 
 > NOTE: Plan details and pricing are REQUIRES DECISION.
 
@@ -52,13 +52,13 @@ AskATutorLive is a paid platform. Every meaningful user interaction exists withi
 
 ```typescript
 interface Subscription {
-  id: string
-  account_id: string
-  plan_id: string
-  status: 'active' | 'past_due' | 'cancelled' | 'expired'
-  started_at: Date
-  current_period_end: Date
-  cancel_at: Date | null
+  id: string;
+  account_id: string;
+  plan_id: string;
+  status: "active" | "past_due" | "cancelled" | "expired";
+  started_at: Date;
+  current_period_end: Date;
+  cancel_at: Date | null;
 }
 ```
 
@@ -103,10 +103,10 @@ Trial (optional)
 
 ### 4.3 Payment Provider
 
-| Provider | Status |
-|----------|--------|
-| Stripe | RECOMMENDED |
-| Other | UNKNOWN — REQUIRES DECISION |
+| Provider | Status                      |
+| -------- | --------------------------- |
+| Stripe   | RECOMMENDED                 |
+| Other    | UNKNOWN — REQUIRES DECISION |
 
 ---
 
@@ -116,30 +116,30 @@ Trial (optional)
 
 ```typescript
 interface Entitlement {
-  id: string
-  account_id: string
-  feature_id: string
-  status: 'active' | 'exceeded' | 'expired'
-  used: number
-  limit: number
-  period_start: Date
-  period_end: Date
+  id: string;
+  account_id: string;
+  feature_id: string;
+  status: "active" | "exceeded" | "expired";
+  used: number;
+  limit: number;
+  period_start: Date;
+  period_end: Date;
 }
 ```
 
 ### 5.2 Feature Entitlements
 
-| Feature | Free | Basic | Pro | Premium |
-|---------|------|-------|-----|---------|
-| Learning sessions/month | Limited | More | Unlimited | Unlimited |
-| AI interactions/month | Limited | More | Unlimited | Unlimited |
-| Whiteboard saves | Limited | More | Unlimited | Unlimited |
-| Voice recording | No | Yes | Yes | Yes |
-| Video recording | No | Limited | Yes | Yes |
-| Virtual labs/month | Limited | More | Unlimited | Unlimited |
-| Tutor sessions | Pay-per | Included | Priority | Priority |
-| Evidence storage | Limited | More | Unlimited | Unlimited |
-| Community | Full | Full | Full | Full |
+| Feature                 | Free    | Basic    | Pro       | Premium   |
+| ----------------------- | ------- | -------- | --------- | --------- |
+| Learning sessions/month | Limited | More     | Unlimited | Unlimited |
+| AI interactions/month   | Limited | More     | Unlimited | Unlimited |
+| Whiteboard saves        | Limited | More     | Unlimited | Unlimited |
+| Voice recording         | No      | Yes      | Yes       | Yes       |
+| Video recording         | No      | Limited  | Yes       | Yes       |
+| Virtual labs/month      | Limited | More     | Unlimited | Unlimited |
+| Tutor sessions          | Pay-per | Included | Priority  | Priority  |
+| Evidence storage        | Limited | More     | Unlimited | Unlimited |
+| Community               | Full    | Full     | Full      | Full      |
 
 > NOTE: Specific limits are REQUIRES DECISION.
 
@@ -149,11 +149,11 @@ interface Entitlement {
 
 ```typescript
 interface UsageRecord {
-  id: string
-  account_id: string
-  feature_id: string
-  count: number
-  timestamp: Date
+  id: string;
+  account_id: string;
+  feature_id: string;
+  count: number;
+  timestamp: Date;
 }
 ```
 
@@ -163,12 +163,12 @@ Usage is tracked in real-time and checked against entitlements before feature ac
 
 ## 7. TUTOR COMMERCE
 
-| Model | Description |
-|-------|-------------|
-| Pay-per-session | Learner pays per tutoring session |
-| Subscription included | Some sessions included in plan |
-| Institution paid | Institution pays for tutor access |
-| Tutor payout | Tutor receives payment for sessions |
+| Model                 | Description                         |
+| --------------------- | ----------------------------------- |
+| Pay-per-session       | Learner pays per tutoring session   |
+| Subscription included | Some sessions included in plan      |
+| Institution paid      | Institution pays for tutor access   |
+| Tutor payout          | Tutor receives payment for sessions |
 
 > NOTE: Tutor commerce model is REQUIRES DECISION.
 
@@ -176,12 +176,12 @@ Usage is tracked in real-time and checked against entitlements before feature ac
 
 ## 8. INSTITUTION COMMERCE
 
-| Aspect | Description |
-|--------|-------------|
-| Billing | Institution-level billing |
-| Plans | Custom institution plans |
-| Usage tracking | Institution-scoped usage |
-| Invoicing | Institution invoices |
+| Aspect         | Description               |
+| -------------- | ------------------------- |
+| Billing        | Institution-level billing |
+| Plans          | Custom institution plans  |
+| Usage tracking | Institution-scoped usage  |
+| Invoicing      | Institution invoices      |
 
 ---
 
@@ -214,6 +214,7 @@ Usage is tracked in real-time and checked against entitlements before feature ac
 > NOTE: Refund policy is REQUIRES DECISION.
 
 General principles:
+
 - Refunds processed server-side
 - Refund records are immutable
 - Subscription adjusted after refund
@@ -224,8 +225,8 @@ General principles:
 
 ## 11. COMMERCE PHASING
 
-| Phase | Deliverable |
-|-------|------------|
-| Phase 9 | Plan structure, subscriptions, payments, entitlements |
-| Phase 10 | Admin commerce management, reporting |
-| Phase 13+ | Advanced billing, promotions, enterprise |
+| Phase     | Deliverable                                           |
+| --------- | ----------------------------------------------------- |
+| Phase 9   | Plan structure, subscriptions, payments, entitlements |
+| Phase 10  | Admin commerce management, reporting                  |
+| Phase 13+ | Advanced billing, promotions, enterprise              |

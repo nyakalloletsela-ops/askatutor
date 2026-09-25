@@ -3,8 +3,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { PageContainer, StatCard, EmptyState } from "@/presentation/domains/8-core-ux-navigation/primitives";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  PageContainer,
+  StatCard,
+  EmptyState,
+} from "@/presentation/domains/8-core-ux-navigation/primitives";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Wallet, Clock, CheckCircle2, TrendingUp, Banknote, AlertCircle } from "lucide-react";
@@ -16,7 +25,11 @@ export const Route = createFileRoute("/_authenticated/wallet")({
 function fmt(cents: number | null | undefined, currency = "USD") {
   const n = Number(cents ?? 0) / 100;
   try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 2 }).format(n);
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(n);
   } catch {
     return `${currency} ${n.toFixed(2)}`;
   }
@@ -127,7 +140,11 @@ function WalletPage() {
           icon={Wallet}
           title="Tutor-only area"
           description="Your wallet shows lifetime earnings, pending balance during the hold window, and weekly payouts. Apply to teach to unlock it."
-          action={<Button asChild><Link to="/become-tutor">Become a tutor</Link></Button>}
+          action={
+            <Button asChild>
+              <Link to="/become-tutor">Become a tutor</Link>
+            </Button>
+          }
         />
       </PageContainer>
     );
@@ -139,10 +156,30 @@ function WalletPage() {
       description="Your earnings, pending balance and weekly payouts. Updated in real time from the ledger."
     >
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={TrendingUp} label="Lifetime earned" value={fmt(balance?.earned_cents)} hint="Net of commission" />
-        <StatCard icon={CheckCircle2} label="Available for payout" value={fmt(balance?.payable_cents)} hint="Past hold window" />
-        <StatCard icon={Clock} label="Pending (on hold)" value={fmt(balance?.pending_cents)} hint="Funds clearing" />
-        <StatCard icon={Banknote} label="Paid out" value={fmt(balance?.paid_out_cents)} hint="Lifetime" />
+        <StatCard
+          icon={TrendingUp}
+          label="Lifetime earned"
+          value={fmt(balance?.earned_cents)}
+          hint="Net of commission"
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="Available for payout"
+          value={fmt(balance?.payable_cents)}
+          hint="Past hold window"
+        />
+        <StatCard
+          icon={Clock}
+          label="Pending (on hold)"
+          value={fmt(balance?.pending_cents)}
+          hint="Funds clearing"
+        />
+        <StatCard
+          icon={Banknote}
+          label="Paid out"
+          value={fmt(balance?.paid_out_cents)}
+          hint="Lifetime"
+        />
       </div>
 
       {!hasMethod && (
@@ -151,11 +188,20 @@ function WalletPage() {
             <div className="flex items-start gap-2">
               <AlertCircle className="mt-0.5 h-5 w-5 text-amber-600" />
               <div>
-                <p className="text-sm font-medium">Add a payout method to receive your Monday payouts.</p>
-                <p className="text-xs text-muted-foreground">Bank account or mobile money — we'll send your earnings here every Monday.</p>
+                <p className="text-sm font-medium">
+                  Add a payout method to receive your Monday payouts.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Bank account or mobile money — we'll send your earnings here every Monday.
+                </p>
               </div>
             </div>
-            <Button size="sm" variant="outline" disabled title="Available once provider integration ships">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled
+              title="Available once provider integration ships"
+            >
               Add method (soon)
             </Button>
           </CardContent>
@@ -169,19 +215,34 @@ function WalletPage() {
           </CardHeader>
           <CardContent className="p-0">
             {payouts.length === 0 ? (
-              <p className="px-4 pb-6 text-sm text-muted-foreground">No payouts yet. The next run is the upcoming Monday.</p>
+              <p className="px-4 pb-6 text-sm text-muted-foreground">
+                No payouts yet. The next run is the upcoming Monday.
+              </p>
             ) : (
               <ul className="divide-y divide-border/60">
                 {payouts.map((p) => (
                   <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium tabular-nums">{fmt(p.net_cents, p.currency)}</p>
+                      <p className="text-sm font-medium tabular-nums">
+                        {fmt(p.net_cents, p.currency)}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {p.paid_at ? new Date(p.paid_at).toLocaleString() : new Date(p.created_at).toLocaleString()}
+                        {p.paid_at
+                          ? new Date(p.paid_at).toLocaleString()
+                          : new Date(p.created_at).toLocaleString()}
                         {p.provider_transfer_ref && ` · ${p.provider_transfer_ref}`}
                       </p>
                     </div>
-                    <Badge variant={p.status === "paid" ? "default" : p.status === "failed" ? "destructive" : "secondary"} className="text-[10px] uppercase">
+                    <Badge
+                      variant={
+                        p.status === "paid"
+                          ? "default"
+                          : p.status === "failed"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                      className="text-[10px] uppercase"
+                    >
                       {p.status}
                     </Badge>
                   </li>
@@ -204,15 +265,27 @@ function WalletPage() {
                   <li key={e.id} className="flex items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
                       <p className="text-sm">
-                        <span className={e.entry_type === "credit" ? "font-medium text-green-600" : "font-medium text-red-600"}>
+                        <span
+                          className={
+                            e.entry_type === "credit"
+                              ? "font-medium text-green-600"
+                              : "font-medium text-red-600"
+                          }
+                        >
                           {e.entry_type === "credit" ? "+" : "−"}
                           {fmt(e.amount_cents, e.currency)}
                         </span>{" "}
-                        <span className="text-muted-foreground">· {e.description ?? e.balance_type}</span>
+                        <span className="text-muted-foreground">
+                          · {e.description ?? e.balance_type}
+                        </span>
                       </p>
-                      <p className="text-[11px] text-muted-foreground">{new Date(e.created_at).toLocaleString()}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {new Date(e.created_at).toLocaleString()}
+                      </p>
                     </div>
-                    <Badge variant="outline" className="text-[10px] uppercase">{e.balance_type}</Badge>
+                    <Badge variant="outline" className="text-[10px] uppercase">
+                      {e.balance_type}
+                    </Badge>
                   </li>
                 ))}
               </ul>

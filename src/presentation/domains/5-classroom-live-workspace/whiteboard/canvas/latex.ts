@@ -17,7 +17,8 @@ function measure(html: string, displayMode: boolean): { w: number; h: number } {
     return { w: 320, h: displayMode ? 80 : 40 };
   }
   const host = document.createElement("div");
-  host.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;padding:8px;font-size:22px;line-height:1.4;";
+  host.style.cssText =
+    "position:absolute;left:-99999px;top:0;visibility:hidden;padding:8px;font-size:22px;line-height:1.4;";
   host.innerHTML = html;
   document.body.appendChild(host);
   const rect = host.getBoundingClientRect();
@@ -27,7 +28,10 @@ function measure(html: string, displayMode: boolean): { w: number; h: number } {
   return { w: Math.max(48, w), h: Math.max(28, h) };
 }
 
-export function renderLatexToSvgDataUrl(latex_: string, opts?: { displayMode?: boolean; color?: string }): RenderedLatex {
+export function renderLatexToSvgDataUrl(
+  latex_: string,
+  opts?: { displayMode?: boolean; color?: string },
+): RenderedLatex {
   const displayMode = opts?.displayMode ?? true;
   const color = opts?.color ?? "#0f172a";
   let html: string;
@@ -55,12 +59,16 @@ export function renderLatexToSvgDataUrl(latex_: string, opts?: { displayMode?: b
     `<div style="display:inline-block;color:${color};font-size:22px;line-height:1.4;padding:6px 8px;background:transparent;">${html}</div>` +
     `</div></foreignObject></svg>`;
 
-  const b64 = typeof window === "undefined"
-    ? Buffer.from(svg, "utf8").toString("base64")
-    : btoa(unescape(encodeURIComponent(svg)));
+  const b64 =
+    typeof window === "undefined"
+      ? Buffer.from(svg, "utf8").toString("base64")
+      : btoa(unescape(encodeURIComponent(svg)));
   return { dataUrl: `data:image/svg+xml;base64,${b64}`, width: w, height: h };
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+  );
 }

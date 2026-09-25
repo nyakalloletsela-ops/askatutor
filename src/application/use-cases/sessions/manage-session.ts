@@ -33,10 +33,7 @@ export const rescheduleSession = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ context, data }) => {
-    await context.deps.session.reschedule(
-      data.sessionId,
-      new Date(data.newStart).toISOString(),
-    );
+    await context.deps.session.reschedule(data.sessionId, new Date(data.newStart).toISOString());
   });
 
 /**

@@ -122,4 +122,4 @@ Before marking a work item `COMPLETED` or `VERIFIED`:
 
 ## 10. One-Next-Action Rule
 
-At the end of any work item, choose exactly ONE recommended next action, based on dependencies, security, isolation, architecture, current implementation state, blockers, production value. Record it in `docs/CURRENT_STATE.md`. The next action is a *recommendation*; beginning it requires an explicit, separate authorization (a new work item enters PLANNED/IN_PROGRESS).
+At the end of any work item, choose exactly ONE recommended next action, based on dependencies, security, isolation, architecture, current implementation state, blockers, production value. Record it in `docs/CURRENT_STATE.md`. The next action is a _recommendation_; beginning it requires an explicit, separate authorization (a new work item enters PLANNED/IN_PROGRESS).

@@ -8,9 +8,7 @@ import { requireAppDependencies } from "@/integrations/auth/app-dependencies";
  */
 export const getCourseMaterialUrl = createServerFn({ method: "POST" })
   .middleware([requireAppDependencies])
-  .inputValidator((input) =>
-    z.object({ materialId: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input) => z.object({ materialId: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     const { deps, userId } = context;
 

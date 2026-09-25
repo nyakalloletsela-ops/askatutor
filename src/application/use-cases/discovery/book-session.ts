@@ -1,6 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireAppDependencies } from "@/integrations/auth/app-dependencies";
+import {
+  requireAppDependencies,
+  requirePublicDependencies,
+} from "@/integrations/auth/app-dependencies";
 
 /**
  * Get Tutor Profile
@@ -8,10 +11,29 @@ import { requireAppDependencies } from "@/integrations/auth/app-dependencies";
  * Loads a tutor's public profile information for the booking page.
  */
 export const getTutorProfile = createServerFn({ method: "GET" })
-  .middleware([requireAppDependencies])
+  .middleware([requirePublicDependencies])
   .inputValidator((input) => z.object({ tutorId: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     return context.deps.tutor.getProfile(data.tutorId);
+  });
+
+/**
+ * Get Tutor Reviews
+ *
+ * Loads a tutor's public reviews, newest first, for the profile page.
+ */
+export const getTutorReviews = createServerFn({ method: "GET" })
+  .middleware([requirePublicDependencies])
+  .inputValidator((input) =>
+    z
+      .object({
+        tutorId: z.string().uuid(),
+        limit: z.number().int().min(1).max(50).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    return context.deps.tutor.listTutorReviews(data.tutorId, data.limit ?? 20);
   });
 
 /**

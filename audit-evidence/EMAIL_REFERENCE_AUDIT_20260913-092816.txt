@@ -1,0 +1,43 @@
+﻿ASKATUTORLIVE — EMAIL REFERENCE EVIDENCE AUDIT
+============================================================
+
+Repository:
+C:\Users\User\Documents\Projects\askatutor
+
+Timestamp:
+2026-09-13 09:28:16 +02:00
+
+Targets:
+  admin@askatutor.com
+  helpdesk@askatutor.com
+  support@askatutor.com
+
+Files inspected: 1226
+
+DIRECT EMAIL ADDRESS REFERENCES
+============================================================
+
+EMAIL: admin@askatutor.com
+------------------------------------------------------------
+NO REFERENCES FOUND
+
+EMAIL: helpdesk@askatutor.com
+------------------------------------------------------------
+NO REFERENCES FOUND
+
+EMAIL: support@askatutor.com
+------------------------------------------------------------
+NO REFERENCES FOUND
+
+SUMMARY
+============================================================
+admin@askatutor.com : 0 direct reference(s)
+helpdesk@askatutor.com : 0 direct reference(s)
+support@askatutor.com : 0 direct reference(s)
+
+IMPORTANT:
+This audit establishes repository references only.
+It does NOT establish that an email mailbox exists,
+that the mailbox can send/receive mail, or that an
+address is configured in Supabase, Vercel, DNS, or
+an external email provider.

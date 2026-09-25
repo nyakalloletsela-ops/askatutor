@@ -19,14 +19,28 @@ export function HeroSection({ tutorCount }: HeroSectionProps) {
             <span className="block text-aurora">When you need it.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-            Find a tutor, get help with a difficult concept, practise what you are learning, and keep moving forward.
+            Find a tutor, get help with a difficult concept, practise what you are learning, and
+            keep moving forward.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg" className="h-12 rounded-2xl bg-aurora px-7 text-base font-semibold text-white shadow-glow-electric hover:opacity-90">
-              <Link to="/auth"><BookOpen className="mr-2 h-5 w-5" /> Start Learning</Link>
+            <Button
+              asChild
+              size="lg"
+              className="h-12 rounded-2xl bg-aurora px-7 text-base font-semibold text-white shadow-glow-electric hover:opacity-90"
+            >
+              <Link to="/auth">
+                <BookOpen className="mr-2 h-5 w-5" /> Start Learning
+              </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-12 rounded-2xl px-7 text-base font-semibold">
-              <Link to="/tutors"><Users className="mr-2 h-5 w-5" /> Find a Tutor</Link>
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="h-12 rounded-2xl px-7 text-base font-semibold"
+            >
+              <Link to="/tutors">
+                <Users className="mr-2 h-5 w-5" /> Find a Tutor
+              </Link>
             </Button>
           </div>
           {tutorCount != null && tutorCount > 0 && (
@@ -36,9 +50,16 @@ export function HeroSection({ tutorCount }: HeroSectionProps) {
           )}
         </div>
         <div className="mx-auto mt-12 flex max-w-3xl flex-wrap justify-center gap-2 text-xs font-medium text-muted-foreground">
-          {["1-to-1 tutoring", "Online learning", "Practice & resources", "AI assistance"].map((item) => (
-            <span key={item} className="rounded-full border border-border/60 bg-card/80 px-3 py-1.5">{item}</span>
-          ))}
+          {["1-to-1 tutoring", "Online learning", "Practice & resources", "AI assistance"].map(
+            (item) => (
+              <span
+                key={item}
+                className="rounded-full border border-border/60 bg-card/80 px-3 py-1.5"
+              >
+                {item}
+              </span>
+            ),
+          )}
         </div>
       </div>
     </section>

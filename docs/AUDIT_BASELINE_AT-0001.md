@@ -35,34 +35,34 @@ Commerce's live bulk-lesson flow is server-authoritative (amounts re-derived ser
 
 ## 3. Architecture Matrix (26 areas)
 
-| # | Area | Status | Evidence | Risk | Dependency |
-|----|------|--------|----------|------|-----------|
-| 1 | Application foundation | VERIFIED (subset) | App/domain/infra + DI root (`src/infrastructure/di`, `src/application/contracts/dependencies.ts`) | Low | Foundational |
-| 2 | Identity | VERIFIED (source) | `auth-middleware.ts` JWT `sub` canonical id; `auth-attacher.ts` | Low | Foundational |
-| 3 | Authentication | VERIFIED (source) | `requireSupabaseAuth` middleware; page/session auth | Low | Foundational |
-| 4 | Authorization | VERIFIED (subset) | `entitlement-guard.ts` fail-closed + tests; room-access fail-closed | Medium (live unverified) | Identity |
-| 5 | Learner isolation | VERIFIED (source) / UNKNOWN (live) | RLS owner/admin-scoped; dropped permissive policies | HIGH (live unverified) | DB/Rls |
-| 6 | Ownership | VERIFIED (source) | user_id/student_id/tutor_id scoping; RLS | Low–Med | Identity |
-| 7 | Relationships | VERIFIED (schema) | sessions aggregate; FKs (submissions→assignments CASCADE, etc.) | Low | Schema |
-| 8 | Lifecycle/state | PARTIAL | sessions status; assignment status; no assessment/learning loop | Med | — |
-| 9 | Learning context | MISSING/PROPOSED | only `domain/ports/learning.ts` interface-unwired | Med | Architecture decision |
-| 10 | Activity | PARTIAL | notes, session_records artifacts; not modeled as activity | Med | — |
-| 11 | Interaction | PARTIAL | classroom chat/whiteboard/sim | Low | — |
-| 12 | Evidence | PARTIAL | assignment_submissions(phantom), session_records, notes; not a modeled loop | Med | — |
-| 13 | Assessment | MISSING (authoritative) | no result/attempt/score table; quiz client-only | HIGH (product) | Architecture decision |
-| 14 | Mastery/learning state | MISSING | no table/model; port only | HIGH (product) | Architecture decision |
-| 15 | Content | PARTIAL | tutor_courses/materials/simulations | Low | — |
-| 16 | Recommendation/intervention | MISSING | no engine; AI prompt-level only | Med | Learning/assessment |
-| 17 | AI | PARTIAL | centralized gateway; quotas/logging/retries/timeout/moderation missing | Med | Entitlement |
-| 18 | Communication/tutoring | PARTIAL | messaging, email, notifications; AI coach chats | Low–Med | — |
-| 19 | Commerce | PARTIAL | server-authoritative intent; reconciliation missing | Med (latent amount risk) | Payments |
-| 20 | Trust/safety/privacy | PARTIAL | forum moderation only; AI moderation missing | Med | — |
-| 21 | Audit/operations | PARTIAL | admin_audit_log (tutor decisions); no AI usage log | Med | — |
-| 22 | Quality/security | PARTIAL | 3 test files; no RLS automated tests; typecheck/build pass | Med | Tests/DB |
-| 23 | Performance/scale | PARTIAL/UNKNOWN | vector index; no load/scale evidence | Med | Live/DB |
-| 24 | Deployment | CONFIGURED/VERIFIED(config) | Workers/Node/Vercel presets; no production run evidence | Low–Med | Env |
-| 25 | Production verification | NOT VERIFIED | no live access; live DB state UNKNOWN | HIGH | AT-0002 |
-| 26 | Continuous improvement | DESIGNED (this doc set) | control docs installed; one-next-action | Low | Process |
+| #   | Area                        | Status                             | Evidence                                                                                          | Risk                     | Dependency            |
+| --- | --------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------ | --------------------- |
+| 1   | Application foundation      | VERIFIED (subset)                  | App/domain/infra + DI root (`src/infrastructure/di`, `src/application/contracts/dependencies.ts`) | Low                      | Foundational          |
+| 2   | Identity                    | VERIFIED (source)                  | `auth-middleware.ts` JWT `sub` canonical id; `auth-attacher.ts`                                   | Low                      | Foundational          |
+| 3   | Authentication              | VERIFIED (source)                  | `requireSupabaseAuth` middleware; page/session auth                                               | Low                      | Foundational          |
+| 4   | Authorization               | VERIFIED (subset)                  | `entitlement-guard.ts` fail-closed + tests; room-access fail-closed                               | Medium (live unverified) | Identity              |
+| 5   | Learner isolation           | VERIFIED (source) / UNKNOWN (live) | RLS owner/admin-scoped; dropped permissive policies                                               | HIGH (live unverified)   | DB/Rls                |
+| 6   | Ownership                   | VERIFIED (source)                  | user_id/student_id/tutor_id scoping; RLS                                                          | Low–Med                  | Identity              |
+| 7   | Relationships               | VERIFIED (schema)                  | sessions aggregate; FKs (submissions→assignments CASCADE, etc.)                                   | Low                      | Schema                |
+| 8   | Lifecycle/state             | PARTIAL                            | sessions status; assignment status; no assessment/learning loop                                   | Med                      | —                     |
+| 9   | Learning context            | MISSING/PROPOSED                   | only `domain/ports/learning.ts` interface-unwired                                                 | Med                      | Architecture decision |
+| 10  | Activity                    | PARTIAL                            | notes, session_records artifacts; not modeled as activity                                         | Med                      | —                     |
+| 11  | Interaction                 | PARTIAL                            | classroom chat/whiteboard/sim                                                                     | Low                      | —                     |
+| 12  | Evidence                    | PARTIAL                            | assignment_submissions(phantom), session_records, notes; not a modeled loop                       | Med                      | —                     |
+| 13  | Assessment                  | MISSING (authoritative)            | no result/attempt/score table; quiz client-only                                                   | HIGH (product)           | Architecture decision |
+| 14  | Mastery/learning state      | MISSING                            | no table/model; port only                                                                         | HIGH (product)           | Architecture decision |
+| 15  | Content                     | PARTIAL                            | tutor_courses/materials/simulations                                                               | Low                      | —                     |
+| 16  | Recommendation/intervention | MISSING                            | no engine; AI prompt-level only                                                                   | Med                      | Learning/assessment   |
+| 17  | AI                          | PARTIAL                            | centralized gateway; quotas/logging/retries/timeout/moderation missing                            | Med                      | Entitlement           |
+| 18  | Communication/tutoring      | PARTIAL                            | messaging, email, notifications; AI coach chats                                                   | Low–Med                  | —                     |
+| 19  | Commerce                    | PARTIAL                            | server-authoritative intent; reconciliation missing                                               | Med (latent amount risk) | Payments              |
+| 20  | Trust/safety/privacy        | PARTIAL                            | forum moderation only; AI moderation missing                                                      | Med                      | —                     |
+| 21  | Audit/operations            | PARTIAL                            | admin_audit_log (tutor decisions); no AI usage log                                                | Med                      | —                     |
+| 22  | Quality/security            | PARTIAL                            | 3 test files; no RLS automated tests; typecheck/build pass                                        | Med                      | Tests/DB              |
+| 23  | Performance/scale           | PARTIAL/UNKNOWN                    | vector index; no load/scale evidence                                                              | Med                      | Live/DB               |
+| 24  | Deployment                  | CONFIGURED/VERIFIED(config)        | Workers/Node/Vercel presets; no production run evidence                                           | Low–Med                  | Env                   |
+| 25  | Production verification     | NOT VERIFIED                       | no live access; live DB state UNKNOWN                                                             | HIGH                     | AT-0002               |
+| 26  | Continuous improvement      | DESIGNED (this doc set)            | control docs installed; one-next-action                                                           | Low                      | Process               |
 
 ---
 

@@ -2,17 +2,25 @@ import { describe, expect, test } from "bun:test";
 import { assertAiEntitlement, premiumMessage } from "../src/application/services/entitlement-guard";
 import type { EntitlementGateway, UserRole } from "../src/application/contracts/entitlements";
 
-type Handler = (...args: unknown[]) => Promise<{ data: unknown; error: { message: string } | null }>;
+type Handler = (
+  ...args: unknown[]
+) => Promise<{ data: unknown; error: { message: string } | null }>;
 
-function makeGateway(overrides: {
-  roles?: UserRole[];
-  config?: { is_subscriptions_enabled: boolean; ai_enabled: boolean; whiteboard_ocr_enabled?: boolean };
-  configError?: { message: string } | null;
-  scopes?: string[];
-  scopesError?: { message: string } | null;
-  legacyApproved?: boolean;
-  rolesError?: { message: string } | null;
-} = {}): EntitlementGateway & { calls: string[] } {
+function makeGateway(
+  overrides: {
+    roles?: UserRole[];
+    config?: {
+      is_subscriptions_enabled: boolean;
+      ai_enabled: boolean;
+      whiteboard_ocr_enabled?: boolean;
+    };
+    configError?: { message: string } | null;
+    scopes?: string[];
+    scopesError?: { message: string } | null;
+    legacyApproved?: boolean;
+    rolesError?: { message: string } | null;
+  } = {},
+): EntitlementGateway & { calls: string[] } {
   const calls: string[] = [];
   const gw: EntitlementGateway & { calls: string[] } = {
     calls,
@@ -119,6 +127,8 @@ describe("assertAiEntitlement", () => {
       scopes: ["ai"],
       config: { is_subscriptions_enabled: true, ai_enabled: true, whiteboard_ocr_enabled: true },
     });
-    await expect(assertAiEntitlement(gw, UID, "ai", { requireOcrEnabled: true })).resolves.toBeUndefined();
+    await expect(
+      assertAiEntitlement(gw, UID, "ai", { requireOcrEnabled: true }),
+    ).resolves.toBeUndefined();
   });
 });

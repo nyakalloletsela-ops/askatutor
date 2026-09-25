@@ -18,8 +18,7 @@
  */
 
 export type AiContentPart =
-  | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
+  { type: "text"; text: string } | { type: "image_url"; image_url: { url: string } };
 
 export interface AiMessage {
   role: "system" | "user" | "assistant";
@@ -90,9 +89,14 @@ async function resolveProvider(): Promise<Provider> {
 // ---------------------------------------------------------------------------
 // Per-provider credential resolver (DB overrides env)
 // ---------------------------------------------------------------------------
-const _credsCache = new Map<Provider, { creds: { api_key: string | null; base_url: string | null }; expires: number }>();
+const _credsCache = new Map<
+  Provider,
+  { creds: { api_key: string | null; base_url: string | null }; expires: number }
+>();
 
-export async function getProviderCreds(provider: Provider): Promise<{ api_key: string | null; base_url: string | null }> {
+export async function getProviderCreds(
+  provider: Provider,
+): Promise<{ api_key: string | null; base_url: string | null }> {
   const now = Date.now();
   const cached = _credsCache.get(provider);
   if (cached && cached.expires > now) return cached.creds;
@@ -147,7 +151,8 @@ function mapModel(provider: Provider, model: string): string {
       return bare.startsWith("gemini-") ? bare : "gemini-2.5-flash";
     case "groq":
       // Groq only serves its own model catalog; map anything else to a sane default.
-      if (bare.startsWith("llama") || bare.startsWith("mixtral") || bare.startsWith("gemma")) return bare;
+      if (bare.startsWith("llama") || bare.startsWith("mixtral") || bare.startsWith("gemma"))
+        return bare;
       return "llama-3.3-70b-versatile";
     case "ollama":
       // e.g. "llama3.1", "qwen2.5", "phi3"; strip vendor prefix if any
@@ -224,14 +229,18 @@ export async function aiChat(opts: AiChatOptions): Promise<AiChatResult> {
     if (res.status === 429) throw new AiError("Too many requests — slow down.", 429);
     if (res.status === 402) throw new AiError("AI credits exhausted.", 402);
     if (res.status === 401 || res.status === 403)
-      throw new AiError(`AI provider "${provider}" rejected the key. Check your API key in Admin → AI.`, res.status);
+      throw new AiError(
+        `AI provider "${provider}" rejected the key. Check your API key in Admin → AI.`,
+        res.status,
+      );
     throw new AiError(`AI service error (${res.status}): ${detail.slice(0, 200)}`, res.status);
   }
 
   const raw = await res.json();
   const text =
-    (raw as { choices?: { message?: { content?: string } }[] })
-      .choices?.[0]?.message?.content?.trim() ?? "";
+    (
+      raw as { choices?: { message?: { content?: string } }[] }
+    ).choices?.[0]?.message?.content?.trim() ?? "";
   return { text, raw };
 }
 

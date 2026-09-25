@@ -1,26 +1,10 @@
 import { useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "../../../8-core-ux-navigation/ui/button";
 import { toast } from "sonner";
 import { whiteboardConvert } from "@/application/use-cases/whiteboard/convert";
-import { parseConversion, blocksToShapes } from "./insertConversion";
 import type { WhiteboardHandle } from "../canvas/Whiteboard";
-import { shapeBounds, type Shape } from "../canvas/engine";
-
-function boundsOf(list: Shape[]): { x: number; y: number; w: number; h: number } | null {
-  if (!list.length) return null;
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const s of list) {
-    const b = shapeBounds(s);
-    if (b.x < x0) x0 = b.x;
-    if (b.y < y0) y0 = b.y;
-    if (b.x + b.w > x1) x1 = b.x + b.w;
-    if (b.y + b.h > y1) y1 = b.y + b.h;
-  }
-  if (!isFinite(x0)) return null;
-  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
-}
 
 export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
   const convert = useServerFn(whiteboardConvert);
@@ -46,39 +30,20 @@ export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
         return;
       }
 
-      // Snapshot shapes BEFORE deletion so we can compute a safe insertion origin
-      // that never overlaps existing (already-converted) content.
-      const snapshot = wb.getShapes();
-      const handwriting = snapshot.filter((s) => s.type === "pencil" || s.type === "highlighter");
-      const others = snapshot.filter((s) => s.type !== "pencil" && s.type !== "highlighter");
+      // Call the convert endpoint. It will throw an error indicating
+      // that handwriting recognition is not implemented.
+      await convert({ data: { imageDataUrl: dataUrl } });
 
-      const { text } = await convert({ data: { imageDataUrl: dataUrl } });
-      const blocks = parseConversion(text);
-      if (blocks.length === 0) {
-        console.warn("AI converter raw output:", text);
-        toast.error("Couldn't parse the AI output. Try again.");
-        return;
-      }
-      if (onlyHandwriting) {
-        wb.deleteShapes(handwriting.map((s) => s.id));
-      }
-
-      // Place new blocks at the handwriting's top-left, but push them below any
-      // already-converted content so nothing overwrites what's already there.
-      const hwBounds = boundsOf(handwriting);
-      const otherBounds = boundsOf(others);
-      const originX = hwBounds ? hwBounds.x : 80;
-      const originY = Math.max(
-        hwBounds ? hwBounds.y : 80,
-        otherBounds ? otherBounds.y + otherBounds.h + 32 : 80,
-      );
-
-      const shapes = blocksToShapes(blocks, { x: originX, y: originY });
-      wb.addShapes(shapes);
-      toast.success(`Converted ${blocks.length} block${blocks.length === 1 ? "" : "s"}.`);
+      // If we reach here, the conversion succeeded (unexpected with current impl)
+      toast.success("Conversion completed.");
     } catch (e) {
-      console.error("Convert failed", e);
-      toast.error(e instanceof Error ? e.message : "Conversion failed");
+      const msg = e instanceof Error ? e.message : "Conversion failed";
+      if (msg.includes("not available") || msg.includes("not implemented")) {
+        toast.error("Handwriting-to-LaTeX is not available. This feature requires a dedicated handwriting-math recognition implementation that does not depend on the platform AI Gateway.");
+      } else {
+        console.error("Convert failed", e);
+        toast.error(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -91,10 +56,14 @@ export function ConvertButton({ handle }: { handle: WhiteboardHandle | null }) {
       className="h-7 px-2 shrink-0"
       onClick={run}
       disabled={busy}
-      title="Convert handwriting → clean digital text, equations and diagrams"
+      title="Convert handwriting → clean digital text, equations and diagrams (not available)"
     >
-      {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Sparkles className="mr-1 h-3.5 w-3.5" />}
-      <span className="hidden xs:inline">{busy ? "Converting…" : "AI Convert"}</span>
+      {busy ? (
+        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <AlertCircle className="mr-1 h-3.5 w-3.5" />
+      )}
+      <span className="hidden xs:inline">{busy ? "Converting…" : "Convert"}</span>
     </Button>
   );
 }

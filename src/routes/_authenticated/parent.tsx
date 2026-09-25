@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Badge } from "@/presentation/domains/8-core-ux-navigation/ui/badge";
 import { Users, Calendar, FileText, ArrowRight } from "lucide-react";
@@ -54,8 +60,7 @@ function ParentDashboard() {
     })();
   }, []);
 
-  const childName = (id: string) =>
-    children.find((c) => c.child_id === id)?.full_name ?? "Student";
+  const childName = (id: string) => children.find((c) => c.child_id === id)?.full_name ?? "Student";
 
   if (!isParent) {
     return (
@@ -90,9 +95,21 @@ function ParentDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Linked children" value={children.length} icon={<Users className="h-4 w-4" />} />
-        <StatCard label="Upcoming lessons" value={upcoming.length} icon={<Calendar className="h-4 w-4" />} />
-        <StatCard label="Active tutors" value={new Set(upcoming.map((s) => s.id)).size} icon={<FileText className="h-4 w-4" />} />
+        <StatCard
+          label="Linked children"
+          value={children.length}
+          icon={<Users className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Upcoming lessons"
+          value={upcoming.length}
+          icon={<Calendar className="h-4 w-4" />}
+        />
+        <StatCard
+          label="Active tutors"
+          value={new Set(upcoming.map((s) => s.id)).size}
+          icon={<FileText className="h-4 w-4" />}
+        />
       </div>
 
       <Card>
@@ -115,7 +132,9 @@ function ParentDashboard() {
                 <li key={c.child_id} className="flex items-center justify-between py-3">
                   <div>
                     <p className="font-medium">{c.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{c.relationship} · {c.status}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {c.relationship} · {c.status}
+                    </p>
                   </div>
                   <Badge variant="outline">{c.status}</Badge>
                 </li>
@@ -139,7 +158,8 @@ function ParentDashboard() {
                   <div>
                     <p className="font-medium">{s.subject || "Lesson"}</p>
                     <p className="text-xs text-muted-foreground">
-                      {childName(s.student_id)} · {new Date(s.scheduled_at).toLocaleString()} · {s.duration_min} min
+                      {childName(s.student_id)} · {new Date(s.scheduled_at).toLocaleString()} ·{" "}
+                      {s.duration_min} min
                     </p>
                   </div>
                   <Badge variant="secondary">{s.status}</Badge>

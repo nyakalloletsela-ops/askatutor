@@ -25,19 +25,19 @@ This is a **design-only deliverable**. Nothing is implemented, wired, or authori
 
 ## 2. CURRENT ARCHITECTURE EVIDENCE
 
-| Capability | Evidence | Status |
-|---|---|---|
-| Learner Difficulty Model (Learner Fear / Learner Claim / Identified Difficulty / Intervention / Learning Evidence / Mastery) | `docs/PRODUCT_CONSTITUTION.md` §3 | DESIGNED only — not implemented |
-| `LearningStage` / `LearningRecordRepository` seam | `src/domain/ports/learning.ts` | IMPLEMENTED as interface only — UNWIRED into `AppDependencies` |
-| Episodic learning (sessions, `session_records`, verbatim, ownership RLS) | migrations + AT-0002 sessions 5–6 | IMPLEMENTED / APPLIED / VERIFIED (non-prod populated project, 628-case matrix) |
-| Assignments + submissions (participant-scoped, grade/feedback) | migration `20260530152504_b823d221-…sql` | IMPLEMENTED / APPLIED / TESTED |
-| Topic catalog (`subjects`, `tutor_courses`) | migration `20260522110136_e7689ab4-…sql` | IMPLEMENTED / APPLIED / TESTED — catalog only; `assignments.subject` is free text |
-| RBAC (`app_role` admin/tutor/student/parent, `user_roles`, `has_role`) | migration `20260518180453_b7b6b188-…sql` + AT-0002 | IMPLEMENTED / VERIFIED (non-prod); REST grant gaps on `profiles`/`user_roles` + ~18 siblings (AT-0002 finding) |
-| Whiteboard-as-evidence (PDF) | Constitution §5; `session_records` | APPLIED (design); live PDF preservation runtime = UNKNOWN |
-| Assessment/result persistence, mastery, learning decisions | (no tables) | NOT IMPLEMENTED — no schema exists |
-| Institutions, memberships, cohorts, classes | (no tables) | NOT IMPLEMENTED — no schema exists |
-| Affective / learner state | (no tables) | NOT IMPLEMENTED — no schema exists |
-| Client-side quiz "assessment" mode | `presentation/.../labs_.simulation-lab.tsx` | IMPLEMENTED — local-only, not machine-readable persistence (must NOT be extended into evidence) |
+| Capability                                                                                                                   | Evidence                                           | Status                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Learner Difficulty Model (Learner Fear / Learner Claim / Identified Difficulty / Intervention / Learning Evidence / Mastery) | `docs/PRODUCT_CONSTITUTION.md` §3                  | DESIGNED only — not implemented                                                                                |
+| `LearningStage` / `LearningRecordRepository` seam                                                                            | `src/domain/ports/learning.ts`                     | IMPLEMENTED as interface only — UNWIRED into `AppDependencies`                                                 |
+| Episodic learning (sessions, `session_records`, verbatim, ownership RLS)                                                     | migrations + AT-0002 sessions 5–6                  | IMPLEMENTED / APPLIED / VERIFIED (non-prod populated project, 628-case matrix)                                 |
+| Assignments + submissions (participant-scoped, grade/feedback)                                                               | migration `20260530152504_b823d221-…sql`           | IMPLEMENTED / APPLIED / TESTED                                                                                 |
+| Topic catalog (`subjects`, `tutor_courses`)                                                                                  | migration `20260522110136_e7689ab4-…sql`           | IMPLEMENTED / APPLIED / TESTED — catalog only; `assignments.subject` is free text                              |
+| RBAC (`app_role` admin/tutor/student/parent, `user_roles`, `has_role`)                                                       | migration `20260518180453_b7b6b188-…sql` + AT-0002 | IMPLEMENTED / VERIFIED (non-prod); REST grant gaps on `profiles`/`user_roles` + ~18 siblings (AT-0002 finding) |
+| Whiteboard-as-evidence (PDF)                                                                                                 | Constitution §5; `session_records`                 | APPLIED (design); live PDF preservation runtime = UNKNOWN                                                      |
+| Assessment/result persistence, mastery, learning decisions                                                                   | (no tables)                                        | NOT IMPLEMENTED — no schema exists                                                                             |
+| Institutions, memberships, cohorts, classes                                                                                  | (no tables)                                        | NOT IMPLEMENTED — no schema exists                                                                             |
+| Affective / learner state                                                                                                    | (no tables)                                        | NOT IMPLEMENTED — no schema exists                                                                             |
+| Client-side quiz "assessment" mode                                                                                           | `presentation/.../labs_.simulation-lab.tsx`        | IMPLEMENTED — local-only, not machine-readable persistence (must NOT be extended into evidence)                |
 
 ---
 
@@ -106,16 +106,16 @@ Proposed core entities (ADDITIVE — none exist today):
 
 Authorization matrix (resource rows × actor columns):
 
-| Resource | Learner (owner) | Tutor | Institution Instructor | Institution Staff | Institution Admin | Platform Admin |
-|---|---|---|---|---|---|---|
-| Own profile/evidence | Full | Scoped (§9.1 report, active tutor) | Scoped (institutional authz) | Aggregate-only | Aggregate-only | Legit ops/safety (§10) |
-| Membership/context | Own memberships | Non-applicable | Non-applicable | Manage staff/instructors | Manage members/links | Manage all |
-| Prerequisite assessment | Create own | Authorize within tutor scope | Authorize within cohort | No | Policy | Audit |
-| Topic assessment | Create own | Authorize/grade within scope | Authorize/grade within cohort | No | Policy | Audit |
-| Affective reports | Full (own only) | Prepared-report only (learner-consented) | Consent-gated aggregate only | Aggregate only | Aggregate only | Audit (consent-gated) |
-| Evidence records | Full (own) | Scoped | Scoped | Scoped/aggregate | Aggregate + evidence per authz | Audit |
-| Mastery snapshots | Full (own) | Scoped | Cohort scoped | No | Aggregate metrics | Audit |
-| Aggregate metrics | Own-only views | Scoped | Cohort | Term/cohort | Institution-wide | Platform-wide |
+| Resource                | Learner (owner) | Tutor                                    | Institution Instructor        | Institution Staff        | Institution Admin              | Platform Admin         |
+| ----------------------- | --------------- | ---------------------------------------- | ----------------------------- | ------------------------ | ------------------------------ | ---------------------- |
+| Own profile/evidence    | Full            | Scoped (§9.1 report, active tutor)       | Scoped (institutional authz)  | Aggregate-only           | Aggregate-only                 | Legit ops/safety (§10) |
+| Membership/context      | Own memberships | Non-applicable                           | Non-applicable                | Manage staff/instructors | Manage members/links           | Manage all             |
+| Prerequisite assessment | Create own      | Authorize within tutor scope             | Authorize within cohort       | No                       | Policy                         | Audit                  |
+| Topic assessment        | Create own      | Authorize/grade within scope             | Authorize/grade within cohort | No                       | Policy                         | Audit                  |
+| Affective reports       | Full (own only) | Prepared-report only (learner-consented) | Consent-gated aggregate only  | Aggregate only           | Aggregate only                 | Audit (consent-gated)  |
+| Evidence records        | Full (own)      | Scoped                                   | Scoped                        | Scoped/aggregate         | Aggregate + evidence per authz | Audit                  |
+| Mastery snapshots       | Full (own)      | Scoped                                   | Cohort scoped                 | No                       | Aggregate metrics              | Audit                  |
+| Aggregate metrics       | Own-only views  | Scoped                                   | Cohort                        | Term/cohort              | Institution-wide               | Platform-wide          |
 
 **Rules:** authorization is resolved through **SECURITY-DEFINER membership helpers** (`resolve_membership`, `has_institution_role`, cohort membership) shared by RLS policies AND aggregate RPCs. **No client-supplied `institution_id` is ever used as authorization.** Aggregate RPCs return aggregates only and enforce **small-cell suppression**.
 
@@ -160,18 +160,18 @@ Constitution §14 makes AskATutorLive a paid platform (free tier, paid plans, tu
 
 ## 14. DECISION REGISTER (INST-DEC-1 .. INST-DEC-10)
 
-| ID | Question | Recommendation | Status |
-|---|---|---|---|
-| INST-DEC-1 | Institution path: link-only vs first-class members vs both | **Both: M:N memberships + §11 links** | **ACCEPTED (2026-09-10, D-0004)** — §11 amendment note issued |
-| INST-DEC-2 | Reuse `app_role` as membership context or separate context roles | Separate `institution_memberships.context_role` | PROPOSED / PENDING |
-| INST-DEC-3 | Topic identity & versioning | Controlled `topics` rows; versioned instruments keyed by topic | PROPOSED / PENDING |
-| INST-DEC-4 | Prerequisite storage | Relational `topic_prerequisites` (not jsonb) | PROPOSED / PENDING |
-| INST-DEC-5 | Accept the bounded learning/assessment framework as target model | **Accept: topics/prereqs, typed assessments, affective, mastery, learning decisions** | **ACCEPTED (2026-09-10, D-0005)** — instrument content remains UNKNOWN |
-| INST-DEC-6 | Mastery validity window / expiry policy | Finite window; learner evidence extends it | PROPOSED / PENDING (product design) |
-| INST-DEC-7 | Affective consent + retention | Consent gates; fail-closed retention | PROPOSED / PENDING (legal) |
-| INST-DEC-8 | Aggregate reporting boundaries + small-cell thresholds | Small-cell suppression; aggregate-only RPCs | PROPOSED / PENDING (legal/product) |
-| INST-DEC-9 | Instrument authoring authority | Catalog + authorized institution contexts, audited | PROPOSED / PENDING |
-| INST-DEC-10 | Migration phasing/order | Phases 1–5 (§16), each its own authorized work item | PROPOSED / PENDING |
+| ID          | Question                                                         | Recommendation                                                                        | Status                                                                 |
+| ----------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| INST-DEC-1  | Institution path: link-only vs first-class members vs both       | **Both: M:N memberships + §11 links**                                                 | **ACCEPTED (2026-09-10, D-0004)** — §11 amendment note issued          |
+| INST-DEC-2  | Reuse `app_role` as membership context or separate context roles | Separate `institution_memberships.context_role`                                       | PROPOSED / PENDING                                                     |
+| INST-DEC-3  | Topic identity & versioning                                      | Controlled `topics` rows; versioned instruments keyed by topic                        | PROPOSED / PENDING                                                     |
+| INST-DEC-4  | Prerequisite storage                                             | Relational `topic_prerequisites` (not jsonb)                                          | PROPOSED / PENDING                                                     |
+| INST-DEC-5  | Accept the bounded learning/assessment framework as target model | **Accept: topics/prereqs, typed assessments, affective, mastery, learning decisions** | **ACCEPTED (2026-09-10, D-0005)** — instrument content remains UNKNOWN |
+| INST-DEC-6  | Mastery validity window / expiry policy                          | Finite window; learner evidence extends it                                            | PROPOSED / PENDING (product design)                                    |
+| INST-DEC-7  | Affective consent + retention                                    | Consent gates; fail-closed retention                                                  | PROPOSED / PENDING (legal)                                             |
+| INST-DEC-8  | Aggregate reporting boundaries + small-cell thresholds           | Small-cell suppression; aggregate-only RPCs                                           | PROPOSED / PENDING (legal/product)                                     |
+| INST-DEC-9  | Instrument authoring authority                                   | Catalog + authorized institution contexts, audited                                    | PROPOSED / PENDING                                                     |
+| INST-DEC-10 | Migration phasing/order                                          | Phases 1–5 (§16), each its own authorized work item                                   | PROPOSED / PENDING                                                     |
 
 Consequences of ignoring the register: INST-DEC-1 ignored → §11 conflict or lost institutional revenue; INST-DEC-5 ignored → continued episodic-only learning with no mastery/assessment persistence. Remaining items are PENDING until explicit human acceptance.
 

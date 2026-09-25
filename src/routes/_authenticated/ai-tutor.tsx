@@ -11,9 +11,12 @@ import { toast } from "sonner";
 import { aiTutorChat } from "@/application/use-cases/ai/tutor-chat";
 import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
-
 export const Route = createFileRoute("/_authenticated/ai-tutor")({
-  component: () => (<ScopeGate scope="ai"><AiTutorPage /></ScopeGate>),
+  component: () => (
+    <ScopeGate scope="ai">
+      <AiTutorPage />
+    </ScopeGate>
+  ),
   head: () => ({
     meta: [
       { title: "AI Study Coach — Ask A Tutor" },
@@ -88,7 +91,10 @@ function AiTutorPage() {
 
     const userContent: MsgContent = attachment
       ? [
-          { type: "text", text: text || "Here is my attempt — please comment but don't solve it for me." },
+          {
+            type: "text",
+            text: text || "Here is my attempt — please comment but don't solve it for me.",
+          },
           { type: "image_url", image_url: { url: attachment.dataUrl } },
         ]
       : text;
@@ -135,18 +141,24 @@ function AiTutorPage() {
             const prev = i > 0 ? messages[i - 1] : null;
             const promptForTitle =
               m.role === "assistant" && prev?.role === "user"
-                ? (typeof prev.content === "string"
-                    ? prev.content
-                    : (prev.content.find((p) => p.type === "text") as TextPart | undefined)?.text ?? "AI Coach response")
+                ? typeof prev.content === "string"
+                  ? prev.content
+                  : ((prev.content.find((p) => p.type === "text") as TextPart | undefined)?.text ??
+                    "AI Coach response")
                 : "AI Coach response";
-            const parts = typeof m.content === "string"
-              ? [{ type: "text", text: m.content } as TextPart]
-              : m.content;
-            const assistantText = m.role === "assistant"
-              ? (typeof m.content === "string"
+            const parts =
+              typeof m.content === "string"
+                ? [{ type: "text", text: m.content } as TextPart]
+                : m.content;
+            const assistantText =
+              m.role === "assistant"
+                ? typeof m.content === "string"
                   ? m.content
-                  : parts.filter((p): p is TextPart => p.type === "text").map((p) => p.text).join("\n\n"))
-              : "";
+                  : parts
+                      .filter((p): p is TextPart => p.type === "text")
+                      .map((p) => p.text)
+                      .join("\n\n")
+                : "";
             return (
               <div
                 key={i}
@@ -154,16 +166,16 @@ function AiTutorPage() {
               >
                 <div
                   className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
+                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
                   }`}
                 >
                   {m.role === "user" ? (
                     <div className="space-y-2">
                       {parts.map((p, idx) =>
                         p.type === "text" ? (
-                          <p key={idx} className="whitespace-pre-wrap">{p.text}</p>
+                          <p key={idx} className="whitespace-pre-wrap">
+                            {p.text}
+                          </p>
                         ) : (
                           <img
                             key={idx}
@@ -199,8 +211,14 @@ function AiTutorPage() {
         <div className="border-t p-2">
           {attachment && (
             <div className="mb-2 flex items-center gap-2 rounded-lg border bg-muted/40 px-2 py-1.5">
-              <img src={attachment.dataUrl} alt="Attachment preview" className="h-10 w-10 rounded object-cover" />
-              <span className="flex-1 truncate text-xs text-muted-foreground">{attachment.name}</span>
+              <img
+                src={attachment.dataUrl}
+                alt="Attachment preview"
+                className="h-10 w-10 rounded object-cover"
+              />
+              <span className="flex-1 truncate text-xs text-muted-foreground">
+                {attachment.name}
+              </span>
               <button
                 type="button"
                 onClick={() => setAttachment(null)}
@@ -238,7 +256,11 @@ function AiTutorPage() {
                   submit();
                 }
               }}
-              placeholder={attachment ? "Add a note about your attempt (optional)…" : "Describe what you're stuck on…"}
+              placeholder={
+                attachment
+                  ? "Add a note about your attempt (optional)…"
+                  : "Describe what you're stuck on…"
+              }
               rows={2}
               className="min-h-[44px] resize-none"
               disabled={loading}

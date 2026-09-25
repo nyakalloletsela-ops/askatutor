@@ -3,7 +3,11 @@ import { Input } from "../../8-core-ux-navigation/ui/input";
 import { Label } from "../../8-core-ux-navigation/ui/label";
 import { Button } from "../../8-core-ux-navigation/ui/button";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "../../8-core-ux-navigation/ui/select";
 import { Loader2, Wallet } from "lucide-react";
 import type { TutorPricing } from "./TutorLookup";
@@ -52,7 +56,9 @@ export function BulkLessonConfig({
           <div>
             <Label>Lesson length</Label>
             <Select value={String(minutes)} onValueChange={(v) => setMinutes(Number(v))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="30">30 min</SelectItem>
                 <SelectItem value="45">45 min</SelectItem>
@@ -77,12 +83,16 @@ export function BulkLessonConfig({
         </div>
 
         <Button onClick={onSubmit} disabled={submitting} className="w-full">
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
-          Create payment request
+          {submitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Wallet className="mr-2 h-4 w-4" />
+          )}
+          Proceed to payment
         </Button>
         <p className="text-xs text-muted-foreground">
-          After paying, an admin will confirm and your lessons will be credited. You can then book
-          that many sessions with your tutor without paying again.
+          You'll be taken to a secure checkout to complete the payment. Your prepaid lessons are
+          credited automatically once payment is confirmed.
         </p>
       </CardContent>
     </Card>

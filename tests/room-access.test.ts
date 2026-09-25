@@ -5,21 +5,20 @@ const TUTOR = "00000000-0000-4000-8000-0000000000aa";
 const STUDENT = "00000000-0000-4000-8000-0000000000bb";
 const ROOM = "aat-123";
 
-function lookup(overrides: {
-  userId?: string;
-  isAdmin?: boolean;
-  row?: { tutor_id: string; student_id: string } | null;
-  error?: { message: string } | null;
-} = {}): RoomLookup {
+function lookup(
+  overrides: {
+    userId?: string;
+    isAdmin?: boolean;
+    row?: { tutor_id: string; student_id: string } | null;
+    error?: { message: string } | null;
+  } = {},
+): RoomLookup {
   return {
     roomId: ROOM,
     userId: overrides.userId ?? STUDENT,
     isAdmin: overrides.isAdmin ?? false,
     findSessionByRoom: async () => ({
-      data:
-        overrides.row === undefined
-          ? { tutor_id: TUTOR, student_id: STUDENT }
-          : overrides.row,
+      data: overrides.row === undefined ? { tutor_id: TUTOR, student_id: STUDENT } : overrides.row,
       error: overrides.error ?? null,
     }),
   };
@@ -44,7 +43,9 @@ describe("resolveRoomMembership (fail-closed)", () => {
   });
 
   test("denies a stranger even if the room id is a guess", async () => {
-    const access = await resolveRoomMembership(lookup({ userId: "deadbeef-0000-4000-8000-000000000000" }));
+    const access = await resolveRoomMembership(
+      lookup({ userId: "deadbeef-0000-4000-8000-000000000000" }),
+    );
     expect(access.isMember).toBe(false);
   });
 
@@ -56,9 +57,9 @@ describe("resolveRoomMembership (fail-closed)", () => {
   });
 
   test("propagates lookup errors so callers deny access (fail closed)", async () => {
-    await expect(
-      resolveRoomMembership(lookup({ error: { message: "db down" } })),
-    ).rejects.toThrow("db down");
+    await expect(resolveRoomMembership(lookup({ error: { message: "db down" } }))).rejects.toThrow(
+      "db down",
+    );
   });
 
   test("no demo/bypass path: a 'demo-' room with no session row is denied", async () => {

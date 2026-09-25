@@ -7,8 +7,19 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
-  Sparkles, BookOpen, Layers, ListChecks, FileText, ScrollText,
-  Code, FlaskConical, Briefcase, Languages, CalendarDays, Loader2, Send,
+  Sparkles,
+  BookOpen,
+  Layers,
+  ListChecks,
+  FileText,
+  ScrollText,
+  Code,
+  FlaskConical,
+  Briefcase,
+  Languages,
+  CalendarDays,
+  Loader2,
+  Send,
 } from "lucide-react";
 import { Card, CardContent } from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
@@ -19,30 +30,123 @@ import { aiToolRun } from "@/application/use-cases/ai/tool-run";
 import { ScopeGate } from "@/presentation/domains/3-personalization-role-context/ScopeGate";
 
 export const Route = createFileRoute("/_authenticated/ai-tools")({
-  component: () => (<ScopeGate scope="ai"><AiToolsPage /></ScopeGate>),
+  component: () => (
+    <ScopeGate scope="ai">
+      <AiToolsPage />
+    </ScopeGate>
+  ),
   head: () => ({
     meta: [
       { title: "AI Toolkit — Ask A Tutor Live" },
-      { name: "description", content: "12 AI-powered study tools: explain, flashcards, quizzes, essay outlines, code help, lab reports, career guide and more." },
+      {
+        name: "description",
+        content:
+          "12 AI-powered study tools: explain, flashcards, quizzes, essay outlines, code help, lab reports, career guide and more.",
+      },
     ],
   }),
 });
 
 type ToolId =
-  | "explain" | "flashcards" | "quiz" | "essay_outline" | "summarize"
-  | "code_helper" | "lab_report" | "career" | "translate" | "study_plan";
+  | "explain"
+  | "flashcards"
+  | "quiz"
+  | "essay_outline"
+  | "summarize"
+  | "code_helper"
+  | "lab_report"
+  | "career"
+  | "translate"
+  | "study_plan";
 
-const TOOLS: { id: ToolId; label: string; icon: any; tagline: string; placeholder: string; accent: string }[] = [
-  { id: "explain", label: "Explain", icon: BookOpen, tagline: "Concepts in plain language", placeholder: "Explain Newton's third law with an analogy", accent: "from-primary to-accent" },
-  { id: "flashcards", label: "Flashcards", icon: Layers, tagline: "Auto-generate 8 cards", placeholder: "Photosynthesis (Form D Biology)", accent: "from-accent to-gold" },
-  { id: "quiz", label: "Quiz", icon: ListChecks, tagline: "5 multiple-choice questions", placeholder: "Quadratic equations", accent: "from-primary to-gold" },
-  { id: "essay_outline", label: "Essay Outline", icon: FileText, tagline: "Structured argument plan", placeholder: "Causes of WWI for IGCSE History", accent: "from-gold to-primary" },
-  { id: "summarize", label: "Summarize", icon: ScrollText, tagline: "TL;DR + key bullets", placeholder: "Paste a chapter or article here", accent: "from-accent to-primary" },
-  { id: "code_helper", label: "Code Helper", icon: Code, tagline: "Debug and fix snippets", placeholder: "My Python loop never ends — here's the code…", accent: "from-primary to-accent" },
-  { id: "lab_report", label: "Lab Report", icon: FlaskConical, tagline: "Template for any experiment", placeholder: "Titration of HCl with NaOH", accent: "from-accent to-gold" },
-  { id: "career", label: "Career Guide", icon: Briefcase, tagline: "African STEM career paths", placeholder: "I love math and computers", accent: "from-gold to-accent" },
-  { id: "translate", label: "Translate", icon: Languages, tagline: "Sesotho ↔ English", placeholder: "Translate: The mitochondria is the powerhouse of the cell", accent: "from-primary to-accent" },
-  { id: "study_plan", label: "Study Plan", icon: CalendarDays, tagline: "7-day plan tailored to you", placeholder: "Prepare for COSC Physics paper in 2 weeks", accent: "from-accent to-primary" },
+const TOOLS: {
+  id: ToolId;
+  label: string;
+  icon: any;
+  tagline: string;
+  placeholder: string;
+  accent: string;
+}[] = [
+  {
+    id: "explain",
+    label: "Explain",
+    icon: BookOpen,
+    tagline: "Concepts in plain language",
+    placeholder: "Explain Newton's third law with an analogy",
+    accent: "from-primary to-accent",
+  },
+  {
+    id: "flashcards",
+    label: "Flashcards",
+    icon: Layers,
+    tagline: "Auto-generate 8 cards",
+    placeholder: "Photosynthesis (Form D Biology)",
+    accent: "from-accent to-gold",
+  },
+  {
+    id: "quiz",
+    label: "Quiz",
+    icon: ListChecks,
+    tagline: "5 multiple-choice questions",
+    placeholder: "Quadratic equations",
+    accent: "from-primary to-gold",
+  },
+  {
+    id: "essay_outline",
+    label: "Essay Outline",
+    icon: FileText,
+    tagline: "Structured argument plan",
+    placeholder: "Causes of WWI for IGCSE History",
+    accent: "from-gold to-primary",
+  },
+  {
+    id: "summarize",
+    label: "Summarize",
+    icon: ScrollText,
+    tagline: "TL;DR + key bullets",
+    placeholder: "Paste a chapter or article here",
+    accent: "from-accent to-primary",
+  },
+  {
+    id: "code_helper",
+    label: "Code Helper",
+    icon: Code,
+    tagline: "Debug and fix snippets",
+    placeholder: "My Python loop never ends — here's the code…",
+    accent: "from-primary to-accent",
+  },
+  {
+    id: "lab_report",
+    label: "Lab Report",
+    icon: FlaskConical,
+    tagline: "Template for any experiment",
+    placeholder: "Titration of HCl with NaOH",
+    accent: "from-accent to-gold",
+  },
+  {
+    id: "career",
+    label: "Career Guide",
+    icon: Briefcase,
+    tagline: "African STEM career paths",
+    placeholder: "I love math and computers",
+    accent: "from-gold to-accent",
+  },
+  {
+    id: "translate",
+    label: "Translate",
+    icon: Languages,
+    tagline: "Sesotho ↔ English",
+    placeholder: "Translate: The mitochondria is the powerhouse of the cell",
+    accent: "from-primary to-accent",
+  },
+  {
+    id: "study_plan",
+    label: "Study Plan",
+    icon: CalendarDays,
+    tagline: "7-day plan tailored to you",
+    placeholder: "Prepare for COSC Physics paper in 2 weeks",
+    accent: "from-accent to-primary",
+  },
 ];
 
 function AiToolsPage() {
@@ -62,7 +166,9 @@ function AiToolsPage() {
     setLoading(true);
     setOutput("");
     try {
-      const { reply } = await run({ data: { tool, prompt: text, subject: subject || undefined, level: level || undefined } });
+      const { reply } = await run({
+        data: { tool, prompt: text, subject: subject || undefined, level: level || undefined },
+      });
       setOutput(reply || "(empty response)");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong");
@@ -94,9 +200,13 @@ function AiToolsPage() {
                 isActive ? "border-primary shadow-glow" : "border-border/60 hover:border-primary/50"
               }`}
             >
-              <div className={`absolute -right-4 -top-4 h-16 w-16 rounded-full bg-gradient-to-br ${t.accent} opacity-${isActive ? "30" : "10"} blur-xl transition-opacity group-hover:opacity-25`} />
+              <div
+                className={`absolute -right-4 -top-4 h-16 w-16 rounded-full bg-gradient-to-br ${t.accent} opacity-${isActive ? "30" : "10"} blur-xl transition-opacity group-hover:opacity-25`}
+              />
               <div className="relative">
-                <div className={`mb-1.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${t.accent} text-white`}>
+                <div
+                  className={`mb-1.5 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br ${t.accent} text-white`}
+                >
                   <Icon className="h-4 w-4" />
                 </div>
                 <p className="text-sm font-semibold">{t.label}</p>
@@ -115,20 +225,38 @@ function AiToolsPage() {
               <h2 className="font-semibold">{active.label}</h2>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject (optional)" />
-              <Input value={level} onChange={(e) => setLevel(e.target.value)} placeholder="Level (e.g. Form D)" />
+              <Input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Subject (optional)"
+              />
+              <Input
+                value={level}
+                onChange={(e) => setLevel(e.target.value)}
+                placeholder="Level (e.g. Form D)"
+              />
             </div>
             <Textarea
               rows={8}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={active.placeholder}
-              onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit();
+              }}
             />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">⌘/Ctrl + Enter to run</p>
-              <Button onClick={submit} disabled={loading || !prompt.trim()} className="bg-aurora text-white hover:opacity-90">
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+              <Button
+                onClick={submit}
+                disabled={loading || !prompt.trim()}
+                className="bg-aurora text-white hover:opacity-90"
+              >
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
                 Run
               </Button>
             </div>
@@ -138,7 +266,9 @@ function AiToolsPage() {
         <Card>
           <CardContent className="min-h-[300px] space-y-2 p-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Output</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Output
+              </h2>
               {output && !loading && (
                 <SaveToNotes
                   content={output}
@@ -155,12 +285,9 @@ function AiToolsPage() {
             {!loading && !output && (
               <p className="text-sm text-muted-foreground">Your result will appear here.</p>
             )}
-            {output && (
-              <SmartMarkdown>{output}</SmartMarkdown>
-            )}
+            {output && <SmartMarkdown>{output}</SmartMarkdown>}
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

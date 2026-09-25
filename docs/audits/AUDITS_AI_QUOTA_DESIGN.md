@@ -11,14 +11,17 @@ A per-user AI token budget is **declared** in configuration and surfaced in the 
 ## 2. What exists (declared, not enforced)
 
 ### 2.1 Configuration field
+
 - Column `ai_token_limit_per_user integer NOT NULL DEFAULT 100000` on `public.platform_config` (singleton, id=1) — `supabase/migrations/20260601045818_f63dbd87-f3a0-4e98-8232-d380ac4a68f6.sql:83`.
 - Readable by `anon`/`authenticated`, admin-updatable (RLS present).
 
 ### 2.2 Types + admin UI
+
 - Typed in `src/integrations/supabase/types.ts`.
-- Surfaced in the admin platform config form via `use-platform-config` hook (`src/presentation/domains/3-personalization-role-context/hooks/use-platform-config.tsx`) and `src/routes/_authenticated/admin.ai.tsx:34` as a `ConfigToggle` for key `ai_token_limit_per_user` with description *"Approximate monthly AI token budget per user."*
+- Surfaced in the admin platform config form via `use-platform-config` hook (`src/presentation/domains/3-personalization-role-context/hooks/use-platform-config.tsx`) and `src/routes/_authenticated/admin.ai.tsx:34` as a `ConfigToggle` for key `ai_token_limit_per_user` with description _"Approximate monthly AI token budget per user."_
 
 ### 2.3 Not present anywhere
+
 - **No usage/token accounting table** (grep for `token_usage`, `tokenUsage`, `recordUsage`, `usage_table` across `src/` returns nothing beyond the config/type/UI hits).
 - **No usage RPC** and **no capture point**: nothing writes usage.
 - **No enforcement check** in any server fn, gateway, or guard.
@@ -35,6 +38,7 @@ The `AiGateway.chat` contract returns `{ text, raw }` (`src/application/contract
 ## 4. Quota scoping (the mechanism that gating uses today)
 
 Access control scoping (distinct from quota accounting):
+
 - `assertAiEntitlement` (`src/application/services/entitlement-guard.ts:28`) decides WHO may use a capability via roles + feature scope.
 - Scopes come from the `get_my_scopes()` RPC, which resolves entitlements from `subscription_assignments` (migration `20260622125739_...sql:117`) keyed via `auth.uid()` and gated by `expires_at`.
 - `admin`/`tutor` roles bypass subscription scoping (allow).
@@ -49,7 +53,7 @@ This is **entitlement**, not **consumption accounting** — nothing here meters 
 
 ## 6. BLOCKER — period semantics REQUIRES PRODUCT DECISION
 
-The admin label says *"Approximate monthly AI token budget per user"*, but "month" is ambiguous:
+The admin label says _"Approximate monthly AI token budget per user"_, but "month" is ambiguous:
 
 - **Calendar month** (1st–month-end, UTC)? Resets on the 1st regardless of subscription.
 - **Rolling 30/31-day window**? Continuous, sliding.
@@ -61,18 +65,18 @@ The current schema stores per-user assignments but has **no period accounting** 
 
 ## 7. Quota surface summary
 
-| Layer | Current state |
-|---|---|
-| Config field | `ai_token_limit_per_user` default 100000 (platform_config) — exists |
-| Admin UI | ConfigToggle in `admin.ai.tsx:34` — exists (display only) |
-| Types | `src/integrations/supabase/types.ts` — exists |
-| Usage capture | None — `raw.usage` discarded (`provider.server.ts:231-235`) |
-| Usage store | None |
-| Enforcement | None |
-| Period semantics | **UNKNOWN — REQUIRES PRODUCT DECISION** |
-| Recommended accounting point | `AiGateway` implementation (Infrastructure seam) |
-| Recommended policy point | Application guard (e.g. `assertAiQuota`) |
-| Primary blocker | No usage store + no period decision |
+| Layer                        | Current state                                                       |
+| ---------------------------- | ------------------------------------------------------------------- |
+| Config field                 | `ai_token_limit_per_user` default 100000 (platform_config) — exists |
+| Admin UI                     | ConfigToggle in `admin.ai.tsx:34` — exists (display only)           |
+| Types                        | `src/integrations/supabase/types.ts` — exists                       |
+| Usage capture                | None — `raw.usage` discarded (`provider.server.ts:231-235`)         |
+| Usage store                  | None                                                                |
+| Enforcement                  | None                                                                |
+| Period semantics             | **UNKNOWN — REQUIRES PRODUCT DECISION**                             |
+| Recommended accounting point | `AiGateway` implementation (Infrastructure seam)                    |
+| Recommended policy point     | Application guard (e.g. `assertAiQuota`)                            |
+| Primary blocker              | No usage store + no period decision                                 |
 
 ## 8. Findings
 

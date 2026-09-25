@@ -3,7 +3,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/presentation/domains/3-personalization-role-context/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/presentation/domains/8-core-ux-navigation/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/presentation/domains/8-core-ux-navigation/ui/card";
 import { Button } from "@/presentation/domains/8-core-ux-navigation/ui/button";
 import { Input } from "@/presentation/domains/8-core-ux-navigation/ui/input";
 import { Label } from "@/presentation/domains/8-core-ux-navigation/ui/label";
@@ -43,7 +48,10 @@ function ManageChildren() {
       const { data: pr } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("id", ls.map((l) => l.child_id));
+        .in(
+          "id",
+          ls.map((l) => l.child_id),
+        );
       const map: Record<string, string> = {};
       (pr ?? []).forEach((p: any) => (map[p.id] = p.full_name ?? p.id));
       setProfiles(map);
@@ -124,7 +132,12 @@ function ManageChildren() {
           <div className="grid gap-3 sm:grid-cols-[1fr_140px_auto]">
             <div>
               <Label>Child's email</Label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="child@example.com" />
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                placeholder="child@example.com"
+              />
             </div>
             <div>
               <Label>Relationship</Label>
@@ -179,7 +192,9 @@ function ManageChildren() {
                 <li key={l.id} className="flex items-center justify-between py-3">
                   <div>
                     <p className="font-medium">{profiles[l.child_id] ?? "Child"}</p>
-                    <p className="text-xs text-muted-foreground">{l.relationship} · {l.status}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {l.relationship} · {l.status}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{l.status}</Badge>
