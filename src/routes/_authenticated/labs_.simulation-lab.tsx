@@ -70,6 +70,8 @@ export const Route = createFileRoute("/_authenticated/labs_/simulation-lab")({
       },
     ],
   }),
+  // Simulation Lab is client-only (uses Three.js/React Three Fiber) — disable SSR
+  ssr: false,
 });
 
 type LibraryItem = {
